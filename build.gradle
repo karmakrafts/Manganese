@@ -22,6 +22,9 @@ repositories {
 dependencies {
     implementation group: 'org.jetbrains', name: 'annotations', version: config.annotations_version
     implementation group: 'it.unimi.dsi', name: 'fastutil', version: config.fastutil_version
+    implementation group: 'org.fusesource.jansi', name: 'jansi', version: config.jansi_version
+    implementation group: 'net.sf.jopt-simple', name: 'jopt-simple', version: config.jopt_version
+    implementation group: 'org.antlr', name: 'antlr4-runtime', version: config.antlr_version
    
     implementation group: 'io.karma.kommons', name: 'kommons', version: config.kommons_version
     implementation group: 'io.karma.ferrous', name: 'fir', version: config.fir_version
