@@ -1,0 +1,98 @@
+buildscript {
+    def config = new Properties()
+    file('build.properties').withInputStream(config.&load)
+    project.ext.config = config
+}
+
+apply plugin: 'java'
+apply plugin: 'maven-publish'
+
+archivesBaseName = config.project_id
+group = config.project_group
+version = "${config.project_version}.${(System.getenv("CI_PIPELINE_IID") ?: 0)}"
+sourceCompatibility = config.java_version
+targetCompatibility = config.java_version
+
+repositories {
+    mavenCentral()
+    google()
+    maven { url = 'https://maven.covers1624.net' }
+}
+
+dependencies {
+    implementation group: 'org.jetbrains', name: 'annotations', version: config.annotations_version
+    implementation group: 'it.unimi.dsi', name: 'fastutil', version: config.fastutil_version
+   
+    implementation group: 'io.karma.kommons', name: 'kommons', version: config.kommons_version
+    implementation group: 'io.karma.ferrous', name: 'fir', version: config.fir_version
+    implementation group: 'io.karma.ferrous', name: 'vanadium', version: config.vanadium_version   
+
+    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: config.junit_version
+    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: config.junit_version
+}
+
+test {
+    jvmArgs '-Xms256M'
+    jvmArgs '-Xmx512M'
+    useJUnitPlatform()
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+    sourceCompatibility = config.java_version
+    targetCompatibility = config.java_version
+}
+
+publishing {
+    repositories {
+        if (System.getenv('MAVEN_PASSWORD')) {
+            maven {
+                url "https://nexus.covers1624.net/repository/karmakrafts-releases/"
+
+                credentials {
+                    username 'kitsunealex'
+                    password System.getenv('MAVEN_PASSWORD')
+                }
+            }
+        }
+    }
+    publications {
+        manganese(MavenPublication) {
+            groupId config.artifact_group
+            artifactId project.archivesBaseName
+            version project.version
+            artifact jar
+
+            pom {
+                name = archivesBaseName
+                description = archivesBaseName
+                //The publish plugin doesnt like GString's here apparently..
+                url = "https://git.karmakrafts.dev/kk/${config.project_id}".toString()
+
+                scm {
+                    url = "https://git.karmakrafts.dev/kk/${config.project_id}".toString()
+                }
+
+                issueManagement {
+                    system = 'gitlab'
+                    url = "https://git.karmakrafts.dev/kk/${config.project_id}/issues".toString()
+                }
+
+                licenses {
+                    license {
+                        name = "The MIT License"
+                        url = "https://git.karmakrafts.dev/kk/${config.project_id}/-/blob/master/LICENSE"
+                        distribution = 'repo'
+                    }
+                }
+
+                developers {
+                    developer {
+                        id = 'kitsunealex'
+                        name = 'KitsuneAlex'
+                    }
+                }
+            }
+        }
+    }
+}
