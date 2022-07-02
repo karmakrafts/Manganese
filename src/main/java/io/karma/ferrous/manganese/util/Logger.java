@@ -1,6 +1,6 @@
 package io.karma.ferrous.manganese.util;
 
-import io.karma.ferrous.manganese.Manganese;
+import io.karma.ferrous.manganese.ManganeseCompiler;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 import org.fusesource.jansi.Ansi;
@@ -24,7 +24,7 @@ public final class Logger extends Writer {
     public static final Logger INSTANCE = new Logger();
     private final StringBuilder messageBuffer = new StringBuilder();
     private boolean isInitialized;
-    private LogLevel logLevel = LogLevel.DEBUG;
+    private LogLevel logLevel = LogLevel.INFO;
     private Consumer<String> logConsumer = System.out::println;
 
     // @formatter:off
@@ -64,7 +64,7 @@ public final class Logger extends Writer {
 
         isInitialized = true;
 
-        if (Manganese.isEmbedded()) {
+        if (ManganeseCompiler.isEmbedded()) {
             return; // No action for the embedded compiler
         }
 
@@ -81,11 +81,16 @@ public final class Logger extends Writer {
             messageBuffer.delete(0, messageBuffer.length());
             final var formatted = String.format(fmt, params);
             final var lines = formatted.split("\n");
+            final var numLines = lines.length;
+            final var maxIndex = numLines - 1;
 
-            for (final var line : lines) {
-                // @formatter:off
-                messageBuffer.append(level.format(line)).append("\n");
-                // @formatter:on
+            for (var i = 0; i < numLines; i++) {
+                final var line = lines[i];
+                messageBuffer.append(level.format(line));
+
+                if (i < maxIndex) {
+                    messageBuffer.append('\n');
+                }
             }
 
             logConsumer.accept(messageBuffer.toString());
@@ -117,8 +122,8 @@ public final class Logger extends Writer {
         DEBUG   (Color.DEFAULT, Color.CYAN),
         INFO    (Color.DEFAULT, Color.DEFAULT),
         WARN    (Color.YELLOW, Color.BLACK),
-        ERROR   (Color.RED, Color.WHITE),
-        FATAL   (Color.WHITE, Color.RED);
+        ERROR   (Color.DEFAULT, Color.RED),
+        FATAL   (Color.RED, Color.WHITE);
         // @formatter:on
 
         private final Ansi.Color bgColor;

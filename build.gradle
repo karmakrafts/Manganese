@@ -54,7 +54,7 @@ test {
 
 def commonManifest = {
     attributes([
-            'Main-Class'            : "${config.project_group}.Manganese",
+            'Main-Class'            : "${config.project_group}.ManganeseCompiler",
             'Implementation-Title'  : 'Manganese',
             'Implementation-Version': project.version,
             'Implementation-Vendor' : 'Karma Krafts',
