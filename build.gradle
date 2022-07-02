@@ -2,9 +2,20 @@ buildscript {
     def config = new Properties()
     file('build.properties').withInputStream(config.&load)
     project.ext.config = config
+
+    repositories {
+        mavenCentral()
+        google()
+        maven { url = 'https://plugins.gradle.org/m2' }
+    }
+
+    dependencies {
+        classpath group: 'gradle.plugin.com.github.johnrengelman', name: 'shadow', version: config.shadow_version, changing: true
+    }
 }
 
 apply plugin: 'java'
+apply plugin: 'com.github.johnrengelman.shadow'
 apply plugin: 'maven-publish'
 
 archivesBaseName = config.project_id
@@ -25,10 +36,11 @@ dependencies {
     implementation group: 'org.fusesource.jansi', name: 'jansi', version: config.jansi_version
     implementation group: 'net.sf.jopt-simple', name: 'jopt-simple', version: config.jopt_version
     implementation group: 'org.antlr', name: 'antlr4-runtime', version: config.antlr_version
-   
+    implementation group: 'org.apiguardian', name: 'apiguardian-api', version: config.apiguard_version
+
     implementation group: 'io.karma.kommons', name: 'kommons', version: config.kommons_version
     implementation group: 'io.karma.ferrous', name: 'fir', version: config.fir_version
-    implementation group: 'io.karma.ferrous', name: 'vanadium', version: config.vanadium_version   
+    implementation group: 'io.karma.ferrous', name: 'vanadium', version: config.vanadium_version
 
     testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: config.junit_version
     testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: config.junit_version
@@ -38,6 +50,37 @@ test {
     jvmArgs '-Xms256M'
     jvmArgs '-Xmx512M'
     useJUnitPlatform()
+}
+
+def commonManifest = {
+    attributes([
+            'Main-Class'            : "${config.project_group}.Manganese",
+            'Implementation-Title'  : 'Manganese',
+            'Implementation-Version': project.version,
+            'Implementation-Vendor' : 'Karma Krafts',
+            'Specification-Title'   : 'Manganese',
+            'Specification-Version' : 1,
+            'Specification-Vendor'  : 'Karma Krafts'
+    ])
+}
+
+jar {
+    classifier 'slim'
+    manifest commonManifest
+}
+
+shadowJar {
+    classifier ''
+    manifest commonManifest
+}
+
+artifacts {
+    archives jar
+    archives shadowJar
+}
+
+tasks.withType(Jar) {
+    includeEmptyDirs = false
 }
 
 tasks.withType(JavaCompile) {
@@ -64,7 +107,9 @@ publishing {
             groupId config.artifact_group
             artifactId project.archivesBaseName
             version project.version
+
             artifact jar
+            artifact shadowJar
 
             pom {
                 name = archivesBaseName
