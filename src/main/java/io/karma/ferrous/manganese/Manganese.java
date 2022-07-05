@@ -1,5 +1,7 @@
 package io.karma.ferrous.manganese;
 
+import io.karma.ferrous.manganese.gen.BytecodeGenerator;
+import io.karma.ferrous.manganese.gen.TranslationException;
 import io.karma.ferrous.manganese.util.Logger;
 import io.karma.ferrous.manganese.util.Logger.LogLevel;
 import io.karma.ferrous.vanadium.FerrousLexer;
@@ -56,8 +58,11 @@ public final class Manganese implements ANTLRErrorListener {
     private static boolean IS_STANDALONE = false;
 
     private final StringBuilder progressBuffer = new StringBuilder();
+    private final BytecodeGenerator generator = new BytecodeGenerator();
     private int numCompiledFiles;
     private CompilationStatus status = CompilationStatus.SKIPPED;
+    private boolean tokenView = false;
+    private boolean reportParserWarnings = false;
 
     // @formatter:off
     private Manganese() {}
@@ -71,6 +76,8 @@ public final class Manganese implements ANTLRErrorListener {
     @API(status = Status.INTERNAL)
     public static void main(final @NotNull String[] args) {
         Logger.INSTANCE.init(); // Initialize logger beforehand so we can catch all errors
+        final var compiler = getInstance();
+        var status = CompilationStatus.SKIPPED;
 
         try {
             final var parser = new OptionParser("?iodv");
@@ -78,6 +85,9 @@ public final class Manganese implements ANTLRErrorListener {
             parser.accepts("i", "A Ferrous file or directory of files from which to compile.").withRequiredArg().ofType(String.class);
             parser.accepts("o", "A FIR file or a directory in which to save the compiled FIR bytecode.").withRequiredArg().ofType(String.class);
             parser.accepts("d", "Debug mode. This will print debug information during the compilation.");
+            parser.accepts("t", "Token view. This will print a tree structure containing all tokens during compilation.");
+            parser.accepts("s", "Silent mode. This will suppress any warning level log messages during compilation.");
+            parser.accepts("p", "Display parser warnings during compilation.");
             parser.accepts("v", "Prints version information about the compiler and runtime.");
             final var options = parser.parse(args);
 
@@ -105,6 +115,18 @@ public final class Manganese implements ANTLRErrorListener {
                 Logger.INSTANCE.setLogLevel(LogLevel.DEBUG);
             }
 
+            if (options.has("s")) {
+                Logger.INSTANCE.disableLogLevel(LogLevel.WARN);
+            }
+
+            if (options.has("t")) {
+                compiler.setTokenView(true);
+            }
+
+            if (options.has("p")) {
+                compiler.setReportParserWarnings(true);
+            }
+
             IS_STANDALONE = true;
             final var in = Paths.get((String) options.valueOf("i")).toAbsolutePath().normalize();
             final var inFile = in.toFile();
@@ -119,20 +141,22 @@ public final class Manganese implements ANTLRErrorListener {
                 : null;
             // @formatter:on
 
-            Logger.INSTANCE.info(getInstance().compile(in, out).getStatus().getFormattedMessage());
+            status = status.worse(compiler.compile(in, out).getStatus());
         }
         catch (OptionException e) {
+            // Special case; display help instead of logging the exception.
             Logger.INSTANCE.info("Try running with -? to get some help!");
             System.exit(0);
         }
         catch (IOException e) {
-            Logger.INSTANCE.info(CompilationStatus.IO_ERROR.getFormattedMessage());
-            System.exit(1);
+            status = status.worse(CompilationStatus.IO_ERROR);
         }
         catch (Throwable e) {
             ExceptionUtils.handleError(e, Logger.INSTANCE::fatal);
-            System.exit(2);
         }
+
+        Logger.INSTANCE.info(status.getFormattedMessage());
+        System.exit(status.getExitCode());
     }
 
     public static boolean isEmbedded() {
@@ -174,10 +198,34 @@ public final class Manganese implements ANTLRErrorListener {
         return files;
     }
 
-    private @NotNull Manganese reset() {
-        numCompiledFiles = 0;
+    private void resetCompilation() {
         status = CompilationStatus.SKIPPED;
+        generator.reset();
+    }
+
+    private @NotNull Manganese reset() {
+        tokenView = false;
         return this;
+    }
+
+    public @NotNull CompilationStatus getStatus() {
+        return status;
+    }
+
+    public void setTokenView(final boolean tokenView) {
+        this.tokenView = tokenView;
+    }
+
+    public void setReportParserWarnings(final boolean reportParserWarnings) {
+        this.reportParserWarnings = reportParserWarnings;
+    }
+
+    public boolean isTokenViewEnabled() {
+        return tokenView;
+    }
+
+    public boolean reportsParserWarnings() {
+        return reportParserWarnings;
     }
 
     private @NotNull String getProgressIndicator(final int numFiles) {
@@ -197,13 +245,14 @@ public final class Manganese implements ANTLRErrorListener {
         return progressBuffer.toString();
     }
 
-    public void compile(final @NotNull Path in, final @Nullable Path out) {
+    public @NotNull CompilationResult compile(final @NotNull Path in, final @Nullable Path out) {
         Logger.INSTANCE.init(); // Initialize logger if we are embedded
         final var numFiles = in.toFile().isDirectory() ? findCompilableFiles(in).size() : 1;
+        numCompiledFiles = 0; // Reset compilation counter
         return compileRecursively(in, out, numFiles);
     }
 
-    private void compileRecursively(final @NotNull Path in, @Nullable Path out, final int numFiles) {
+    private @NotNull CompilationResult compileRecursively(final @NotNull Path in, @Nullable Path out, final int numFiles) {
         final var inFile = in.toFile();
 
         if (inFile.isDirectory()) {
@@ -261,15 +310,16 @@ public final class Manganese implements ANTLRErrorListener {
 
             var status = CompilationStatus.SKIPPED;
 
-            Logger.INSTANCE.debug("I: %s", in);
-            Logger.INSTANCE.debug("O: %s", out);
+            Logger.INSTANCE.debug("Input: %s", in);
+            Logger.INSTANCE.debug("Output: %s", out);
 
             try (final var fis = new FileInputStream(inFile)) {
                 final var inStream = IMemoryStream.fromStream(MemoryStream::new, fis);
 
                 try (final var fos = new FileOutputStream(outFile)) {
                     final var outStream = new MemoryStream(0);
-                    status = status.worse(compile(inStream, outStream));
+                    compile(inStream, outStream);
+                    status = status.worse(this.status);
                     outStream.rewind();
                     outStream.writeTo(fos);
                 }
@@ -283,45 +333,74 @@ public final class Manganese implements ANTLRErrorListener {
         }
     }
 
-    public @NotNull CompilationStatus compile(final @NotNull IMemoryStream in, final @NotNull IMemoryStream out) {
+    public void compile(final @NotNull IMemoryStream in, final @NotNull IMemoryStream out) {
+        resetCompilation(); // Reset before each compilation
         Logger.INSTANCE.init(); // Initialize logger if we are embedded
 
         try {
             final var charStream = CharStreams.fromChannel(in, StandardCharsets.UTF_8);
             final var lexer = new FerrousLexer(charStream);
-
             final var tokenStream = new CommonTokenStream(lexer);
+
+            if (tokenView) {
+                tokenStream.fill();
+                final var numTokens = tokenStream.size();
+
+                for (var i = 0; i < numTokens; i++) {
+                    Logger.INSTANCE.info(Ansi.ansi().fgBright(Color.MAGENTA).a(tokenStream.get(i)).a(Attribute.RESET).toString());
+                }
+            }
+
             final var parser = new FerrousParser(tokenStream);
+            parser.removeErrorListeners(); // Remove default error listener
+            parser.addErrorListener(this);
+            final var evalContext = parser.eval();
 
-            Logger.INSTANCE.debug(parser.eval().toStringTree());
+            if (!status.isRecoverable()) {
+                return;
+            }
 
-            return CompilationStatus.SUCCESS;
+            status = status.worse(generator.generate(evalContext, out) ? CompilationStatus.SUCCESS : CompilationStatus.TRANSLATION_ERROR);
         }
-        catch (IOException t) {
-            return CompilationStatus.IO_ERROR;
+        catch (TranslationException e) {
+            status = status.worse(CompilationStatus.TRANSLATION_ERROR);
+        }
+        catch (IOException e) {
+            status = status.worse(CompilationStatus.IO_ERROR);
         }
         catch (Throwable t) {
-            return CompilationStatus.UNKNOWN_ERROR;
+            status = status.worse(CompilationStatus.UNKNOWN_ERROR);
+            ExceptionUtils.handleError(t, Logger.INSTANCE::error);
         }
     }
 
     @Override
     public void syntaxError(final @NotNull Recognizer<?, ?> recognizer, final @NotNull Object offendingSymbol, final int line, final int charPositionInLine, final @NotNull String msg, final @NotNull RecognitionException e) {
-
+        status = status.worse(CompilationStatus.SYNTAX_ERROR);
+        Logger.INSTANCE.error("Syntax error on line %d:%d: %s", line, charPositionInLine, msg);
     }
 
     @Override
     public void reportAmbiguity(final @NotNull Parser recognizer, final @NotNull DFA dfa, final int startIndex, final int stopIndex, final boolean exact, final @NotNull BitSet ambigAlts, final @NotNull ATNConfigSet configs) {
-
+        if (reportParserWarnings) {
+            Logger.INSTANCE.warn("Detected ambiguity at %d:%d (%d)", startIndex, stopIndex, dfa.decision);
+            status = status.worse(CompilationStatus.SUCCESS_WITH_WARNINGS);
+        }
     }
 
     @Override
     public void reportAttemptingFullContext(final @NotNull Parser recognizer, final @NotNull DFA dfa, final int startIndex, final int stopIndex, final @NotNull BitSet conflictingAlts, final @NotNull ATNConfigSet configs) {
-
+        if (reportParserWarnings) {
+            Logger.INSTANCE.warn("Detected full context at %d:%d (%d)", startIndex, stopIndex, dfa.decision);
+            status = status.worse(CompilationStatus.SUCCESS_WITH_WARNINGS);
+        }
     }
 
     @Override
     public void reportContextSensitivity(final @NotNull Parser recognizer, final @NotNull DFA dfa, final int startIndex, final int stopIndex, final int prediction, final @NotNull ATNConfigSet configs) {
-
+        if (reportParserWarnings) {
+            Logger.INSTANCE.warn("Detected abnormally high context sensitivity at %d:%d (%d)", startIndex, stopIndex, dfa.decision);
+            status = status.worse(CompilationStatus.SUCCESS_WITH_WARNINGS);
+        }
     }
 }

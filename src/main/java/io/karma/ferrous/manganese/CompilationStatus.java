@@ -17,23 +17,36 @@ import org.jetbrains.annotations.NotNull;
 @API(status = Status.STABLE)
 public enum CompilationStatus {
     // @formatter:off
-    SKIPPED                 (Color.GREEN,   "Compilation Skipped"),
-    SUCCESS                 (Color.GREEN,   "Compilation Successful"),
-    SUCCESS_WITH_WARNINGS   (Color.GREEN,   "Compilation Successful (with warnings)"),
-    IO_ERROR                (Color.RED,     "Compilation Failed (IO error)"),
-    SYNTAX_ERROR            (Color.RED,     "Compilation Failed (syntax error)"),
-    UNKNOWN_ERROR           (Color.RED,     "Compilation Failed (unknown error)");
+    SKIPPED                 (0,   true,  Color.GREEN, "Compilation Skipped"),
+    SUCCESS                 (0,   true,  Color.GREEN, "Compilation Successful"),
+    SUCCESS_WITH_WARNINGS   (0,   true,  Color.GREEN, "Compilation Successful (with warnings)"),
+    IO_ERROR                (1,   false, Color.RED,   "Compilation Failed (IO error)"),
+    SYNTAX_ERROR            (2,   false, Color.RED,   "Compilation Failed (syntax error)"),
+    TRANSLATION_ERROR       (3,   false, Color.RED,   "Compilation Failed (translation error)"),
+    UNKNOWN_ERROR           (999, false, Color.RED,   "Compilation Failed (unknown error)");
     // @formatter:on
 
     private final Color color;
     private final String message;
+    private final boolean isRecoverable;
+    private final int exitCode;
 
-    CompilationStatus(final @NotNull Color color, final @NotNull String message) {
+    CompilationStatus(final int exitCode, final boolean isRecoverable, final @NotNull Color color, final @NotNull String message) {
+        this.exitCode = exitCode;
+        this.isRecoverable = isRecoverable;
         this.color = color;
         this.message = message;
     }
 
     public @NotNull CompilationStatus worse(final @NotNull CompilationStatus result) {
+        if (!isRecoverable && result.isRecoverable) {
+            return this;
+        }
+
+        if (isRecoverable && !result.isRecoverable) {
+            return result;
+        }
+
         return ordinal() < result.ordinal() ? result : this;
     }
 
@@ -45,7 +58,20 @@ public enum CompilationStatus {
         return message;
     }
 
-    public @NotNull String getFormattedMessage() {
-        return Ansi.ansi().fg(color).a(Attribute.INTENSITY_BOLD).a(message).a(Attribute.RESET).toString();
+    public boolean isRecoverable() {
+        return isRecoverable;
     }
+
+    public int getExitCode() {
+        return exitCode;
+    }
+
+    public @NotNull String getFormattedMessage() { // @formatter:off
+        return Ansi.ansi()
+            .fg(color)
+            .a(Attribute.INTENSITY_BOLD)
+            .a(message)
+            .a(Attribute.RESET)
+            .toString();
+    } // @formatter:on
 }

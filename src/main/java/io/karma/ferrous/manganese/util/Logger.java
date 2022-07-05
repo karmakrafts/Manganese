@@ -11,6 +11,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.Writer;
+import java.util.EnumSet;
 import java.util.function.Consumer;
 
 /**
@@ -33,6 +34,7 @@ public final class Logger extends Writer {
     }; // @formatter:on
 
     private final StringBuilder messageBuffer = new StringBuilder();
+    private final EnumSet<LogLevel> activeLevels = EnumSet.allOf(LogLevel.class);
     private boolean isInitialized;
     private LogLevel logLevel = LogLevel.INFO;
     private Consumer<String> logConsumer = System.out::println;
@@ -57,6 +59,14 @@ public final class Logger extends Writer {
     // @formatter:on
 
     // Functions
+
+    public void enableLogLevel(final @NotNull LogLevel level) {
+        activeLevels.add(level);
+    }
+
+    public void disableLogLevel(final @NotNull LogLevel level) {
+        activeLevels.remove(level);
+    }
 
     public void setLogLevel(final @NotNull LogLevel level) {
         logLevel = level;
@@ -87,6 +97,10 @@ public final class Logger extends Writer {
     }
 
     public void log(final @NotNull LogLevel level, final @NotNull String fmt, final Object... params) {
+        if (!activeLevels.contains(level)) {
+            return; // Prioritize this condition over the current log level
+        }
+
         if (logConsumer != null && level.ordinal() >= logLevel.ordinal()) {
             messageBuffer.delete(0, messageBuffer.length());
             final var formatted = String.format(fmt, params);
@@ -140,7 +154,7 @@ public final class Logger extends Writer {
         // @formatter:off
         DEBUG   (Color.DEFAULT, Color.CYAN),
         INFO    (Color.DEFAULT, Color.DEFAULT),
-        WARN    (Color.YELLOW, Color.BLACK),
+        WARN    (Color.DEFAULT, Color.YELLOW),
         ERROR   (Color.DEFAULT, Color.RED),
         FATAL   (Color.RED, Color.WHITE);
         // @formatter:on
