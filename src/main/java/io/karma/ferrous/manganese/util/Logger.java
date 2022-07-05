@@ -1,6 +1,6 @@
 package io.karma.ferrous.manganese.util;
 
-import io.karma.ferrous.manganese.ManganeseCompiler;
+import io.karma.ferrous.manganese.Manganese;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 import org.fusesource.jansi.Ansi;
@@ -22,6 +22,16 @@ import java.util.function.Consumer;
 @API(status = Status.STABLE)
 public final class Logger extends Writer {
     public static final Logger INSTANCE = new Logger();
+
+    private static final String[] LOGO_LINES = { // @formatter:off
+        "  __  __                                              ",
+        " |  \\/  | __ _ _ __   __ _  __ _ _ __   ___  ___  ___ ",
+        " | |\\/| |/ _` | '_ \\ / _` |/ _` | '_ \\ / _ \\/ __|/ _ \\",
+        " | |  | | (_| | | | | (_| | (_| | | | |  __/\\__ \\  __/",
+        " |_|  |_|\\__,_|_| |_|\\__, |\\__,_|_| |_|\\___||___/\\___|",
+        "                     |___/                            "
+    }; // @formatter:on
+
     private final StringBuilder messageBuffer = new StringBuilder();
     private boolean isInitialized;
     private LogLevel logLevel = LogLevel.INFO;
@@ -64,7 +74,7 @@ public final class Logger extends Writer {
 
         isInitialized = true;
 
-        if (ManganeseCompiler.isEmbedded()) {
+        if (Manganese.isEmbedded()) {
             return; // No action for the embedded compiler
         }
 
@@ -115,6 +125,15 @@ public final class Logger extends Writer {
 
     public void fatal(final @NotNull String fmt, final Object... params) {
         log(LogLevel.FATAL, fmt, params);
+    }
+
+    public void printLogo() {
+        info(Ansi.ansi().fg(Color.RED).a(LOGO_LINES[0]).a(Attribute.RESET).toString());
+        info(Ansi.ansi().fgBright(Color.RED).a(LOGO_LINES[1]).a(Attribute.RESET).toString());
+        info(Ansi.ansi().fgBright(Color.YELLOW).a(LOGO_LINES[2]).a(Attribute.RESET).toString());
+        info(Ansi.ansi().fg(Color.GREEN).a(LOGO_LINES[3]).a(Attribute.RESET).toString());
+        info(Ansi.ansi().fg(Color.BLUE).a(LOGO_LINES[4]).a(Attribute.RESET).toString());
+        info(Ansi.ansi().fg(Color.MAGENTA).a(LOGO_LINES[5]).a(Attribute.RESET).toString());
     }
 
     public enum LogLevel {
