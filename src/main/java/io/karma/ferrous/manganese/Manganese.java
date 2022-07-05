@@ -324,8 +324,12 @@ public final class Manganese implements ANTLRErrorListener {
                     outStream.writeTo(fos);
                 }
             }
-            catch (Throwable t) {
-                ExceptionUtils.handleError(t, Logger.INSTANCE::error);
+            catch (IOException e) {
+                status = status.worse(CompilationStatus.IO_ERROR);
+            }
+            catch (Throwable e) {
+                status = status.worse(CompilationStatus.UNKNOWN_ERROR);
+                ExceptionUtils.handleError(e, Logger.INSTANCE::error);
             }
 
             numCompiledFiles++;
