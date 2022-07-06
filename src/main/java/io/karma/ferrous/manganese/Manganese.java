@@ -41,6 +41,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.jar.Manifest;
 
 /**
@@ -58,11 +59,13 @@ public final class Manganese implements ANTLRErrorListener {
     private static boolean IS_STANDALONE = false;
 
     private final StringBuilder progressBuffer = new StringBuilder();
-    private final BytecodeGenerator generator = new BytecodeGenerator();
+    private final BytecodeGenerator generator = new BytecodeGenerator(this);
     private int numCompiledFiles;
     private CompilationStatus status = CompilationStatus.SKIPPED;
     private boolean tokenView = false;
     private boolean reportParserWarnings = false;
+    private Path sourcePath;
+    private Path outputPath;
 
     // @formatter:off
     private Manganese() {}
@@ -85,9 +88,9 @@ public final class Manganese implements ANTLRErrorListener {
             parser.accepts("i", "A Ferrous file or directory of files from which to compile.").withRequiredArg().ofType(String.class);
             parser.accepts("o", "A FIR file or a directory in which to save the compiled FIR bytecode.").withRequiredArg().ofType(String.class);
             parser.accepts("d", "Debug mode. This will print debug information during the compilation.");
+            parser.accepts("p", "Display parser warnings during compilation.").availableIf("d");
             parser.accepts("t", "Token view. This will print a tree structure containing all tokens during compilation.");
             parser.accepts("s", "Silent mode. This will suppress any warning level log messages during compilation.");
-            parser.accepts("p", "Display parser warnings during compilation.");
             parser.accepts("v", "Prints version information about the compiler and runtime.");
             final var options = parser.parse(args);
 
@@ -201,6 +204,8 @@ public final class Manganese implements ANTLRErrorListener {
     private void resetCompilation() {
         status = CompilationStatus.SKIPPED;
         generator.reset();
+        sourcePath = null;
+        outputPath = null;
     }
 
     private @NotNull Manganese reset() {
@@ -210,6 +215,14 @@ public final class Manganese implements ANTLRErrorListener {
 
     public @NotNull CompilationStatus getStatus() {
         return status;
+    }
+
+    public @NotNull Optional<Path> getSourcePath() {
+        return Optional.ofNullable(sourcePath);
+    }
+
+    public @NotNull Optional<Path> getOutputPath() {
+        return Optional.ofNullable(outputPath);
     }
 
     public void setTokenView(final boolean tokenView) {
@@ -313,6 +326,9 @@ public final class Manganese implements ANTLRErrorListener {
             Logger.INSTANCE.debug("Input: %s", in);
             Logger.INSTANCE.debug("Output: %s", out);
 
+            sourcePath = in; // Update path fields
+            outputPath = out;
+
             try (final var fis = new FileInputStream(inFile)) {
                 final var inStream = IMemoryStream.fromStream(MemoryStream::new, fis);
 
@@ -387,24 +403,21 @@ public final class Manganese implements ANTLRErrorListener {
     @Override
     public void reportAmbiguity(final @NotNull Parser recognizer, final @NotNull DFA dfa, final int startIndex, final int stopIndex, final boolean exact, final @NotNull BitSet ambigAlts, final @NotNull ATNConfigSet configs) {
         if (reportParserWarnings) {
-            Logger.INSTANCE.warn("Detected ambiguity at %d:%d (%d)", startIndex, stopIndex, dfa.decision);
-            status = status.worse(CompilationStatus.SUCCESS_WITH_WARNINGS);
+            Logger.INSTANCE.debug("Detected ambiguity at %d:%d (%d)", startIndex, stopIndex, dfa.decision);
         }
     }
 
     @Override
     public void reportAttemptingFullContext(final @NotNull Parser recognizer, final @NotNull DFA dfa, final int startIndex, final int stopIndex, final @NotNull BitSet conflictingAlts, final @NotNull ATNConfigSet configs) {
         if (reportParserWarnings) {
-            Logger.INSTANCE.warn("Detected full context at %d:%d (%d)", startIndex, stopIndex, dfa.decision);
-            status = status.worse(CompilationStatus.SUCCESS_WITH_WARNINGS);
+            Logger.INSTANCE.debug("Detected full context at %d:%d (%d)", startIndex, stopIndex, dfa.decision);
         }
     }
 
     @Override
     public void reportContextSensitivity(final @NotNull Parser recognizer, final @NotNull DFA dfa, final int startIndex, final int stopIndex, final int prediction, final @NotNull ATNConfigSet configs) {
         if (reportParserWarnings) {
-            Logger.INSTANCE.warn("Detected abnormally high context sensitivity at %d:%d (%d)", startIndex, stopIndex, dfa.decision);
-            status = status.worse(CompilationStatus.SUCCESS_WITH_WARNINGS);
+            Logger.INSTANCE.debug("Detected abnormally high context sensitivity at %d:%d (%d)", startIndex, stopIndex, dfa.decision);
         }
     }
 }

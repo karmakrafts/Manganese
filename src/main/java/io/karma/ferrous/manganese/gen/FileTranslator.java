@@ -1,14 +1,36 @@
 package io.karma.ferrous.manganese.gen;
 
+import io.karma.ferrous.fir.codec.IFIRCodec;
+import io.karma.ferrous.fir.tree.IFIRElement;
 import io.karma.ferrous.fir.tree.block.impl.FIRFileBlock;
+import io.karma.ferrous.manganese.util.Logger;
+import io.karma.ferrous.vanadium.FerrousParser.FileContext;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.jetbrains.annotations.NotNull;
 
-public final class FileTranslator implements IElementTranslator<FIRFileBlock> {
+public final class FileTranslator implements IElementTranslator {
+    @SuppressWarnings("unchecked")
     @Override
-    public @NotNull FIRFileBlock translate(final @NotNull ParseTree ctx) {
+    public <E extends IFIRElement<E, C>, C extends IFIRCodec<E>> @NotNull E translate(final @NotNull ITranslationContext ctx, final @NotNull ParseTree node) {
+        final var fileCtx = (FileContext) node;
         final var block = new FIRFileBlock();
         block.setName("entry");
-        return block;
+
+        final var pkgCtx = fileCtx.package_decl(); // TODO
+        final var declarations = fileCtx.decl();
+
+        for (final var decl : declarations) {
+            final var translator = BytecodeGenerator.getTranslator(decl.getClass());
+
+            if (translator == null) {
+                Logger.INSTANCE.warn("Encountered unsupported element, this is not a bug, developers were being lazy");
+                continue; // Skip unsupported entry
+            }
+
+            final var element = translator.translate(ctx, decl);
+            block.addChild(element);
+        }
+
+        return (E)block;
     }
 }
