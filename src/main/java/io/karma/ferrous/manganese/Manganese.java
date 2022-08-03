@@ -83,6 +83,10 @@ public final class Manganese implements ANTLRErrorListener {
         var status = CompilationStatus.SKIPPED;
 
         try {
+            if(args.length == 0) {
+                throw new NoArgsException();
+            }
+
             final var parser = new OptionParser("?iodv");
             parser.accepts("?", "Print this help dialog");
             parser.accepts("i", "A Ferrous file or directory of files from which to compile.").withRequiredArg().ofType(String.class);
@@ -146,7 +150,7 @@ public final class Manganese implements ANTLRErrorListener {
 
             status = status.worse(compiler.compile(in, out).getStatus());
         }
-        catch (OptionException e) {
+        catch (OptionException | NoArgsException e) {
             // Special case; display help instead of logging the exception.
             Logger.INSTANCE.info("Try running with -? to get some help!");
             System.exit(0);
@@ -365,9 +369,11 @@ public final class Manganese implements ANTLRErrorListener {
             if (tokenView) {
                 tokenStream.fill();
                 final var numTokens = tokenStream.size();
+                final var builder = Ansi.ansi();
 
                 for (var i = 0; i < numTokens; i++) {
-                    Logger.INSTANCE.info(Ansi.ansi().fgBright(Color.MAGENTA).a(tokenStream.get(i)).a(Attribute.RESET).toString());
+                    builder.reset();
+                    Logger.INSTANCE.info(builder.fgBright(Color.MAGENTA).a(tokenStream.get(i)).a(Attribute.RESET).toString());
                 }
             }
 
@@ -418,6 +424,12 @@ public final class Manganese implements ANTLRErrorListener {
     public void reportContextSensitivity(final @NotNull Parser recognizer, final @NotNull DFA dfa, final int startIndex, final int stopIndex, final int prediction, final @NotNull ATNConfigSet configs) {
         if (reportParserWarnings) {
             Logger.INSTANCE.debug("Detected abnormally high context sensitivity at %d:%d (%d)", startIndex, stopIndex, dfa.decision);
+        }
+    }
+
+    private static final class NoArgsException extends RuntimeException {
+        public NoArgsException() {
+            super();
         }
     }
 }

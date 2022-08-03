@@ -17,7 +17,6 @@ import org.jetbrains.annotations.Nullable;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Optional;
 
@@ -45,7 +44,7 @@ public final class BytecodeGenerator {
 
     @SafeVarargs
     private static void addDelegation(final @NotNull Class<? extends ParseTree> type, final Class<? extends ParseTree>... delegateTypes) {
-        if(DELEGATIONS.containsKey(type)) {
+        if (DELEGATIONS.containsKey(type)) {
             throw new IllegalStateException("Delegation already exists");
         }
 
@@ -58,7 +57,7 @@ public final class BytecodeGenerator {
             final var numChildren = node.getChildCount();
             final var nodeType = node.getClass();
 
-            for(var i = 0; i < numChildren; i++) {
+            for (var i = 0; i < numChildren; i++) {
                 final var child = node.getChild(i);
                 final var childType = child.getClass();
                 final var translator = getTranslator(childType);
