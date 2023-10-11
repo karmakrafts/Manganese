@@ -1,17 +1,13 @@
 package io.karma.ferrous.manganese;
 
-import io.karma.ferrous.manganese.gen.BytecodeGenerator;
-import io.karma.ferrous.manganese.gen.TranslationException;
+import io.karma.ferrous.manganese.translate.ILEmitter;
 import io.karma.ferrous.manganese.util.Logger;
-import io.karma.ferrous.manganese.util.Logger.LogLevel;
+import io.karma.ferrous.manganese.util.SimpleFileVisitor;
 import io.karma.ferrous.vanadium.FerrousLexer;
 import io.karma.ferrous.vanadium.FerrousParser;
-import io.karma.kommons.io.stream.IMemoryStream;
 import io.karma.kommons.io.stream.MemoryStream;
+import io.karma.kommons.io.stream.SimpleMemoryStream;
 import io.karma.kommons.util.ExceptionUtils;
-import io.karma.kommons.util.SystemInfo;
-import joptsimple.OptionException;
-import joptsimple.OptionParser;
 import org.antlr.v4.runtime.ANTLRErrorListener;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -27,22 +23,23 @@ import org.fusesource.jansi.Ansi.Attribute;
 import org.fusesource.jansi.Ansi.Color;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.lwjgl.llvm.LLVMCore;
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
-import java.util.jar.Manifest;
 
 /**
  * Main class for invoking a compilation, either programmatically
@@ -53,13 +50,47 @@ import java.util.jar.Manifest;
  */
 @API(status = Status.STABLE)
 public final class Manganese implements ANTLRErrorListener {
+    private static final Path[] LLVM_LIB_DIRECTORIES = {Path.of("/usr/lib")};
+    private static final HashSet<String> LLVM_LIB_FILE_NAMES = new HashSet<>(Arrays.asList("libLLVM.so", "libLLVM.dylib"));
     private static final HashSet<String> IN_EXTENSIONS = new HashSet<>(Arrays.asList("ferrous", "fe"));
-    private static final String OUT_EXTENSION = "fir";
+    private static final String OUT_EXTENSION = "bc";
     private static final ThreadLocal<Manganese> INSTANCE = ThreadLocal.withInitial(Manganese::new);
-    private static boolean IS_STANDALONE = false;
+
+    static {
+        try {
+            var libraryPath = System.getProperty("org.lwjgl.llvm.libname");
+            if (libraryPath == null || libraryPath.isEmpty()) {
+                final var candidates = new ArrayList<>();
+                for (final var directory : LLVM_LIB_DIRECTORIES) {
+                    if (!Files.exists(directory)) {
+                        continue;
+                    }
+                    try {
+                        Files.walkFileTree(directory, new SimpleFileVisitor(filePath -> {
+                            if (!LLVM_LIB_FILE_NAMES.contains(filePath.getFileName().toString())) {
+                                return FileVisitResult.CONTINUE;
+                            }
+                            candidates.add(filePath);
+                            return FileVisitResult.CONTINUE;
+                        }));
+                    }
+                    catch (IOException error) { /* swallow exception */ }
+                }
+                candidates.sort(Comparator.comparing(Object::toString));
+                Collections.reverse(candidates);
+                libraryPath = candidates.get(0).toString();
+            }
+            System.setProperty("org.lwjgl.llvm.libname", libraryPath);
+        }
+        catch (UnsatisfiedLinkError error) { // @formatter:off
+            Logger.INSTANCE.error("Please configure the LLVM shared libraries path with:\n"
+                + "\t-Dorg.lwjgl.llvm.libname=<LLVM shared library path> or\n"
+                + "\t-Dorg.lwjgl.librarypath=<path that contains LLVM shared libraries>\n\t%s", error);
+        } // @formatter:on
+    }
 
     private final StringBuilder progressBuffer = new StringBuilder();
-    private final BytecodeGenerator generator = new BytecodeGenerator(this);
+    boolean isEmbedded = false;
     private int numCompiledFiles;
     private CompilationStatus status = CompilationStatus.SKIPPED;
     private boolean tokenView = false;
@@ -73,101 +104,6 @@ public final class Manganese implements ANTLRErrorListener {
 
     public static @NotNull Manganese getInstance() {
         return INSTANCE.get().reset();
-    }
-
-    // Main-entry point which invokes Manganese as a standalone tool
-    @API(status = Status.INTERNAL)
-    public static void main(final @NotNull String[] args) {
-        Logger.INSTANCE.init(); // Initialize logger beforehand so we can catch all errors
-        final var compiler = getInstance();
-        var status = CompilationStatus.SKIPPED;
-
-        try {
-            if(args.length == 0) {
-                throw new NoArgsException();
-            }
-
-            final var parser = new OptionParser("?iodv");
-            parser.accepts("?", "Print this help dialog");
-            parser.accepts("i", "A Ferrous file or directory of files from which to compile.").withRequiredArg().ofType(String.class);
-            parser.accepts("o", "A FIR file or a directory in which to save the compiled FIR bytecode.").withRequiredArg().ofType(String.class);
-            parser.accepts("d", "Debug mode. This will print debug information during the compilation.");
-            parser.accepts("p", "Display parser warnings during compilation.").availableIf("d");
-            parser.accepts("t", "Token view. This will print a tree structure containing all tokens during compilation.");
-            parser.accepts("s", "Silent mode. This will suppress any warning level log messages during compilation.");
-            parser.accepts("v", "Prints version information about the compiler and runtime.");
-            final var options = parser.parse(args);
-
-            if (options.has("?")) {
-                parser.printHelpOn(Logger.INSTANCE); // Print help
-                return;
-            }
-
-            if (options.has("v")) {
-                final var location = Objects.requireNonNull(Manganese.class.getClassLoader().getResource("META-INF/MANIFEST.MF"));
-
-                try (final var stream = location.openStream()) {
-                    final var manifest = new Manifest(stream);
-                    final var attribs = manifest.getMainAttributes();
-                    Logger.INSTANCE.printLogo();
-                    Logger.INSTANCE.info("Manganese Version %s", attribs.getValue("Implementation-Version"));
-                    Logger.INSTANCE.info("Running on %s", SystemInfo.getPlatformPair());
-                }
-
-                return;
-            }
-
-            // Update the log level if we are in verbose mode.
-            if (options.has("d")) {
-                Logger.INSTANCE.setLogLevel(LogLevel.DEBUG);
-            }
-
-            if (options.has("s")) {
-                Logger.INSTANCE.disableLogLevel(LogLevel.WARN);
-            }
-
-            if (options.has("t")) {
-                compiler.setTokenView(true);
-            }
-
-            if (options.has("p")) {
-                compiler.setReportParserWarnings(true);
-            }
-
-            IS_STANDALONE = true;
-            final var in = Paths.get((String) options.valueOf("i")).toAbsolutePath().normalize();
-            final var inFile = in.toFile();
-
-            if (!inFile.exists()) {
-                throw new IOException("Input file/directory does not exist");
-            }
-
-            // @formatter:off
-            final var out = options.has("o")
-                ? Paths.get((String)options.valueOf("o")).toAbsolutePath().normalize()
-                : null;
-            // @formatter:on
-
-            status = status.worse(compiler.compile(in, out).getStatus());
-        }
-        catch (OptionException | NoArgsException e) {
-            // Special case; display help instead of logging the exception.
-            Logger.INSTANCE.info("Try running with -? to get some help!");
-            System.exit(0);
-        }
-        catch (IOException e) {
-            status = status.worse(CompilationStatus.IO_ERROR);
-        }
-        catch (Throwable e) {
-            ExceptionUtils.handleError(e, Logger.INSTANCE::fatal);
-        }
-
-        Logger.INSTANCE.info(status.getFormattedMessage());
-        System.exit(status.getExitCode());
-    }
-
-    public static boolean isEmbedded() {
-        return !IS_STANDALONE;
     }
 
     private static @NotNull List<Path> findCompilableFiles(final @NotNull Path path) {
@@ -205,9 +141,12 @@ public final class Manganese implements ANTLRErrorListener {
         return files;
     }
 
+    public boolean isEmbedded() {
+        return !isEmbedded;
+    }
+
     private void resetCompilation() {
         status = CompilationStatus.SKIPPED;
-        generator.reset();
         sourcePath = null;
         outputPath = null;
     }
@@ -263,13 +202,13 @@ public final class Manganese implements ANTLRErrorListener {
     }
 
     public @NotNull CompilationResult compile(final @NotNull Path in, final @Nullable Path out) {
-        Logger.INSTANCE.init(); // Initialize logger if we are embedded
         final var numFiles = in.toFile().isDirectory() ? findCompilableFiles(in).size() : 1;
         numCompiledFiles = 0; // Reset compilation counter
         return compileRecursively(in, out, numFiles);
     }
 
-    private @NotNull CompilationResult compileRecursively(final @NotNull Path in, @Nullable Path out, final int numFiles) {
+    private @NotNull CompilationResult compileRecursively(final @NotNull Path in, @Nullable Path out,
+                                                          final int numFiles) {
         final var inFile = in.toFile();
 
         if (inFile.isDirectory()) {
@@ -279,6 +218,7 @@ public final class Manganese implements ANTLRErrorListener {
             var result = new CompilationResult(CompilationStatus.SKIPPED);
 
             for (final var subFile : subFiles) {
+                // TODO: replace this with a file tree visitor
                 result = result.merge(compileRecursively(subFile, out, numFiles));
             }
 
@@ -334,11 +274,9 @@ public final class Manganese implements ANTLRErrorListener {
             outputPath = out;
 
             try (final var fis = new FileInputStream(inFile)) {
-                final var inStream = IMemoryStream.fromStream(MemoryStream::new, fis);
-
                 try (final var fos = new FileOutputStream(outFile)) {
-                    final var outStream = new MemoryStream(0);
-                    compile(inStream, outStream);
+                    final var outStream = new SimpleMemoryStream();
+                    compile(MemoryStream.fromStream(SimpleMemoryStream::new, fis), outStream);
                     status = status.worse(this.status);
                     outStream.rewind();
                     outStream.writeTo(fos);
@@ -357,39 +295,35 @@ public final class Manganese implements ANTLRErrorListener {
         }
     }
 
-    public void compile(final @NotNull IMemoryStream in, final @NotNull IMemoryStream out) {
+    public void compile(final @NotNull MemoryStream in, final @NotNull MemoryStream out) {
         resetCompilation(); // Reset before each compilation
-        Logger.INSTANCE.init(); // Initialize logger if we are embedded
 
         try {
             final var charStream = CharStreams.fromChannel(in, StandardCharsets.UTF_8);
             final var lexer = new FerrousLexer(charStream);
-            final var tokenStream = new CommonTokenStream(lexer);
+            var tokenStream = new CommonTokenStream(lexer);
 
             if (tokenView) {
                 tokenStream.fill();
-                final var numTokens = tokenStream.size();
-                final var builder = Ansi.ansi();
-
-                for (var i = 0; i < numTokens; i++) {
-                    builder.reset();
-                    Logger.INSTANCE.info(builder.fgBright(Color.MAGENTA).a(tokenStream.get(i)).a(Attribute.RESET).toString());
+                final var tokens = tokenStream.getTokens();
+                for (final var token : tokens) {
+                    Logger.INSTANCE.info("%s", token.toString());
                 }
             }
 
             final var parser = new FerrousParser(tokenStream);
             parser.removeErrorListeners(); // Remove default error listener
             parser.addErrorListener(this);
-            final var evalContext = parser.eval();
+            final var emitter = new ILEmitter();
+            parser.addParseListener(emitter);
+            parser.file();
 
             if (!status.isRecoverable()) {
                 return;
             }
 
-            status = status.worse(generator.generate(evalContext, out) ? CompilationStatus.SUCCESS : CompilationStatus.TRANSLATION_ERROR);
-        }
-        catch (TranslationException e) {
-            status = status.worse(CompilationStatus.TRANSLATION_ERROR);
+            //status = status.worse(generator.generate(evalContext, out) ? CompilationStatus.SUCCESS : CompilationStatus.TRANSLATION_ERROR);
+            status = CompilationStatus.SUCCESS;
         }
         catch (IOException e) {
             status = status.worse(CompilationStatus.IO_ERROR);
@@ -401,35 +335,38 @@ public final class Manganese implements ANTLRErrorListener {
     }
 
     @Override
-    public void syntaxError(final @NotNull Recognizer<?, ?> recognizer, final @NotNull Object offendingSymbol, final int line, final int charPositionInLine, final @NotNull String msg, final @NotNull RecognitionException e) {
+    public void syntaxError(final @NotNull Recognizer<?, ?> recognizer, final @NotNull Object offendingSymbol,
+                            final int line, final int charPositionInLine, final @NotNull String msg,
+                            final @NotNull RecognitionException e) {
         status = status.worse(CompilationStatus.SYNTAX_ERROR);
         Logger.INSTANCE.error("Syntax error on line %d:%d: %s", line, charPositionInLine, msg);
     }
 
     @Override
-    public void reportAmbiguity(final @NotNull Parser recognizer, final @NotNull DFA dfa, final int startIndex, final int stopIndex, final boolean exact, final @NotNull BitSet ambigAlts, final @NotNull ATNConfigSet configs) {
+    public void reportAmbiguity(final @NotNull Parser recognizer, final @NotNull DFA dfa, final int startIndex,
+                                final int stopIndex, final boolean exact, final @NotNull BitSet ambigAlts,
+                                final @NotNull ATNConfigSet configs) {
         if (reportParserWarnings) {
             Logger.INSTANCE.debug("Detected ambiguity at %d:%d (%d)", startIndex, stopIndex, dfa.decision);
         }
     }
 
     @Override
-    public void reportAttemptingFullContext(final @NotNull Parser recognizer, final @NotNull DFA dfa, final int startIndex, final int stopIndex, final @NotNull BitSet conflictingAlts, final @NotNull ATNConfigSet configs) {
+    public void reportAttemptingFullContext(final @NotNull Parser recognizer, final @NotNull DFA dfa,
+                                            final int startIndex, final int stopIndex,
+                                            final @NotNull BitSet conflictingAlts,
+                                            final @NotNull ATNConfigSet configs) {
         if (reportParserWarnings) {
             Logger.INSTANCE.debug("Detected full context at %d:%d (%d)", startIndex, stopIndex, dfa.decision);
         }
     }
 
     @Override
-    public void reportContextSensitivity(final @NotNull Parser recognizer, final @NotNull DFA dfa, final int startIndex, final int stopIndex, final int prediction, final @NotNull ATNConfigSet configs) {
+    public void reportContextSensitivity(final @NotNull Parser recognizer, final @NotNull DFA dfa, final int startIndex,
+                                         final int stopIndex, final int prediction,
+                                         final @NotNull ATNConfigSet configs) {
         if (reportParserWarnings) {
             Logger.INSTANCE.debug("Detected abnormally high context sensitivity at %d:%d (%d)", startIndex, stopIndex, dfa.decision);
-        }
-    }
-
-    private static final class NoArgsException extends RuntimeException {
-        public NoArgsException() {
-            super();
         }
     }
 }

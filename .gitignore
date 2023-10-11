@@ -26,4 +26,5 @@ forge*changelog.txt
 .floo
 .flooignore
 logs/
-testfile.fir
+test.fe
+test.bc

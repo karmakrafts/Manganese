@@ -6,11 +6,11 @@ buildscript {
     repositories {
         mavenCentral()
         google()
-        maven { url = 'https://plugins.gradle.org/m2' }
+        gradlePluginPortal()
     }
 
     dependencies {
-        classpath group: 'gradle.plugin.com.github.johnrengelman', name: 'shadow', version: config.shadow_version, changing: true
+        classpath group: 'com.github.johnrengelman', name: 'shadow', version: config.shadow_version, changing: true
     }
 }
 
@@ -31,19 +31,34 @@ repositories {
 }
 
 dependencies {
-    implementation group: 'org.jetbrains', name: 'annotations', version: config.annotations_version
-    implementation group: 'it.unimi.dsi', name: 'fastutil', version: config.fastutil_version
-    implementation group: 'org.fusesource.jansi', name: 'jansi', version: config.jansi_version
-    implementation group: 'net.sf.jopt-simple', name: 'jopt-simple', version: config.jopt_version
-    implementation group: 'org.antlr', name: 'antlr4-runtime', version: config.antlr_version
-    implementation group: 'org.apiguardian', name: 'apiguardian-api', version: config.apiguard_version
+    def addLwjglModule = { moduleName ->
+        implementation group: 'org.lwjgl', name: moduleName, version: config.lwjgl_version, changing: true
+        implementation group: 'org.lwjgl', name: moduleName, version: config.lwjgl_version, classifier: 'natives-linux-arm32', changing: true
+        implementation group: 'org.lwjgl', name: moduleName, version: config.lwjgl_version, classifier: 'natives-linux-arm64', changing: true
+        implementation group: 'org.lwjgl', name: moduleName, version: config.lwjgl_version, classifier: 'natives-linux', changing: true
+        implementation group: 'org.lwjgl', name: moduleName, version: config.lwjgl_version, classifier: 'natives-macos-arm64', changing: true
+        implementation group: 'org.lwjgl', name: moduleName, version: config.lwjgl_version, classifier: 'natives-macos', changing: true
+        implementation group: 'org.lwjgl', name: moduleName, version: config.lwjgl_version, classifier: 'natives-windows-arm64', changing: true
+        implementation group: 'org.lwjgl', name: moduleName, version: config.lwjgl_version, classifier: 'natives-windows-x86', changing: true
+        implementation group: 'org.lwjgl', name: moduleName, version: config.lwjgl_version, classifier: 'natives-windows', changing: true
+    }
 
-    implementation group: 'io.karma.kommons', name: 'kommons', version: config.kommons_version
-    implementation group: 'io.karma.ferrous', name: 'fir', version: config.fir_version
-    implementation group: 'io.karma.ferrous', name: 'vanadium', version: config.vanadium_version
+    addLwjglModule("lwjgl")
+    addLwjglModule("lwjgl-rpmalloc")
+    addLwjglModule("lwjgl-llvm")
 
-    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: config.junit_version
-    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: config.junit_version
+    implementation group: 'org.jetbrains', name: 'annotations', version: config.annotations_version, changing: true
+    implementation group: 'it.unimi.dsi', name: 'fastutil', version: config.fastutil_version, changing: true
+    implementation group: 'org.fusesource.jansi', name: 'jansi', version: config.jansi_version, changing: true
+    implementation group: 'net.sf.jopt-simple', name: 'jopt-simple', version: config.jopt_version, changing: true
+    implementation group: 'org.antlr', name: 'antlr4-runtime', version: config.antlr_version, changing: true
+    implementation group: 'org.apiguardian', name: 'apiguardian-api', version: config.apiguard_version, changing: true
+
+    implementation group: 'io.karma.kommons', name: 'kommons', version: config.kommons_version, changing: true
+    implementation group: 'io.karma.ferrous', name: 'vanadium', version: config.vanadium_version, changing: true
+
+    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: config.junit_version, changing: true
+    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: config.junit_version, changing: true
 }
 
 test {
@@ -54,7 +69,7 @@ test {
 
 def commonManifest = {
     attributes([
-            'Main-Class'            : "${config.project_group}.Manganese",
+            'Main-Class'            : "${config.project_group}.Main",
             'Implementation-Title'  : 'Manganese',
             'Implementation-Version': project.version,
             'Implementation-Vendor' : 'Karma Krafts',
@@ -65,12 +80,12 @@ def commonManifest = {
 }
 
 jar {
-    classifier 'slim'
+    archiveClassifier = 'slim'
     manifest commonManifest
 }
 
 shadowJar {
-    classifier ''
+    archiveClassifier = ''
     manifest commonManifest
 }
 

@@ -31,7 +31,8 @@ public enum CompilationStatus {
     private final boolean isRecoverable;
     private final int exitCode;
 
-    CompilationStatus(final int exitCode, final boolean isRecoverable, final @NotNull Color color, final @NotNull String message) {
+    CompilationStatus(final int exitCode, final boolean isRecoverable, final @NotNull Color color,
+                      final @NotNull String message) {
         this.exitCode = exitCode;
         this.isRecoverable = isRecoverable;
         this.color = color;

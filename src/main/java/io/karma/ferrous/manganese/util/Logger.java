@@ -1,6 +1,5 @@
 package io.karma.ferrous.manganese.util;
 
-import io.karma.ferrous.manganese.Manganese;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 import org.fusesource.jansi.Ansi;
@@ -23,7 +22,6 @@ import java.util.function.Consumer;
 @API(status = Status.STABLE)
 public final class Logger extends Writer {
     public static final Logger INSTANCE = new Logger();
-
     private static final String[] LOGO_LINES = { // @formatter:off
         "  __  __                                              ",
         " |  \\/  | __ _ _ __   __ _  __ _ _ __   ___  ___  ___ ",
@@ -33,9 +31,16 @@ public final class Logger extends Writer {
         "                     |___/                            "
     }; // @formatter:on
 
+    static {
+        if (AnsiConsole.isInstalled()) {
+            throw new IllegalStateException("ANSI subsystem already initialized");
+        }
+        AnsiConsole.systemInstall();
+        Runtime.getRuntime().addShutdownHook(new Thread(AnsiConsole::systemUninstall));
+    }
+
     private final StringBuilder messageBuffer = new StringBuilder();
     private final EnumSet<LogLevel> activeLevels = EnumSet.allOf(LogLevel.class);
-    private boolean isInitialized;
     private LogLevel logLevel = LogLevel.INFO;
     private Consumer<String> logConsumer = System.out::println;
 
@@ -74,26 +79,6 @@ public final class Logger extends Writer {
 
     public void setLogConsumer(final @Nullable Consumer<String> logConsumer) {
         this.logConsumer = logConsumer;
-    }
-
-    @API(status = Status.INTERNAL)
-    public void init() {
-        if (isInitialized) {
-            return;
-        }
-
-        isInitialized = true;
-
-        if (Manganese.isEmbedded()) {
-            return; // No action for the embedded compiler
-        }
-
-        if (AnsiConsole.isInstalled()) {
-            throw new IllegalStateException("ANSI subsystem already initialized");
-        }
-
-        AnsiConsole.systemInstall();
-        Runtime.getRuntime().addShutdownHook(new Thread(AnsiConsole::systemUninstall));
     }
 
     public void log(final @NotNull LogLevel level, final @NotNull String fmt, final Object... params) {
@@ -163,7 +148,8 @@ public final class Logger extends Writer {
         private final Ansi.Color fgColor;
         private final Ansi.Attribute[] attribs;
 
-        LogLevel(final @NotNull Ansi.Color bgColor, final @NotNull Ansi.Color fgColor, final Ansi.Attribute... attribs) {
+        LogLevel(final @NotNull Ansi.Color bgColor, final @NotNull Ansi.Color fgColor,
+                 final Ansi.Attribute... attribs) {
             this.bgColor = bgColor;
             this.fgColor = fgColor;
             this.attribs = attribs;
