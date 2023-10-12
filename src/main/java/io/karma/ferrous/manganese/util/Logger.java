@@ -6,7 +6,6 @@ import org.fusesource.jansi.Ansi;
 import org.fusesource.jansi.Ansi.Attribute;
 import org.fusesource.jansi.Ansi.Color;
 import org.fusesource.jansi.AnsiConsole;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.Writer;
@@ -51,7 +50,7 @@ public final class Logger extends Writer {
     // Writer overrides
 
     @Override
-    public void write(final char @NotNull [] cbuf, final int off, final int len) {
+    public void write(final char[] cbuf, final int off, final int len) {
         info(new String(cbuf, off, len));
     }
 
@@ -65,15 +64,15 @@ public final class Logger extends Writer {
 
     // Functions
 
-    public void enableLogLevel(final @NotNull LogLevel level) {
+    public void enableLogLevel(final LogLevel level) {
         activeLevels.add(level);
     }
 
-    public void disableLogLevel(final @NotNull LogLevel level) {
+    public void disableLogLevel(final LogLevel level) {
         activeLevels.remove(level);
     }
 
-    public void setLogLevel(final @NotNull LogLevel level) {
+    public void setLogLevel(final LogLevel level) {
         logLevel = level;
     }
 
@@ -81,7 +80,7 @@ public final class Logger extends Writer {
         this.logConsumer = logConsumer;
     }
 
-    public void log(final @NotNull LogLevel level, final @NotNull String fmt, final Object... params) {
+    public void log(final LogLevel level, final String fmt, final Object... params) {
         if (!activeLevels.contains(level)) {
             return; // Prioritize this condition over the current log level
         }
@@ -106,23 +105,23 @@ public final class Logger extends Writer {
         }
     }
 
-    public void debug(final @NotNull String fmt, final Object... params) {
+    public void debug(final String fmt, final Object... params) {
         log(LogLevel.DEBUG, fmt, params);
     }
 
-    public void info(final @NotNull String fmt, final Object... params) {
+    public void info(final String fmt, final Object... params) {
         log(LogLevel.INFO, fmt, params);
     }
 
-    public void warn(final @NotNull String fmt, final Object... params) {
+    public void warn(final String fmt, final Object... params) {
         log(LogLevel.WARN, fmt, params);
     }
 
-    public void error(final @NotNull String fmt, final Object... params) {
+    public void error(final String fmt, final Object... params) {
         log(LogLevel.ERROR, fmt, params);
     }
 
-    public void fatal(final @NotNull String fmt, final Object... params) {
+    public void fatal(final String fmt, final Object... params) {
         log(LogLevel.FATAL, fmt, params);
     }
 
@@ -148,14 +147,13 @@ public final class Logger extends Writer {
         private final Ansi.Color fgColor;
         private final Ansi.Attribute[] attribs;
 
-        LogLevel(final @NotNull Ansi.Color bgColor, final @NotNull Ansi.Color fgColor,
-                 final Ansi.Attribute... attribs) {
+        LogLevel(final Ansi.Color bgColor, final Ansi.Color fgColor, final Ansi.Attribute... attribs) {
             this.bgColor = bgColor;
             this.fgColor = fgColor;
             this.attribs = attribs;
         }
 
-        public @NotNull String format(final @NotNull String s) {
+        public String format(final String s) {
             final var builder = Ansi.ansi();
             builder.bg(bgColor);
             builder.fg(fgColor);

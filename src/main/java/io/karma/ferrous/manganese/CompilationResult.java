@@ -1,7 +1,5 @@
 package io.karma.ferrous.manganese;
 
-import org.jetbrains.annotations.NotNull;
-
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -18,20 +16,20 @@ public final class CompilationResult {
     private final CompilationStatus status;
     private final List<Path> compiledFiles;
 
-    public CompilationResult(final @NotNull CompilationStatus status, final @NotNull List<Path> compiledFiles) {
+    public CompilationResult(final CompilationStatus status, final List<Path> compiledFiles) {
         this.status = status;
         this.compiledFiles = compiledFiles;
     }
 
-    public CompilationResult(final @NotNull CompilationStatus status, final Path... compiledFiles) {
+    public CompilationResult(final CompilationStatus status, final Path... compiledFiles) {
         this(status, Arrays.asList(compiledFiles));
     }
 
-    public @NotNull CompilationStatus getStatus() {
+    public CompilationStatus getStatus() {
         return status;
     }
 
-    public @NotNull List<Path> getCompiledFiles() {
+    public List<Path> getCompiledFiles() {
         return compiledFiles;
     }
 
@@ -39,7 +37,7 @@ public final class CompilationResult {
         return compiledFiles.size();
     }
 
-    public @NotNull CompilationResult merge(final @NotNull CompilationResult other) {
+    public CompilationResult merge(final CompilationResult other) {
         final var status = this.status.worse(other.status);
         final var compiledFiles = new ArrayList<>(this.compiledFiles);
         compiledFiles.addAll(other.compiledFiles);

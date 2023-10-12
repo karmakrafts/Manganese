@@ -7,7 +7,6 @@ import joptsimple.OptionException;
 import joptsimple.OptionParser;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.nio.file.Paths;
@@ -20,7 +19,7 @@ import java.util.jar.Manifest;
  */
 public class Main {
     @API(status = Status.INTERNAL)
-    public static void main(final @NotNull String[] args) {
+    public static void main(final String[] args) {
         final var compiler = Manganese.getInstance();
         var status = CompilationStatus.SKIPPED;
 

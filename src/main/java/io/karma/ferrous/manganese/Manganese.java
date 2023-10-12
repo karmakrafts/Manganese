@@ -2,6 +2,7 @@ package io.karma.ferrous.manganese;
 
 import io.karma.ferrous.manganese.translate.TranslationUnit;
 import io.karma.ferrous.manganese.util.Logger;
+import io.karma.ferrous.manganese.util.SimpleFileVisitor;
 import io.karma.ferrous.vanadium.FerrousLexer;
 import io.karma.ferrous.vanadium.FerrousParser;
 import io.karma.kommons.io.stream.MemoryStream;
@@ -20,19 +21,18 @@ import org.apiguardian.api.API.Status;
 import org.fusesource.jansi.Ansi;
 import org.fusesource.jansi.Ansi.Attribute;
 import org.fusesource.jansi.Ansi.Color;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 
@@ -45,7 +45,7 @@ import java.util.Optional;
  */
 @API(status = Status.STABLE)
 public final class Manganese implements ANTLRErrorListener {
-    private static final HashSet<String> IN_EXTENSIONS = new HashSet<>(Arrays.asList("ferrous", "fe"));
+    private static final String[] IN_EXTENSIONS = {"ferrous", "fe"};
     private static final String OUT_EXTENSION = "bc";
     private static final ThreadLocal<Manganese> INSTANCE = ThreadLocal.withInitial(Manganese::new);
 
@@ -62,11 +62,11 @@ public final class Manganese implements ANTLRErrorListener {
     private Manganese() {}
     // @formatter:on
 
-    public static @NotNull Manganese getInstance() {
+    public static Manganese getInstance() {
         return INSTANCE.get().reset();
     }
 
-    private static @NotNull List<Path> findCompilableFiles(final @NotNull Path path) {
+    private static List<Path> findCompilableFiles(final Path path) {
         final var file = path.toFile();
         final var subFiles = file.listFiles();
 
@@ -75,28 +75,20 @@ public final class Manganese implements ANTLRErrorListener {
         }
 
         final var files = new ArrayList<Path>();
-
-        for (final var subFile : subFiles) {
-            if (subFile.isDirectory()) {
-                files.addAll(findCompilableFiles(subFile.toPath()));
-                continue;
-            }
-
-            final var fileName = subFile.getName();
-
-            if (!fileName.contains(".")) {
-                continue; // Skip files without extension
-            }
-
-            final var lastDot = fileName.lastIndexOf(".");
-            final var extension = fileName.substring(lastDot + 1);
-
-            if (!IN_EXTENSIONS.contains(extension)) {
-                continue; // Skip files without the right extension
-            }
-
-            files.add(subFile.toPath());
+        try {
+            Files.walkFileTree(path, new SimpleFileVisitor(filePath -> {
+                final var fileName = filePath.getFileName().toString();
+                for (final var ext : IN_EXTENSIONS) {
+                    if (!fileName.endsWith(String.format(".%s", ext))) {
+                        continue;
+                    }
+                    files.add(filePath);
+                    break;
+                }
+                return FileVisitResult.CONTINUE;
+            }));
         }
+        catch (Exception error) { /* swallow exception */ }
 
         return files;
     }
@@ -107,21 +99,21 @@ public final class Manganese implements ANTLRErrorListener {
         outputPath = null;
     }
 
-    private @NotNull Manganese reset() {
+    private Manganese reset() {
         tokenView = false;
         extendedTokenView = false;
         return this;
     }
 
-    public @NotNull CompilationStatus getStatus() {
+    public CompilationStatus getStatus() {
         return status;
     }
 
-    public @NotNull Optional<Path> getSourcePath() {
+    public Optional<Path> getSourcePath() {
         return Optional.ofNullable(sourcePath);
     }
 
-    public @NotNull Optional<Path> getOutputPath() {
+    public Optional<Path> getOutputPath() {
         return Optional.ofNullable(outputPath);
     }
 
@@ -142,7 +134,7 @@ public final class Manganese implements ANTLRErrorListener {
         return reportParserWarnings;
     }
 
-    private @NotNull String getProgressIndicator(final int numFiles) {
+    private String getProgressIndicator(final int numFiles) {
         final var percent = (int) (((float) numCompiledFiles / (float) numFiles) * 100F);
         final var str = percent + "%%";
         final var length = str.length();
@@ -159,14 +151,13 @@ public final class Manganese implements ANTLRErrorListener {
         return progressBuffer.toString();
     }
 
-    public @NotNull CompilationResult compile(final @NotNull Path in, final @Nullable Path out) {
+    public CompilationResult compile(final Path in, final @Nullable Path out) {
         final var numFiles = in.toFile().isDirectory() ? findCompilableFiles(in).size() : 1;
         numCompiledFiles = 0; // Reset compilation counter
         return compileRecursively(in, out, numFiles);
     }
 
-    private @NotNull CompilationResult compileRecursively(final @NotNull Path in, @Nullable Path out,
-                                                          final int numFiles) {
+    private CompilationResult compileRecursively(final Path in, @Nullable Path out, final int numFiles) {
         final var inFile = in.toFile();
 
         if (inFile.isDirectory()) {
@@ -253,7 +244,7 @@ public final class Manganese implements ANTLRErrorListener {
         }
     }
 
-    public void compile(final @NotNull MemoryStream in, final @NotNull MemoryStream out) {
+    public void compile(final MemoryStream in, final MemoryStream out) {
         LLVMLoader.ensureNativesLoaded();
         resetCompilation(); // Reset before each compilation
 
@@ -306,36 +297,32 @@ public final class Manganese implements ANTLRErrorListener {
     }
 
     @Override
-    public void syntaxError(final @NotNull Recognizer<?, ?> recognizer, final @NotNull Object offendingSymbol,
-                            final int line, final int charPositionInLine, final @NotNull String msg,
-                            final @NotNull RecognitionException e) {
+    public void syntaxError(final Recognizer<?, ?> recognizer, final Object offendingSymbol, final int line,
+                            final int charPositionInLine, final String msg, final RecognitionException e) {
         status = status.worse(CompilationStatus.SYNTAX_ERROR);
         Logger.INSTANCE.error("Syntax error on line %d:%d: %s", line, charPositionInLine, msg);
     }
 
     @Override
-    public void reportAmbiguity(final @NotNull Parser recognizer, final @NotNull DFA dfa, final int startIndex,
-                                final int stopIndex, final boolean exact, final @NotNull BitSet ambigAlts,
-                                final @NotNull ATNConfigSet configs) {
+    public void reportAmbiguity(final Parser recognizer, final DFA dfa, final int startIndex, final int stopIndex,
+                                final boolean exact, final BitSet ambigAlts, final ATNConfigSet configs) {
         if (reportParserWarnings) {
             Logger.INSTANCE.debug("Detected ambiguity at %d:%d (%d)", startIndex, stopIndex, dfa.decision);
         }
     }
 
     @Override
-    public void reportAttemptingFullContext(final @NotNull Parser recognizer, final @NotNull DFA dfa,
-                                            final int startIndex, final int stopIndex,
-                                            final @NotNull BitSet conflictingAlts,
-                                            final @NotNull ATNConfigSet configs) {
+    public void reportAttemptingFullContext(final Parser recognizer, final DFA dfa, final int startIndex,
+                                            final int stopIndex, final BitSet conflictingAlts,
+                                            final ATNConfigSet configs) {
         if (reportParserWarnings) {
             Logger.INSTANCE.debug("Detected full context at %d:%d (%d)", startIndex, stopIndex, dfa.decision);
         }
     }
 
     @Override
-    public void reportContextSensitivity(final @NotNull Parser recognizer, final @NotNull DFA dfa, final int startIndex,
-                                         final int stopIndex, final int prediction,
-                                         final @NotNull ATNConfigSet configs) {
+    public void reportContextSensitivity(final Parser recognizer, final DFA dfa, final int startIndex,
+                                         final int stopIndex, final int prediction, final ATNConfigSet configs) {
         if (reportParserWarnings) {
             Logger.INSTANCE.debug("Detected abnormally high context sensitivity at %d:%d (%d)", startIndex, stopIndex, dfa.decision);
         }

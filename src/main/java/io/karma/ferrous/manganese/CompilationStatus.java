@@ -5,7 +5,6 @@ import org.apiguardian.api.API.Status;
 import org.fusesource.jansi.Ansi;
 import org.fusesource.jansi.Ansi.Attribute;
 import org.fusesource.jansi.Ansi.Color;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Represents all possible outcomes of a compilation.
@@ -31,15 +30,14 @@ public enum CompilationStatus {
     private final boolean isRecoverable;
     private final int exitCode;
 
-    CompilationStatus(final int exitCode, final boolean isRecoverable, final @NotNull Color color,
-                      final @NotNull String message) {
+    CompilationStatus(final int exitCode, final boolean isRecoverable, final Color color, final String message) {
         this.exitCode = exitCode;
         this.isRecoverable = isRecoverable;
         this.color = color;
         this.message = message;
     }
 
-    public @NotNull CompilationStatus worse(final @NotNull CompilationStatus result) {
+    public CompilationStatus worse(final CompilationStatus result) {
         if (!isRecoverable && result.isRecoverable) {
             return this;
         }
@@ -51,11 +49,11 @@ public enum CompilationStatus {
         return ordinal() < result.ordinal() ? result : this;
     }
 
-    public @NotNull Color getColor() {
+    public Color getColor() {
         return color;
     }
 
-    public @NotNull String getMessage() {
+    public String getMessage() {
         return message;
     }
 
@@ -67,7 +65,7 @@ public enum CompilationStatus {
         return exitCode;
     }
 
-    public @NotNull String getFormattedMessage() { // @formatter:off
+    public String getFormattedMessage() { // @formatter:off
         return Ansi.ansi()
             .fg(color)
             .a(Attribute.INTENSITY_BOLD)
