@@ -8,7 +8,6 @@ import joptsimple.OptionParser;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 import org.jetbrains.annotations.NotNull;
-import org.lwjgl.llvm.LLVMCore;
 
 import java.io.IOException;
 import java.nio.file.Paths;
@@ -19,8 +18,7 @@ import java.util.jar.Manifest;
  * @author Alexander Hinze
  * @since 11/10/2023
  */
-public class Main {// Main-entry point which invokes Manganese as a standalone tool
-
+public class Main {
     @API(status = Status.INTERNAL)
     public static void main(final @NotNull String[] args) {
         final var compiler = Manganese.getInstance();
@@ -31,13 +29,14 @@ public class Main {// Main-entry point which invokes Manganese as a standalone t
                 throw new NoArgsException();
             }
 
-            final var parser = new OptionParser("?iodv");
+            final var parser = new OptionParser("?iodptTsv");
             parser.accepts("?", "Print this help dialog");
             parser.accepts("i", "A Ferrous file or directory of files from which to compile.").withRequiredArg().ofType(String.class);
             parser.accepts("o", "An IL file or a directory in which to save the compiled IL blocks.").withRequiredArg().ofType(String.class);
             parser.accepts("d", "Debug mode. This will print debug information during the compilation.");
             parser.accepts("p", "Display parser warnings during compilation.").availableIf("d");
             parser.accepts("t", "Token view. This will print a tree structure containing all tokens during compilation.");
+            parser.accepts("T", "Extended token view. This will print all whitespace characters.").availableIf("t");
             parser.accepts("s", "Silent mode. This will suppress any warning level log messages during compilation.");
             parser.accepts("v", "Prints version information about the compiler and runtime.");
             final var options = parser.parse(args);
@@ -67,15 +66,12 @@ public class Main {// Main-entry point which invokes Manganese as a standalone t
                 Logger.INSTANCE.disableLogLevel(LogLevel.WARN);
             }
             if (options.has("t")) {
-                compiler.setTokenView(true);
+                compiler.setTokenView(true, options.has("T"));
             }
             if (options.has("p")) {
                 compiler.setReportParserWarnings(true);
             }
 
-            Logger.INSTANCE.debug("Loaded LLVM library from %s", LLVMCore.getLibrary().getName());
-
-            compiler.isEmbedded = true;
             final var in = Paths.get((String) options.valueOf("i")).toAbsolutePath().normalize();
             final var inFile = in.toFile();
 
@@ -101,7 +97,6 @@ public class Main {// Main-entry point which invokes Manganese as a standalone t
         }
         catch (Throwable error) {
             status = status.worse(CompilationStatus.UNKNOWN_ERROR);
-            System.err.println(error);
         }
 
         Logger.INSTANCE.info(status.getFormattedMessage());

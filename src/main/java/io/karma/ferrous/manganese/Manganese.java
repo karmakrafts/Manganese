@@ -1,8 +1,7 @@
 package io.karma.ferrous.manganese;
 
-import io.karma.ferrous.manganese.translate.ILEmitter;
+import io.karma.ferrous.manganese.translate.TranslationUnit;
 import io.karma.ferrous.manganese.util.Logger;
-import io.karma.ferrous.manganese.util.SimpleFileVisitor;
 import io.karma.ferrous.vanadium.FerrousLexer;
 import io.karma.ferrous.vanadium.FerrousParser;
 import io.karma.kommons.io.stream.MemoryStream;
@@ -23,20 +22,16 @@ import org.fusesource.jansi.Ansi.Attribute;
 import org.fusesource.jansi.Ansi.Color;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.lwjgl.llvm.LLVMCore;
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -50,50 +45,15 @@ import java.util.Optional;
  */
 @API(status = Status.STABLE)
 public final class Manganese implements ANTLRErrorListener {
-    private static final Path[] LLVM_LIB_DIRECTORIES = {Path.of("/usr/lib")};
-    private static final HashSet<String> LLVM_LIB_FILE_NAMES = new HashSet<>(Arrays.asList("libLLVM.so", "libLLVM.dylib"));
     private static final HashSet<String> IN_EXTENSIONS = new HashSet<>(Arrays.asList("ferrous", "fe"));
     private static final String OUT_EXTENSION = "bc";
     private static final ThreadLocal<Manganese> INSTANCE = ThreadLocal.withInitial(Manganese::new);
 
-    static {
-        try {
-            var libraryPath = System.getProperty("org.lwjgl.llvm.libname");
-            if (libraryPath == null || libraryPath.isEmpty()) {
-                final var candidates = new ArrayList<>();
-                for (final var directory : LLVM_LIB_DIRECTORIES) {
-                    if (!Files.exists(directory)) {
-                        continue;
-                    }
-                    try {
-                        Files.walkFileTree(directory, new SimpleFileVisitor(filePath -> {
-                            if (!LLVM_LIB_FILE_NAMES.contains(filePath.getFileName().toString())) {
-                                return FileVisitResult.CONTINUE;
-                            }
-                            candidates.add(filePath);
-                            return FileVisitResult.CONTINUE;
-                        }));
-                    }
-                    catch (IOException error) { /* swallow exception */ }
-                }
-                candidates.sort(Comparator.comparing(Object::toString));
-                Collections.reverse(candidates);
-                libraryPath = candidates.get(0).toString();
-            }
-            System.setProperty("org.lwjgl.llvm.libname", libraryPath);
-        }
-        catch (UnsatisfiedLinkError error) { // @formatter:off
-            Logger.INSTANCE.error("Please configure the LLVM shared libraries path with:\n"
-                + "\t-Dorg.lwjgl.llvm.libname=<LLVM shared library path> or\n"
-                + "\t-Dorg.lwjgl.librarypath=<path that contains LLVM shared libraries>\n\t%s", error);
-        } // @formatter:on
-    }
-
     private final StringBuilder progressBuffer = new StringBuilder();
-    boolean isEmbedded = false;
     private int numCompiledFiles;
     private CompilationStatus status = CompilationStatus.SKIPPED;
     private boolean tokenView = false;
+    private boolean extendedTokenView = false;
     private boolean reportParserWarnings = false;
     private Path sourcePath;
     private Path outputPath;
@@ -141,10 +101,6 @@ public final class Manganese implements ANTLRErrorListener {
         return files;
     }
 
-    public boolean isEmbedded() {
-        return !isEmbedded;
-    }
-
     private void resetCompilation() {
         status = CompilationStatus.SKIPPED;
         sourcePath = null;
@@ -153,6 +109,7 @@ public final class Manganese implements ANTLRErrorListener {
 
     private @NotNull Manganese reset() {
         tokenView = false;
+        extendedTokenView = false;
         return this;
     }
 
@@ -168,8 +125,9 @@ public final class Manganese implements ANTLRErrorListener {
         return Optional.ofNullable(outputPath);
     }
 
-    public void setTokenView(final boolean tokenView) {
+    public void setTokenView(final boolean tokenView, final boolean extendedTokenView) {
         this.tokenView = tokenView;
+        this.extendedTokenView = extendedTokenView;
     }
 
     public void setReportParserWarnings(final boolean reportParserWarnings) {
@@ -296,6 +254,7 @@ public final class Manganese implements ANTLRErrorListener {
     }
 
     public void compile(final @NotNull MemoryStream in, final @NotNull MemoryStream out) {
+        LLVMLoader.ensureNativesLoaded();
         resetCompilation(); // Reset before each compilation
 
         try {
@@ -307,15 +266,27 @@ public final class Manganese implements ANTLRErrorListener {
                 tokenStream.fill();
                 final var tokens = tokenStream.getTokens();
                 for (final var token : tokens) {
-                    Logger.INSTANCE.info("%s", token.toString());
+                    final var text = token.getText();
+                    if (!extendedTokenView && text.isBlank()) {
+                        continue; // Skip blank tokens if extended mode is disabled
+                    }
+                    // @formatter:off
+                    final var tokenType = lexer.getTokenTypeMap()
+                        .entrySet()
+                        .stream()
+                        .filter(e -> e.getValue().equals(token.getType()))
+                        .findFirst()
+                        .orElseThrow();
+                    // @formatter:on
+                    Logger.INSTANCE.info("%06d: %s (%s)", token.getTokenIndex(), text, tokenType);
                 }
             }
 
             final var parser = new FerrousParser(tokenStream);
             parser.removeErrorListeners(); // Remove default error listener
             parser.addErrorListener(this);
-            final var emitter = new ILEmitter();
-            parser.addParseListener(emitter);
+            final var unit = new TranslationUnit();
+            parser.addParseListener(unit);
             parser.file();
 
             if (!status.isRecoverable()) {
