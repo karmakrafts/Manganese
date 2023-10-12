@@ -1,6 +1,8 @@
 package io.karma.ferrous.manganese;
 
 import io.karma.ferrous.manganese.translate.TranslationUnit;
+import io.karma.ferrous.manganese.util.CompilationResult;
+import io.karma.ferrous.manganese.util.CompilationStatus;
 import io.karma.ferrous.manganese.util.Logger;
 import io.karma.ferrous.manganese.util.SimpleFileVisitor;
 import io.karma.ferrous.vanadium.FerrousLexer;
@@ -44,10 +46,10 @@ import java.util.Optional;
  * @since 02/07/2022
  */
 @API(status = Status.STABLE)
-public final class Manganese implements ANTLRErrorListener {
+public final class Compiler implements ANTLRErrorListener {
     private static final String[] IN_EXTENSIONS = {"ferrous", "fe"};
     private static final String OUT_EXTENSION = "bc";
-    private static final ThreadLocal<Manganese> INSTANCE = ThreadLocal.withInitial(Manganese::new);
+    private static final ThreadLocal<Compiler> INSTANCE = ThreadLocal.withInitial(Compiler::new);
 
     private final StringBuilder progressBuffer = new StringBuilder();
     private int numCompiledFiles;
@@ -59,10 +61,10 @@ public final class Manganese implements ANTLRErrorListener {
     private Path outputPath;
 
     // @formatter:off
-    private Manganese() {}
+    private Compiler() {}
     // @formatter:on
 
-    public static Manganese getInstance() {
+    public static Compiler getInstance() {
         return INSTANCE.get().reset();
     }
 
@@ -99,7 +101,7 @@ public final class Manganese implements ANTLRErrorListener {
         outputPath = null;
     }
 
-    private Manganese reset() {
+    private Compiler reset() {
         tokenView = false;
         extendedTokenView = false;
         return this;

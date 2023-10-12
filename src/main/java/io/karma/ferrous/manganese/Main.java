@@ -1,5 +1,6 @@
 package io.karma.ferrous.manganese;
 
+import io.karma.ferrous.manganese.util.CompilationStatus;
 import io.karma.ferrous.manganese.util.Logger;
 import io.karma.ferrous.manganese.util.Logger.LogLevel;
 import io.karma.kommons.util.SystemInfo;
@@ -20,7 +21,7 @@ import java.util.jar.Manifest;
 public class Main {
     @API(status = Status.INTERNAL)
     public static void main(final String[] args) {
-        final var compiler = Manganese.getInstance();
+        final var compiler = Compiler.getInstance();
         var status = CompilationStatus.SKIPPED;
 
         try {
@@ -46,7 +47,7 @@ public class Main {
             }
 
             if (options.has("v")) {
-                final var location = Objects.requireNonNull(Manganese.class.getClassLoader().getResource("META-INF/MANIFEST.MF"));
+                final var location = Objects.requireNonNull(Compiler.class.getClassLoader().getResource("META-INF/MANIFEST.MF"));
                 try (final var stream = location.openStream()) {
                     final var manifest = new Manifest(stream);
                     final var attribs = manifest.getMainAttributes();

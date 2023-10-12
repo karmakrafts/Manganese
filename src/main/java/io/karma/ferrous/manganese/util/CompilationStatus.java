@@ -1,4 +1,4 @@
-package io.karma.ferrous.manganese;
+package io.karma.ferrous.manganese.util;
 
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;

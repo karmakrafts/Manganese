@@ -1,4 +1,4 @@
-package io.karma.ferrous.manganese;
+package io.karma.ferrous.manganese.util;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
