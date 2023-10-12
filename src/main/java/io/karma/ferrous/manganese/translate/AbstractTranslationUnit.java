@@ -37,6 +37,18 @@ public abstract class AbstractTranslationUnit implements FerrousParserListener {
     public void exitModUseStatement(ModUseStatementContext modUseStatementContext) {}
 
     @Override
+    public void enterUseTypeList(UseTypeListContext useTypeListContext) {}
+
+    @Override
+    public void exitUseTypeList(UseTypeListContext useTypeListContext) {}
+
+    @Override
+    public void enterUseType(UseTypeContext useTypeContext) {}
+
+    @Override
+    public void exitUseType(UseTypeContext useTypeContext) {}
+
+    @Override
     public void enterSourceFile(SourceFileContext sourceFileContext) {}
 
     @Override
@@ -149,6 +161,30 @@ public abstract class AbstractTranslationUnit implements FerrousParserListener {
 
     @Override
     public void exitField(FieldContext fieldContext) {}
+
+    @Override
+    public void enterConstructor(ConstructorContext constructorContext) {}
+
+    @Override
+    public void exitConstructor(ConstructorContext constructorContext) {}
+
+    @Override
+    public void enterThisCall(ThisCallContext thisCallContext) {}
+
+    @Override
+    public void exitThisCall(ThisCallContext thisCallContext) {}
+
+    @Override
+    public void enterSuperCall(SuperCallContext superCallContext) {}
+
+    @Override
+    public void exitSuperCall(SuperCallContext superCallContext) {}
+
+    @Override
+    public void enterDestructor(DestructorContext destructorContext) {}
+
+    @Override
+    public void exitDestructor(DestructorContext destructorContext) {}
 
     @Override
     public void enterStatement(StatementContext statementContext) {}
@@ -337,6 +373,12 @@ public abstract class AbstractTranslationUnit implements FerrousParserListener {
     public void exitExpr(ExprContext exprContext) {}
 
     @Override
+    public void enterReAssignmentExpr(ReAssignmentExprContext reAssignmentExprContext) {}
+
+    @Override
+    public void exitReAssignmentExpr(ReAssignmentExprContext reAssignmentExprContext) {}
+
+    @Override
     public void enterAlignofExpr(AlignofExprContext alignofExprContext) {}
 
     @Override
@@ -455,6 +497,12 @@ public abstract class AbstractTranslationUnit implements FerrousParserListener {
 
     @Override
     public void exitRef(RefContext refContext) {}
+
+    @Override
+    public void enterThisRef(ThisRefContext thisRefContext) {}
+
+    @Override
+    public void exitThisRef(ThisRefContext thisRefContext) {}
 
     @Override
     public void enterSimpleRef(SimpleRefContext simpleRefContext) {}
@@ -599,6 +647,12 @@ public abstract class AbstractTranslationUnit implements FerrousParserListener {
 
     @Override
     public void exitFunctionMod(FunctionModContext functionModContext) {}
+
+    @Override
+    public void enterCallConvMod(CallConvModContext callConvModContext) {}
+
+    @Override
+    public void exitCallConvMod(CallConvModContext callConvModContext) {}
 
     @Override
     public void enterStorageMod(StorageModContext storageModContext) {}

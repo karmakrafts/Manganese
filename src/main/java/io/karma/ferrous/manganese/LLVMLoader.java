@@ -9,7 +9,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -46,8 +45,7 @@ public final class LLVMLoader {
                         catch (IOException error) { /* swallow exception */ }
                     }
                     candidates.sort(Comparator.comparing(Object::toString));
-                    Collections.reverse(candidates);
-                    libraryPath = candidates.get(0).toString();
+                    libraryPath = candidates.get(candidates.size() - 1).toString();
                 }
                 if (libraryPath != null) {
                     Logger.INSTANCE.debug("Using LLVM library at %s", libraryPath);

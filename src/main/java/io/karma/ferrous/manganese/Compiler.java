@@ -25,8 +25,6 @@ import org.fusesource.jansi.Ansi.Attribute;
 import org.fusesource.jansi.Ansi.Color;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
@@ -34,7 +32,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.BitSet;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -52,7 +49,6 @@ public final class Compiler implements ANTLRErrorListener {
     private static final ThreadLocal<Compiler> INSTANCE = ThreadLocal.withInitial(Compiler::new);
 
     private final StringBuilder progressBuffer = new StringBuilder();
-    private int numCompiledFiles;
     private CompilationStatus status = CompilationStatus.SKIPPED;
     private boolean tokenView = false;
     private boolean extendedTokenView = false;
@@ -69,13 +65,6 @@ public final class Compiler implements ANTLRErrorListener {
     }
 
     private static List<Path> findCompilableFiles(final Path path) {
-        final var file = path.toFile();
-        final var subFiles = file.listFiles();
-
-        if (subFiles == null || subFiles.length == 0) {
-            return Collections.emptyList();
-        }
-
         final var files = new ArrayList<Path>();
         try {
             Files.walkFileTree(path, new SimpleFileVisitor(filePath -> {
@@ -91,7 +80,6 @@ public final class Compiler implements ANTLRErrorListener {
             }));
         }
         catch (Exception error) { /* swallow exception */ }
-
         return files;
     }
 
@@ -136,8 +124,8 @@ public final class Compiler implements ANTLRErrorListener {
         return reportParserWarnings;
     }
 
-    private String getProgressIndicator(final int numFiles) {
-        final var percent = (int) (((float) numCompiledFiles / (float) numFiles) * 100F);
+    private String getProgressIndicator(final int numFiles, final int index) {
+        final var percent = (int) (((float) index / (float) numFiles) * 100F);
         final var str = percent + "%%";
         final var length = str.length();
 
@@ -153,44 +141,27 @@ public final class Compiler implements ANTLRErrorListener {
         return progressBuffer.toString();
     }
 
-    public CompilationResult compile(final Path in, final @Nullable Path out) {
-        final var numFiles = in.toFile().isDirectory() ? findCompilableFiles(in).size() : 1;
-        numCompiledFiles = 0; // Reset compilation counter
-        return compileRecursively(in, out, numFiles);
-    }
+    public CompilationResult compile(final Path in, @Nullable Path out) {
+        final var inputFiles = findCompilableFiles(in);
+        final var numFiles = inputFiles.size();
+        var status = CompilationStatus.SKIPPED;
 
-    private CompilationResult compileRecursively(final Path in, @Nullable Path out, final int numFiles) {
-        final var inFile = in.toFile();
-
-        if (inFile.isDirectory()) {
-            Logger.INSTANCE.debug("Traversing %s", in);
-
-            final var subFiles = findCompilableFiles(in);
-            var result = new CompilationResult(CompilationStatus.SKIPPED);
-
-            for (final var subFile : subFiles) {
-                // TODO: replace this with a file tree visitor
-                result = result.merge(compileRecursively(subFile, out, numFiles));
-            }
-
-            return result;
-        }
-        else {
+        for (var i = 0; i < numFiles; ++i) {
             // @formatter:off
             Logger.INSTANCE.info(Ansi.ansi()
                 .fg(Color.GREEN)
-                .a(getProgressIndicator(numFiles))
+                .a(getProgressIndicator(numFiles, i))
                 .a(Attribute.RESET)
                 .a(" Compiling file ")
                 .fg(Color.BLUE)
                 .a(Attribute.INTENSITY_BOLD)
-                .a(inFile.getAbsolutePath())
+                .a(in.toAbsolutePath().toString())
                 .a(Attribute.RESET)
                 .toString());
             // @formatter:on
 
             // Attempt to deduce the output file name from the input file name, this may throw an AIOOB
-            final var fileName = inFile.getName();
+            final var fileName = in.getFileName().toString();
             final var lastDot = fileName.lastIndexOf('.');
             final var rawName = fileName.substring(0, lastDot);
             final var outFileName = String.format("%s.%s", rawName, OUT_EXTENSION);
@@ -199,35 +170,32 @@ public final class Compiler implements ANTLRErrorListener {
                 // If the output path is null, derive it
                 out = in.getParent().resolve(outFileName);
             }
-
-            var outFile = out.toFile();
-
-            if (!outFile.getName().contains(".")) { // Since isFile/isDirectory doesn't work reliably for non-existent files
+            if (!out.getFileName().toString().contains(".")) { // Since isFile/isDirectory doesn't work reliably for non-existent files
                 // If out is a directory, resolve the output file name
                 out = out.resolve(outFileName);
-                outFile = out.toFile();
             }
 
-            final var outParentFile = outFile.getParentFile();
-
-            if (!outParentFile.exists()) {
-                if (outParentFile.mkdirs()) {
-                    Logger.INSTANCE.debug("Created directory %s", outParentFile);
+            final var outParentFile = out.getParent();
+            if (!Files.exists(outParentFile)) {
+                try {
+                    if (Files.createDirectories(outParentFile) != null) {
+                        Logger.INSTANCE.debug("Created directory %s", outParentFile);
+                    }
+                }
+                catch (Exception error) {
+                    Logger.INSTANCE.error("Could not create directory at %s, skipping", outParentFile.toString());
                 }
             }
 
-            var status = CompilationStatus.SKIPPED;
-
             Logger.INSTANCE.debug("Input: %s", in);
             Logger.INSTANCE.debug("Output: %s", out);
-
             sourcePath = in; // Update path fields
             outputPath = out;
 
-            try (final var fis = new FileInputStream(inFile)) {
-                try (final var fos = new FileOutputStream(outFile)) {
+            try (final var fis = Files.newInputStream(in)) {
+                try (final var fos = Files.newOutputStream(out)) {
                     final var outStream = new SimpleMemoryStream();
-                    compile(MemoryStream.fromStream(SimpleMemoryStream::new, fis), outStream);
+                    compile(fileName, MemoryStream.fromStream(SimpleMemoryStream::new, fis), outStream);
                     status = status.worse(this.status);
                     outStream.rewind();
                     outStream.writeTo(fos);
@@ -240,13 +208,12 @@ public final class Compiler implements ANTLRErrorListener {
                 status = status.worse(CompilationStatus.UNKNOWN_ERROR);
                 ExceptionUtils.handleError(e, Logger.INSTANCE::error);
             }
-
-            numCompiledFiles++;
-            return new CompilationResult(status);
         }
+
+        return new CompilationResult(status);
     }
 
-    public void compile(final MemoryStream in, final MemoryStream out) {
+    public void compile(final String name, final MemoryStream in, final MemoryStream out) {
         LLVMLoader.ensureNativesLoaded();
         resetCompilation(); // Reset before each compilation
 
@@ -278,7 +245,7 @@ public final class Compiler implements ANTLRErrorListener {
             final var parser = new FerrousParser(tokenStream);
             parser.removeErrorListeners(); // Remove default error listener
             parser.addErrorListener(this);
-            final var unit = new TranslationUnit();
+            final var unit = new TranslationUnit(name);
             parser.addParseListener(unit);
             parser.file();
 
@@ -286,8 +253,8 @@ public final class Compiler implements ANTLRErrorListener {
                 return;
             }
 
-            //status = status.worse(generator.generate(evalContext, out) ? CompilationStatus.SUCCESS : CompilationStatus.TRANSLATION_ERROR);
             status = CompilationStatus.SUCCESS;
+            unit.dispose();
         }
         catch (IOException e) {
             status = status.worse(CompilationStatus.IO_ERROR);
