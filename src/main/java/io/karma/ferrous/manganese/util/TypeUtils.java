@@ -16,11 +16,14 @@
 package io.karma.ferrous.manganese.util;
 
 import io.karma.ferrous.manganese.Compiler;
+import io.karma.ferrous.manganese.type.FunctionType;
 import io.karma.ferrous.manganese.type.Type;
+import io.karma.ferrous.vanadium.FerrousLexer;
 import io.karma.ferrous.vanadium.FerrousParser.ProtoFunctionContext;
 import io.karma.ferrous.vanadium.FerrousParser.TypeContext;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * @author Alexander Hinze
@@ -38,5 +41,26 @@ public final class TypeUtils {
             .map(tok -> Type.findType(compiler, (TypeContext) tok).orElseThrow())
             .toList();
         // @formatter:on
+    }
+
+    public static Optional<FunctionType> getFunctionType(final Compiler compiler, final ProtoFunctionContext context) {
+        try {
+            final var returnType = Type.findType(compiler, context.type()).orElseThrow();
+            final var params = context.functionParamList().functionParam();
+            var isVarArg = false;
+
+            if (!params.isEmpty()) {
+                final var paramType = params.getLast().functionParamType();
+                final var nodes = paramType.children;
+                final var keyword = FerrousLexer.VOCABULARY.getLiteralName(FerrousLexer.KW_VAARGS);
+                isVarArg = nodes.size() == 1 && nodes.get(0).getText().equals(keyword);
+            }
+
+            final var paramTypes = TypeUtils.getParameterTypes(compiler, context);
+            return Optional.of(new FunctionType(returnType, paramTypes, isVarArg));
+        }
+        catch (Exception error) {
+            return Optional.empty();
+        }
     }
 }

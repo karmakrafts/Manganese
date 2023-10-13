@@ -16,15 +16,16 @@
 package io.karma.ferrous.manganese.type;
 
 import io.karma.ferrous.manganese.Compiler;
-import io.karma.ferrous.manganese.translate.TypeTranslationUnit;
 import io.karma.ferrous.manganese.target.Target;
+import io.karma.ferrous.manganese.translate.TypeTranslationUnit;
 import io.karma.ferrous.manganese.util.Target2LongFunction;
+import io.karma.ferrous.manganese.util.TokenUtils;
+import io.karma.ferrous.vanadium.FerrousLexer;
 import io.karma.ferrous.vanadium.FerrousParser.TypeContext;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import org.lwjgl.llvm.LLVMCore;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -33,15 +34,15 @@ import java.util.Optional;
  * @since 13/10/2023
  */
 public final class Type {
-    public static final Type VOID = new Type("void", target -> LLVMCore.LLVMVoidType());
-    public static final Type BOOL = new Type("bool", target -> LLVMCore.LLVMInt8Type());
-    public static final Type CHAR = new Type("char", target -> LLVMCore.LLVMInt8Type());
+    public static final Type VOID = new Type(TokenUtils.getLiteral(FerrousLexer.KW_VOID), target -> LLVMCore.LLVMVoidType());
+    public static final Type BOOL = new Type(TokenUtils.getLiteral(FerrousLexer.KW_BOOL), target -> LLVMCore.LLVMInt8Type());
+    public static final Type CHAR = new Type(TokenUtils.getLiteral(FerrousLexer.KW_CHAR), target -> LLVMCore.LLVMInt8Type());
     // Signed types
-    public static final Type I8 = new Type("i8", target -> LLVMCore.LLVMInt8Type());
-    public static final Type I16 = new Type("i16", target -> LLVMCore.LLVMInt16Type());
-    public static final Type I32 = new Type("i32", target -> LLVMCore.LLVMInt32Type());
-    public static final Type I64 = new Type("i64", target -> LLVMCore.LLVMInt64Type());
-    public static final Type ISIZE = new Type("isize", Type::getSizedIntType);
+    public static final Type I8 = new Type(TokenUtils.getLiteral(FerrousLexer.KW_I8), target -> LLVMCore.LLVMInt8Type());
+    public static final Type I16 = new Type(TokenUtils.getLiteral(FerrousLexer.KW_I16), target -> LLVMCore.LLVMInt16Type());
+    public static final Type I32 = new Type(TokenUtils.getLiteral(FerrousLexer.KW_I32), target -> LLVMCore.LLVMInt32Type());
+    public static final Type I64 = new Type(TokenUtils.getLiteral(FerrousLexer.KW_I64), target -> LLVMCore.LLVMInt64Type());
+    public static final Type ISIZE = new Type(TokenUtils.getLiteral(FerrousLexer.KW_ISIZE), Type::getSizedIntType);
     public static final Type[] SIGNED_TYPES = {I8, I16, I32, I64, ISIZE};
     // Unsigned types
     public static final Type U8 = new Type("u8", target -> LLVMCore.LLVMInt8Type());
@@ -62,25 +63,14 @@ public final class Type {
         F32, F64
     }; // @formatter:on
 
-    private static final HashMap<String, Type> NAMED_TYPE_CACHE = new HashMap<>();
-
     private final String baseName;
     private final Target2LongFunction baseTypeProvider;
-    private final int sliceDepth;
-    private final int pointerDepth;
-    private final boolean isReference;
+    private final TypeAttribute[] attributes;
 
-    public Type(final String baseName, final Target2LongFunction baseTypeProvider, final int pointerDepth,
-                final int sliceDepth, final boolean isReference) {
+    public Type(final String baseName, final Target2LongFunction baseTypeProvider, final TypeAttribute... attributes) {
         this.baseName = baseName;
         this.baseTypeProvider = baseTypeProvider;
-        this.pointerDepth = pointerDepth;
-        this.sliceDepth = sliceDepth;
-        this.isReference = isReference;
-    }
-
-    public Type(final String baseName, final Target2LongFunction baseTypeProvider) {
-        this(baseName, baseTypeProvider, 0, 0, false);
+        this.attributes = attributes;
     }
 
     public static Optional<Type> findBuiltinType(final String name) {
@@ -93,36 +83,38 @@ public final class Type {
         if (!compiler.getStatus().isRecoverable()) {
             return Optional.empty();
         }
-        return Optional.of(unit.materializeType());
+        return Optional.of(unit.getType());
     }
 
     private static long getSizedIntType(final Target target) {
         return target.getPointerSize() == 8 ? LLVMCore.LLVMInt64Type() : LLVMCore.LLVMInt32Type();
     }
 
-    public Type derive(final int sliceDepth, final int pointerDepth, final boolean isReference) {
-        return new Type(baseName, baseTypeProvider, sliceDepth, pointerDepth, isReference);
+    public Type derive(final TypeAttribute... attributes) {
+        return new Type(baseName, baseTypeProvider, attributes);
     }
 
     public Type derivePointer(final int depth) {
-        return derive(0, depth, false);
+        final var attribs = new TypeAttribute[depth];
+        Arrays.fill(attribs, TypeAttribute.POINTER);
+        return derive(attribs);
     }
 
     public Type deriveSlice(final int depth) {
-        return derive(depth, 0, false);
+        final var attribs = new TypeAttribute[depth];
+        Arrays.fill(attribs, TypeAttribute.SLICE);
+        return derive(attribs);
     }
 
     public Type deriveReference() {
-        return derive(0, 0, true);
+        return derive(TypeAttribute.REFERENCE);
     }
 
     public long materialize(final Target target) {
         var result = baseTypeProvider.getAddress(target);
-        for (var i = 0; i < pointerDepth; i++) {
+        final var numAttribs = attributes.length;
+        for (var i = 0; i < numAttribs; i++) {
             result = LLVMCore.LLVMPointerType(result, 0);
-        }
-        if (isReference) {
-            result = LLVMCore.LLVMPointerType(result, 0); // One pointer for refs
         }
         return result;
     }
@@ -131,35 +123,50 @@ public final class Type {
         return baseName;
     }
 
-    public int getPointerDepth() {
-        return pointerDepth;
+    public TypeAttribute[] getAttributes() {
+        return attributes;
     }
 
     public boolean isReference() {
-        return isReference;
+        if (attributes.length == 0) {
+            return false;
+        }
+        return attributes[attributes.length - 1] == TypeAttribute.REFERENCE;
+    }
+
+    public boolean isPointer() {
+        if (attributes.length == 0) {
+            return false;
+        }
+        return attributes[attributes.length - 1] == TypeAttribute.POINTER;
+    }
+
+    public boolean isSlice() {
+        if (attributes.length == 0) {
+            return false;
+        }
+        return attributes[attributes.length - 1] == TypeAttribute.SLICE;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(baseName, pointerDepth, isReference);
+        return Objects.hash(baseName, Arrays.hashCode(attributes));
     }
 
     @Override
     public boolean equals(Object obj) {
         if (obj instanceof Type type) {
-            return baseName.equals(type.baseName) && pointerDepth == type.pointerDepth && isReference == type.isReference;
+            return baseName.equals(type.baseName) && Arrays.equals(attributes, type.attributes);
         }
         return false;
     }
 
     @Override
     public String toString() {
-        final var builder = new StringBuilder();
-        if (isReference) {
-            builder.append('&');
+        var result = baseName;
+        for (final var attrib : attributes) {
+            result = attrib.format(result);
         }
-        builder.append("*".repeat(pointerDepth));
-        builder.append(baseName);
-        return builder.toString();
+        return result;
     }
 }

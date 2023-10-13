@@ -15,10 +15,10 @@
 
 package io.karma.ferrous.manganese;
 
+import io.karma.ferrous.manganese.target.Target;
 import io.karma.ferrous.manganese.translate.TranslationUnit;
 import io.karma.ferrous.manganese.util.Logger;
 import io.karma.ferrous.manganese.util.SimpleFileVisitor;
-import io.karma.ferrous.manganese.target.Target;
 import io.karma.ferrous.manganese.util.Utils;
 import io.karma.ferrous.vanadium.FerrousLexer;
 import io.karma.ferrous.vanadium.FerrousParser;

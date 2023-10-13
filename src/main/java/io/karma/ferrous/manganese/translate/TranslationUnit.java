@@ -21,7 +21,6 @@ import io.karma.ferrous.manganese.Compiler;
 import io.karma.ferrous.manganese.target.CallingConvention;
 import io.karma.ferrous.manganese.util.Logger;
 import io.karma.ferrous.manganese.util.Scope;
-import io.karma.ferrous.manganese.type.Type;
 import io.karma.ferrous.manganese.util.TypeUtils;
 import io.karma.ferrous.manganese.util.Utils;
 import io.karma.ferrous.vanadium.FerrousParser.CallConvModContext;
@@ -89,8 +88,7 @@ public class TranslationUnit extends AbstractTranslationUnit {
     public void enterExternFunction(ExternFunctionContext ctx) {
         doOrReport(() -> {
             final var prototype = ctx.protoFunction();
-            final var returnType = Type.findType(compiler, prototype.type()).orElseThrow();
-            final var paramTypes = TypeUtils.getParameterTypes(compiler, prototype);
+            final var type = TypeUtils.getFunctionType(compiler, prototype);
             final var ident = prototype.functionIdent();
         }, CompileStatus.TRANSLATION_ERROR);
     }

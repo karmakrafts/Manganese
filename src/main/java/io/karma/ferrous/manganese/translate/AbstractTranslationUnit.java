@@ -407,6 +407,12 @@ public abstract class AbstractTranslationUnit implements FerrousParserListener {
     public void exitFunctionParam(FunctionParamContext functionParamContext) {}
 
     @Override
+    public void enterFunctionParamType(FunctionParamTypeContext functionParamTypeContext) {}
+
+    @Override
+    public void exitFunctionParamType(FunctionParamTypeContext functionParamTypeContext) {}
+
+    @Override
     public void enterExprList(ExprListContext exprListContext) {}
 
     @Override

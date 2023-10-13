@@ -23,6 +23,7 @@ import io.karma.ferrous.vanadium.FerrousParser.MiscTypeContext;
 import io.karma.ferrous.vanadium.FerrousParser.PointerTypeContext;
 import io.karma.ferrous.vanadium.FerrousParser.RefTypeContext;
 import io.karma.ferrous.vanadium.FerrousParser.SintTypeContext;
+import io.karma.ferrous.vanadium.FerrousParser.SliceTypeContext;
 import io.karma.ferrous.vanadium.FerrousParser.UintTypeContext;
 
 /**
@@ -31,6 +32,7 @@ import io.karma.ferrous.vanadium.FerrousParser.UintTypeContext;
  */
 public final class TypeTranslationUnit extends AbstractTranslationUnit {
     private int pointerDepth = 0;
+    private int sliceDepth = 0;
     private boolean isReference = false;
     private Type baseType;
 
@@ -56,6 +58,16 @@ public final class TypeTranslationUnit extends AbstractTranslationUnit {
     @Override
     public void exitRefType(RefTypeContext ctx) {
         isReference = false;
+    }
+
+    @Override
+    public void enterSliceType(SliceTypeContext arrayTypeContext) {
+        sliceDepth++;
+    }
+
+    @Override
+    public void exitSliceType(SliceTypeContext arrayTypeContext) {
+        sliceDepth--;
     }
 
     // Actual types
@@ -84,7 +96,7 @@ public final class TypeTranslationUnit extends AbstractTranslationUnit {
         handleType(ctx.getText());
     }
 
-    public Type materializeType() {
-        return baseType.derive(pointerDepth, isReference);
+    public Type getType() {
+        return baseType.derive(sliceDepth, pointerDepth, isReference);
     }
 }

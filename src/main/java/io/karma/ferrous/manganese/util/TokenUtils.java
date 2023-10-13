@@ -15,6 +15,7 @@
 
 package io.karma.ferrous.manganese.util;
 
+import io.karma.ferrous.vanadium.FerrousLexer;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.TokenStream;
 
@@ -29,6 +30,10 @@ public final class TokenUtils {
     // @formatter:off
     private TokenUtils() {}
     // @formatter:on
+
+    public static String getLiteral(final int token) {
+        return FerrousLexer.VOCABULARY.getLiteralName(token);
+    }
 
     public static void getLineTokens(final TokenStream tokenStream, final Token token, final List<Token> tokens) {
         final var line = token.getLine();
