@@ -18,7 +18,8 @@ package io.karma.ferrous.manganese;
 import io.karma.ferrous.manganese.translate.TranslationUnit;
 import io.karma.ferrous.manganese.util.Logger;
 import io.karma.ferrous.manganese.util.SimpleFileVisitor;
-import io.karma.ferrous.manganese.util.Target;
+import io.karma.ferrous.manganese.target.Target;
+import io.karma.ferrous.manganese.util.Utils;
 import io.karma.ferrous.vanadium.FerrousLexer;
 import io.karma.ferrous.vanadium.FerrousParser;
 import io.karma.kommons.util.ExceptionUtils;
@@ -184,7 +185,7 @@ public final class Compiler implements ANTLRErrorListener {
             // @formatter:off
             Logger.INSTANCE.infoln(Ansi.ansi()
                 .fg(Color.GREEN)
-                .a(getProgressIndicator(numFiles, i))
+                .a(Utils.getProgressIndicator(numFiles, i))
                 .a(Attribute.RESET)
                 .a(" Compiling file ")
                 .fg(Color.BLUE)

@@ -13,11 +13,26 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.translate;
+package io.karma.ferrous.manganese.target;
 
 /**
  * @author Alexander Hinze
  * @since 13/10/2023
  */
-public final class Scope {
+public enum ABI {
+    // @formatter:off
+    GNU     ("gnu"),
+    GNU_EABI("gnueabi"),
+    MSVC    ("msvc");
+    // @formatter:on
+
+    private final String name;
+
+    ABI(final String name) {
+        this.name = name;
+    }
+
+    public String getName() {
+        return name;
+    }
 }

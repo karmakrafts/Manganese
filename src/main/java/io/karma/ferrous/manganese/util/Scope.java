@@ -15,13 +15,9 @@
 
 package io.karma.ferrous.manganese.util;
 
-import io.karma.ferrous.manganese.target.Target;
-
 /**
  * @author Alexander Hinze
  * @since 13/10/2023
  */
-@FunctionalInterface
-public interface Target2LongFunction {
-    long getAddress(final Target target);
+public final class Scope {
 }

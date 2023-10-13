@@ -113,10 +113,10 @@ public abstract class AbstractTranslationUnit implements FerrousParserListener {
     public void exitUseList(UseListContext useListContext) {}
 
     @Override
-    public void enterUdtDecl(UdtDeclContext udtDeclContext) {}
+    public void enterUdt(UdtContext udtDeclContext) {}
 
     @Override
-    public void exitUdtDecl(UdtDeclContext udtDeclContext) {}
+    public void exitUdt(UdtContext udtDeclContext) {}
 
     @Override
     public void enterEnumClass(EnumClassContext enumClassContext) {}
@@ -461,16 +461,16 @@ public abstract class AbstractTranslationUnit implements FerrousParserListener {
     public void exitExhaustiveWhenExpr(ExhaustiveWhenExprContext exhaustiveWhenExprContext) {}
 
     @Override
-    public void enterSizedArrayExpr(SizedArrayExprContext sizedArrayExprContext) {}
+    public void enterSizedSliceExpr(SizedSliceExprContext sizedArrayExprContext) {}
 
     @Override
-    public void exitSizedArrayExpr(SizedArrayExprContext sizedArrayExprContext) {}
+    public void exitSizedSliceExpr(SizedSliceExprContext sizedArrayExprContext) {}
 
     @Override
-    public void enterArrayInitExpr(ArrayInitExprContext arrayInitExprContext) {}
+    public void enterSliceInitExpr(SliceInitExprContext arrayInitExprContext) {}
 
     @Override
-    public void exitArrayInitExpr(ArrayInitExprContext arrayInitExprContext) {}
+    public void exitSliceInitExpr(SliceInitExprContext arrayInitExprContext) {}
 
     @Override
     public void enterStackAllocExpr(StackAllocExprContext stackAllocExprContext) {}
@@ -749,10 +749,10 @@ public abstract class AbstractTranslationUnit implements FerrousParserListener {
     public void exitGenericType(GenericTypeContext genericTypeContext) {}
 
     @Override
-    public void enterArrayType(ArrayTypeContext arrayTypeContext) {}
+    public void enterSliceType(SliceTypeContext arrayTypeContext) {}
 
     @Override
-    public void exitArrayType(ArrayTypeContext arrayTypeContext) {}
+    public void exitSliceType(SliceTypeContext arrayTypeContext) {}
 
     @Override
     public void enterBuiltinType(BuiltinTypeContext builtinTypeContext) {}

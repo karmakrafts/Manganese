@@ -13,26 +13,40 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.util;
+package io.karma.ferrous.manganese.target;
+
+import io.karma.kommons.util.SystemInfo;
 
 /**
  * @author Alexander Hinze
  * @since 13/10/2023
  */
-public enum ABI {
+public enum Architecture {
     // @formatter:off
-    GNU     ("gnu"),
-    GNU_EABI("gnueabi"),
-    MSVC    ("msvc");
+    UNKNOWN ("unknown", SystemInfo.is64Bit() ? 8 : 4),
+    ARM     ("arm",     4),
+    AARCH64 ("aarch64", 8),
+    X86     ("x86",     4),
+    X86_64  ("x86_64",  8),
+    RISCV_32("riscv32", 4),
+    RISCV_64("riscv64", 8),
+    WASM_32 ("wasm32",  4),
+    WASM_64 ("wasm64",  8);
     // @formatter:on
 
     private final String name;
+    private final int pointerSize;
 
-    ABI(final String name) {
+    Architecture(final String name, final int pointerSize) {
         this.name = name;
+        this.pointerSize = pointerSize;
     }
 
     public String getName() {
         return name;
+    }
+
+    public int getPointerSize() {
+        return pointerSize;
     }
 }

@@ -13,10 +13,11 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.translate;
+package io.karma.ferrous.manganese.type;
 
 import io.karma.ferrous.manganese.Compiler;
-import io.karma.ferrous.manganese.util.Target;
+import io.karma.ferrous.manganese.translate.TypeTranslationUnit;
+import io.karma.ferrous.manganese.target.Target;
 import io.karma.ferrous.manganese.util.Target2LongFunction;
 import io.karma.ferrous.vanadium.FerrousParser.TypeContext;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
@@ -63,25 +64,27 @@ public final class Type {
 
     private static final HashMap<String, Type> NAMED_TYPE_CACHE = new HashMap<>();
 
-    private final String name;
-    private final Target2LongFunction addressProvider;
+    private final String baseName;
+    private final Target2LongFunction baseTypeProvider;
+    private final int sliceDepth;
     private final int pointerDepth;
     private final boolean isReference;
 
-    public Type(final String name, final Target2LongFunction addressProvider, final int pointerDepth,
-                final boolean isReference) {
-        this.name = name;
-        this.addressProvider = addressProvider;
+    public Type(final String baseName, final Target2LongFunction baseTypeProvider, final int pointerDepth,
+                final int sliceDepth, final boolean isReference) {
+        this.baseName = baseName;
+        this.baseTypeProvider = baseTypeProvider;
         this.pointerDepth = pointerDepth;
+        this.sliceDepth = sliceDepth;
         this.isReference = isReference;
     }
 
-    public Type(final String name, final Target2LongFunction addressProvider) {
-        this(name, addressProvider, 0, false);
+    public Type(final String baseName, final Target2LongFunction baseTypeProvider) {
+        this(baseName, baseTypeProvider, 0, 0, false);
     }
 
     public static Optional<Type> findBuiltinType(final String name) {
-        return Arrays.stream(BUILTIN_TYPES).filter(type -> type.name.equals(name)).findFirst();
+        return Arrays.stream(BUILTIN_TYPES).filter(type -> type.baseName.equals(name)).findFirst();
     }
 
     public static Optional<Type> findType(final Compiler compiler, final TypeContext context) {
@@ -97,16 +100,35 @@ public final class Type {
         return target.getPointerSize() == 8 ? LLVMCore.LLVMInt64Type() : LLVMCore.LLVMInt32Type();
     }
 
-    public Type derive(final int pointerDepth, final boolean isReference) {
-        return new Type(name, addressProvider, pointerDepth, isReference);
+    public Type derive(final int sliceDepth, final int pointerDepth, final boolean isReference) {
+        return new Type(baseName, baseTypeProvider, sliceDepth, pointerDepth, isReference);
     }
 
-    public long getAddress(final Target target) {
-        return addressProvider.getAddress(target);
+    public Type derivePointer(final int depth) {
+        return derive(0, depth, false);
     }
 
-    public String getName() {
-        return name;
+    public Type deriveSlice(final int depth) {
+        return derive(depth, 0, false);
+    }
+
+    public Type deriveReference() {
+        return derive(0, 0, true);
+    }
+
+    public long materialize(final Target target) {
+        var result = baseTypeProvider.getAddress(target);
+        for (var i = 0; i < pointerDepth; i++) {
+            result = LLVMCore.LLVMPointerType(result, 0);
+        }
+        if (isReference) {
+            result = LLVMCore.LLVMPointerType(result, 0); // One pointer for refs
+        }
+        return result;
+    }
+
+    public String getBaseName() {
+        return baseName;
     }
 
     public int getPointerDepth() {
@@ -119,13 +141,13 @@ public final class Type {
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, pointerDepth, isReference);
+        return Objects.hash(baseName, pointerDepth, isReference);
     }
 
     @Override
     public boolean equals(Object obj) {
         if (obj instanceof Type type) {
-            return name.equals(type.name) && pointerDepth == type.pointerDepth && isReference == type.isReference;
+            return baseName.equals(type.baseName) && pointerDepth == type.pointerDepth && isReference == type.isReference;
         }
         return false;
     }
@@ -137,7 +159,7 @@ public final class Type {
             builder.append('&');
         }
         builder.append("*".repeat(pointerDepth));
-        builder.append(name);
+        builder.append(baseName);
         return builder.toString();
     }
 }

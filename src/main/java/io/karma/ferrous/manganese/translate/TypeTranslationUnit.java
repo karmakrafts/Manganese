@@ -17,6 +17,7 @@ package io.karma.ferrous.manganese.translate;
 
 import io.karma.ferrous.manganese.CompileStatus;
 import io.karma.ferrous.manganese.Compiler;
+import io.karma.ferrous.manganese.type.Type;
 import io.karma.ferrous.vanadium.FerrousParser.FloatTypeContext;
 import io.karma.ferrous.vanadium.FerrousParser.MiscTypeContext;
 import io.karma.ferrous.vanadium.FerrousParser.PointerTypeContext;

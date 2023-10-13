@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.util;
+package io.karma.ferrous.manganese.target;
 
 import java.util.Objects;
 

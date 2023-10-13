@@ -18,17 +18,17 @@ package io.karma.ferrous.manganese.translate;
 import io.karma.ferrous.manganese.CompileError;
 import io.karma.ferrous.manganese.CompileStatus;
 import io.karma.ferrous.manganese.Compiler;
-import io.karma.ferrous.manganese.util.CallingConvention;
+import io.karma.ferrous.manganese.target.CallingConvention;
 import io.karma.ferrous.manganese.util.Logger;
+import io.karma.ferrous.manganese.util.Scope;
+import io.karma.ferrous.manganese.type.Type;
+import io.karma.ferrous.manganese.util.TypeUtils;
 import io.karma.ferrous.manganese.util.Utils;
 import io.karma.ferrous.vanadium.FerrousParser.CallConvModContext;
 import io.karma.ferrous.vanadium.FerrousParser.ExternFunctionContext;
 import io.karma.ferrous.vanadium.FerrousParser.FunctionContext;
-import io.karma.ferrous.vanadium.FerrousParser.TypeContext;
-import io.karma.ferrous.vanadium.FerrousParser.UdtDeclContext;
-import org.antlr.v4.runtime.Token;
+import io.karma.ferrous.vanadium.FerrousParser.UdtContext;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
-import org.antlr.v4.runtime.tree.TerminalNode;
 
 import java.util.Arrays;
 import java.util.Stack;
@@ -47,7 +47,6 @@ public class TranslationUnit extends AbstractTranslationUnit {
     private final long module;
     private final Stack<Scope> scopes = new Stack<>();
     private boolean isDisposed;
-    private Token currentToken;
     private CallingConvention callingConvention = CallingConvention.CDECL;
 
     public TranslationUnit(final Compiler compiler, final String name) {
@@ -61,7 +60,7 @@ public class TranslationUnit extends AbstractTranslationUnit {
     }
 
     @Override
-    public void enterUdtDecl(UdtDeclContext ctx) {
+    public void enterUdt(UdtContext ctx) {
         final var unit = new UDTTranslationUnit(compiler);
         ParseTreeWalker.DEFAULT.walk(unit, ctx);
         // TODO: add UDT to module
@@ -69,7 +68,7 @@ public class TranslationUnit extends AbstractTranslationUnit {
     }
 
     @Override
-    public void exitUdtDecl(UdtDeclContext ctx) {
+    public void exitUdt(UdtContext ctx) {
         scopes.pop();
     }
 
@@ -91,12 +90,7 @@ public class TranslationUnit extends AbstractTranslationUnit {
         doOrReport(() -> {
             final var prototype = ctx.protoFunction();
             final var returnType = Type.findType(compiler, prototype.type()).orElseThrow();
-            // @formatter:off
-            final var paramTypes = prototype.functionParamList().children.stream()
-                .filter(tok -> tok instanceof TypeContext)
-                .map(tok -> Type.findType(compiler, (TypeContext) tok).orElseThrow())
-                .toList();
-            // @formatter:on
+            final var paramTypes = TypeUtils.getParameterTypes(compiler, prototype);
             final var ident = prototype.functionIdent();
         }, CompileStatus.TRANSLATION_ERROR);
     }
@@ -118,11 +112,6 @@ public class TranslationUnit extends AbstractTranslationUnit {
             return;
         }
         callingConvention = convOption.get();
-    }
-
-    @Override
-    public void visitTerminal(TerminalNode node) {
-        currentToken = node.getSymbol();
     }
 
     public void dispose() {
