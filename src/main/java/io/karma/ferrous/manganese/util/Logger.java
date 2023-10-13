@@ -1,3 +1,18 @@
+/*
+ * Copyright 2023 Karma Krafts & associates
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package io.karma.ferrous.manganese.util;
 
 import org.apiguardian.api.API;
@@ -38,10 +53,9 @@ public final class Logger extends Writer {
         Runtime.getRuntime().addShutdownHook(new Thread(AnsiConsole::systemUninstall));
     }
 
-    private final StringBuilder messageBuffer = new StringBuilder();
     private final EnumSet<LogLevel> activeLevels = EnumSet.allOf(LogLevel.class);
     private LogLevel logLevel = LogLevel.INFO;
-    private Consumer<String> logConsumer = System.out::println;
+    private Consumer<String> logConsumer = System.out::print;
 
     // @formatter:off
     private Logger() {}
@@ -51,7 +65,7 @@ public final class Logger extends Writer {
 
     @Override
     public void write(final char[] cbuf, final int off, final int len) {
-        info(new String(cbuf, off, len));
+        infoln(new String(cbuf, off, len));
     }
 
     // @formatter:off
@@ -80,28 +94,41 @@ public final class Logger extends Writer {
         this.logConsumer = logConsumer;
     }
 
+    public void logln(final LogLevel level, final String fmt, final Object... params) {
+        if (!activeLevels.contains(level)) {
+            return; // Prioritize this condition over the current log level
+        }
+        if (logConsumer != null && level.ordinal() >= logLevel.ordinal()) {
+            logConsumer.accept(String.format("%s\n", level.format(String.format(fmt, params))));
+        }
+    }
+
+    public void debugln(final String fmt, final Object... params) {
+        logln(LogLevel.DEBUG, fmt, params);
+    }
+
+    public void infoln(final String fmt, final Object... params) {
+        logln(LogLevel.INFO, fmt, params);
+    }
+
+    public void warnln(final String fmt, final Object... params) {
+        logln(LogLevel.WARN, fmt, params);
+    }
+
+    public void errorln(final String fmt, final Object... params) {
+        logln(LogLevel.ERROR, fmt, params);
+    }
+
+    public void fatalln(final String fmt, final Object... params) {
+        logln(LogLevel.FATAL, fmt, params);
+    }
+
     public void log(final LogLevel level, final String fmt, final Object... params) {
         if (!activeLevels.contains(level)) {
             return; // Prioritize this condition over the current log level
         }
-
         if (logConsumer != null && level.ordinal() >= logLevel.ordinal()) {
-            messageBuffer.delete(0, messageBuffer.length());
-            final var formatted = String.format(fmt, params);
-            final var lines = formatted.split("\n");
-            final var numLines = lines.length;
-            final var maxIndex = numLines - 1;
-
-            for (var i = 0; i < numLines; i++) {
-                final var line = lines[i];
-                messageBuffer.append(level.format(line));
-
-                if (i < maxIndex) {
-                    messageBuffer.append('\n');
-                }
-            }
-
-            logConsumer.accept(messageBuffer.toString());
+            logConsumer.accept(level.format(String.format(fmt, params)));
         }
     }
 
@@ -126,12 +153,12 @@ public final class Logger extends Writer {
     }
 
     public void printLogo() {
-        info(Ansi.ansi().fg(Color.RED).a(LOGO_LINES[0]).a(Attribute.RESET).toString());
-        info(Ansi.ansi().fgBright(Color.RED).a(LOGO_LINES[1]).a(Attribute.RESET).toString());
-        info(Ansi.ansi().fgBright(Color.YELLOW).a(LOGO_LINES[2]).a(Attribute.RESET).toString());
-        info(Ansi.ansi().fg(Color.GREEN).a(LOGO_LINES[3]).a(Attribute.RESET).toString());
-        info(Ansi.ansi().fg(Color.BLUE).a(LOGO_LINES[4]).a(Attribute.RESET).toString());
-        info(Ansi.ansi().fg(Color.MAGENTA).a(LOGO_LINES[5]).a(Attribute.RESET).toString());
+        infoln("%s", Ansi.ansi().fg(Color.RED).a(LOGO_LINES[0]).a(Attribute.RESET).toString());
+        infoln("%s", Ansi.ansi().fgBright(Color.RED).a(LOGO_LINES[1]).a(Attribute.RESET).toString());
+        infoln("%s", Ansi.ansi().fgBright(Color.YELLOW).a(LOGO_LINES[2]).a(Attribute.RESET).toString());
+        infoln("%s", Ansi.ansi().fg(Color.GREEN).a(LOGO_LINES[3]).a(Attribute.RESET).toString());
+        infoln("%s", Ansi.ansi().fg(Color.BLUE).a(LOGO_LINES[4]).a(Attribute.RESET).toString());
+        infoln("%s", Ansi.ansi().fg(Color.MAGENTA).a(LOGO_LINES[5]).a(Attribute.RESET).toString());
     }
 
     public enum LogLevel {
