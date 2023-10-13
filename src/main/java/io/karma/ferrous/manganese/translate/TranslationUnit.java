@@ -24,10 +24,19 @@ import io.karma.ferrous.manganese.util.Utils;
 import io.karma.ferrous.vanadium.FerrousParser.CallConvModContext;
 import io.karma.ferrous.vanadium.FerrousParser.ExternFunctionContext;
 import io.karma.ferrous.vanadium.FerrousParser.FunctionContext;
-import org.lwjgl.llvm.LLVMCore;
+import io.karma.ferrous.vanadium.FerrousParser.TypeContext;
+import io.karma.ferrous.vanadium.FerrousParser.UdtDeclContext;
+import org.antlr.v4.runtime.Token;
+import org.antlr.v4.runtime.tree.ParseTreeWalker;
+import org.antlr.v4.runtime.tree.TerminalNode;
 
 import java.util.Arrays;
+import java.util.Stack;
 
+import static org.lwjgl.llvm.LLVMCore.LLVMDisposeModule;
+import static org.lwjgl.llvm.LLVMCore.LLVMGetModuleIdentifier;
+import static org.lwjgl.llvm.LLVMCore.LLVMModuleCreateWithName;
+import static org.lwjgl.llvm.LLVMCore.LLVMSetSourceFileName;
 import static org.lwjgl.system.MemoryUtil.NULL;
 
 /**
@@ -35,36 +44,66 @@ import static org.lwjgl.system.MemoryUtil.NULL;
  * @since 12/10/2023
  */
 public class TranslationUnit extends AbstractTranslationUnit {
-    private final Compiler compiler;
     private final long module;
+    private final Stack<Scope> scopes = new Stack<>();
     private boolean isDisposed;
+    private Token currentToken;
     private CallingConvention callingConvention = CallingConvention.CDECL;
 
-    public TranslationUnit(final String name, final Compiler compiler) {
-        this.compiler = compiler;
-        module = LLVMCore.LLVMModuleCreateWithName(name);
+    public TranslationUnit(final Compiler compiler, final String name) {
+        super(compiler);
+        module = LLVMModuleCreateWithName(name);
         if (module == NULL) {
             throw new RuntimeException("Could not allocate module");
         }
-        LLVMCore.LLVMSetSourceFileName(module, name); // Same as source file name
+        LLVMSetSourceFileName(module, name); // Same as source file name
         Logger.INSTANCE.debugln("Allocated translation unit module at 0x%08X", module);
     }
 
     @Override
-    public void enterFunction(FunctionContext functionContext) {
-        final var prototype = functionContext.protoFunction();
-        final var ident = prototype.functionIdent();
+    public void enterUdtDecl(UdtDeclContext ctx) {
+        final var unit = new UDTTranslationUnit(compiler);
+        ParseTreeWalker.DEFAULT.walk(unit, ctx);
+        // TODO: add UDT to module
+        scopes.push(new Scope());
     }
 
     @Override
-    public void enterExternFunction(ExternFunctionContext externFunctionContext) {
-        final var prototype = externFunctionContext.protoFunction();
-        final var ident = prototype.functionIdent();
+    public void exitUdtDecl(UdtDeclContext ctx) {
+        scopes.pop();
     }
 
     @Override
-    public void enterCallConvMod(CallConvModContext callConvModContext) {
-        final var identifier = callConvModContext.IDENT();
+    public void enterFunction(FunctionContext ctx) {
+        final var unit = new FunctionTranslationUnit(compiler);
+        ParseTreeWalker.DEFAULT.walk(unit, ctx);
+        // TODO: add function to module
+        scopes.push(new Scope());
+    }
+
+    @Override
+    public void exitFunction(FunctionContext ctx) {
+        scopes.pop();
+    }
+
+    @Override
+    public void enterExternFunction(ExternFunctionContext ctx) {
+        doOrReport(() -> {
+            final var prototype = ctx.protoFunction();
+            final var returnType = Type.findType(compiler, prototype.type()).orElseThrow();
+            // @formatter:off
+            final var paramTypes = prototype.functionParamList().children.stream()
+                .filter(tok -> tok instanceof TypeContext)
+                .map(tok -> Type.findType(compiler, (TypeContext) tok).orElseThrow())
+                .toList();
+            // @formatter:on
+            final var ident = prototype.functionIdent();
+        }, CompileStatus.TRANSLATION_ERROR);
+    }
+
+    @Override
+    public void enterCallConvMod(CallConvModContext ctx) {
+        final var identifier = ctx.IDENT();
         final var name = identifier.getText();
         // @formatter:off
         final var convOption = Arrays.stream(CallingConvention.values())
@@ -81,11 +120,16 @@ public class TranslationUnit extends AbstractTranslationUnit {
         callingConvention = convOption.get();
     }
 
+    @Override
+    public void visitTerminal(TerminalNode node) {
+        currentToken = node.getSymbol();
+    }
+
     public void dispose() {
         if (isDisposed) {
             return;
         }
-        LLVMCore.LLVMDisposeModule(module);
+        LLVMDisposeModule(module);
         isDisposed = true;
     }
 
@@ -94,6 +138,6 @@ public class TranslationUnit extends AbstractTranslationUnit {
     }
 
     public String getModuleName() {
-        return LLVMCore.LLVMGetModuleIdentifier(module);
+        return LLVMGetModuleIdentifier(module);
     }
 }

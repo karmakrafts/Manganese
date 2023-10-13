@@ -46,4 +46,20 @@ public final class Utils {
         }
         return builder.toString();
     }
+
+    public static String getProgressIndicator(final int numFiles, final int index) {
+        final var percent = (int) (((float) index / (float) numFiles) * 100F);
+        final var str = percent + "%%";
+        final var length = str.length();
+        final var builder = new StringBuilder();
+
+        while (builder.length() < (5 - length)) {
+            builder.append(' ');
+        }
+
+        builder.insert(0, '[');
+        builder.append(str);
+        builder.append(']');
+        return builder.toString();
+    }
 }

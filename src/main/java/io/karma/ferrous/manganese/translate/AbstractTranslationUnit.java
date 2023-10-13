@@ -15,9 +15,15 @@
 
 package io.karma.ferrous.manganese.translate;
 
+import io.karma.ferrous.manganese.CompileError;
+import io.karma.ferrous.manganese.CompileStatus;
+import io.karma.ferrous.manganese.Compiler;
 import io.karma.ferrous.vanadium.FerrousParser.*;
 import io.karma.ferrous.vanadium.FerrousParserListener;
+import io.karma.kommons.function.Functions;
+import io.karma.kommons.function.XRunnable;
 import org.antlr.v4.runtime.ParserRuleContext;
+import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
@@ -26,6 +32,25 @@ import org.antlr.v4.runtime.tree.TerminalNode;
  * @since 11/10/2023
  */
 public abstract class AbstractTranslationUnit implements FerrousParserListener {
+    protected Compiler compiler;
+    protected Token currentToken;
+
+    protected AbstractTranslationUnit(final Compiler compiler) {
+        this.compiler = compiler;
+    }
+
+    public Compiler getCompiler() {
+        return compiler;
+    }
+
+    public Token getCurrentToken() {
+        return currentToken;
+    }
+
+    protected void doOrReport(final XRunnable<?> closure, final CompileStatus status) {
+        Functions.tryDo(closure, exception -> compiler.reportError(new CompileError(currentToken), status));
+    }
+
     // @formatter:off
     @Override
     public void enterFile(FileContext fileContext) {}
@@ -706,12 +731,6 @@ public abstract class AbstractTranslationUnit implements FerrousParserListener {
     public void exitSimpleType(SimpleTypeContext simpleTypeContext) {}
 
     @Override
-    public void enterNullableType(NullableTypeContext nullableTypeContext) {}
-
-    @Override
-    public void exitNullableType(NullableTypeContext nullableTypeContext) {}
-
-    @Override
     public void enterRefType(RefTypeContext refTypeContext) {}
 
     @Override
@@ -740,6 +759,12 @@ public abstract class AbstractTranslationUnit implements FerrousParserListener {
 
     @Override
     public void exitBuiltinType(BuiltinTypeContext builtinTypeContext) {}
+
+    @Override
+    public void enterMiscType(MiscTypeContext miscTypeContext) {}
+
+    @Override
+    public void exitMiscType(MiscTypeContext miscTypeContext) {}
 
     @Override
     public void enterIntType(IntTypeContext intTypeContext) {}
@@ -790,7 +815,9 @@ public abstract class AbstractTranslationUnit implements FerrousParserListener {
     public void exitEnd(EndContext endContext) {}
 
     @Override
-    public void visitTerminal(TerminalNode terminalNode) {}
+    public void visitTerminal(TerminalNode terminalNode) {
+        currentToken = terminalNode.getSymbol();
+    }
 
     @Override
     public void visitErrorNode(ErrorNode errorNode) {}

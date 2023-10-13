@@ -22,6 +22,7 @@ import joptsimple.OptionException;
 import joptsimple.OptionParser;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
+import org.lwjgl.llvm.LLVMCore;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -36,6 +37,19 @@ import java.util.jar.Manifest;
  * @since 11/10/2023
  */
 public final class Main {
+    static {
+        try {
+            LLVMCore.getLibrary();
+        }
+        catch (UnsatisfiedLinkError e) { // @formatter:off
+            throw new IllegalStateException("""
+                Please configure the LLVM (13, 14 or 15) shared libraries path with:
+                \t-Dorg.lwjgl.llvm.libname=<LLVM shared library path> or
+                \t-Dorg.lwjgl.librarypath=<path that contains LLVM shared libraries>
+            """, e);
+        } // @formatter:on
+    }
+
     @API(status = Status.INTERNAL)
     public static void main(final String[] args) {
         var status = CompileStatus.SKIPPED;

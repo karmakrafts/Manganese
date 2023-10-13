@@ -18,6 +18,7 @@ package io.karma.ferrous.manganese;
 import io.karma.ferrous.manganese.translate.TranslationUnit;
 import io.karma.ferrous.manganese.util.Logger;
 import io.karma.ferrous.manganese.util.SimpleFileVisitor;
+import io.karma.ferrous.manganese.util.Target;
 import io.karma.ferrous.vanadium.FerrousLexer;
 import io.karma.ferrous.vanadium.FerrousParser;
 import io.karma.kommons.util.ExceptionUtils;
@@ -69,14 +70,15 @@ public final class Compiler implements ANTLRErrorListener {
     private static final String OUT_EXTENSION = "bc";
     private static final ThreadLocal<Compiler> INSTANCE = ThreadLocal.withInitial(Compiler::new);
 
-    private final StringBuilder progressBuffer = new StringBuilder();
     private final ArrayList<CompileError> errors = new ArrayList<>();
     private CompileStatus status = CompileStatus.SKIPPED;
+    private BufferedTokenStream tokenStream;
+
+    private Target target = null;
     private boolean tokenView = false;
     private boolean extendedTokenView = false;
     private boolean reportParserWarnings = false;
     private boolean disassemble = false;
-    private BufferedTokenStream tokenStream;
 
     // @formatter:off
     private Compiler() {}
@@ -119,6 +121,7 @@ public final class Compiler implements ANTLRErrorListener {
         status = CompileStatus.SKIPPED;
         tokenStream = null;
         errors.clear();
+        target = null;
     }
 
     public BufferedTokenStream getTokenStream() {
@@ -154,30 +157,21 @@ public final class Compiler implements ANTLRErrorListener {
         return reportParserWarnings;
     }
 
-    public void reportError(final CompileError error, final CompileStatus status) {
-        errors.add(error);
-        this.status = this.status.worse(status);
+    public Target getTarget() {
+        return target;
+    }
+
+    public void setTarget(final Target target) {
+        this.target = target;
     }
 
     public ArrayList<CompileError> getErrors() {
         return errors;
     }
 
-    private String getProgressIndicator(final int numFiles, final int index) {
-        final var percent = (int) (((float) index / (float) numFiles) * 100F);
-        final var str = percent + "%%";
-        final var length = str.length();
-
-        progressBuffer.delete(0, progressBuffer.length());
-
-        while (progressBuffer.length() < (5 - length)) {
-            progressBuffer.append(' ');
-        }
-
-        progressBuffer.insert(0, '[');
-        progressBuffer.append(str);
-        progressBuffer.append(']');
-        return progressBuffer.toString();
+    public void reportError(final CompileError error, final CompileStatus status) {
+        errors.add(error);
+        this.status = this.status.worse(status);
     }
 
     public CompileResult compile(final Path in, @Nullable Path out) {
@@ -218,9 +212,8 @@ public final class Compiler implements ANTLRErrorListener {
             final var outParentFile = out.getParent();
             if (!Files.exists(outParentFile)) {
                 try {
-                    if (Files.createDirectories(outParentFile) != null) {
-                        Logger.INSTANCE.debugln("Created directory %s", outParentFile);
-                    }
+                    Files.createDirectories(outParentFile);
+                    Logger.INSTANCE.debugln("Created directory %s", outParentFile);
                 }
                 catch (Exception error) {
                     Logger.INSTANCE.errorln("Could not create directory at %s, skipping", outParentFile.toString());
@@ -292,7 +285,7 @@ public final class Compiler implements ANTLRErrorListener {
             parser.removeErrorListeners(); // Remove default error listener
             parser.addErrorListener(this);
 
-            final var unit = new TranslationUnit(name, this);
+            final var unit = new TranslationUnit(this, name);
             ParseTreeWalker.DEFAULT.walk(unit, parser.file()); // Walk the entire AST with the TU
             if (!status.isRecoverable()) {
                 Logger.INSTANCE.errorln("Compilation is cancelled from hereon out, continuing to report errors");
@@ -329,8 +322,7 @@ public final class Compiler implements ANTLRErrorListener {
     @Override
     public void syntaxError(final Recognizer<?, ?> recognizer, final Object offendingSymbol, final int line,
                             final int charPositionInLine, final String msg, final RecognitionException e) {
-        final var token = (Token) offendingSymbol;
-        errors.add(new CompileError(token, tokenStream, line, charPositionInLine));
+        errors.add(new CompileError((Token) offendingSymbol, tokenStream, line, charPositionInLine));
         status = status.worse(CompileStatus.SYNTAX_ERROR);
     }
 
