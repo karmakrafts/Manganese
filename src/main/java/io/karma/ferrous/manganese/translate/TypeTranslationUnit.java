@@ -15,25 +15,23 @@
 
 package io.karma.ferrous.manganese.translate;
 
+import io.karma.ferrous.manganese.CompileError;
 import io.karma.ferrous.manganese.CompileStatus;
 import io.karma.ferrous.manganese.Compiler;
 import io.karma.ferrous.manganese.type.Type;
-import io.karma.ferrous.vanadium.FerrousParser.FloatTypeContext;
-import io.karma.ferrous.vanadium.FerrousParser.MiscTypeContext;
-import io.karma.ferrous.vanadium.FerrousParser.PointerTypeContext;
-import io.karma.ferrous.vanadium.FerrousParser.RefTypeContext;
-import io.karma.ferrous.vanadium.FerrousParser.SintTypeContext;
-import io.karma.ferrous.vanadium.FerrousParser.SliceTypeContext;
-import io.karma.ferrous.vanadium.FerrousParser.UintTypeContext;
+import io.karma.ferrous.manganese.type.TypeAttribute;
+import io.karma.ferrous.manganese.util.Utils;
+import io.karma.ferrous.vanadium.FerrousParser.*;
+import org.antlr.v4.runtime.ParserRuleContext;
+
+import java.util.Stack;
 
 /**
  * @author Alexander Hinze
  * @since 13/10/2023
  */
 public final class TypeTranslationUnit extends AbstractTranslationUnit {
-    private int pointerDepth = 0;
-    private int sliceDepth = 0;
-    private boolean isReference = false;
+    private final Stack<TypeAttribute> attributes = new Stack<>();
     private Type baseType;
 
     public TypeTranslationUnit(Compiler compiler) {
@@ -41,62 +39,62 @@ public final class TypeTranslationUnit extends AbstractTranslationUnit {
     }
 
     @Override
-    public void enterPointerType(PointerTypeContext ctx) {
-        pointerDepth++;
+    public void enterPointerType(PointerTypeContext context) {
+        attributes.push(TypeAttribute.POINTER);
     }
 
     @Override
-    public void exitPointerType(PointerTypeContext ctx) {
-        pointerDepth--;
-    }
-
-    @Override
-    public void enterRefType(RefTypeContext ctx) {
-        isReference = true;
-    }
-
-    @Override
-    public void exitRefType(RefTypeContext ctx) {
-        isReference = false;
+    public void enterRefType(RefTypeContext context) {
+        if (attributes.contains(TypeAttribute.REFERENCE)) {
+            final var error = new CompileError(context.start);
+            error.setAdditionalText(Utils.makeCompilerMessage("Type can only have one level of reference", null));
+            compiler.reportError(error, CompileStatus.SEMANTIC_ERROR);
+            return;
+        }
+        attributes.push(TypeAttribute.REFERENCE);
     }
 
     @Override
     public void enterSliceType(SliceTypeContext arrayTypeContext) {
-        sliceDepth++;
-    }
-
-    @Override
-    public void exitSliceType(SliceTypeContext arrayTypeContext) {
-        sliceDepth--;
+        attributes.push(TypeAttribute.SLICE);
     }
 
     // Actual types
 
-    private void handleType(final String text) {
-        doOrReport(() -> baseType = Type.findBuiltinType(text).orElseThrow(), CompileStatus.TRANSLATION_ERROR);
+    private void handleType(final ParserRuleContext context, final String errorMessage) {
+        final var text = context.getText();
+        doOrReport(context, () -> {
+            if (baseType != null) {
+                throw new TranslationException(context.start, "Type already translated, how did this happen?");
+            }
+            // @formatter:off
+            baseType = Type.findBuiltinType(text)
+                .orElseThrow(() -> new TranslationException(context.start, "%s: '%s'", errorMessage, text));
+            // @formatter:on
+        });
     }
 
     @Override
-    public void enterMiscType(MiscTypeContext ctx) {
-        handleType(ctx.getText());
+    public void enterMiscType(MiscTypeContext context) {
+        handleType(context, "Unknown miscellaneous type");
     }
 
     @Override
-    public void enterSintType(SintTypeContext ctx) {
-        handleType(ctx.getText());
+    public void enterSintType(SintTypeContext context) {
+        handleType(context, "Unknown signed integer type");
     }
 
     @Override
-    public void enterUintType(UintTypeContext ctx) {
-        handleType(ctx.getText());
+    public void enterUintType(UintTypeContext context) {
+        handleType(context, "Unknown unsigned integer type");
     }
 
     @Override
-    public void enterFloatType(FloatTypeContext ctx) {
-        handleType(ctx.getText());
+    public void enterFloatType(FloatTypeContext context) {
+        handleType(context, "Unknown floating point type");
     }
 
     public Type getType() {
-        return baseType.derive(sliceDepth, pointerDepth, isReference);
+        return baseType.derive(attributes.toArray(TypeAttribute[]::new));
     }
 }

@@ -16,7 +16,9 @@
 package io.karma.ferrous.manganese.util;
 
 import org.fusesource.jansi.Ansi;
+import org.fusesource.jansi.Ansi.Attribute;
 import org.fusesource.jansi.Ansi.Color;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
@@ -29,21 +31,24 @@ public final class Utils {
     private Utils() {}
     // @formatter:on
 
-    public static String makeSuggestion(final String message, final List<String> values) {
+    public static String makeCompilerMessage(final String message, final @Nullable List<String> values) {
         final var builder = Ansi.ansi();
         builder.a("  ");
         builder.fgBright(Color.BLACK);
         builder.a(message);
-        builder.a(":\n  ");
-        final var numValues = values.size();
-        for (var i = 0; i < numValues; i++) {
-            builder.fgBright(Color.BLUE);
-            builder.a(values.get(i));
-            builder.fgBright(Color.BLACK);
-            if (i < numValues - 1) {
-                builder.a(", ");
+        if (values != null) {
+            builder.a(":\n  ");
+            final var numValues = values.size();
+            for (var i = 0; i < numValues; i++) {
+                builder.fgBright(Color.BLUE);
+                builder.a(values.get(i));
+                builder.fgBright(Color.BLACK);
+                if (i < numValues - 1) {
+                    builder.a(", ");
+                }
             }
         }
+        builder.a(Attribute.RESET);
         return builder.toString();
     }
 

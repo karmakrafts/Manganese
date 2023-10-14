@@ -28,7 +28,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Objects;
 import java.util.jar.Manifest;
 
@@ -124,16 +123,7 @@ public final class Main {
 
             final var errors = result.getErrors();
             Collections.sort(errors);
-            final var lines = new HashSet<String>();
-
-            for (final var error : errors) {
-                final var text = error.getText();
-                if (lines.contains(text)) {
-                    continue;
-                }
-                error.print(System.out);
-                lines.add(text);
-            }
+            errors.forEach(error -> error.print(System.out));
         }
         catch (OptionException | NoArgsException e) {
             // Special case; display help instead of logging the exception.

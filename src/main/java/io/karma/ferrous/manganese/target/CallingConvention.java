@@ -17,6 +17,7 @@ package io.karma.ferrous.manganese.target;
 
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
+import org.lwjgl.llvm.LLVMCore;
 
 import java.util.Arrays;
 import java.util.List;
@@ -29,13 +30,16 @@ import java.util.stream.Collectors;
 @API(status = Status.STABLE)
 public enum CallingConvention {
     // @formatter:off
-    CDECL       ("cdecl"),
-    STDCALL     ("stdcall"),
-    THISCALL    ("thiscall"),
-    FASTCALL    ("fastcall"),
-    VECTORCALL  ("vectorcall"),
-    MS          ("ms"),
-    SYSV        ("sysv");
+    CDECL       ("cdecl",       LLVMCore.LLVMCCallConv),
+    ANYREG      ("anyreg",      LLVMCore.LLVMAnyRegCallConv),
+    REGCALL     ("regcall",     LLVMCore.LLVMX86RegCallCallConv),
+    STDCALL     ("stdcall",     LLVMCore.LLVMX86StdcallCallConv),
+    THISCALL    ("thiscall",    LLVMCore.LLVMX86ThisCallCallConv),
+    FASTCALL    ("fastcall",    LLVMCore.LLVMX86FastcallCallConv),
+    VECTORCALL  ("vectorcall",  LLVMCore.LLVMX86VectorCallCallConv),
+    SWIFTCALL   ("swiftcall",   LLVMCore.LLVMSwiftCallConv),
+    MS          ("ms",          LLVMCore.LLVMWin64CallConv),
+    SYSV        ("sysv",        LLVMCore.LLVMX8664SysVCallConv);
     // @formatter:on
 
     // @formatter:off
@@ -44,12 +48,18 @@ public enum CallingConvention {
         .collect(Collectors.toList());
     // @formatter:on
     private final String text;
+    private final int llvmType;
 
-    CallingConvention(final String text) {
+    CallingConvention(final String text, final int llvmType) {
         this.text = text;
+        this.llvmType = llvmType;
     }
 
     public String getText() {
         return text;
+    }
+
+    public int getLlvmType() {
+        return llvmType;
     }
 }

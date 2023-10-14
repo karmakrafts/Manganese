@@ -38,6 +38,7 @@ public enum CompileStatus {
     SYNTAX_ERROR         (1, false, Color.RED,    "Compilation Failed (syntax error)"),
     SEMANTIC_ERROR       (1, false, Color.RED,    "Compilation Failed (semantic error)"),
     TRANSLATION_ERROR    (1, false, Color.RED,    "Compilation Failed (translation error)"),
+    VERIFY_ERROR         (1, false, Color.RED,    "Compilation Failed (verify error)"),
     UNKNOWN_ERROR        (1, false, Color.RED,    "Compilation Failed (unknown error)");
     // @formatter:on
 

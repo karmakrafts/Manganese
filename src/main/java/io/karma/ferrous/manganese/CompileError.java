@@ -23,9 +23,11 @@ import org.fusesource.jansi.Ansi;
 import org.fusesource.jansi.Ansi.Attribute;
 import org.fusesource.jansi.Ansi.Color;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.PrintStream;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -35,31 +37,21 @@ import java.util.Optional;
 public final class CompileError implements Comparable<CompileError> {
     private final Token token;
     private final List<Token> lineTokens;
-    private final String ansiText;
-    private final String text;
     private final int line;
     private final int column;
     private String additionalText;
 
-    public CompileError(final Token token, final List<Token> lineTokens, final int line, final int column) {
+    public CompileError(final @Nullable Token token, final @Nullable List<Token> lineTokens, final int line,
+                        final int column) {
         this.token = token;
         this.lineTokens = lineTokens;
         this.line = line;
         this.column = column;
+    }
 
-        final var ansiBuffer = Ansi.ansi();
-        final var buffer = new StringBuilder();
-        for (final var lineToken : lineTokens) {
-            if (lineToken.getText().equals("\n")) {
-                continue; // Skip any new lines
-            }
-            handleTokenColor(lineToken, ansiBuffer);
-            final var tokenText = lineToken.getText();
-            ansiBuffer.a(tokenText);
-            buffer.append(tokenText);
-        }
-        ansiText = ansiBuffer.toString().strip();
-        text = buffer.toString().strip();
+    public CompileError(final String additionalText) {
+        this(null, (List<Token>) null, -1, -1);
+        this.additionalText = additionalText;
     }
 
     public CompileError(final Token token, final TokenStream tokenStream, final int line, final int column) {
@@ -110,15 +102,36 @@ public final class CompileError implements Comparable<CompileError> {
         if (line != 0) {
             return line;
         }
-        return Integer.compare(other.column, this.column);
+        return Integer.compare(this.column, other.column);
     }
 
     public String getAnsiText() {
-        return ansiText;
+        if (lineTokens == null || lineTokens.isEmpty()) {
+            return "";
+        }
+        final var ansiBuffer = Ansi.ansi();
+        for (final var lineToken : lineTokens) {
+            if (lineToken.getText().equals("\n")) {
+                continue; // Skip any new lines
+            }
+            handleTokenColor(lineToken, ansiBuffer);
+            ansiBuffer.a(lineToken.getText());
+        }
+        return ansiBuffer.a(Attribute.RESET).toString().strip();
     }
 
     public String getText() {
-        return text;
+        if (lineTokens == null || lineTokens.isEmpty()) {
+            return "";
+        }
+        final var buffer = new StringBuilder();
+        for (final var lineToken : lineTokens) {
+            if (lineToken.getText().equals("\n")) {
+                continue; // Skip any new lines
+            }
+            buffer.append(lineToken.getText());
+        }
+        return buffer.toString();
     }
 
     public int getLine() {
@@ -129,34 +142,62 @@ public final class CompileError implements Comparable<CompileError> {
         return column;
     }
 
-    public Token getToken() {
+    public @Nullable Token getToken() {
         return token;
     }
 
-    public List<Token> getLineTokens() {
+    public @Nullable List<Token> getLineTokens() {
         return lineTokens;
     }
 
     public void print(final PrintStream stream) {
-        // @formatter:off
-        stream.printf(Ansi.ansi().fg(Color.RED).a("\nUnexpected symbol in line %d:%d\n\n")
-            .a(Attribute.RESET).toString(), line, column);
-        // @formatter:on
-        stream.printf("  %s\n", ansiText);
+        stream.print(this);
+    }
 
-        stream.print("  ");
-        for (var i = 0; i < column; i++) {
-            stream.print(' ');
-        }
-        final var length = token.getStopIndex() - token.getStartIndex() + 1;
-        for (var i = 0; i < length; i++) {
-            stream.print(Ansi.ansi().fgBright(Color.RED).a('^').a(Attribute.RESET));
+    @Override
+    public int hashCode() {
+        return Objects.hash(token, line, column, additionalText);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if(obj instanceof CompileError error) { // @formatter:off
+            return token.equals(error.token)
+                && line == error.line
+                && column == error.column
+                && additionalText.equals(error.additionalText);
+        } // @formatter:on
+        return false;
+    }
+
+    @Override
+    public String toString() {
+        final var builder = new StringBuilder();
+
+        if(line != -1 && column != -1) { // @formatter:off
+            builder.append(Ansi.ansi().fg(Color.RED).a("\nError during compilation in line %d:%d\n\n")
+                .a(Attribute.RESET).toString(), line, column);
+        }// @formatter:on
+        else {// @formatter:off
+            builder.append(Ansi.ansi().fg(Color.RED).a("\nError during compilation\n\n")
+                .a(Attribute.RESET).toString(), line, column);
+        }// @formatter:on
+
+        if (token != null && lineTokens != null) {
+            builder.append(String.format("  %s\n  ", getAnsiText()));
+            builder.append(" ".repeat(Math.max(0, column)));
+            final var length = token.getStopIndex() - token.getStartIndex() + 1;
+            for (var i = 0; i < length; i++) {
+                builder.append(Ansi.ansi().fgBright(Color.RED).a('^').a(Attribute.RESET));
+            }
+            builder.append("\n");
         }
 
-        stream.print("\n");
         if (additionalText != null) {
-            stream.printf("%s\n", additionalText);
+            builder.append(String.format("%s\n", additionalText));
         }
-        stream.print("\n");
+        builder.append("\n");
+
+        return builder.toString();
     }
 }

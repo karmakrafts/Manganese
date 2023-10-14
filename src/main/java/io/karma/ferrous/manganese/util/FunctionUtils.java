@@ -13,30 +13,28 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.translate;
+package io.karma.ferrous.manganese.util;
 
-import io.karma.ferrous.manganese.Compiler;
 import io.karma.ferrous.vanadium.FerrousParser.FunctionIdentContext;
-
-import static org.lwjgl.system.MemoryUtil.*;
 
 /**
  * @author Alexander Hinze
- * @since 13/10/2023
+ * @since 14/10/2023
  */
-public final class FunctionTranslationUnit extends AbstractTranslationUnit {
-    private final long function = NULL;
+public final class FunctionUtils {
+    // @formatter:off
+    private FunctionUtils() {}
+    // @formatter:on
 
-    public FunctionTranslationUnit(Compiler compiler) {
-        super(compiler);
-    }
-
-    @Override
-    public void enterFunctionIdent(FunctionIdentContext context) {
-
-    }
-
-    public long getFunction() {
-        return function;
+    public static String getFunctionName(final FunctionIdentContext context) {
+        final var children = context.children;
+        if (children.size() == 1) {
+            final var text = children.get(0).getText();
+            final var op = Operator.findByText(text);
+            if (op.isPresent()) {
+                return op.get().getFunctionName();
+            }
+        }
+        return context.ident().getText();
     }
 }

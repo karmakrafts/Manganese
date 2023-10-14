@@ -16,6 +16,7 @@
 package io.karma.ferrous.manganese.type;
 
 import io.karma.ferrous.manganese.target.Target;
+import org.jetbrains.annotations.Nullable;
 import org.lwjgl.llvm.LLVMCore;
 import org.lwjgl.system.MemoryStack;
 
@@ -57,6 +58,31 @@ public final class FunctionType {
         return paramTypes;
     }
 
+    public String toString(final @Nullable String name) {
+        final var builder = new StringBuilder();
+        builder.append(returnType);
+
+        if (name != null) {
+            builder.append(' ');
+            builder.append(name);
+        }
+
+        builder.append('(');
+        final var numParams = paramTypes.size();
+        for (var i = 0; i < numParams; i++) {
+            builder.append(paramTypes.get(i));
+            if (i < numParams - 1) {
+                builder.append(", ");
+            }
+        }
+
+        if (isVarArg) {
+            builder.append(", ...");
+        }
+        builder.append(')');
+        return builder.toString();
+    }
+
     @Override
     public int hashCode() {
         return Objects.hash(returnType, paramTypes);
@@ -72,19 +98,6 @@ public final class FunctionType {
 
     @Override
     public String toString() {
-        final var builder = new StringBuilder();
-        builder.append(returnType);
-        builder.append('(');
-
-        final var numParams = paramTypes.size();
-        for (var i = 0; i < numParams; i++) {
-            builder.append(paramTypes.get(i));
-            if (i < numParams - 1) {
-                builder.append(", ");
-            }
-        }
-
-        builder.append(')');
-        return builder.toString();
+        return toString(null);
     }
 }

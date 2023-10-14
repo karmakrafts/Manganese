@@ -23,7 +23,6 @@ import io.karma.ferrous.vanadium.FerrousParserListener;
 import io.karma.kommons.function.Functions;
 import io.karma.kommons.function.XRunnable;
 import org.antlr.v4.runtime.ParserRuleContext;
-import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
@@ -33,7 +32,6 @@ import org.antlr.v4.runtime.tree.TerminalNode;
  */
 public abstract class AbstractTranslationUnit implements FerrousParserListener {
     protected Compiler compiler;
-    protected Token currentToken;
 
     protected AbstractTranslationUnit(final Compiler compiler) {
         this.compiler = compiler;
@@ -43,12 +41,14 @@ public abstract class AbstractTranslationUnit implements FerrousParserListener {
         return compiler;
     }
 
-    public Token getCurrentToken() {
-        return currentToken;
-    }
-
-    protected void doOrReport(final XRunnable<?> closure, final CompileStatus status) {
-        Functions.tryDo(closure, exception -> compiler.reportError(new CompileError(currentToken), status));
+    protected void doOrReport(final ParserRuleContext context, final XRunnable<?> closure) {
+        Functions.tryDo(closure, exception -> {
+            if (exception instanceof TranslationException tExcept) {
+                compiler.reportError(tExcept.getError(), CompileStatus.TRANSLATION_ERROR);
+                return;
+            }
+            compiler.reportError(new CompileError(context.start), CompileStatus.TRANSLATION_ERROR);
+        });
     }
 
     // @formatter:off
@@ -821,9 +821,7 @@ public abstract class AbstractTranslationUnit implements FerrousParserListener {
     public void exitEnd(EndContext endContext) {}
 
     @Override
-    public void visitTerminal(TerminalNode terminalNode) {
-        currentToken = terminalNode.getSymbol();
-    }
+    public void visitTerminal(TerminalNode terminalNode) {}
 
     @Override
     public void visitErrorNode(ErrorNode errorNode) {}

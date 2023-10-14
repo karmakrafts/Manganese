@@ -15,29 +15,31 @@
 
 package io.karma.ferrous.manganese.translate;
 
+import io.karma.ferrous.manganese.CompileError;
+import io.karma.ferrous.manganese.util.Utils;
+import org.antlr.v4.runtime.Token;
+
 /**
  * @author Alexander Hinze
  * @since 13/10/2023
  */
-public class TranslationException extends RuntimeException {
-    public TranslationException() {
-        super();
+public final class TranslationException extends RuntimeException {
+    private final CompileError error;
+
+    public TranslationException(final CompileError error) {
+        this.error = error;
     }
 
-    public TranslationException(String message) {
-        super(message);
+    public TranslationException(final Token token, final String additionalText, final Object... params) {
+        error = new CompileError(token);
+        error.setAdditionalText(Utils.makeCompilerMessage(String.format(additionalText, params), null));
     }
 
-    public TranslationException(String message, Throwable cause) {
-        super(message, cause);
+    public TranslationException(final Token token) {
+        this(new CompileError(token));
     }
 
-    public TranslationException(Throwable cause) {
-        super(cause);
-    }
-
-    protected TranslationException(String message, Throwable cause, boolean enableSuppression,
-                                   boolean writableStackTrace) {
-        super(message, cause, enableSuppression, writableStackTrace);
+    public CompileError getError() {
+        return error;
     }
 }

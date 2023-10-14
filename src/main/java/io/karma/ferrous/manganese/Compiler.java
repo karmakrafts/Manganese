@@ -22,15 +22,7 @@ import io.karma.ferrous.manganese.util.SimpleFileVisitor;
 import io.karma.ferrous.manganese.util.Utils;
 import io.karma.ferrous.vanadium.FerrousLexer;
 import io.karma.ferrous.vanadium.FerrousParser;
-import io.karma.kommons.util.ExceptionUtils;
-import org.antlr.v4.runtime.ANTLRErrorListener;
-import org.antlr.v4.runtime.BufferedTokenStream;
-import org.antlr.v4.runtime.CharStreams;
-import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.Parser;
-import org.antlr.v4.runtime.RecognitionException;
-import org.antlr.v4.runtime.Recognizer;
-import org.antlr.v4.runtime.Token;
+import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.atn.ATNConfigSet;
 import org.antlr.v4.runtime.dfa.DFA;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
@@ -41,7 +33,7 @@ import org.fusesource.jansi.Ansi.Attribute;
 import org.fusesource.jansi.Ansi.Color;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.llvm.LLVMBitWriter;
-import org.lwjgl.llvm.LLVMCore;
+import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 
 import java.io.IOException;
@@ -56,7 +48,9 @@ import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.List;
 
-import static org.lwjgl.system.MemoryUtil.NULL;
+import static org.lwjgl.llvm.LLVMAnalysis.*;
+import static org.lwjgl.llvm.LLVMCore.*;
+import static org.lwjgl.system.MemoryUtil.*;
 
 /**
  * Main class for invoking a compilation, either programmatically
@@ -80,6 +74,7 @@ public final class Compiler implements ANTLRErrorListener {
     private boolean extendedTokenView = false;
     private boolean reportParserWarnings = false;
     private boolean disassemble = false;
+    private boolean saveBitcode = false;
 
     // @formatter:off
     private Compiler() {}
@@ -114,7 +109,7 @@ public final class Compiler implements ANTLRErrorListener {
 
     private static void disassemble(final TranslationUnit unit) {
         Logger.INSTANCE.infoln("");
-        Logger.INSTANCE.info(LLVMCore.LLVMPrintModuleToString(unit.getModule()));
+        Logger.INSTANCE.info(LLVMPrintModuleToString(unit.getModule()));
         Logger.INSTANCE.infoln("");
     }
 
@@ -138,6 +133,10 @@ public final class Compiler implements ANTLRErrorListener {
         this.extendedTokenView = extendedTokenView;
     }
 
+    public void setSaveBitcode(boolean saveBitcode) {
+        this.saveBitcode = saveBitcode;
+    }
+
     public void setDisassemble(final boolean disassemble) {
         this.disassemble = disassemble;
     }
@@ -158,6 +157,10 @@ public final class Compiler implements ANTLRErrorListener {
         return reportParserWarnings;
     }
 
+    public boolean shouldSaveBitcode() {
+        return saveBitcode;
+    }
+
     public Target getTarget() {
         return target;
     }
@@ -171,6 +174,9 @@ public final class Compiler implements ANTLRErrorListener {
     }
 
     public void reportError(final CompileError error, final CompileStatus status) {
+        if (errors.contains(error)) {
+            return; // Don't report duplicates
+        }
         errors.add(error);
         this.status = this.status.worse(status);
     }
@@ -230,12 +236,11 @@ public final class Compiler implements ANTLRErrorListener {
                     status = status.worse(this.status);
                 }
             }
-            catch (IOException e) {
-                status = status.worse(CompileStatus.IO_ERROR);
+            catch (IOException error) {
+                reportError(new CompileError(error.getMessage()), CompileStatus.IO_ERROR);
             }
-            catch (Throwable e) {
-                status = status.worse(CompileStatus.UNKNOWN_ERROR);
-                ExceptionUtils.handleError(e, Logger.INSTANCE::errorln);
+            catch (Exception error) {
+                reportError(new CompileError(error.getMessage()), CompileStatus.UNKNOWN_ERROR);
             }
         }
 
@@ -247,6 +252,11 @@ public final class Compiler implements ANTLRErrorListener {
 
         try {
             final var charStream = CharStreams.fromChannel(in, StandardCharsets.UTF_8);
+            if (charStream.size() == 0) {
+                Logger.INSTANCE.warnln("No input data, skipping compilation");
+                return;
+            }
+
             final var lexer = new FerrousLexer(charStream);
             tokenStream = new CommonTokenStream(lexer);
 
@@ -265,7 +275,6 @@ public final class Compiler implements ANTLRErrorListener {
                         .filter(e -> e.getValue().equals(token.getType()))
                         .findFirst()
                         .orElseThrow();
-                    //Logger.INSTANCE.infoln("%06d: %s (%s)", token.getTokenIndex(), text, tokenType);
                     System.out.println(Ansi.ansi()
                         .fg(Color.BLUE)
                         .a(String.format("%06d", token.getTokenIndex()))
@@ -286,45 +295,63 @@ public final class Compiler implements ANTLRErrorListener {
             parser.removeErrorListeners(); // Remove default error listener
             parser.addErrorListener(this);
 
+            // Create a new translation unit (& module)
             final var unit = new TranslationUnit(this, name);
             ParseTreeWalker.DEFAULT.walk(unit, parser.file()); // Walk the entire AST with the TU
             if (!status.isRecoverable()) {
                 Logger.INSTANCE.errorln("Compilation is cancelled from hereon out, continuing to report errors");
                 return;
             }
+
+            // Verify module and handle message as compile error if needed
+            final var module = unit.getModule();
+            try (final var stack = MemoryStack.stackPush()) {
+                final var messageBuffer = stack.callocPointer(1);
+                if (LLVMVerifyModule(module, LLVMReturnStatusAction, messageBuffer)) {
+                    final var message = messageBuffer.get(0);
+                    if (message != NULL) {
+                        reportError(new CompileError(messageBuffer.getStringUTF8(0)), CompileStatus.VERIFY_ERROR);
+                        nLLVMDisposeMessage(message);
+                        unit.dispose();
+                        return;
+                    }
+                    reportError(new CompileError("Unknown verify error"), CompileStatus.VERIFY_ERROR);
+                    return;
+                }
+            }
+
             if (disassemble) {
                 disassemble(unit);
             }
 
-            final var buffer = LLVMBitWriter.LLVMWriteBitcodeToMemoryBuffer(unit.getModule());
+            // Write the modules bitcode to the given output byte channel
+            final var buffer = LLVMBitWriter.LLVMWriteBitcodeToMemoryBuffer(module);
             Logger.INSTANCE.debugln("Wrote bitcode to memory at 0x%08X", buffer);
             if (buffer == NULL) {
-                status = status.worse(CompileStatus.TRANSLATION_ERROR);
+                reportError(new CompileError("Could not allocate buffer for module bitcode"), CompileStatus.IO_ERROR);
                 unit.dispose();
                 return;
             }
-            final var size = (int) LLVMCore.LLVMGetBufferSize(buffer);
-            final var address = LLVMCore.nLLVMGetBufferStart(buffer); // LWJGL codegen is a pita
+            final var size = (int) LLVMGetBufferSize(buffer);
+            final var address = nLLVMGetBufferStart(buffer); // LWJGL codegen is a pita
             out.write(MemoryUtil.memByteBuffer(address, size));
-            LLVMCore.LLVMDisposeMemoryBuffer(buffer);
+            LLVMDisposeMemoryBuffer(buffer);
 
             status = CompileStatus.SUCCESS;
             unit.dispose();
         }
-        catch (IOException e) {
-            status = status.worse(CompileStatus.IO_ERROR);
+        catch (IOException error) {
+            reportError(new CompileError(error.getMessage()), CompileStatus.IO_ERROR);
         }
-        catch (Throwable t) {
-            status = status.worse(CompileStatus.UNKNOWN_ERROR);
-            ExceptionUtils.handleError(t, Logger.INSTANCE::fatalln);
+        catch (Exception error) {
+            reportError(new CompileError(error.getMessage()), CompileStatus.UNKNOWN_ERROR);
         }
     }
 
     @Override
     public void syntaxError(final Recognizer<?, ?> recognizer, final Object offendingSymbol, final int line,
                             final int charPositionInLine, final String msg, final RecognitionException e) {
-        errors.add(new CompileError((Token) offendingSymbol, tokenStream, line, charPositionInLine));
-        status = status.worse(CompileStatus.SYNTAX_ERROR);
+        reportError(new CompileError((Token) offendingSymbol, tokenStream, line, charPositionInLine), CompileStatus.SYNTAX_ERROR);
     }
 
     @Override

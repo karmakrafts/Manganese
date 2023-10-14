@@ -16,14 +16,14 @@
 package io.karma.ferrous.manganese.util;
 
 import io.karma.ferrous.manganese.Compiler;
+import io.karma.ferrous.manganese.translate.TranslationException;
 import io.karma.ferrous.manganese.type.FunctionType;
 import io.karma.ferrous.manganese.type.Type;
 import io.karma.ferrous.vanadium.FerrousLexer;
+import io.karma.ferrous.vanadium.FerrousParser.FunctionParamContext;
 import io.karma.ferrous.vanadium.FerrousParser.ProtoFunctionContext;
-import io.karma.ferrous.vanadium.FerrousParser.TypeContext;
 
 import java.util.List;
-import java.util.Optional;
 
 /**
  * @author Alexander Hinze
@@ -34,33 +34,35 @@ public final class TypeUtils {
     private TypeUtils() {}
     // @formatter:on
 
-    public static List<Type> getParameterTypes(final Compiler compiler, final ProtoFunctionContext context) {
+    public static List<Type> getParameterTypes(final Compiler compiler,
+                                               final ProtoFunctionContext context) throws TranslationException {
         // @formatter:off
-        return context.functionParamList().children.stream()
-            .filter(tok -> tok instanceof TypeContext)
-            .map(tok -> Type.findType(compiler, (TypeContext) tok).orElseThrow())
+        return context.functionParamList().functionParam().stream()
+            .map(FunctionParamContext::functionParamType)
+            .filter(type -> !type.getText().equals(TokenUtils.getLiteral(FerrousLexer.KW_VAARGS)))
+            .map(type -> Type.findType(compiler, type.type())
+                .orElseThrow(() -> new TranslationException(context.start, "Unknown function parameter type '%s'", type.getText())))
             .toList();
         // @formatter:on
     }
 
-    public static Optional<FunctionType> getFunctionType(final Compiler compiler, final ProtoFunctionContext context) {
-        try {
-            final var returnType = Type.findType(compiler, context.type()).orElseThrow();
-            final var params = context.functionParamList().functionParam();
-            var isVarArg = false;
+    public static FunctionType getFunctionType(final Compiler compiler,
+                                               final ProtoFunctionContext context) throws TranslationException {
+        final var type = context.type();
+        // @formatter:off
+        final var returnType = Type.findType(compiler, type)
+            .orElseThrow(() -> new TranslationException(context.start, "Unknown function return type '%s'", type.getText()));
+        // @formatter:on
+        final var params = context.functionParamList().functionParam();
+        var isVarArg = false;
 
-            if (!params.isEmpty()) {
-                final var paramType = params.getLast().functionParamType();
-                final var nodes = paramType.children;
-                final var keyword = FerrousLexer.VOCABULARY.getLiteralName(FerrousLexer.KW_VAARGS);
-                isVarArg = nodes.size() == 1 && nodes.get(0).getText().equals(keyword);
-            }
+        if (!params.isEmpty()) {
+            final var paramType = params.getLast().functionParamType();
+            final var nodes = paramType.children;
+            isVarArg = nodes.size() == 1 && nodes.get(0).getText().equals(TokenUtils.getLiteral(FerrousLexer.KW_VAARGS));
+        }
 
-            final var paramTypes = TypeUtils.getParameterTypes(compiler, context);
-            return Optional.of(new FunctionType(returnType, paramTypes, isVarArg));
-        }
-        catch (Exception error) {
-            return Optional.empty();
-        }
+        final var paramTypes = TypeUtils.getParameterTypes(compiler, context);
+        return new FunctionType(returnType, paramTypes, isVarArg);
     }
 }

@@ -19,10 +19,7 @@ import io.karma.ferrous.manganese.CompileError;
 import io.karma.ferrous.manganese.CompileStatus;
 import io.karma.ferrous.manganese.Compiler;
 import io.karma.ferrous.manganese.target.CallingConvention;
-import io.karma.ferrous.manganese.util.Logger;
-import io.karma.ferrous.manganese.util.Scope;
-import io.karma.ferrous.manganese.util.TypeUtils;
-import io.karma.ferrous.manganese.util.Utils;
+import io.karma.ferrous.manganese.util.*;
 import io.karma.ferrous.vanadium.FerrousParser.CallConvModContext;
 import io.karma.ferrous.vanadium.FerrousParser.ExternFunctionContext;
 import io.karma.ferrous.vanadium.FerrousParser.FunctionContext;
@@ -32,21 +29,19 @@ import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import java.util.Arrays;
 import java.util.Stack;
 
-import static org.lwjgl.llvm.LLVMCore.LLVMDisposeModule;
-import static org.lwjgl.llvm.LLVMCore.LLVMGetModuleIdentifier;
-import static org.lwjgl.llvm.LLVMCore.LLVMModuleCreateWithName;
-import static org.lwjgl.llvm.LLVMCore.LLVMSetSourceFileName;
-import static org.lwjgl.system.MemoryUtil.NULL;
+import static org.lwjgl.llvm.LLVMCore.*;
+import static org.lwjgl.system.MemoryUtil.*;
 
 /**
  * @author Alexander Hinze
  * @since 12/10/2023
  */
 public class TranslationUnit extends AbstractTranslationUnit {
+    private static final CallingConvention DEFAULT_CALL_CONV = CallingConvention.CDECL;
     private final long module;
     private final Stack<Scope> scopes = new Stack<>();
     private boolean isDisposed;
-    private CallingConvention callingConvention = CallingConvention.CDECL;
+    private CallingConvention callingConvention = DEFAULT_CALL_CONV;
 
     public TranslationUnit(final Compiler compiler, final String name) {
         super(compiler);
@@ -55,47 +50,59 @@ public class TranslationUnit extends AbstractTranslationUnit {
             throw new RuntimeException("Could not allocate module");
         }
         LLVMSetSourceFileName(module, name); // Same as source file name
-        Logger.INSTANCE.debugln("Allocated translation unit module at 0x%08X", module);
+        Logger.INSTANCE.debugln("Allocated translation unit at 0x%08X", module);
+    }
+
+    private CallingConvention consumeCallConv() {
+        final var result = callingConvention;
+        callingConvention = DEFAULT_CALL_CONV;
+        return result;
     }
 
     @Override
-    public void enterUdt(UdtContext ctx) {
+    public void enterUdt(UdtContext context) {
         final var unit = new UDTTranslationUnit(compiler);
-        ParseTreeWalker.DEFAULT.walk(unit, ctx);
+        ParseTreeWalker.DEFAULT.walk(unit, context);
         // TODO: add UDT to module
         scopes.push(new Scope());
     }
 
     @Override
-    public void exitUdt(UdtContext ctx) {
+    public void exitUdt(UdtContext context) {
         scopes.pop();
     }
 
     @Override
-    public void enterFunction(FunctionContext ctx) {
+    public void enterFunction(FunctionContext context) {
         final var unit = new FunctionTranslationUnit(compiler);
-        ParseTreeWalker.DEFAULT.walk(unit, ctx);
+        ParseTreeWalker.DEFAULT.walk(unit, context);
         // TODO: add function to module
         scopes.push(new Scope());
     }
 
     @Override
-    public void exitFunction(FunctionContext ctx) {
+    public void exitFunction(FunctionContext context) {
         scopes.pop();
     }
 
     @Override
-    public void enterExternFunction(ExternFunctionContext ctx) {
-        doOrReport(() -> {
-            final var prototype = ctx.protoFunction();
+    public void enterExternFunction(ExternFunctionContext context) {
+        doOrReport(context, () -> {
+            final var prototype = context.protoFunction();
             final var type = TypeUtils.getFunctionType(compiler, prototype);
-            final var ident = prototype.functionIdent();
-        }, CompileStatus.TRANSLATION_ERROR);
+            final var name = FunctionUtils.getFunctionName(prototype.functionIdent());
+            final var function = LLVMAddFunction(module, name, type.materialize(compiler.getTarget()));
+            if (function == NULL) {
+                throw new TranslationException(context.start, "Could not create function");
+            }
+            LLVMSetLinkage(function, LLVMExternalLinkage);
+            LLVMSetFunctionCallConv(function, consumeCallConv().getLlvmType());
+        });
     }
 
     @Override
-    public void enterCallConvMod(CallConvModContext ctx) {
-        final var identifier = ctx.IDENT();
+    public void enterCallConvMod(CallConvModContext context) {
+        final var identifier = context.IDENT();
         final var name = identifier.getText();
         // @formatter:off
         final var convOption = Arrays.stream(CallingConvention.values())
@@ -105,7 +112,7 @@ public class TranslationUnit extends AbstractTranslationUnit {
         if (convOption.isEmpty()) {
             final var error = new CompileError(identifier.getSymbol());
             final var message = String.format("'%s' is not a valid calling convention, expected one of the following values", name);
-            error.setAdditionalText(Utils.makeSuggestion(message, CallingConvention.EXPECTED_VALUES));
+            error.setAdditionalText(Utils.makeCompilerMessage(message, CallingConvention.EXPECTED_VALUES));
             compiler.reportError(error, CompileStatus.SEMANTIC_ERROR);
             return;
         }
@@ -116,6 +123,7 @@ public class TranslationUnit extends AbstractTranslationUnit {
         if (isDisposed) {
             return;
         }
+        Logger.INSTANCE.debugln("Disposing translation unit at 0x%08X", module);
         LLVMDisposeModule(module);
         isDisposed = true;
     }

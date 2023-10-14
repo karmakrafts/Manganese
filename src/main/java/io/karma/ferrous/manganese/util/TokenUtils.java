@@ -32,7 +32,8 @@ public final class TokenUtils {
     // @formatter:on
 
     public static String getLiteral(final int token) {
-        return FerrousLexer.VOCABULARY.getLiteralName(token);
+        final var name = FerrousLexer.VOCABULARY.getLiteralName(token);
+        return name.substring(1, name.length() - 1);
     }
 
     public static void getLineTokens(final TokenStream tokenStream, final Token token, final List<Token> tokens) {
