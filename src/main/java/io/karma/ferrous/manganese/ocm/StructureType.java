@@ -13,38 +13,27 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.type;
+package io.karma.ferrous.manganese.ocm;
 
 import io.karma.ferrous.manganese.target.Target;
 import org.lwjgl.llvm.LLVMCore;
 import org.lwjgl.system.MemoryStack;
 
-import java.util.Arrays;
-import java.util.List;
-
 /**
  * @author Alexander Hinze
  * @since 14/10/2023
  */
-public final class Structure {
-    private final boolean isPacked;
-    private final List<Type> fieldTypes;
-
-    public Structure(final boolean isPacked, final Type... fieldTypes) {
-        this.isPacked = isPacked;
-        this.fieldTypes = Arrays.asList(fieldTypes);
+public record StructureType(String name, boolean isPacked, Type... fieldTypes) {
+    public StructureType(final String name, final Type... fieldTypes) {
+        this(name, false, fieldTypes);
     }
 
-    public Structure(final Type... fieldTypes) {
-        this(false, fieldTypes);
-    }
-
-    public long materializeType(final Target target) {
+    public long materialize(final Target target) {
         try (final var stack = MemoryStack.stackPush()) {
-            final var numFields = fieldTypes.size();
+            final var numFields = fieldTypes.length;
             final var fields = stack.callocPointer(numFields);
             for (var i = 0; i < numFields; i++) {
-                fields.put(i, fieldTypes.get(i).materialize(target));
+                fields.put(i, fieldTypes[i].materialize(target));
             }
             return LLVMCore.LLVMStructType(fields, isPacked);
         }
@@ -54,7 +43,11 @@ public final class Structure {
         return isPacked;
     }
 
-    public List<Type> getFieldTypes() {
+    public Type[] getFieldTypes() {
         return fieldTypes;
+    }
+
+    public String getName() {
+        return name;
     }
 }

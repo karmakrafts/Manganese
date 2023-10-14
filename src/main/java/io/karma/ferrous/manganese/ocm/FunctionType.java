@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.type;
+package io.karma.ferrous.manganese.ocm;
 
 import io.karma.ferrous.manganese.target.Target;
 import org.jetbrains.annotations.Nullable;
@@ -21,28 +21,17 @@ import org.lwjgl.llvm.LLVMCore;
 import org.lwjgl.system.MemoryStack;
 
 import java.util.List;
-import java.util.Objects;
 
 /**
  * @author Alexander Hinze
  * @since 13/10/2023
  */
-public final class Function {
-    private final Type returnType;
-    private final List<Type> paramTypes;
-    private final boolean isVarArg;
-
-    public Function(final Type returnType, final List<Type> paramTypes, final boolean isVarArg) {
-        this.returnType = returnType;
-        this.paramTypes = paramTypes;
-        this.isVarArg = isVarArg;
-    }
-
-    public Function(final Type returnType, final List<Type> paramTypes) {
+public record FunctionType(Type returnType, List<Type> paramTypes, boolean isVarArg) {
+    public FunctionType(final Type returnType, final List<Type> paramTypes) {
         this(returnType, paramTypes, false);
     }
 
-    public long materializeType(final Target target) {
+    public long materialize(final Target target) {
         try (final var stack = MemoryStack.stackPush()) {
             final var returnType = this.returnType.materialize(target);
             final var paramTypes = this.paramTypes.stream().mapToLong(type -> type.materialize(target)).toArray();
@@ -81,19 +70,6 @@ public final class Function {
         }
         builder.append(')');
         return builder.toString();
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(returnType, paramTypes);
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj instanceof Function type) {
-            return returnType.equals(type.returnType) && paramTypes.equals(type.paramTypes);
-        }
-        return false;
     }
 
     @Override

@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.type;
+package io.karma.ferrous.manganese.ocm;
 
 import io.karma.ferrous.manganese.Compiler;
 import io.karma.ferrous.manganese.target.Target;
@@ -26,14 +26,13 @@ import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import org.lwjgl.llvm.LLVMCore;
 
 import java.util.Arrays;
-import java.util.Objects;
 import java.util.Optional;
 
 /**
  * @author Alexander Hinze
  * @since 13/10/2023
  */
-public final class Type {
+public record Type(String baseName, Target2LongFunction baseTypeProvider, TypeAttribute... attributes) {
     public static final Type VOID = new Type(FerrousLexer.KW_VOID, target -> LLVMCore.LLVMVoidType());
     public static final Type BOOL = new Type(FerrousLexer.KW_BOOL, target -> LLVMCore.LLVMInt8Type());
     public static final Type CHAR = new Type(FerrousLexer.KW_CHAR, target -> LLVMCore.LLVMInt8Type());
@@ -62,16 +61,6 @@ public final class Type {
         U8, U16, U32, U64, USIZE,
         F32, F64
     }; // @formatter:on
-
-    private final String baseName;
-    private final Target2LongFunction baseTypeProvider;
-    private final TypeAttribute[] attributes;
-
-    public Type(final String baseName, final Target2LongFunction baseTypeProvider, final TypeAttribute... attributes) {
-        this.baseName = baseName;
-        this.baseTypeProvider = baseTypeProvider;
-        this.attributes = attributes;
-    }
 
     public Type(final int token, final Target2LongFunction baseTypeProvider, final TypeAttribute... attributes) {
         this(TokenUtils.getLiteral(token), baseTypeProvider, attributes);
@@ -150,19 +139,6 @@ public final class Type {
             return false;
         }
         return attributes[attributes.length - 1] == TypeAttribute.SLICE;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(baseName, Arrays.hashCode(attributes));
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj instanceof Type type) {
-            return baseName.equals(type.baseName) && Arrays.equals(attributes, type.attributes);
-        }
-        return false;
     }
 
     @Override

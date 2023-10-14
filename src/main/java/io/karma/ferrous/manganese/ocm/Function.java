@@ -13,28 +13,11 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.type;
-
-import java.util.function.Function;
+package io.karma.ferrous.manganese.ocm;
 
 /**
  * @author Alexander Hinze
  * @since 14/10/2023
  */
-public enum TypeAttribute {
-    // @formatter:off
-    SLICE    (type -> String.format("[%s]", type)),
-    POINTER  (type -> String.format("*%s", type)),
-    REFERENCE(type -> String.format("&%s", type));
-    // @formatter:on
-
-    private final Function<String, String> formatter;
-
-    TypeAttribute(final Function<String, String> formatter) {
-        this.formatter = formatter;
-    }
-
-    public String format(final String type) {
-        return formatter.apply(type);
-    }
+public record Function(String name, FunctionType type) {
 }

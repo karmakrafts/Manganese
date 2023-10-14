@@ -18,8 +18,8 @@ package io.karma.ferrous.manganese.translate;
 import io.karma.ferrous.manganese.CompileError;
 import io.karma.ferrous.manganese.CompileStatus;
 import io.karma.ferrous.manganese.Compiler;
+import io.karma.ferrous.manganese.ocm.StructureType;
 import io.karma.ferrous.manganese.target.CallingConvention;
-import io.karma.ferrous.manganese.type.Structure;
 import io.karma.ferrous.manganese.util.FunctionUtils;
 import io.karma.ferrous.manganese.util.Logger;
 import io.karma.ferrous.manganese.util.TypeUtils;
@@ -40,7 +40,7 @@ import static org.lwjgl.system.MemoryUtil.*;
 public class TranslationUnit extends AbstractTranslationUnit {
     private static final CallingConvention DEFAULT_CALL_CONV = CallingConvention.CDECL;
     private final long module;
-    private final HashMap<String, Structure> structures = new HashMap<>();
+    private final HashMap<String, StructureType> structures = new HashMap<>();
     private boolean isDisposed;
     private CallingConvention callingConvention = DEFAULT_CALL_CONV;
 
@@ -66,7 +66,7 @@ public class TranslationUnit extends AbstractTranslationUnit {
             final var prototype = context.protoFunction();
             final var type = TypeUtils.getFunctionType(compiler, prototype);
             final var name = FunctionUtils.getFunctionName(prototype.functionIdent());
-            final var function = LLVMAddFunction(module, name, type.materializeType(compiler.getTarget()));
+            final var function = LLVMAddFunction(module, name, type.materialize(compiler.getTarget()));
             if (function == NULL) {
                 throw new TranslationException(context.start, "Could not create function");
             }
