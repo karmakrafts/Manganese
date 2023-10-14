@@ -15,12 +15,11 @@
 
 package io.karma.ferrous.manganese.ocm;
 
+import org.jetbrains.annotations.Nullable;
+
 /**
  * @author Alexander Hinze
  * @since 14/10/2023
  */
-public record Function(String name, FunctionType type, boolean isExtern) {
-    public Function(final String name, final FunctionType type) {
-        this(name, type, false);
-    }
+public record UDT(UDTType type, @Nullable StructureType structureType) {
 }

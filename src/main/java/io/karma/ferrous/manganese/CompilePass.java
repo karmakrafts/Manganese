@@ -13,14 +13,17 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.ocm;
+package io.karma.ferrous.manganese;
 
 /**
  * @author Alexander Hinze
  * @since 14/10/2023
  */
-public record Function(String name, FunctionType type, boolean isExtern) {
-    public Function(final String name, final FunctionType type) {
-        this(name, type, false);
-    }
+public enum CompilePass {
+    NONE,
+    TOKENIZE,
+    PARSE,
+    ANALYZE,
+    PROCESS,
+    COMPILE
 }

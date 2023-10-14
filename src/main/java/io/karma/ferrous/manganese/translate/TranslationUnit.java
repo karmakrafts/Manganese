@@ -16,14 +16,12 @@
 package io.karma.ferrous.manganese.translate;
 
 import io.karma.ferrous.manganese.Compiler;
-import io.karma.ferrous.manganese.ocm.StructureType;
-import io.karma.ferrous.manganese.util.CallingConvention;
 import io.karma.ferrous.manganese.util.FunctionUtils;
 import io.karma.ferrous.manganese.util.Logger;
 import io.karma.ferrous.manganese.util.TypeUtils;
 import io.karma.ferrous.vanadium.FerrousParser.ExternFunctionContext;
-
-import java.util.HashMap;
+import io.karma.ferrous.vanadium.FerrousParser.FunctionContext;
+import org.antlr.v4.runtime.tree.ParseTreeWalker;
 
 import static org.lwjgl.llvm.LLVMCore.LLVMAddFunction;
 import static org.lwjgl.llvm.LLVMCore.LLVMDisposeModule;
@@ -40,9 +38,7 @@ import static org.lwjgl.system.MemoryUtil.NULL;
  * @since 12/10/2023
  */
 public class TranslationUnit extends AbstractTranslationUnit {
-    private static final CallingConvention DEFAULT_CALL_CONV = CallingConvention.CDECL;
     private final long module;
-    private final HashMap<String, StructureType> structures = new HashMap<>();
     private boolean isDisposed;
 
     public TranslationUnit(final Compiler compiler, final String name) {
@@ -56,12 +52,17 @@ public class TranslationUnit extends AbstractTranslationUnit {
     }
 
     @Override
+    public void enterFunction(FunctionContext context) {
+        final var unit = new FunctionTranslationUnit(compiler);
+        ParseTreeWalker.DEFAULT.walk(unit, context);
+    }
+
+    @Override
     public void enterExternFunction(ExternFunctionContext context) {
-        doOrReport(context, () -> {
+        compiler.doOrReport(context, () -> {
             final var prototype = context.protoFunction();
             final var type = TypeUtils.getFunctionType(compiler, prototype);
-            final var name = FunctionUtils.getFunctionName(prototype.functionIdent());
-            final var function = LLVMAddFunction(module, name, type.materialize(compiler.getTarget()));
+            final var function = LLVMAddFunction(module, FunctionUtils.getFunctionName(prototype.functionIdent()), type.materialize(compiler.getTarget()));
             if (function == NULL) {
                 throw new TranslationException(context.start, "Could not create function");
             }

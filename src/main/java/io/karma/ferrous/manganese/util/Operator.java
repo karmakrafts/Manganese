@@ -53,7 +53,8 @@ public enum Operator {
     SAT_TIMES_ASSIGN(FerrousLexer.OP_SAT_TIMES_ASSIGN,  "fe.sat_times_assign"),
     SAT_DIV_ASSIGN  (FerrousLexer.OP_SAT_DIV_ASSIGN,    "fe.sat_div_assign"),
     SAT_MOD_ASSIGN  (FerrousLexer.OP_SAT_MOD_ASSIGN,    "fe.sat_mod_assign"),
-    SAT_POW_ASSIGN  (FerrousLexer.OP_SAT_POW_ASSIGN,    "fe.sat_pow_assign")
+    SAT_POW_ASSIGN  (FerrousLexer.OP_SAT_POW_ASSIGN,    "fe.sat_pow_assign"),
+    // Pointer call
     ;
     // @formatter:on
 

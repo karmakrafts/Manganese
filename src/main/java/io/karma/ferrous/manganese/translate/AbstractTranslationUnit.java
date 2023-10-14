@@ -15,13 +15,9 @@
 
 package io.karma.ferrous.manganese.translate;
 
-import io.karma.ferrous.manganese.CompileError;
-import io.karma.ferrous.manganese.CompileStatus;
 import io.karma.ferrous.manganese.Compiler;
 import io.karma.ferrous.vanadium.FerrousParser.*;
 import io.karma.ferrous.vanadium.FerrousParserListener;
-import io.karma.kommons.function.Functions;
-import io.karma.kommons.function.XRunnable;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.TerminalNode;
@@ -39,19 +35,6 @@ public abstract class AbstractTranslationUnit implements FerrousParserListener {
 
     public Compiler getCompiler() {
         return compiler;
-    }
-
-    protected void doOrReport(final ParserRuleContext context, final XRunnable<?> closure) {
-        if (!compiler.getStatus().isRecoverable()) {
-            return; // Don't report translation errors after we are unrecoverable
-        }
-        Functions.tryDo(closure, exception -> {
-            if (exception instanceof TranslationException tExcept) {
-                compiler.reportError(tExcept.getError(), CompileStatus.TRANSLATION_ERROR);
-                return;
-            }
-            compiler.reportError(new CompileError(context.start), CompileStatus.TRANSLATION_ERROR);
-        });
     }
 
     // @formatter:off
@@ -122,6 +105,12 @@ public abstract class AbstractTranslationUnit implements FerrousParserListener {
     public void exitUdt(UdtContext udtDeclContext) {}
 
     @Override
+    public void enterEnumClassBody(EnumClassBodyContext enumClassBodyContext) {}
+
+    @Override
+    public void exitEnumClassBody(EnumClassBodyContext enumClassBodyContext) {}
+
+    @Override
     public void enterEnumClass(EnumClassContext enumClassContext) {}
 
     @Override
@@ -140,10 +129,10 @@ public abstract class AbstractTranslationUnit implements FerrousParserListener {
     public void exitClassBody(ClassBodyContext classBodyContext) {}
 
     @Override
-    public void enterInlineClassBody(InlineClassBodyContext inlineClassBodyContext) {}
+    public void enterEnumBody(EnumBodyContext enumBodyContext) {}
 
     @Override
-    public void exitInlineClassBody(InlineClassBodyContext inlineClassBodyContext) {}
+    public void exitEnumBody(EnumBodyContext enumBodyContext) {}
 
     @Override
     public void enterEnum(EnumContext enumContext) {}
@@ -170,10 +159,22 @@ public abstract class AbstractTranslationUnit implements FerrousParserListener {
     public void exitStruct(StructContext structContext) {}
 
     @Override
+    public void enterInterfaceBody(InterfaceBodyContext interfaceBodyContext) {}
+
+    @Override
+    public void exitInterfaceBody(InterfaceBodyContext interfaceBodyContext) {}
+
+    @Override
     public void enterInterface(InterfaceContext interfaceContext) {}
 
     @Override
     public void exitInterface(InterfaceContext interfaceContext) {}
+
+    @Override
+    public void enterAttribBody(AttribBodyContext attribBodyContext) {}
+
+    @Override
+    public void exitAttribBody(AttribBodyContext attribBodyContext) {}
 
     @Override
     public void enterAttrib(AttribContext attribContext) {}
@@ -804,6 +805,12 @@ public abstract class AbstractTranslationUnit implements FerrousParserListener {
 
     @Override
     public void exitQualifiedIdent(QualifiedIdentContext qualifiedIdentContext) {}
+
+    @Override
+    public void enterLerpIdent(LerpIdentContext lerpIdentContext) {}
+
+    @Override
+    public void exitLerpIdent(LerpIdentContext lerpIdentContext) {}
 
     @Override
     public void enterIdent(IdentContext identContext) {}

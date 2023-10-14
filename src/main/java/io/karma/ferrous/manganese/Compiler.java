@@ -16,13 +16,28 @@
 package io.karma.ferrous.manganese;
 
 import io.karma.ferrous.manganese.target.Target;
+import io.karma.ferrous.manganese.translate.DDTranslationUnit;
+import io.karma.ferrous.manganese.translate.TranslationException;
 import io.karma.ferrous.manganese.translate.TranslationUnit;
 import io.karma.ferrous.manganese.util.Logger;
 import io.karma.ferrous.manganese.util.SimpleFileVisitor;
 import io.karma.ferrous.manganese.util.Utils;
 import io.karma.ferrous.vanadium.FerrousLexer;
 import io.karma.ferrous.vanadium.FerrousParser;
-import org.antlr.v4.runtime.*;
+import io.karma.ferrous.vanadium.FerrousParser.FileContext;
+import io.karma.kommons.function.Functions;
+import io.karma.kommons.function.XRunnable;
+import org.antlr.v4.runtime.ANTLRErrorListener;
+import org.antlr.v4.runtime.BufferedTokenStream;
+import org.antlr.v4.runtime.CharStream;
+import org.antlr.v4.runtime.CharStreams;
+import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.ListTokenSource;
+import org.antlr.v4.runtime.Parser;
+import org.antlr.v4.runtime.ParserRuleContext;
+import org.antlr.v4.runtime.RecognitionException;
+import org.antlr.v4.runtime.Recognizer;
+import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.atn.ATNConfigSet;
 import org.antlr.v4.runtime.dfa.DFA;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
@@ -48,9 +63,14 @@ import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.List;
 
-import static org.lwjgl.llvm.LLVMAnalysis.*;
-import static org.lwjgl.llvm.LLVMCore.*;
-import static org.lwjgl.system.MemoryUtil.*;
+import static org.lwjgl.llvm.LLVMAnalysis.LLVMReturnStatusAction;
+import static org.lwjgl.llvm.LLVMAnalysis.LLVMVerifyModule;
+import static org.lwjgl.llvm.LLVMCore.LLVMDisposeMemoryBuffer;
+import static org.lwjgl.llvm.LLVMCore.LLVMGetBufferSize;
+import static org.lwjgl.llvm.LLVMCore.LLVMPrintModuleToString;
+import static org.lwjgl.llvm.LLVMCore.nLLVMDisposeMessage;
+import static org.lwjgl.llvm.LLVMCore.nLLVMGetBufferStart;
+import static org.lwjgl.system.MemoryUtil.NULL;
 
 /**
  * Main class for invoking a compilation, either programmatically
@@ -66,8 +86,13 @@ public final class Compiler implements ANTLRErrorListener {
     private static final ThreadLocal<Compiler> INSTANCE = ThreadLocal.withInitial(Compiler::new);
 
     private final ArrayList<CompileError> errors = new ArrayList<>();
+    private CompilePass currentPass = CompilePass.NONE;
     private CompileStatus status = CompileStatus.SKIPPED;
+    private FerrousLexer lexer;
     private BufferedTokenStream tokenStream;
+    private FerrousParser parser;
+    private FileContext fileContext;
+    private TranslationUnit translationUnit;
 
     private Target target = null;
     private boolean tokenView = false;
@@ -75,6 +100,8 @@ public final class Compiler implements ANTLRErrorListener {
     private boolean reportParserWarnings = false;
     private boolean disassemble = false;
     private boolean saveBitcode = false;
+    private boolean isVerbose = false;
+    private String moduleName = null;
 
     // @formatter:off
     private Compiler() {}
@@ -107,17 +134,49 @@ public final class Compiler implements ANTLRErrorListener {
         return files;
     }
 
-    private static void disassemble(final TranslationUnit unit) {
+    private void disassemble() {
         Logger.INSTANCE.infoln("");
-        Logger.INSTANCE.info(LLVMPrintModuleToString(unit.getModule()));
+        Logger.INSTANCE.info(LLVMPrintModuleToString(translationUnit.getModule()));
         Logger.INSTANCE.infoln("");
     }
 
     private void resetCompilation() {
         status = CompileStatus.SKIPPED;
         tokenStream = null;
+        fileContext = null;
+        lexer = null;
+        parser = null;
+        translationUnit = null;
         errors.clear();
         target = null;
+    }
+
+    public void doOrReport(final ParserRuleContext context, final XRunnable<?> closure) {
+        if (!isVerbose && !status.isRecoverable()) {
+            return; // Don't report translation errors after we are unrecoverable
+        }
+        Functions.tryDo(closure, exception -> {
+            if (exception instanceof TranslationException tExcept) {
+                reportError(tExcept.getError(), CompileStatus.TRANSLATION_ERROR);
+                return;
+            }
+            final var error = new CompileError(context.start);
+            error.setAdditionalText(Utils.makeCompilerMessage(exception.getMessage()));
+            reportError(error, CompileStatus.TRANSLATION_ERROR);
+        });
+    }
+
+    public void doOrReport(final XRunnable<?> closure) {
+        if (!isVerbose && !status.isRecoverable()) {
+            return; // Don't report translation errors after we are unrecoverable
+        }
+        Functions.tryDo(closure, exception -> {
+            if (exception instanceof TranslationException tExcept) {
+                reportError(tExcept.getError(), CompileStatus.TRANSLATION_ERROR);
+                return;
+            }
+            reportError(new CompileError(exception.getMessage()), CompileStatus.TRANSLATION_ERROR);
+        });
     }
 
     public BufferedTokenStream getTokenStream() {
@@ -126,6 +185,10 @@ public final class Compiler implements ANTLRErrorListener {
 
     public CompileStatus getStatus() {
         return status;
+    }
+
+    public CompilePass getCurrentPass() {
+        return currentPass;
     }
 
     public void setTokenView(final boolean tokenView, final boolean extendedTokenView) {
@@ -161,12 +224,24 @@ public final class Compiler implements ANTLRErrorListener {
         return saveBitcode;
     }
 
+    public boolean isVerbose() {
+        return isVerbose;
+    }
+
+    public void setVerbose(boolean verbose) {
+        isVerbose = verbose;
+    }
+
     public Target getTarget() {
         return target;
     }
 
     public void setTarget(final Target target) {
         this.target = target;
+    }
+
+    public void setModuleName(final String moduleName) {
+        this.moduleName = moduleName;
     }
 
     public ArrayList<CompileError> getErrors() {
@@ -204,11 +279,11 @@ public final class Compiler implements ANTLRErrorListener {
                 .toString());
             // @formatter:on
 
-            // Attempt to deduce the output file name from the input file name, this may throw an AIOOB
-            final var fileName = filePath.getFileName().toString();
-            final var lastDot = fileName.lastIndexOf('.');
-            final var rawName = fileName.substring(0, lastDot);
-            final var outFileName = String.format("%s.%s", rawName, OUT_EXTENSION);
+            final var rawFileName = Utils.getRawFileName(filePath);
+            final var outFileName = String.format("%s.%s", rawFileName, OUT_EXTENSION);
+            if (moduleName == null || moduleName.isBlank()) {
+                moduleName = rawFileName; // Derive module name if not present
+            }
 
             if (out == null) {
                 // If the output path is null, derive it
@@ -235,7 +310,7 @@ public final class Compiler implements ANTLRErrorListener {
 
             try (final var fis = Files.newInputStream(filePath)) {
                 try (final var fos = Files.newOutputStream(out)) {
-                    compile(fileName, Channels.newChannel(fis), Channels.newChannel(fos));
+                    compile(rawFileName, Channels.newChannel(fis), Channels.newChannel(fos));
                     status = status.worse(this.status);
                 }
             }
@@ -250,6 +325,145 @@ public final class Compiler implements ANTLRErrorListener {
         return new CompileResult(status, inputFiles, new ArrayList<>(errors));
     }
 
+    private boolean verifyModule(final long module) {
+        try (final var stack = MemoryStack.stackPush()) {
+            final var messageBuffer = stack.callocPointer(1);
+            if (LLVMVerifyModule(module, LLVMReturnStatusAction, messageBuffer)) {
+                final var message = messageBuffer.get(0);
+                if (message != NULL) {
+                    reportError(new CompileError(messageBuffer.getStringUTF8(0)), CompileStatus.VERIFY_ERROR);
+                    nLLVMDisposeMessage(message);
+                    return false;
+                }
+                reportError(new CompileError("Unknown verify error"), CompileStatus.VERIFY_ERROR);
+                return false;
+            }
+            return true;
+        }
+    }
+
+    private void printTokens(final FerrousLexer lexer) {
+        final var tokens = tokenStream.getTokens();
+        for (final var token : tokens) {
+            final var text = token.getText();
+            if (!extendedTokenView && text.isBlank()) {
+                continue; // Skip blank tokens if extended mode is disabled
+            }
+            // @formatter:off
+            final var tokenType = lexer.getTokenTypeMap()
+                .entrySet()
+                .stream()
+                .filter(e -> e.getValue().equals(token.getType()))
+                .findFirst()
+                .orElseThrow();
+            System.out.println(Ansi.ansi()
+                .fg(Color.BLUE)
+                .a(String.format("%06d", token.getTokenIndex()))
+                .a(Attribute.RESET)
+                .a(": ")
+                .fgBright(Color.CYAN)
+                .a(text)
+                .a(Attribute.RESET)
+                .a(' ')
+                .fg(Color.GREEN)
+                .a(tokenType)
+                .a(Attribute.RESET).toString());
+            // @formatter:on
+        }
+    }
+
+    private boolean checkStatus() {
+        if (!status.isRecoverable()) {
+            Logger.INSTANCE.errorln("Compilation is irrecoverable, continuing to report syntax errors");
+            return false;
+        }
+        return true;
+    }
+
+    private void processTokens(final List<Token> tokens) {
+        // TODO: implement here
+    }
+
+    private void tokenize(final CharStream stream) {
+        final var startTime = System.currentTimeMillis();
+        currentPass = CompilePass.TOKENIZE;
+        final var lexer = new FerrousLexer(stream);
+        tokenStream = new CommonTokenStream(lexer);
+        tokenStream.fill();
+        final var time = System.currentTimeMillis() - startTime;
+        Logger.INSTANCE.debugln("Finished pass TOKENIZE in %dms", time);
+        if (tokenView) {
+            printTokens(lexer);
+        }
+    }
+
+    private void parse() {
+        final var startTime = System.currentTimeMillis();
+        currentPass = CompilePass.PARSE;
+        parser = new FerrousParser(tokenStream);
+        parser.removeErrorListeners(); // Remove default error listener
+        parser.addErrorListener(this);
+        fileContext = parser.file();
+        final var time = System.currentTimeMillis() - startTime;
+        Logger.INSTANCE.debugln("Finished pass PARSE in %dms", time);
+    }
+
+    private boolean analyze() {
+        final var startTime = System.currentTimeMillis();
+        currentPass = CompilePass.ANALYZE;
+        final var discoveryUnit = new DDTranslationUnit(this);
+        ParseTreeWalker.DEFAULT.walk(discoveryUnit, fileContext);
+        final var time = System.currentTimeMillis() - startTime;
+        Logger.INSTANCE.debugln("Finished pass ANALYZE in %dms", time);
+        return checkStatus();
+    }
+
+    private void process() {
+        final var startTime = System.currentTimeMillis();
+        currentPass = CompilePass.PROCESS;
+        final var tokens = tokenStream.getTokens();
+        processTokens(tokens);
+        final var time = System.currentTimeMillis() - startTime;
+        Logger.INSTANCE.debugln("Finished pass PROCESS in %dms", time);
+        tokenStream = new CommonTokenStream(new ListTokenSource(tokens));
+        parser.setTokenStream(tokenStream);
+        parser.reset();
+        parser.removeErrorListeners();
+        parser.addErrorListener(this);
+    }
+
+    private boolean compile(final String name) {
+        final var startTime = System.currentTimeMillis();
+        currentPass = CompilePass.COMPILE;
+        translationUnit = new TranslationUnit(this, name);
+        ParseTreeWalker.DEFAULT.walk(translationUnit, fileContext); // Walk the entire AST with the TU
+        final var time = System.currentTimeMillis() - startTime;
+        Logger.INSTANCE.debugln("Finished pass COMPILE in %dms", time);
+        return checkStatus();
+    }
+
+    private void saveBitcode(final Path path) {
+        final var module = translationUnit.getModule();
+        final var buffer = LLVMBitWriter.LLVMWriteBitcodeToMemoryBuffer(module);
+        Logger.INSTANCE.debugln("Wrote bitcode to memory at 0x%08X", buffer);
+        if (buffer == NULL) {
+            reportError(new CompileError("Could not allocate buffer for module bitcode"), CompileStatus.IO_ERROR);
+            translationUnit.dispose();
+            return;
+        }
+
+        try (final var stream = Files.newOutputStream(path)) {
+            final var size = (int) LLVMGetBufferSize(buffer);
+            final var address = nLLVMGetBufferStart(buffer); // LWJGL codegen is a pita
+            Channels.newChannel(stream).write(MemoryUtil.memByteBuffer(address, size));
+        }
+        catch (Exception error) {
+            Logger.INSTANCE.warnln("Could not save bitcode to file: %s", error.getMessage());
+        }
+
+        LLVMDisposeMemoryBuffer(buffer);
+    }
+
     public void compile(final String name, final ReadableByteChannel in, final WritableByteChannel out) {
         resetCompilation(); // Reset before each compilation
 
@@ -260,88 +474,30 @@ public final class Compiler implements ANTLRErrorListener {
                 return;
             }
 
-            final var lexer = new FerrousLexer(charStream);
-            tokenStream = new CommonTokenStream(lexer);
-            tokenStream.fill();
-
-            if (tokenView) {
-                final var tokens = tokenStream.getTokens();
-                for (final var token : tokens) {
-                    final var text = token.getText();
-                    if (!extendedTokenView && text.isBlank()) {
-                        continue; // Skip blank tokens if extended mode is disabled
-                    }
-                    // @formatter:off
-                    final var tokenType = lexer.getTokenTypeMap()
-                        .entrySet()
-                        .stream()
-                        .filter(e -> e.getValue().equals(token.getType()))
-                        .findFirst()
-                        .orElseThrow();
-                    System.out.println(Ansi.ansi()
-                        .fg(Color.BLUE)
-                        .a(String.format("%06d", token.getTokenIndex()))
-                        .a(Attribute.RESET)
-                        .a(": ")
-                        .fgBright(Color.CYAN)
-                        .a(text)
-                        .a(Attribute.RESET)
-                        .a(' ')
-                        .fg(Color.GREEN)
-                        .a(tokenType)
-                        .a(Attribute.RESET).toString());
-                    // @formatter:on
-                }
+            tokenize(charStream);
+            parse();
+            if (!analyze()) {
+                return;
             }
-
-            final var parser = new FerrousParser(tokenStream);
-            parser.removeErrorListeners(); // Remove default error listener
-            parser.addErrorListener(this);
-
-            // Create a new translation unit (& module)
-            final var unit = new TranslationUnit(this, name);
-            ParseTreeWalker.DEFAULT.walk(unit, parser.file()); // Walk the entire AST with the TU
-            if (!status.isRecoverable()) {
-                Logger.INSTANCE.errorln("Compilation is irrecoverable, continuing to report syntax errors");
+            process();
+            if (!compile(name)) {
                 return;
             }
 
-            // Verify module and handle message as compile error if needed
-            final var module = unit.getModule();
-            try (final var stack = MemoryStack.stackPush()) {
-                final var messageBuffer = stack.callocPointer(1);
-                if (LLVMVerifyModule(module, LLVMReturnStatusAction, messageBuffer)) {
-                    final var message = messageBuffer.get(0);
-                    if (message != NULL) {
-                        reportError(new CompileError(messageBuffer.getStringUTF8(0)), CompileStatus.VERIFY_ERROR);
-                        nLLVMDisposeMessage(message);
-                        unit.dispose();
-                        return;
-                    }
-                    reportError(new CompileError("Unknown verify error"), CompileStatus.VERIFY_ERROR);
-                    return;
-                }
+            final var module = translationUnit.getModule();
+            if (!verifyModule(module)) {
+                return;
             }
-
             if (disassemble) {
-                disassemble(unit);
+                disassemble();
             }
-
-            // Write the modules bitcode to the given output byte channel
-            final var buffer = LLVMBitWriter.LLVMWriteBitcodeToMemoryBuffer(module);
-            Logger.INSTANCE.debugln("Wrote bitcode to memory at 0x%08X", buffer);
-            if (buffer == NULL) {
-                reportError(new CompileError("Could not allocate buffer for module bitcode"), CompileStatus.IO_ERROR);
-                unit.dispose();
-                return;
+            if (saveBitcode) {
+                saveBitcode(Path.of(String.format("%s.bc", name)));
             }
-            final var size = (int) LLVMGetBufferSize(buffer);
-            final var address = nLLVMGetBufferStart(buffer); // LWJGL codegen is a pita
-            out.write(MemoryUtil.memByteBuffer(address, size));
-            LLVMDisposeMemoryBuffer(buffer);
 
             status = CompileStatus.SUCCESS;
-            unit.dispose();
+            translationUnit.dispose();
+            currentPass = CompilePass.NONE;
         }
         catch (IOException error) {
             reportError(new CompileError(error.getMessage()), CompileStatus.IO_ERROR);

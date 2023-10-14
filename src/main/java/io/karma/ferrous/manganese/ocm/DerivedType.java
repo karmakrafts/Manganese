@@ -17,31 +17,23 @@ package io.karma.ferrous.manganese.ocm;
 
 import io.karma.ferrous.manganese.target.Target;
 import org.lwjgl.llvm.LLVMCore;
-import org.lwjgl.system.MemoryStack;
 
 /**
  * @author Alexander Hinze
  * @since 14/10/2023
  */
-public record StructureType(boolean isPacked, Type... fieldTypes) implements Type {
-    public StructureType(final Type... fieldTypes) {
-        this(false, fieldTypes);
-    }
-
+public record DerivedType(Type baseType, TypeAttribute... attributes) implements Type {
     @Override
     public long materialize(final Target target) {
-        try (final var stack = MemoryStack.stackPush()) {
-            final var numFields = fieldTypes.length;
-            final var fields = stack.callocPointer(numFields);
-            for (var i = 0; i < numFields; i++) {
-                fields.put(i, fieldTypes[i].materialize(target));
-            }
-            return LLVMCore.LLVMStructType(fields, isPacked);
+        var type = baseType.materialize(target);
+        for (var i = 0; i < attributes.length; i++) {
+            type = LLVMCore.LLVMPointerType(type, 0);
         }
+        return type;
     }
 
     @Override
     public TypeAttribute[] getAttributes() {
-        return new TypeAttribute[0];
+        return attributes;
     }
 }

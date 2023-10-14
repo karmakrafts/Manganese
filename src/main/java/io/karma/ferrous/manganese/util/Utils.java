@@ -15,11 +15,14 @@
 
 package io.karma.ferrous.manganese.util;
 
+import io.karma.ferrous.vanadium.FerrousParser.IdentContext;
+import io.karma.ferrous.vanadium.FerrousParser.LerpIdentContext;
 import org.fusesource.jansi.Ansi;
 import org.fusesource.jansi.Ansi.Attribute;
 import org.fusesource.jansi.Ansi.Color;
 import org.jetbrains.annotations.Nullable;
 
+import java.nio.file.Path;
 import java.util.List;
 
 /**
@@ -31,16 +34,40 @@ public final class Utils {
     private Utils() {}
     // @formatter:on
 
+    public static String getIdentifier(final IdentContext context) {
+        final var children = context.children;
+        final var buffer = new StringBuilder();
+        for (final var child : children) {
+            if (child instanceof LerpIdentContext lerpContext) {
+                // TODO: handle interpolated identifiers
+                Logger.INSTANCE.warn("Identifier interpolation is not implemented right now");
+                continue;
+            }
+            buffer.append(child.getText());
+        }
+        return buffer.toString();
+    }
+
+    public static String getRawFileName(final Path path) {
+        final var fileName = path.getFileName().toString();
+        final var lastDot = fileName.lastIndexOf('.');
+        return fileName.substring(0, lastDot);
+    }
+
+    public static Path derivePathExtension(final Path path, final String ext) {
+        return path.getParent().resolve(String.format("%s.%s", getRawFileName(path), ext));
+    }
+
     public static String capitalize(final String value) {
         var result = value.substring(0, 1).toUpperCase();
         result += value.substring(1);
         return result;
     }
 
-    public static String makeCompilerMessage(final String message, final @Nullable List<String> values) {
+    public static String makeCompilerMessage(final String message, final Color color,
+                                             final @Nullable List<String> values) {
         final var builder = Ansi.ansi();
-        builder.a("  ");
-        builder.fgBright(Color.BLACK);
+        builder.fgBright(color);
         builder.a(message);
         if (values != null) {
             builder.a(":\n  ");
@@ -48,7 +75,7 @@ public final class Utils {
             for (var i = 0; i < numValues; i++) {
                 builder.fgBright(Color.BLUE);
                 builder.a(values.get(i));
-                builder.fgBright(Color.BLACK);
+                builder.fgBright(color);
                 if (i < numValues - 1) {
                     builder.a(", ");
                 }
@@ -56,6 +83,14 @@ public final class Utils {
         }
         builder.a(Attribute.RESET);
         return builder.toString();
+    }
+
+    public static String makeCompilerMessage(final String message, final @Nullable List<String> values) {
+        return makeCompilerMessage(message, Color.RED, values);
+    }
+
+    public static String makeCompilerMessage(final String message) {
+        return makeCompilerMessage(message, Color.RED, null);
     }
 
     public static String getProgressIndicator(final int numFiles, final int index) {

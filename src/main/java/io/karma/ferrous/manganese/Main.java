@@ -58,7 +58,7 @@ public final class Main {
                 throw new NoArgsException();
             }
 
-            final var parser = new OptionParser("?iodDptTsv");
+            final var parser = new OptionParser("?iodDptTsvVbm");
             parser.accepts("?", "Print this help dialog");
             parser.accepts("i", "A Ferrous file or directory of files from which to compile.").withRequiredArg().ofType(String.class);
             parser.accepts("o", "An IL file or a directory in which to save the compiled IL blocks.").withRequiredArg().ofType(String.class);
@@ -69,6 +69,9 @@ public final class Main {
             parser.accepts("T", "Extended token view. This will print a tree view of all tokens.").availableIf("t");
             parser.accepts("s", "Silent mode. This will suppress any warning level log messages during compilation.");
             parser.accepts("v", "Prints version information about the compiler and runtime.");
+            parser.accepts("V", "Enable verbose errors. This will likely show some garbage.");
+            parser.accepts("b", "Dump bitcode to files while compiling.");
+            parser.accepts("m", "Specify the name of the output module, will default to the name of the first input file.");
             final var options = parser.parse(args);
 
             if (options.has("?")) {
@@ -97,15 +100,10 @@ public final class Main {
             }
 
             final var compiler = Compiler.getInstance();
-            if (options.has("d")) {
-                compiler.setDisassemble(true);
-            }
-            if (options.has("t")) {
-                compiler.setTokenView(true, options.has("T"));
-            }
-            if (options.has("p")) {
-                compiler.setReportParserWarnings(true);
-            }
+            compiler.setDisassemble(options.has("d"));
+            compiler.setTokenView(options.has("t"), options.has("T"));
+            compiler.setReportParserWarnings(options.has("p"));
+            compiler.setVerbose(options.has("V"));
 
             final var in = Paths.get((String) options.valueOf("i")).toAbsolutePath().normalize();
             if (!Files.exists(in)) {

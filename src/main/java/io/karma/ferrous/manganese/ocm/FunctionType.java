@@ -26,11 +26,12 @@ import java.util.List;
  * @author Alexander Hinze
  * @since 13/10/2023
  */
-public record FunctionType(Type returnType, List<Type> paramTypes, boolean isVarArg) {
-    public FunctionType(final Type returnType, final List<Type> paramTypes) {
+public record FunctionType(Type returnType, List<? extends Type> paramTypes, boolean isVarArg) implements Type {
+    public FunctionType(final Type returnType, final List<? extends Type> paramTypes) {
         this(returnType, paramTypes, false);
     }
 
+    @Override
     public long materialize(final Target target) {
         try (final var stack = MemoryStack.stackPush()) {
             final var returnType = this.returnType.materialize(target);
@@ -39,12 +40,9 @@ public record FunctionType(Type returnType, List<Type> paramTypes, boolean isVar
         }
     }
 
-    public Type getReturnType() {
-        return returnType;
-    }
-
-    public List<Type> getParamTypes() {
-        return paramTypes;
+    @Override
+    public TypeAttribute[] getAttributes() {
+        return new TypeAttribute[0];
     }
 
     public String toString(final @Nullable String name) {

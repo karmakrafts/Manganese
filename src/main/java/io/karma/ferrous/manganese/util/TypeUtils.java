@@ -19,11 +19,15 @@ import io.karma.ferrous.manganese.Compiler;
 import io.karma.ferrous.manganese.ocm.FunctionType;
 import io.karma.ferrous.manganese.ocm.Type;
 import io.karma.ferrous.manganese.translate.TranslationException;
+import io.karma.ferrous.manganese.translate.TypeTranslationUnit;
 import io.karma.ferrous.vanadium.FerrousLexer;
 import io.karma.ferrous.vanadium.FerrousParser.FunctionParamContext;
 import io.karma.ferrous.vanadium.FerrousParser.ProtoFunctionContext;
+import io.karma.ferrous.vanadium.FerrousParser.TypeContext;
+import org.antlr.v4.runtime.tree.ParseTreeWalker;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * @author Alexander Hinze
@@ -34,13 +38,22 @@ public final class TypeUtils {
     private TypeUtils() {}
     // @formatter:on
 
+    public static Optional<Type> getType(final Compiler compiler, final TypeContext context) {
+        final TypeTranslationUnit unit = new TypeTranslationUnit(compiler);
+        ParseTreeWalker.DEFAULT.walk(unit, context);
+        if (!compiler.getStatus().isRecoverable()) {
+            return Optional.empty();
+        }
+        return Optional.of(unit.getType());
+    }
+
     public static List<Type> getParameterTypes(final Compiler compiler,
                                                final ProtoFunctionContext context) throws TranslationException {
         // @formatter:off
         return context.functionParamList().functionParam().stream()
             .map(FunctionParamContext::functionParamType)
             .filter(type -> !type.getText().equals(TokenUtils.getLiteral(FerrousLexer.KW_VAARGS)))
-            .map(type -> Type.findType(compiler, type.type())
+            .map(type -> getType(compiler, type.type())
                 .orElseThrow(() -> new TranslationException(context.start, "Unknown function parameter type '%s'", type.getText())))
             .toList();
         // @formatter:on
@@ -50,7 +63,7 @@ public final class TypeUtils {
                                                final ProtoFunctionContext context) throws TranslationException {
         final var type = context.type();
         // @formatter:off
-        final var returnType = Type.findType(compiler, type)
+        final var returnType = getType(compiler, type)
             .orElseThrow(() -> new TranslationException(context.start, "Unknown function return type '%s'", type.getText()));
         // @formatter:on
         final var params = context.functionParamList().functionParam();

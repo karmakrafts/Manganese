@@ -56,15 +56,15 @@ public enum CallingConvention {
         this.llvmType = llvmType;
     }
 
+    public static Optional<CallingConvention> findByText(final String text) {
+        return Arrays.stream(values()).filter(conv -> conv.text.equals(text)).findFirst();
+    }
+
     public String getText() {
         return text;
     }
 
     public int getLlvmType() {
         return llvmType;
-    }
-
-    public static Optional<CallingConvention> findByText(final String text) {
-        return Arrays.stream(values()).filter(conv -> conv.text.equals(text)).findFirst();
     }
 }

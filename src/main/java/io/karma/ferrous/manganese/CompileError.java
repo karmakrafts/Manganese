@@ -166,7 +166,7 @@ public final class CompileError implements Comparable<CompileError> {
         final var hasToken = token != null;
 
         if(line != -1 && column != -1 && (hasToken || lineTokens != null)) { // @formatter:off
-            builder.a("\n");
+            builder.a('\n');
             builder.fg(Color.RED);
             builder.a(String.format("Error during compilation in line %d:%d", line, column));
             builder.a(Attribute.RESET);
@@ -180,25 +180,25 @@ public final class CompileError implements Comparable<CompileError> {
                 builder.a('^');
             }
             builder.a(Attribute.RESET);
-            builder.a("\n");
+            builder.a(' ');
         }// @formatter:on
         else {// @formatter:off
+            builder.a('\n');
             builder.fg(Color.RED);
-            builder.a("\nError during compilation\n\n");
+            builder.a("Error during compilation");
             builder.a(Attribute.RESET);
+            builder.a("\n\n");
         }// @formatter:on
 
         if (additionalText != null) {
-            builder.a(String.format("%s\n", additionalText));
+            builder.a(String.format("%s\n\n", additionalText));
         }
-        builder.a("\n");
-
         return builder.toString();
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(token, line, column, additionalText);
+        return Objects.hash(token, line, column);
     }
 
     @Override
@@ -206,8 +206,7 @@ public final class CompileError implements Comparable<CompileError> {
         if(obj instanceof CompileError error) { // @formatter:off
             return (token == null || token.equals(error.token))
                 && line == error.line
-                && column == error.column
-                && additionalText.equals(error.additionalText);
+                && column == error.column;
         } // @formatter:on
         return false;
     }

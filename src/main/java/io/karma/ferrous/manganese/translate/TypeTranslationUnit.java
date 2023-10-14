@@ -18,10 +18,17 @@ package io.karma.ferrous.manganese.translate;
 import io.karma.ferrous.manganese.CompileError;
 import io.karma.ferrous.manganese.CompileStatus;
 import io.karma.ferrous.manganese.Compiler;
+import io.karma.ferrous.manganese.ocm.BuiltinType;
 import io.karma.ferrous.manganese.ocm.Type;
 import io.karma.ferrous.manganese.ocm.TypeAttribute;
 import io.karma.ferrous.manganese.util.Utils;
-import io.karma.ferrous.vanadium.FerrousParser.*;
+import io.karma.ferrous.vanadium.FerrousParser.FloatTypeContext;
+import io.karma.ferrous.vanadium.FerrousParser.MiscTypeContext;
+import io.karma.ferrous.vanadium.FerrousParser.PointerTypeContext;
+import io.karma.ferrous.vanadium.FerrousParser.RefTypeContext;
+import io.karma.ferrous.vanadium.FerrousParser.SintTypeContext;
+import io.karma.ferrous.vanadium.FerrousParser.SliceTypeContext;
+import io.karma.ferrous.vanadium.FerrousParser.UintTypeContext;
 import org.antlr.v4.runtime.ParserRuleContext;
 
 import java.util.Stack;
@@ -63,12 +70,12 @@ public final class TypeTranslationUnit extends AbstractTranslationUnit {
 
     private void handleType(final ParserRuleContext context, final String errorMessage) {
         final var text = context.getText();
-        doOrReport(context, () -> {
+        compiler.doOrReport(context, () -> {
             if (baseType != null) {
                 throw new TranslationException(context.start, "Type already translated, how did this happen?");
             }
             // @formatter:off
-            baseType = Type.findBuiltinType(text)
+            baseType = BuiltinType.findBuiltinType(text)
                 .orElseThrow(() -> new TranslationException(context.start, "%s: '%s'", errorMessage, text));
             // @formatter:on
         });

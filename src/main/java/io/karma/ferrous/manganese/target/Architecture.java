@@ -45,6 +45,28 @@ public enum Architecture {
         this.initClosure = initClosure;
     }
 
+    public static Architecture getHostArchitecture() {
+        if (SystemInfo.isIA32()) {
+            return Architecture.X86;
+        }
+        if (SystemInfo.isAMD64()) {
+            return Architecture.X86_64;
+        }
+        if (SystemInfo.isARM()) {
+            return Architecture.ARM;
+        }
+        if (SystemInfo.isARM64()) {
+            return Architecture.AARCH64;
+        }
+        if (SystemInfo.isRiscV64()) {
+            return Architecture.RISCV_64;
+        }
+        if (SystemInfo.isRiscV32()) {
+            return Architecture.RISCV_32;
+        }
+        return Architecture.UNKNOWN;
+    }
+
     public String getName() {
         return name;
     }
