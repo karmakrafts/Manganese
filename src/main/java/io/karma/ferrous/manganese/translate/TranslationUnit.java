@@ -19,15 +19,16 @@ import io.karma.ferrous.manganese.CompileError;
 import io.karma.ferrous.manganese.CompileStatus;
 import io.karma.ferrous.manganese.Compiler;
 import io.karma.ferrous.manganese.target.CallingConvention;
-import io.karma.ferrous.manganese.util.*;
+import io.karma.ferrous.manganese.type.Structure;
+import io.karma.ferrous.manganese.util.FunctionUtils;
+import io.karma.ferrous.manganese.util.Logger;
+import io.karma.ferrous.manganese.util.TypeUtils;
+import io.karma.ferrous.manganese.util.Utils;
 import io.karma.ferrous.vanadium.FerrousParser.CallConvModContext;
 import io.karma.ferrous.vanadium.FerrousParser.ExternFunctionContext;
-import io.karma.ferrous.vanadium.FerrousParser.FunctionContext;
-import io.karma.ferrous.vanadium.FerrousParser.UdtContext;
-import org.antlr.v4.runtime.tree.ParseTreeWalker;
 
 import java.util.Arrays;
-import java.util.Stack;
+import java.util.HashMap;
 
 import static org.lwjgl.llvm.LLVMCore.*;
 import static org.lwjgl.system.MemoryUtil.*;
@@ -39,7 +40,7 @@ import static org.lwjgl.system.MemoryUtil.*;
 public class TranslationUnit extends AbstractTranslationUnit {
     private static final CallingConvention DEFAULT_CALL_CONV = CallingConvention.CDECL;
     private final long module;
-    private final Stack<Scope> scopes = new Stack<>();
+    private final HashMap<String, Structure> structures = new HashMap<>();
     private boolean isDisposed;
     private CallingConvention callingConvention = DEFAULT_CALL_CONV;
 
@@ -60,38 +61,12 @@ public class TranslationUnit extends AbstractTranslationUnit {
     }
 
     @Override
-    public void enterUdt(UdtContext context) {
-        final var unit = new UDTTranslationUnit(compiler);
-        ParseTreeWalker.DEFAULT.walk(unit, context);
-        // TODO: add UDT to module
-        scopes.push(new Scope());
-    }
-
-    @Override
-    public void exitUdt(UdtContext context) {
-        scopes.pop();
-    }
-
-    @Override
-    public void enterFunction(FunctionContext context) {
-        final var unit = new FunctionTranslationUnit(compiler);
-        ParseTreeWalker.DEFAULT.walk(unit, context);
-        // TODO: add function to module
-        scopes.push(new Scope());
-    }
-
-    @Override
-    public void exitFunction(FunctionContext context) {
-        scopes.pop();
-    }
-
-    @Override
     public void enterExternFunction(ExternFunctionContext context) {
         doOrReport(context, () -> {
             final var prototype = context.protoFunction();
             final var type = TypeUtils.getFunctionType(compiler, prototype);
             final var name = FunctionUtils.getFunctionName(prototype.functionIdent());
-            final var function = LLVMAddFunction(module, name, type.materialize(compiler.getTarget()));
+            final var function = LLVMAddFunction(module, name, type.materializeType(compiler.getTarget()));
             if (function == NULL) {
                 throw new TranslationException(context.start, "Could not create function");
             }

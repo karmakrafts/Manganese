@@ -31,6 +31,12 @@ public final class Utils {
     private Utils() {}
     // @formatter:on
 
+    public static String capitalize(final String value) {
+        var result = value.substring(0, 1).toUpperCase();
+        result += value.substring(1);
+        return result;
+    }
+
     public static String makeCompilerMessage(final String message, final @Nullable List<String> values) {
         final var builder = Ansi.ansi();
         builder.a("  ");

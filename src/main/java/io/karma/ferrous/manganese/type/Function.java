@@ -27,22 +27,22 @@ import java.util.Objects;
  * @author Alexander Hinze
  * @since 13/10/2023
  */
-public final class FunctionType {
+public final class Function {
     private final Type returnType;
     private final List<Type> paramTypes;
     private final boolean isVarArg;
 
-    public FunctionType(final Type returnType, final List<Type> paramTypes, final boolean isVarArg) {
+    public Function(final Type returnType, final List<Type> paramTypes, final boolean isVarArg) {
         this.returnType = returnType;
         this.paramTypes = paramTypes;
         this.isVarArg = isVarArg;
     }
 
-    public FunctionType(final Type returnType, final List<Type> paramTypes) {
+    public Function(final Type returnType, final List<Type> paramTypes) {
         this(returnType, paramTypes, false);
     }
 
-    public long materialize(final Target target) {
+    public long materializeType(final Target target) {
         try (final var stack = MemoryStack.stackPush()) {
             final var returnType = this.returnType.materialize(target);
             final var paramTypes = this.paramTypes.stream().mapToLong(type -> type.materialize(target)).toArray();
@@ -90,7 +90,7 @@ public final class FunctionType {
 
     @Override
     public boolean equals(Object obj) {
-        if (obj instanceof FunctionType type) {
+        if (obj instanceof Function type) {
             return returnType.equals(type.returnType) && paramTypes.equals(type.paramTypes);
         }
         return false;

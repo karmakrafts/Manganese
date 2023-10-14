@@ -106,10 +106,14 @@ public final class CompileError implements Comparable<CompileError> {
     }
 
     public String getAnsiText() {
+        final var ansiBuffer = Ansi.ansi();
         if (lineTokens == null || lineTokens.isEmpty()) {
+            if (token != null) {
+                handleTokenColor(token, ansiBuffer);
+                return ansiBuffer.a(token.getText()).a(Attribute.RESET).toString();
+            }
             return "";
         }
-        final var ansiBuffer = Ansi.ansi();
         for (final var lineToken : lineTokens) {
             if (lineToken.getText().equals("\n")) {
                 continue; // Skip any new lines
@@ -122,6 +126,9 @@ public final class CompileError implements Comparable<CompileError> {
 
     public String getText() {
         if (lineTokens == null || lineTokens.isEmpty()) {
+            if (token != null) {
+                return token.getText();
+            }
             return "";
         }
         final var buffer = new StringBuilder();
@@ -151,7 +158,42 @@ public final class CompileError implements Comparable<CompileError> {
     }
 
     public void print(final PrintStream stream) {
-        stream.print(this);
+        stream.print(render());
+    }
+
+    public String render() {
+        final var builder = Ansi.ansi();
+        final var hasToken = token != null;
+
+        if(line != -1 && column != -1 && (hasToken || lineTokens != null)) { // @formatter:off
+            builder.a("\n");
+            builder.fg(Color.RED);
+            builder.a(String.format("Error during compilation in line %d:%d", line, column));
+            builder.a(Attribute.RESET);
+            builder.a("\n\n  ");
+            builder.a(getAnsiText());
+            builder.a("\n  ");
+            final var length = hasToken ? Math.max(1, token.getStopIndex() - token.getStartIndex() + 1) : 1;
+            builder.a(" ".repeat(Math.max(0, column)));
+            for (var i = 0; i < length; i++) {
+                builder.fgBright(Color.RED);
+                builder.a('^');
+            }
+            builder.a(Attribute.RESET);
+            builder.a("\n");
+        }// @formatter:on
+        else {// @formatter:off
+            builder.fg(Color.RED);
+            builder.a("\nError during compilation\n\n");
+            builder.a(Attribute.RESET);
+        }// @formatter:on
+
+        if (additionalText != null) {
+            builder.a(String.format("%s\n", additionalText));
+        }
+        builder.a("\n");
+
+        return builder.toString();
     }
 
     @Override
@@ -162,7 +204,7 @@ public final class CompileError implements Comparable<CompileError> {
     @Override
     public boolean equals(Object obj) {
         if(obj instanceof CompileError error) { // @formatter:off
-            return token.equals(error.token)
+            return (token == null || token.equals(error.token))
                 && line == error.line
                 && column == error.column
                 && additionalText.equals(error.additionalText);
@@ -172,32 +214,6 @@ public final class CompileError implements Comparable<CompileError> {
 
     @Override
     public String toString() {
-        final var builder = new StringBuilder();
-
-        if(line != -1 && column != -1) { // @formatter:off
-            builder.append(Ansi.ansi().fg(Color.RED).a("\nError during compilation in line %d:%d\n\n")
-                .a(Attribute.RESET).toString(), line, column);
-        }// @formatter:on
-        else {// @formatter:off
-            builder.append(Ansi.ansi().fg(Color.RED).a("\nError during compilation\n\n")
-                .a(Attribute.RESET).toString(), line, column);
-        }// @formatter:on
-
-        if (token != null && lineTokens != null) {
-            builder.append(String.format("  %s\n  ", getAnsiText()));
-            builder.append(" ".repeat(Math.max(0, column)));
-            final var length = token.getStopIndex() - token.getStartIndex() + 1;
-            for (var i = 0; i < length; i++) {
-                builder.append(Ansi.ansi().fgBright(Color.RED).a('^').a(Attribute.RESET));
-            }
-            builder.append("\n");
-        }
-
-        if (additionalText != null) {
-            builder.append(String.format("%s\n", additionalText));
-        }
-        builder.append("\n");
-
-        return builder.toString();
+        return getText();
     }
 }

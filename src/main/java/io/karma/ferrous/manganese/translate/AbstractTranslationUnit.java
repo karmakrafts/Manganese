@@ -42,6 +42,9 @@ public abstract class AbstractTranslationUnit implements FerrousParserListener {
     }
 
     protected void doOrReport(final ParserRuleContext context, final XRunnable<?> closure) {
+        if (!compiler.getStatus().isRecoverable()) {
+            return; // Don't report translation errors after we are unrecoverable
+        }
         Functions.tryDo(closure, exception -> {
             if (exception instanceof TranslationException tExcept) {
                 compiler.reportError(tExcept.getError(), CompileStatus.TRANSLATION_ERROR);

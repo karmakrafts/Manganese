@@ -174,6 +174,9 @@ public final class Compiler implements ANTLRErrorListener {
     }
 
     public void reportError(final CompileError error, final CompileStatus status) {
+        if (tokenStream.size() == 0) {
+            tokenStream.fill();
+        }
         if (errors.contains(error)) {
             return; // Don't report duplicates
         }
@@ -259,9 +262,9 @@ public final class Compiler implements ANTLRErrorListener {
 
             final var lexer = new FerrousLexer(charStream);
             tokenStream = new CommonTokenStream(lexer);
+            tokenStream.fill();
 
             if (tokenView) {
-                tokenStream.fill();
                 final var tokens = tokenStream.getTokens();
                 for (final var token : tokens) {
                     final var text = token.getText();
@@ -299,7 +302,7 @@ public final class Compiler implements ANTLRErrorListener {
             final var unit = new TranslationUnit(this, name);
             ParseTreeWalker.DEFAULT.walk(unit, parser.file()); // Walk the entire AST with the TU
             if (!status.isRecoverable()) {
-                Logger.INSTANCE.errorln("Compilation is cancelled from hereon out, continuing to report errors");
+                Logger.INSTANCE.errorln("Compilation is irrecoverable, continuing to report syntax errors");
                 return;
             }
 
@@ -351,7 +354,9 @@ public final class Compiler implements ANTLRErrorListener {
     @Override
     public void syntaxError(final Recognizer<?, ?> recognizer, final Object offendingSymbol, final int line,
                             final int charPositionInLine, final String msg, final RecognitionException e) {
-        reportError(new CompileError((Token) offendingSymbol, tokenStream, line, charPositionInLine), CompileStatus.SYNTAX_ERROR);
+        final var error = new CompileError((Token) offendingSymbol, tokenStream, line, charPositionInLine);
+        error.setAdditionalText(Utils.makeCompilerMessage(Utils.capitalize(msg), null));
+        reportError(error, CompileStatus.SYNTAX_ERROR);
     }
 
     @Override
