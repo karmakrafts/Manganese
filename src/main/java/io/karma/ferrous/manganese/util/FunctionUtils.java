@@ -15,7 +15,11 @@
 
 package io.karma.ferrous.manganese.util;
 
+import io.karma.ferrous.manganese.CompileError;
+import io.karma.ferrous.manganese.CompileStatus;
+import io.karma.ferrous.manganese.Compiler;
 import io.karma.ferrous.vanadium.FerrousParser.FunctionIdentContext;
+import io.karma.ferrous.vanadium.FerrousParser.ProtoFunctionContext;
 
 /**
  * @author Alexander Hinze
@@ -25,6 +29,24 @@ public final class FunctionUtils {
     // @formatter:off
     private FunctionUtils() {}
     // @formatter:on
+
+    public static CallingConvention getCallingConvention(final Compiler compiler, final ProtoFunctionContext context) {
+        final var convContext = context.callConvMod();
+        if (convContext == null) {
+            return CallingConvention.CDECL;
+        }
+        final var identifier = convContext.IDENT();
+        final var name = identifier.getText();
+        final var conv = CallingConvention.findByText(name);
+        if (conv.isEmpty()) {
+            final var error = new CompileError(identifier.getSymbol());
+            final var message = String.format("'%s' is not a valid calling convention, expected one of the following values", name);
+            error.setAdditionalText(Utils.makeCompilerMessage(message, CallingConvention.EXPECTED_VALUES));
+            compiler.reportError(error, CompileStatus.SEMANTIC_ERROR);
+            return CallingConvention.CDECL;
+        }
+        return conv.get();
+    }
 
     public static String getFunctionName(final FunctionIdentContext context) {
         final var children = context.children;

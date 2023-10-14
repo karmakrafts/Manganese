@@ -15,23 +15,25 @@
 
 package io.karma.ferrous.manganese.translate;
 
-import io.karma.ferrous.manganese.CompileError;
-import io.karma.ferrous.manganese.CompileStatus;
 import io.karma.ferrous.manganese.Compiler;
 import io.karma.ferrous.manganese.ocm.StructureType;
-import io.karma.ferrous.manganese.target.CallingConvention;
+import io.karma.ferrous.manganese.util.CallingConvention;
 import io.karma.ferrous.manganese.util.FunctionUtils;
 import io.karma.ferrous.manganese.util.Logger;
 import io.karma.ferrous.manganese.util.TypeUtils;
-import io.karma.ferrous.manganese.util.Utils;
-import io.karma.ferrous.vanadium.FerrousParser.CallConvModContext;
 import io.karma.ferrous.vanadium.FerrousParser.ExternFunctionContext;
 
-import java.util.Arrays;
 import java.util.HashMap;
 
-import static org.lwjgl.llvm.LLVMCore.*;
-import static org.lwjgl.system.MemoryUtil.*;
+import static org.lwjgl.llvm.LLVMCore.LLVMAddFunction;
+import static org.lwjgl.llvm.LLVMCore.LLVMDisposeModule;
+import static org.lwjgl.llvm.LLVMCore.LLVMExternalLinkage;
+import static org.lwjgl.llvm.LLVMCore.LLVMGetModuleIdentifier;
+import static org.lwjgl.llvm.LLVMCore.LLVMModuleCreateWithName;
+import static org.lwjgl.llvm.LLVMCore.LLVMSetFunctionCallConv;
+import static org.lwjgl.llvm.LLVMCore.LLVMSetLinkage;
+import static org.lwjgl.llvm.LLVMCore.LLVMSetSourceFileName;
+import static org.lwjgl.system.MemoryUtil.NULL;
 
 /**
  * @author Alexander Hinze
@@ -42,7 +44,6 @@ public class TranslationUnit extends AbstractTranslationUnit {
     private final long module;
     private final HashMap<String, StructureType> structures = new HashMap<>();
     private boolean isDisposed;
-    private CallingConvention callingConvention = DEFAULT_CALL_CONV;
 
     public TranslationUnit(final Compiler compiler, final String name) {
         super(compiler);
@@ -52,12 +53,6 @@ public class TranslationUnit extends AbstractTranslationUnit {
         }
         LLVMSetSourceFileName(module, name); // Same as source file name
         Logger.INSTANCE.debugln("Allocated translation unit at 0x%08X", module);
-    }
-
-    private CallingConvention consumeCallConv() {
-        final var result = callingConvention;
-        callingConvention = DEFAULT_CALL_CONV;
-        return result;
     }
 
     @Override
@@ -71,27 +66,8 @@ public class TranslationUnit extends AbstractTranslationUnit {
                 throw new TranslationException(context.start, "Could not create function");
             }
             LLVMSetLinkage(function, LLVMExternalLinkage);
-            LLVMSetFunctionCallConv(function, consumeCallConv().getLlvmType());
+            LLVMSetFunctionCallConv(function, FunctionUtils.getCallingConvention(compiler, prototype).getLlvmType());
         });
-    }
-
-    @Override
-    public void enterCallConvMod(CallConvModContext context) {
-        final var identifier = context.IDENT();
-        final var name = identifier.getText();
-        // @formatter:off
-        final var convOption = Arrays.stream(CallingConvention.values())
-            .filter(conv -> conv.getText().equals(name))
-            .findFirst();
-        // @formatter:on
-        if (convOption.isEmpty()) {
-            final var error = new CompileError(identifier.getSymbol());
-            final var message = String.format("'%s' is not a valid calling convention, expected one of the following values", name);
-            error.setAdditionalText(Utils.makeCompilerMessage(message, CallingConvention.EXPECTED_VALUES));
-            compiler.reportError(error, CompileStatus.SEMANTIC_ERROR);
-            return;
-        }
-        callingConvention = convOption.get();
     }
 
     public void dispose() {

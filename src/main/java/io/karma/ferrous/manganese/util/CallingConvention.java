@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.target;
+package io.karma.ferrous.manganese.util;
 
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
@@ -21,6 +21,7 @@ import org.lwjgl.llvm.LLVMCore;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -61,5 +62,9 @@ public enum CallingConvention {
 
     public int getLlvmType() {
         return llvmType;
+    }
+
+    public static Optional<CallingConvention> findByText(final String text) {
+        return Arrays.stream(values()).filter(conv -> conv.text.equals(text)).findFirst();
     }
 }
