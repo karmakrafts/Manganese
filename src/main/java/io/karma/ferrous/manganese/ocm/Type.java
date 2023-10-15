@@ -28,8 +28,10 @@ public interface Type {
 
     TypeAttribute[] getAttributes();
 
+    Type getBaseType();
+
     default Type derive(final TypeAttribute... attributes) {
-        return new DerivedType(this, attributes);
+        return Types.cached(new DerivedType(this, attributes));
     }
 
     default Type derivePointer(final int depth) {

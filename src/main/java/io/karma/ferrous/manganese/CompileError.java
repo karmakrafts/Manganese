@@ -39,23 +39,27 @@ public final class CompileError implements Comparable<CompileError> {
     private final List<Token> lineTokens;
     private final int line;
     private final int column;
+    private final CompileStatus status;
+    private final CompilePass pass;
     private String additionalText;
 
     public CompileError(final @Nullable Token token, final @Nullable List<Token> lineTokens, final int line,
-                        final int column) {
+                        final int column, final @Nullable CompileStatus status, final @Nullable CompilePass pass) {
         this.token = token;
         this.lineTokens = lineTokens;
         this.line = line;
         this.column = column;
+        this.status = status;
+        this.pass = pass;
     }
 
     public CompileError(final String additionalText) {
-        this(null, (List<Token>) null, -1, -1);
+        this(null, null, -1, -1, null, null);
         this.additionalText = additionalText;
     }
 
     public CompileError(final Token token, final TokenStream tokenStream, final int line, final int column) {
-        this(token, TokenUtils.getLineTokens(tokenStream, token), line, column);
+        this(token, TokenUtils.getLineTokens(tokenStream, token), line, column, null, null);
     }
 
     public CompileError(final Token token, final int line, final int column) {
@@ -149,6 +153,14 @@ public final class CompileError implements Comparable<CompileError> {
         return column;
     }
 
+    public @Nullable CompileStatus getStatus() {
+        return status;
+    }
+
+    public @Nullable CompilePass getPass() {
+        return pass;
+    }
+
     public @Nullable Token getToken() {
         return token;
     }
@@ -198,7 +210,7 @@ public final class CompileError implements Comparable<CompileError> {
 
     @Override
     public int hashCode() {
-        return Objects.hash(token, line, column);
+        return Objects.hash(token, line, column, status, pass);
     }
 
     @Override
@@ -206,7 +218,9 @@ public final class CompileError implements Comparable<CompileError> {
         if(obj instanceof CompileError error) { // @formatter:off
             return (token == null || token.equals(error.token))
                 && line == error.line
-                && column == error.column;
+                && column == error.column
+                && status == error.status
+                && pass == error.pass;
         } // @formatter:on
         return false;
     }

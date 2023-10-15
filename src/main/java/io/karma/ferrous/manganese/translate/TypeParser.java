@@ -18,13 +18,16 @@ package io.karma.ferrous.manganese.translate;
 import io.karma.ferrous.manganese.CompileError;
 import io.karma.ferrous.manganese.CompileStatus;
 import io.karma.ferrous.manganese.Compiler;
-import io.karma.ferrous.manganese.ocm.BuiltinType;
+import io.karma.ferrous.manganese.ParseAdapter;
 import io.karma.ferrous.manganese.ocm.Type;
 import io.karma.ferrous.manganese.ocm.TypeAttribute;
+import io.karma.ferrous.manganese.ocm.Types;
 import io.karma.ferrous.manganese.util.Utils;
 import io.karma.ferrous.vanadium.FerrousParser.FloatTypeContext;
+import io.karma.ferrous.vanadium.FerrousParser.IdentContext;
 import io.karma.ferrous.vanadium.FerrousParser.MiscTypeContext;
 import io.karma.ferrous.vanadium.FerrousParser.PointerTypeContext;
+import io.karma.ferrous.vanadium.FerrousParser.QualifiedIdentContext;
 import io.karma.ferrous.vanadium.FerrousParser.RefTypeContext;
 import io.karma.ferrous.vanadium.FerrousParser.SintTypeContext;
 import io.karma.ferrous.vanadium.FerrousParser.SliceTypeContext;
@@ -37,11 +40,11 @@ import java.util.Stack;
  * @author Alexander Hinze
  * @since 13/10/2023
  */
-public final class TypeTranslationUnit extends AbstractTranslationUnit {
+public final class TypeParser extends ParseAdapter {
     private final Stack<TypeAttribute> attributes = new Stack<>();
     private Type baseType;
 
-    public TypeTranslationUnit(Compiler compiler) {
+    public TypeParser(Compiler compiler) {
         super(compiler);
     }
 
@@ -68,37 +71,60 @@ public final class TypeTranslationUnit extends AbstractTranslationUnit {
 
     // Actual types
 
-    private void handleType(final ParserRuleContext context, final String errorMessage) {
+    private void handlePrimitiveType(final ParserRuleContext context, final String errorMessage) {
         final var text = context.getText();
         compiler.doOrReport(context, () -> {
             if (baseType != null) {
                 throw new TranslationException(context.start, "Type already translated, how did this happen?");
             }
-            // @formatter:off
-            baseType = BuiltinType.findBuiltinType(text)
-                .orElseThrow(() -> new TranslationException(context.start, "%s: '%s'", errorMessage, text));
-            // @formatter:on
+            baseType = Types.builtin(text);
+        });
+    }
+
+    @Override
+    public void enterIdent(IdentContext context) {
+        compiler.doOrReport(context, () -> {
+            final var name = Utils.getIdentifier(context);
+            final var udt = compiler.getAnalyzer().getUDTs().get(name);
+            if (udt == null) {
+                baseType = Types.incomplete(name);
+                return;
+            }
+            baseType = udt.structureType();
+        });
+    }
+
+    @Override
+    public void enterQualifiedIdent(QualifiedIdentContext context) {
+        compiler.doOrReport(context, () -> {
+            final var name = Utils.getIdentifier(context);
+            final var udt = compiler.getAnalyzer().getUDTs().get(name);
+            if (udt == null) {
+                baseType = Types.incomplete(name);
+                return;
+            }
+            baseType = udt.structureType();
         });
     }
 
     @Override
     public void enterMiscType(MiscTypeContext context) {
-        handleType(context, "Unknown miscellaneous type");
+        handlePrimitiveType(context, "Unknown miscellaneous type");
     }
 
     @Override
     public void enterSintType(SintTypeContext context) {
-        handleType(context, "Unknown signed integer type");
+        handlePrimitiveType(context, "Unknown signed integer type");
     }
 
     @Override
     public void enterUintType(UintTypeContext context) {
-        handleType(context, "Unknown unsigned integer type");
+        handlePrimitiveType(context, "Unknown unsigned integer type");
     }
 
     @Override
     public void enterFloatType(FloatTypeContext context) {
-        handleType(context, "Unknown floating point type");
+        handlePrimitiveType(context, "Unknown floating point type");
     }
 
     public Type getType() {

@@ -31,6 +31,9 @@ import java.util.Collections;
 import java.util.Objects;
 import java.util.jar.Manifest;
 
+import static org.lwjgl.llvm.LLVMCore.LLVMContextSetOpaquePointers;
+import static org.lwjgl.llvm.LLVMCore.LLVMGetGlobalContext;
+
 /**
  * @author Alexander Hinze
  * @since 11/10/2023
@@ -52,13 +55,14 @@ public final class Main {
     @API(status = Status.INTERNAL)
     public static void main(final String[] args) {
         var status = CompileStatus.SKIPPED;
+        final var compiler = Compiler.getInstance();
 
         try {
             if (args.length == 0) {
                 throw new NoArgsException();
             }
 
-            final var parser = new OptionParser("?iodDptTsvVbm");
+            final var parser = new OptionParser("?iodDpPtTsvVbm");
             parser.accepts("?", "Print this help dialog");
             parser.accepts("i", "A Ferrous file or directory of files from which to compile.").withRequiredArg().ofType(String.class);
             parser.accepts("o", "An IL file or a directory in which to save the compiled IL blocks.").withRequiredArg().ofType(String.class);
@@ -72,6 +76,7 @@ public final class Main {
             parser.accepts("V", "Enable verbose errors. This will likely show some garbage.");
             parser.accepts("b", "Dump bitcode to files while compiling.");
             parser.accepts("m", "Specify the name of the output module, will default to the name of the first input file.");
+            parser.accepts("P", "Disable opaque pointers. Useful for disassembling compile output.");
             final var options = parser.parse(args);
 
             if (options.has("?")) {
@@ -98,12 +103,15 @@ public final class Main {
             if (options.has("s")) {
                 Logger.INSTANCE.disableLogLevel(LogLevel.WARN);
             }
+            if (options.has("P")) {
+                LLVMContextSetOpaquePointers(LLVMGetGlobalContext(), false);
+            }
 
-            final var compiler = Compiler.getInstance();
             compiler.setDisassemble(options.has("d"));
             compiler.setTokenView(options.has("t"), options.has("T"));
             compiler.setReportParserWarnings(options.has("p"));
             compiler.setVerbose(options.has("V"));
+            compiler.setSaveBitcode(options.has("b"));
 
             final var in = Paths.get((String) options.valueOf("i")).toAbsolutePath().normalize();
             if (!Files.exists(in)) {
@@ -135,7 +143,7 @@ public final class Main {
             status = status.worse(CompileStatus.UNKNOWN_ERROR);
         }
 
-        Logger.INSTANCE.infoln(status.getFormattedMessage());
+        Logger.INSTANCE.infoln("%s", status.getFormattedMessage());
         System.exit(status.getExitCode());
     }
 

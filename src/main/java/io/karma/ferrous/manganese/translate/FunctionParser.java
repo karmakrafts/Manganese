@@ -16,10 +16,12 @@
 package io.karma.ferrous.manganese.translate;
 
 import io.karma.ferrous.manganese.Compiler;
+import io.karma.ferrous.manganese.ParseAdapter;
 import io.karma.ferrous.manganese.ocm.Function;
 import io.karma.ferrous.manganese.ocm.FunctionType;
 import io.karma.ferrous.manganese.util.CallingConvention;
 import io.karma.ferrous.manganese.util.FunctionUtils;
+import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.TypeUtils;
 import io.karma.ferrous.vanadium.FerrousParser.FunctionBodyContext;
 import io.karma.ferrous.vanadium.FerrousParser.InlineFunctionBodyContext;
@@ -29,19 +31,19 @@ import io.karma.ferrous.vanadium.FerrousParser.ProtoFunctionContext;
  * @author Alexander Hinze
  * @since 14/10/2023
  */
-public final class FunctionTranslationUnit extends AbstractTranslationUnit {
-    private String name;
+public final class FunctionParser extends ParseAdapter {
+    private Identifier identifier;
     private FunctionType type;
     private CallingConvention callConv;
 
-    public FunctionTranslationUnit(Compiler compiler) {
+    public FunctionParser(final Compiler compiler) {
         super(compiler);
     }
 
     @Override
     public void enterProtoFunction(ProtoFunctionContext context) {
         compiler.doOrReport(context, () -> {
-            name = FunctionUtils.getFunctionName(context.functionIdent());
+            identifier = FunctionUtils.getFunctionName(context.functionIdent());
             type = TypeUtils.getFunctionType(compiler, context);
             callConv = FunctionUtils.getCallingConvention(compiler, context);
         });
@@ -58,6 +60,6 @@ public final class FunctionTranslationUnit extends AbstractTranslationUnit {
     }
 
     public Function getFunction() {
-        return new Function(name, type);
+        return new Function(identifier, type);
     }
 }

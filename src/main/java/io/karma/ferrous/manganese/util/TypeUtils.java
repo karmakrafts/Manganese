@@ -18,8 +18,9 @@ package io.karma.ferrous.manganese.util;
 import io.karma.ferrous.manganese.Compiler;
 import io.karma.ferrous.manganese.ocm.FunctionType;
 import io.karma.ferrous.manganese.ocm.Type;
+import io.karma.ferrous.manganese.ocm.Types;
 import io.karma.ferrous.manganese.translate.TranslationException;
-import io.karma.ferrous.manganese.translate.TypeTranslationUnit;
+import io.karma.ferrous.manganese.translate.TypeParser;
 import io.karma.ferrous.vanadium.FerrousLexer;
 import io.karma.ferrous.vanadium.FerrousParser.FunctionParamContext;
 import io.karma.ferrous.vanadium.FerrousParser.ProtoFunctionContext;
@@ -39,7 +40,7 @@ public final class TypeUtils {
     // @formatter:on
 
     public static Optional<Type> getType(final Compiler compiler, final TypeContext context) {
-        final TypeTranslationUnit unit = new TypeTranslationUnit(compiler);
+        final TypeParser unit = new TypeParser(compiler);
         ParseTreeWalker.DEFAULT.walk(unit, context);
         if (!compiler.getStatus().isRecoverable()) {
             return Optional.empty();
@@ -76,6 +77,6 @@ public final class TypeUtils {
         }
 
         final var paramTypes = TypeUtils.getParameterTypes(compiler, context);
-        return new FunctionType(returnType, paramTypes, isVarArg);
+        return Types.function(returnType, paramTypes, isVarArg);
     }
 }

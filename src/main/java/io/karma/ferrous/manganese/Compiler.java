@@ -15,8 +15,9 @@
 
 package io.karma.ferrous.manganese;
 
+import io.karma.ferrous.manganese.analyze.Analyzer;
+import io.karma.ferrous.manganese.ocm.Types;
 import io.karma.ferrous.manganese.target.Target;
-import io.karma.ferrous.manganese.translate.DDTranslationUnit;
 import io.karma.ferrous.manganese.translate.TranslationException;
 import io.karma.ferrous.manganese.translate.TranslationUnit;
 import io.karma.ferrous.manganese.util.Logger;
@@ -82,7 +83,7 @@ import static org.lwjgl.system.MemoryUtil.NULL;
 @API(status = Status.STABLE)
 public final class Compiler implements ANTLRErrorListener {
     private static final String[] IN_EXTENSIONS = {"ferrous", "fe"};
-    private static final String OUT_EXTENSION = "bc";
+    private static final String OUT_EXTENSION = "o";
     private static final ThreadLocal<Compiler> INSTANCE = ThreadLocal.withInitial(Compiler::new);
 
     private final ArrayList<CompileError> errors = new ArrayList<>();
@@ -92,6 +93,7 @@ public final class Compiler implements ANTLRErrorListener {
     private BufferedTokenStream tokenStream;
     private FerrousParser parser;
     private FileContext fileContext;
+    private Analyzer analyzer;
     private TranslationUnit translationUnit;
 
     private Target target = null;
@@ -136,7 +138,7 @@ public final class Compiler implements ANTLRErrorListener {
 
     private void disassemble() {
         Logger.INSTANCE.infoln("");
-        Logger.INSTANCE.info(LLVMPrintModuleToString(translationUnit.getModule()));
+        Logger.INSTANCE.info("%s", LLVMPrintModuleToString(translationUnit.getModule()));
         Logger.INSTANCE.infoln("");
     }
 
@@ -146,9 +148,11 @@ public final class Compiler implements ANTLRErrorListener {
         fileContext = null;
         lexer = null;
         parser = null;
+        analyzer = null;
         translationUnit = null;
         errors.clear();
         target = null;
+        Types.invalidateCache();
     }
 
     public void doOrReport(final ParserRuleContext context, final XRunnable<?> closure) {
@@ -161,7 +165,7 @@ public final class Compiler implements ANTLRErrorListener {
                 return;
             }
             final var error = new CompileError(context.start);
-            error.setAdditionalText(Utils.makeCompilerMessage(exception.getMessage()));
+            error.setAdditionalText(Utils.makeCompilerMessage(exception.toString()));
             reportError(error, CompileStatus.TRANSLATION_ERROR);
         });
     }
@@ -175,7 +179,7 @@ public final class Compiler implements ANTLRErrorListener {
                 reportError(tExcept.getError(), CompileStatus.TRANSLATION_ERROR);
                 return;
             }
-            reportError(new CompileError(exception.getMessage()), CompileStatus.TRANSLATION_ERROR);
+            reportError(new CompileError(exception.toString()), CompileStatus.TRANSLATION_ERROR);
         });
     }
 
@@ -189,6 +193,14 @@ public final class Compiler implements ANTLRErrorListener {
 
     public CompilePass getCurrentPass() {
         return currentPass;
+    }
+
+    public TranslationUnit getTranslationUnit() {
+        return translationUnit;
+    }
+
+    public Analyzer getAnalyzer() {
+        return analyzer;
     }
 
     public void setTokenView(final boolean tokenView, final boolean extendedTokenView) {
@@ -308,17 +320,17 @@ public final class Compiler implements ANTLRErrorListener {
             Logger.INSTANCE.debugln("Input: %s", filePath);
             Logger.INSTANCE.debugln("Output: %s", out);
 
-            try (final var fis = Files.newInputStream(filePath)) {
-                try (final var fos = Files.newOutputStream(out)) {
-                    compile(rawFileName, Channels.newChannel(fis), Channels.newChannel(fos));
+            try (final var inStream = Files.newInputStream(filePath); final var inChannel = Channels.newChannel(inStream)) {
+                try (final var outStream = Files.newOutputStream(out); final var outChannel = Channels.newChannel(outStream)) {
+                    compile(rawFileName, inChannel, outChannel);
                     status = status.worse(this.status);
                 }
             }
             catch (IOException error) {
-                reportError(new CompileError(error.getMessage()), CompileStatus.IO_ERROR);
+                reportError(new CompileError(error.toString()), CompileStatus.IO_ERROR);
             }
             catch (Exception error) {
-                reportError(new CompileError(error.getMessage()), CompileStatus.UNKNOWN_ERROR);
+                reportError(new CompileError(error.toString()), CompileStatus.UNKNOWN_ERROR);
             }
         }
 
@@ -411,8 +423,9 @@ public final class Compiler implements ANTLRErrorListener {
     private boolean analyze() {
         final var startTime = System.currentTimeMillis();
         currentPass = CompilePass.ANALYZE;
-        final var discoveryUnit = new DDTranslationUnit(this);
-        ParseTreeWalker.DEFAULT.walk(discoveryUnit, fileContext);
+        analyzer = new Analyzer(this);
+        ParseTreeWalker.DEFAULT.walk(analyzer, fileContext);
+        analyzer.preMaterialize(); // Pre-materializes all UDTs in the right order
         final var time = System.currentTimeMillis() - startTime;
         Logger.INSTANCE.debugln("Finished pass ANALYZE in %dms", time);
         return checkStatus();
@@ -426,6 +439,7 @@ public final class Compiler implements ANTLRErrorListener {
         final var time = System.currentTimeMillis() - startTime;
         Logger.INSTANCE.debugln("Finished pass PROCESS in %dms", time);
         tokenStream = new CommonTokenStream(new ListTokenSource(tokens));
+        tokenStream.fill();
         parser.setTokenStream(tokenStream);
         parser.reset();
         parser.removeErrorListeners();
@@ -455,10 +469,12 @@ public final class Compiler implements ANTLRErrorListener {
         try (final var stream = Files.newOutputStream(path)) {
             final var size = (int) LLVMGetBufferSize(buffer);
             final var address = nLLVMGetBufferStart(buffer); // LWJGL codegen is a pita
-            Channels.newChannel(stream).write(MemoryUtil.memByteBuffer(address, size));
+            try (final var channel = Channels.newChannel(stream)) {
+                channel.write(MemoryUtil.memByteBuffer(address, size));
+            }
         }
         catch (Exception error) {
-            Logger.INSTANCE.warnln("Could not save bitcode to file: %s", error.getMessage());
+            Logger.INSTANCE.warnln("Could not save bitcode to file: %s", error.toString());
         }
 
         LLVMDisposeMemoryBuffer(buffer);
@@ -500,10 +516,10 @@ public final class Compiler implements ANTLRErrorListener {
             currentPass = CompilePass.NONE;
         }
         catch (IOException error) {
-            reportError(new CompileError(error.getMessage()), CompileStatus.IO_ERROR);
+            reportError(new CompileError(error.toString()), CompileStatus.IO_ERROR);
         }
         catch (Exception error) {
-            reportError(new CompileError(error.getMessage()), CompileStatus.UNKNOWN_ERROR);
+            reportError(new CompileError(error.toString()), CompileStatus.UNKNOWN_ERROR);
         }
     }
 

@@ -13,9 +13,8 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.translate;
+package io.karma.ferrous.manganese;
 
-import io.karma.ferrous.manganese.Compiler;
 import io.karma.ferrous.vanadium.FerrousParser.*;
 import io.karma.ferrous.vanadium.FerrousParserListener;
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -26,10 +25,10 @@ import org.antlr.v4.runtime.tree.TerminalNode;
  * @author Alexander Hinze
  * @since 11/10/2023
  */
-public abstract class AbstractTranslationUnit implements FerrousParserListener {
+public abstract class ParseAdapter implements FerrousParserListener {
     protected Compiler compiler;
 
-    protected AbstractTranslationUnit(final Compiler compiler) {
+    protected ParseAdapter(final Compiler compiler) {
         this.compiler = compiler;
     }
 

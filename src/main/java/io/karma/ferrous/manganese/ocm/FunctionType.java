@@ -19,24 +19,41 @@ import io.karma.ferrous.manganese.target.Target;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.llvm.LLVMCore;
 import org.lwjgl.system.MemoryStack;
+import org.lwjgl.system.MemoryUtil;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * @author Alexander Hinze
  * @since 13/10/2023
  */
-public record FunctionType(Type returnType, List<? extends Type> paramTypes, boolean isVarArg) implements Type {
-    public FunctionType(final Type returnType, final List<? extends Type> paramTypes) {
-        this(returnType, paramTypes, false);
+public final class FunctionType implements Type {
+    private final Type returnType;
+    private final List<? extends Type> paramTypes;
+    private final boolean isVarArg;
+    private long materializedType = MemoryUtil.NULL;
+
+    FunctionType(final Type returnType, final List<? extends Type> paramTypes, final boolean isVarArg) {
+        this.returnType = returnType;
+        this.paramTypes = paramTypes;
+        this.isVarArg = isVarArg;
+    }
+
+    @Override
+    public Type getBaseType() {
+        return this;
     }
 
     @Override
     public long materialize(final Target target) {
+        if (materializedType != MemoryUtil.NULL) {
+            return materializedType;
+        }
         try (final var stack = MemoryStack.stackPush()) {
             final var returnType = this.returnType.materialize(target);
             final var paramTypes = this.paramTypes.stream().mapToLong(type -> type.materialize(target)).toArray();
-            return LLVMCore.LLVMFunctionType(returnType, stack.pointers(paramTypes), isVarArg);
+            return materializedType = LLVMCore.LLVMFunctionType(returnType, stack.pointers(paramTypes), isVarArg);
         }
     }
 
@@ -68,6 +85,21 @@ public record FunctionType(Type returnType, List<? extends Type> paramTypes, boo
         }
         builder.append(')');
         return builder.toString();
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(returnType, paramTypes, isVarArg);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if(obj instanceof FunctionType type) { // @formatter:off
+            return returnType.equals(type.returnType)
+                && paramTypes.equals(type.paramTypes)
+                && isVarArg == type.isVarArg;
+        } // @formatter:on
+        return false;
     }
 
     @Override

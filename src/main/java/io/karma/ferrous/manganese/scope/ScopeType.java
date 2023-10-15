@@ -13,12 +13,23 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.ocm;
+package io.karma.ferrous.manganese.scope;
 
 /**
  * @author Alexander Hinze
- * @since 14/10/2023
+ * @since 15/10/2023
  */
-public record UDT(UDTType type, StructureType structureType) {
-
+public enum ScopeType {
+    GLOBAL,
+    NAMESPACE,
+    STRUCT,
+    CLASS,
+    ENUM_CLASS,
+    ENUM,
+    TRAIT,
+    ATTRIBUTE,
+    INTERFACE,
+    CONSTRUCTOR,
+    DESTRUCTOR,
+    FUNCTION
 }

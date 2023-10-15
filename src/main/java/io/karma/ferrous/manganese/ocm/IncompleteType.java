@@ -16,43 +16,30 @@
 package io.karma.ferrous.manganese.ocm;
 
 import io.karma.ferrous.manganese.target.Target;
-import io.karma.ferrous.manganese.util.Target2LongFunction;
-import io.karma.ferrous.manganese.util.TokenUtils;
+import io.karma.ferrous.manganese.util.Identifier;
+import org.lwjgl.llvm.LLVMCore;
 import org.lwjgl.system.MemoryUtil;
+
+import static org.lwjgl.llvm.LLVMCore.LLVMGetGlobalContext;
 
 /**
  * @author Alexander Hinze
- * @since 13/10/2023
+ * @since 15/10/2023
  */
-public final class BuiltinType implements Type {
-    private final String name;
-    private final Target2LongFunction typeProvider;
+public final class IncompleteType implements Type {
+    private final Identifier identifier;
     private long materializedType = MemoryUtil.NULL;
 
-    BuiltinType(String name, Target2LongFunction typeProvider) {
-        this.name = name;
-        this.typeProvider = typeProvider;
-    }
-
-    BuiltinType(final int token, final Target2LongFunction typeProvider) {
-        this(TokenUtils.getLiteral(token), typeProvider);
-    }
-
-    public String getName() {
-        return name;
+    IncompleteType(final Identifier identifier) {
+        this.identifier = identifier;
     }
 
     @Override
-    public Type getBaseType() {
-        return this;
-    }
-
-    @Override
-    public long materialize(final Target target) {
+    public long materialize(Target target) {
         if (materializedType != MemoryUtil.NULL) {
             return materializedType;
         }
-        return materializedType = typeProvider.getAddress(target);
+        return materializedType = LLVMCore.LLVMStructCreateNamed(LLVMGetGlobalContext(), identifier.toString());
     }
 
     @Override
@@ -61,20 +48,25 @@ public final class BuiltinType implements Type {
     }
 
     @Override
+    public Type getBaseType() {
+        return this;
+    }
+
+    @Override
     public int hashCode() {
-        return name.hashCode();
+        return identifier.hashCode();
     }
 
     @Override
     public boolean equals(Object obj) {
-        if (obj instanceof BuiltinType type) {
-            return name.equals(type.name);
+        if (obj instanceof IncompleteType type) {
+            return identifier.equals(type.identifier);
         }
         return false;
     }
 
     @Override
     public String toString() {
-        return name;
+        return identifier.toString();
     }
 }

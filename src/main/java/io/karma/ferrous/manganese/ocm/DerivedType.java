@@ -17,23 +17,66 @@ package io.karma.ferrous.manganese.ocm;
 
 import io.karma.ferrous.manganese.target.Target;
 import org.lwjgl.llvm.LLVMCore;
+import org.lwjgl.system.MemoryUtil;
+
+import java.util.Arrays;
+import java.util.Objects;
 
 /**
  * @author Alexander Hinze
  * @since 14/10/2023
  */
-public record DerivedType(Type baseType, TypeAttribute... attributes) implements Type {
+public final class DerivedType implements Type {
+    private final Type baseType;
+    private final TypeAttribute[] attributes;
+    private long materializedType = MemoryUtil.NULL;
+
+    DerivedType(Type baseType, TypeAttribute... attributes) {
+        this.baseType = baseType;
+        this.attributes = attributes;
+    }
+
+    @Override
+    public Type getBaseType() {
+        return baseType;
+    }
+
     @Override
     public long materialize(final Target target) {
-        var type = baseType.materialize(target);
-        for (var i = 0; i < attributes.length; i++) {
-            type = LLVMCore.LLVMPointerType(type, 0);
+        if (materializedType != MemoryUtil.NULL) {
+            return materializedType;
         }
-        return type;
+        materializedType = baseType.materialize(target);
+        for (var i = 0; i < attributes.length; i++) {
+            materializedType = LLVMCore.LLVMPointerType(materializedType, 0);
+        }
+        return materializedType;
     }
 
     @Override
     public TypeAttribute[] getAttributes() {
         return attributes;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(baseType, Arrays.hashCode(attributes));
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof DerivedType type) {
+            return baseType.equals(type.baseType) && Arrays.equals(attributes, type.attributes);
+        }
+        return false;
+    }
+
+    @Override
+    public String toString() {
+        var result = baseType.toString();
+        for (final var attrib : attributes) {
+            result = attrib.format(result);
+        }
+        return result;
     }
 }

@@ -17,6 +17,7 @@ package io.karma.ferrous.manganese.util;
 
 import io.karma.ferrous.vanadium.FerrousParser.IdentContext;
 import io.karma.ferrous.vanadium.FerrousParser.LerpIdentContext;
+import io.karma.ferrous.vanadium.FerrousParser.QualifiedIdentContext;
 import org.fusesource.jansi.Ansi;
 import org.fusesource.jansi.Ansi.Attribute;
 import org.fusesource.jansi.Ansi.Color;
@@ -34,7 +35,7 @@ public final class Utils {
     private Utils() {}
     // @formatter:on
 
-    public static String getIdentifier(final IdentContext context) {
+    public static Identifier getIdentifier(final IdentContext context) {
         final var children = context.children;
         final var buffer = new StringBuilder();
         for (final var child : children) {
@@ -45,7 +46,21 @@ public final class Utils {
             }
             buffer.append(child.getText());
         }
-        return buffer.toString();
+        return Identifier.parse(buffer.toString());
+    }
+
+    public static Identifier getIdentifier(final QualifiedIdentContext context) {
+        final var children = context.children;
+        final var buffer = new StringBuilder();
+        for (final var child : children) {
+            if (child instanceof LerpIdentContext lerpContext) {
+                // TODO: handle interpolated identifiers
+                Logger.INSTANCE.warn("Identifier interpolation is not implemented right now");
+                continue;
+            }
+            buffer.append(child.getText());
+        }
+        return Identifier.parse(buffer.toString());
     }
 
     public static String getRawFileName(final Path path) {

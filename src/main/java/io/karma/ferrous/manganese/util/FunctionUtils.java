@@ -48,15 +48,15 @@ public final class FunctionUtils {
         return conv.get();
     }
 
-    public static String getFunctionName(final FunctionIdentContext context) {
+    public static Identifier getFunctionName(final FunctionIdentContext context) {
         final var children = context.children;
         if (children.size() == 1) {
             final var text = children.get(0).getText();
             final var op = Operator.findByText(text);
             if (op.isPresent()) {
-                return op.get().getFunctionName();
+                return Identifier.parse(op.get().getFunctionName());
             }
         }
-        return context.ident().getText();
+        return Utils.getIdentifier(context.ident());
     }
 }

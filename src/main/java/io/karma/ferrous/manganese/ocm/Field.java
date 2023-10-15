@@ -13,11 +13,13 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.util;
+package io.karma.ferrous.manganese.ocm;
+
+import io.karma.ferrous.manganese.util.Identifier;
 
 /**
  * @author Alexander Hinze
- * @since 13/10/2023
+ * @since 15/10/2023
  */
-public final class Scope {
+public record Field(Identifier identifier, Type type) {
 }
