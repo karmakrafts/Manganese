@@ -76,20 +76,20 @@ public final class Analyzer extends ParseAdapter {
             Logger.INSTANCE.debugln("Found incomplete field type '%s' in '%s'", fieldTypeName, scopeName);
             final var completeUdt = findUDTInScope(fieldTypeName, scopeName);
             if (completeUdt == null) {
-                compiler.reportError(
-                        new CompileError(String.format("Failed to resolve field types for '%s'", scopeName)),
-                        CompileStatus.ANALYZER_ERROR);
+                compiler.reportError(new CompileError(Utils.makeCompilerMessage(
+                                             String.format("Failed to resolve field type '%s' for '%s'", fieldTypeName, scopeName))),
+                                     CompileStatus.ANALYZER_ERROR);
                 continue;
             }
             final var completeType = completeUdt.structureType();
             if (completeType == null) {
-                compiler.reportError(
-                        new CompileError(String.format("Failed to resolve field types for '%s'", scopeName)),
-                        CompileStatus.ANALYZER_ERROR);
+                compiler.reportError(new CompileError(Utils.makeCompilerMessage(
+                                             String.format("Failed to resolve field type '%s' for '%s'", fieldTypeName, scopeName))),
+                                     CompileStatus.ANALYZER_ERROR);
                 continue;
             }
             Logger.INSTANCE.debugln("   Resolved to complete type '%s'", completeType.getInternalName());
-            type.setFieldType(i, completeType);
+            type.setFieldType(i, completeType.derive(fieldType.getAttributes()));
         }
     }
 

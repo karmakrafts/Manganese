@@ -40,7 +40,7 @@ public final class DerivedType implements Type {
 
     @Override
     public Identifier getName() {
-        return new Identifier(toString()); // TODO: find a better solution
+        return baseType.getName();
     }
 
     @Override
