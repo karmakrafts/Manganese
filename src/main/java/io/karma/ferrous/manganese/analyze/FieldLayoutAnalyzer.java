@@ -20,6 +20,7 @@ import io.karma.ferrous.manganese.Compiler;
 import io.karma.ferrous.manganese.ParseAdapter;
 import io.karma.ferrous.manganese.ocm.Field;
 import io.karma.ferrous.manganese.translate.TranslationException;
+import io.karma.ferrous.manganese.util.ScopeStack;
 import io.karma.ferrous.manganese.util.TypeUtils;
 import io.karma.ferrous.manganese.util.Utils;
 import io.karma.ferrous.vanadium.FerrousParser.FieldContext;
@@ -61,7 +62,7 @@ public final class FieldLayoutAnalyzer extends ParseAdapter {
         compiler.doOrReport(context, () -> {
             final var name = Utils.getIdentifier(context.ident());
             // @formatter:off
-            final var type = TypeUtils.getType(compiler, context.type())
+            final var type = TypeUtils.getType(compiler, ScopeStack.EMPTY, context.type())
                 .orElseThrow(() -> new TranslationException(context.start, "Unknown field type"));
             // @formatter:on
             fields.add(new Field(name, type));

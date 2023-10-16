@@ -16,6 +16,7 @@
 package io.karma.ferrous.manganese.util;
 
 import io.karma.ferrous.manganese.ocm.scope.EnclosingScopeProvider;
+import io.karma.ferrous.manganese.ocm.scope.ScopeType;
 
 import java.util.Stack;
 
@@ -40,5 +41,14 @@ public final class ScopeStack extends Stack<EnclosingScopeProvider> {
             currentScope = scope;
         }
         return provider;
+    }
+
+    public Identifier getScopeName() {
+        var result = new Identifier("");
+        for (final var scope : this) {
+            final var delimiter = scope.getScopeType() == ScopeType.NAMESPACE ? Identifier.DELIMITER : ".";
+            result = result.join(scope.getScopeName(), delimiter);
+        }
+        return result;
     }
 }

@@ -13,14 +13,34 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.ocm;
+package io.karma.ferrous.manganese.ocm.value;
 
-import io.karma.ferrous.manganese.ocm.type.StructureType;
+import io.karma.ferrous.manganese.ocm.expr.Expression;
 
 /**
  * @author Alexander Hinze
- * @since 14/10/2023
+ * @since 16/10/2023
  */
-public record UDT(UDTType type, StructureType structureType) {
-    public static final UDT NULL = new UDT(UDTType.STRUCT, null);
+public interface Value {
+    default boolean isExpression() {
+        return false;
+    }
+
+    default boolean isConstant() {
+        return false;
+    }
+
+    default Constant asConstant() {
+        if (!isConstant()) {
+            throw new RuntimeException("Not a constant");
+        }
+        return (Constant) this;
+    }
+
+    default Expression asExpression() {
+        if (!isExpression()) {
+            throw new RuntimeException("Not an expression");
+        }
+        return (Expression) this;
+    }
 }

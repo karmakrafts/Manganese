@@ -17,6 +17,7 @@ package io.karma.ferrous.manganese.ocm.type;
 
 import io.karma.ferrous.manganese.ocm.scope.EnclosingScopeProvider;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
+import io.karma.ferrous.manganese.ocm.scope.ScopeType;
 import io.karma.ferrous.manganese.target.Target;
 import io.karma.ferrous.manganese.util.Identifier;
 import org.jetbrains.annotations.Nullable;
@@ -41,6 +42,11 @@ public class FunctionType implements Type {
         this.returnType = returnType;
         this.paramTypes = paramTypes;
         this.isVarArg = isVarArg;
+    }
+
+    @Override
+    public ScopeType getScopeType() {
+        return ScopeType.FUNCTION;
     }
 
     @Override

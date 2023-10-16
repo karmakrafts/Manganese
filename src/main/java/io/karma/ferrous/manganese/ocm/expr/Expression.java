@@ -13,25 +13,13 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.ocm.scope;
+package io.karma.ferrous.manganese.ocm.expr;
+
+import io.karma.ferrous.manganese.ocm.value.Value;
 
 /**
  * @author Alexander Hinze
- * @since 15/10/2023
+ * @since 16/10/2023
  */
-public enum ScopeType {
-    GLOBAL,
-    FILE,
-    MODULE_FILE,
-    NAMESPACE,
-    STRUCT,
-    CLASS,
-    ENUM_CLASS,
-    ENUM,
-    TRAIT,
-    ATTRIBUTE,
-    INTERFACE,
-    CONSTRUCTOR,
-    DESTRUCTOR,
-    FUNCTION
+public interface Expression extends Value {
 }

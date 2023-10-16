@@ -47,8 +47,9 @@ public final class TypeUtils {
      * @param context  The actual type context AST node.
      * @return An optional with a type if one is found, otherwise empty.
      */
-    public static Optional<Type> getType(final Compiler compiler, final TypeContext context) {
-        final TypeParser unit = new TypeParser(compiler);
+    public static Optional<Type> getType(final Compiler compiler, final ScopeStack capturedScopeStack,
+                                         final TypeContext context) {
+        final TypeParser unit = new TypeParser(compiler, capturedScopeStack);
         ParseTreeWalker.DEFAULT.walk(unit, context);
         if (!compiler.getStatus().isRecoverable()) {
             return Optional.empty();
@@ -56,23 +57,23 @@ public final class TypeUtils {
         return Optional.of(unit.getType());
     }
 
-    public static List<Type> getParameterTypes(final Compiler compiler,
+    public static List<Type> getParameterTypes(final Compiler compiler, final ScopeStack capturedScopeStack,
                                                final ProtoFunctionContext context) throws TranslationException {
         // @formatter:off
         return context.functionParamList().functionParam().stream()
             .map(FunctionParamContext::functionParamType)
             .filter(type -> !type.getText().equals(TokenUtils.getLiteral(FerrousLexer.KW_VAARGS)))
-            .map(type -> getType(compiler, type.type())
+            .map(type -> getType(compiler, capturedScopeStack, type.type())
                 .orElseThrow(() -> new TranslationException(context.start, "Unknown function parameter type '%s'", type.getText())))
             .toList();
         // @formatter:on
     }
 
-    public static FunctionType getFunctionType(final Compiler compiler,
+    public static FunctionType getFunctionType(final Compiler compiler, final ScopeStack capturedScopeStack,
                                                final ProtoFunctionContext context) throws TranslationException {
         final var type = context.type();
         // @formatter:off
-        final var returnType = getType(compiler, type)
+        final var returnType = getType(compiler, capturedScopeStack, type)
             .orElseThrow(() -> new TranslationException(context.start, "Unknown function return type '%s'", type.getText()));
         // @formatter:on
         final var params = context.functionParamList().functionParam();
@@ -85,7 +86,7 @@ public final class TypeUtils {
                                                  .equals(TokenUtils.getLiteral(FerrousLexer.KW_VAARGS));
         }
 
-        final var paramTypes = TypeUtils.getParameterTypes(compiler, context);
+        final var paramTypes = TypeUtils.getParameterTypes(compiler, capturedScopeStack, context);
         return Types.function(returnType, paramTypes, isVarArg);
     }
 }

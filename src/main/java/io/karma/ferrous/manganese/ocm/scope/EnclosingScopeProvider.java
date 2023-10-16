@@ -18,14 +18,22 @@ package io.karma.ferrous.manganese.ocm.scope;
 import io.karma.ferrous.manganese.ocm.NameProvider;
 import io.karma.ferrous.manganese.util.Identifier;
 
+import java.util.EnumSet;
+
 /**
  * @author Alexander Hinze
  * @since 16/10/2023
  */
 public interface EnclosingScopeProvider extends NameProvider {
+    EnumSet<ScopeType> INVISIBLE_SCOPE_TYPES = EnumSet.of(ScopeType.GLOBAL, ScopeType.FILE, ScopeType.MODULE_FILE);
+
     EnclosingScopeProvider getEnclosingScope();
 
     default void setEnclosingScope(EnclosingScopeProvider scope) {
+    }
+
+    default ScopeType getScopeType() {
+        return getEnclosingScope().getScopeType();
     }
 
     default Identifier getScopeName() {
@@ -39,6 +47,10 @@ public interface EnclosingScopeProvider extends NameProvider {
             return getName();
         }
         while (currentParent != null) {
+            if (INVISIBLE_SCOPE_TYPES.contains(currentParent.getScopeType())) {
+                currentParent = currentParent.getEnclosingScope();
+                continue;
+            }
             result = currentParent.getName().join(result, '.');
             currentParent = currentParent.getEnclosingScope();
         }

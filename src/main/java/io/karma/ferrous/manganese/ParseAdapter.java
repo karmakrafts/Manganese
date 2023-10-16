@@ -17,6 +17,7 @@ package io.karma.ferrous.manganese;
 
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.ocm.scope.ScopeType;
+import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.ScopeStack;
 import io.karma.ferrous.manganese.util.Utils;
 import io.karma.ferrous.vanadium.FerrousParser.*;
@@ -35,6 +36,7 @@ public abstract class ParseAdapter implements FerrousParserListener {
 
     protected ParseAdapter(final Compiler compiler) {
         this.compiler = compiler;
+        scopeStack.push(Scope.GLOBAL);
     }
 
     public Compiler getCompiler() {
@@ -48,7 +50,7 @@ public abstract class ParseAdapter implements FerrousParserListener {
     // @formatter:off
     @Override
     public void enterFile(FileContext fileContext) {
-        scopeStack.push(Scope.GLOBAL);
+        scopeStack.push(new Scope(ScopeType.FILE, Identifier.parse(compiler.getCurrentName())));
     }
 
     @Override
@@ -58,7 +60,7 @@ public abstract class ParseAdapter implements FerrousParserListener {
 
     @Override
     public void enterModuleFile(ModuleFileContext moduleFileContext) {
-        scopeStack.push(Scope.GLOBAL);
+        scopeStack.push(new Scope(ScopeType.MODULE_FILE, Identifier.parse(compiler.getCurrentName())));
     }
 
     @Override
@@ -71,6 +73,12 @@ public abstract class ParseAdapter implements FerrousParserListener {
 
     @Override
     public void exitModule(ModuleContext moduleContext) {}
+
+    @Override
+    public void enterModBlock(ModBlockContext modBlockContext) {}
+
+    @Override
+    public void exitModBlock(ModBlockContext modBlockContext) {}
 
     @Override
     public void enterModUseStatement(ModUseStatementContext modUseStatementContext) {}

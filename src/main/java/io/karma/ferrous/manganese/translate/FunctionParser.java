@@ -23,6 +23,7 @@ import io.karma.ferrous.manganese.ocm.type.FunctionType;
 import io.karma.ferrous.manganese.util.CallingConvention;
 import io.karma.ferrous.manganese.util.FunctionUtils;
 import io.karma.ferrous.manganese.util.Identifier;
+import io.karma.ferrous.manganese.util.ScopeStack;
 import io.karma.ferrous.manganese.util.TypeUtils;
 import io.karma.ferrous.vanadium.FerrousParser.ProtoFunctionContext;
 
@@ -31,19 +32,21 @@ import io.karma.ferrous.vanadium.FerrousParser.ProtoFunctionContext;
  * @since 14/10/2023
  */
 public final class FunctionParser extends ParseAdapter {
+    private final ScopeStack capturedScopeStack;
     private Identifier identifier;
     private FunctionType type;
     private CallingConvention callConv;
 
-    public FunctionParser(final Compiler compiler) {
+    public FunctionParser(final Compiler compiler, final ScopeStack capturedScopeStack) {
         super(compiler);
+        this.capturedScopeStack = capturedScopeStack;
     }
 
     @Override
     public void enterProtoFunction(ProtoFunctionContext context) {
         compiler.doOrReport(context, () -> {
             identifier = FunctionUtils.getFunctionName(context.functionIdent());
-            type = TypeUtils.getFunctionType(compiler, context);
+            type = TypeUtils.getFunctionType(compiler, capturedScopeStack, context);
             callConv = FunctionUtils.getCallingConvention(compiler, context);
         }, CompileStatus.TRANSLATION_ERROR);
         super.enterProtoFunction(context);

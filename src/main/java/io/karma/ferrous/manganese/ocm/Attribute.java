@@ -13,25 +13,29 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.ocm.scope;
+package io.karma.ferrous.manganese.ocm;
+
+import io.karma.ferrous.manganese.util.Identifier;
 
 /**
  * @author Alexander Hinze
- * @since 15/10/2023
+ * @since 16/10/2023
  */
-public enum ScopeType {
-    GLOBAL,
-    FILE,
-    MODULE_FILE,
-    NAMESPACE,
-    STRUCT,
-    CLASS,
-    ENUM_CLASS,
-    ENUM,
-    TRAIT,
-    ATTRIBUTE,
-    INTERFACE,
-    CONSTRUCTOR,
-    DESTRUCTOR,
-    FUNCTION
+public final class Attribute implements NameProvider {
+    private final Identifier name;
+    private final Parameter[] parameters;
+
+    public Attribute(final Identifier name, final Parameter... params) {
+        this.name = name;
+        parameters = params;
+    }
+
+    public Parameter[] getParameters() {
+        return parameters;
+    }
+
+    @Override
+    public Identifier getName() {
+        return name;
+    }
 }

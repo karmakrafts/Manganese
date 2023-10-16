@@ -87,8 +87,8 @@ public final class Compiler implements ANTLRErrorListener {
 
     private final ArrayList<CompileError> errors = new ArrayList<>();
     private CompilePass currentPass = CompilePass.NONE;
+    private String currentName;
     private CompileStatus status = CompileStatus.SKIPPED;
-    private FerrousLexer lexer;
     private BufferedTokenStream tokenStream;
     private FerrousParser parser;
     private FileContext fileContext;
@@ -143,9 +143,9 @@ public final class Compiler implements ANTLRErrorListener {
 
     private void resetCompilation() {
         status = CompileStatus.SKIPPED;
+        currentName = null;
         tokenStream = null;
         fileContext = null;
-        lexer = null;
         parser = null;
         analyzer = null;
         translationUnit = null;
@@ -192,6 +192,10 @@ public final class Compiler implements ANTLRErrorListener {
 
     public CompilePass getCurrentPass() {
         return currentPass;
+    }
+
+    public String getCurrentName() {
+        return currentName;
     }
 
     public TranslationUnit getTranslationUnit() {
@@ -358,13 +362,26 @@ public final class Compiler implements ANTLRErrorListener {
 
     private void printTokens(final FerrousLexer lexer) {
         final var tokens = tokenStream.getTokens();
+        var indent = 0;
         for (final var token : tokens) {
+            switch (token.getType()) {
+                case FerrousLexer.L_BRACE:
+                case FerrousLexer.L_BRACKET:
+                case FerrousLexer.L_PAREN:
+                    indent++;
+                    break;
+                case FerrousLexer.R_BRACE:
+                case FerrousLexer.R_BRACKET:
+                case FerrousLexer.R_PAREN:
+                    indent--;
+                    break;
+            }
             final var text = token.getText();
             if (!extendedTokenView && text.isBlank()) {
                 continue; // Skip blank tokens if extended mode is disabled
             }
             // @formatter:off
-            final var tokenType = lexer.getTokenTypeMap()
+            final var tokenTypeEntry = lexer.getTokenTypeMap()
                 .entrySet()
                 .stream()
                 .filter(e -> e.getValue().equals(token.getType()))
@@ -372,6 +389,7 @@ public final class Compiler implements ANTLRErrorListener {
                 .orElseThrow();
             System.out.println(Ansi.ansi()
                 .fg(Color.BLUE)
+                .a(" ".repeat(indent << 2))
                 .a(String.format("%06d", token.getTokenIndex()))
                 .a(Attribute.RESET)
                 .a(": ")
@@ -380,7 +398,7 @@ public final class Compiler implements ANTLRErrorListener {
                 .a(Attribute.RESET)
                 .a(' ')
                 .fg(Color.GREEN)
-                .a(tokenType)
+                .a(tokenTypeEntry)
                 .a(Attribute.RESET).toString());
             // @formatter:on
         }
@@ -484,6 +502,7 @@ public final class Compiler implements ANTLRErrorListener {
 
     public void compile(final String name, final ReadableByteChannel in, final WritableByteChannel out) {
         resetCompilation(); // Reset before each compilation
+        currentName = name;
 
         try {
             final var charStream = CharStreams.fromChannel(in, StandardCharsets.UTF_8);

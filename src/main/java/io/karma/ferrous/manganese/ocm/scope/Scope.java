@@ -24,11 +24,10 @@ import java.util.Objects;
  * @since 15/10/2023
  */
 public final class Scope implements EnclosingScopeProvider {
-    public static final Scope GLOBAL = new Scope(ScopeType.GLOBAL);
-
+    public static final Scope GLOBAL = new Scope(ScopeType.GLOBAL, Identifier.EMPTY);
     private final ScopeType type;
     private final Identifier name;
-    private EnclosingScopeProvider enclosingScope = GLOBAL;
+    private EnclosingScopeProvider enclosingScope;
 
     public Scope(final ScopeType type, final Identifier name) {
         this.type = type;
@@ -37,6 +36,11 @@ public final class Scope implements EnclosingScopeProvider {
 
     public Scope(final ScopeType type) {
         this(type, Identifier.EMPTY);
+    }
+
+    @Override
+    public ScopeType getScopeType() {
+        return type;
     }
 
     @Override

@@ -57,7 +57,7 @@ public class TranslationUnit extends ParseAdapter {
     public void enterExternFunction(ExternFunctionContext context) {
         compiler.doOrReport(context, () -> {
             final var prototype = context.protoFunction();
-            final var type = TypeUtils.getFunctionType(compiler, prototype);
+            final var type = TypeUtils.getFunctionType(compiler, scopeStack, prototype);
             final var function = LLVMAddFunction(module,
                                                  FunctionUtils.getFunctionName(prototype.functionIdent()).toString(),
                                                  type.materialize(compiler.getTarget()));

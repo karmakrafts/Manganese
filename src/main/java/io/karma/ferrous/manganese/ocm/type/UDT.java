@@ -13,25 +13,12 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.ocm.scope;
+package io.karma.ferrous.manganese.ocm.type;
 
 /**
  * @author Alexander Hinze
- * @since 15/10/2023
+ * @since 14/10/2023
  */
-public enum ScopeType {
-    GLOBAL,
-    FILE,
-    MODULE_FILE,
-    NAMESPACE,
-    STRUCT,
-    CLASS,
-    ENUM_CLASS,
-    ENUM,
-    TRAIT,
-    ATTRIBUTE,
-    INTERFACE,
-    CONSTRUCTOR,
-    DESTRUCTOR,
-    FUNCTION
+public record UDT(UDTKind type, StructureType structureType) {
+    public static final UDT NULL = new UDT(UDTKind.STRUCT, null);
 }

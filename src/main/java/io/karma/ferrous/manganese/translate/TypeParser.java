@@ -23,6 +23,7 @@ import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.ocm.type.TypeAttribute;
 import io.karma.ferrous.manganese.ocm.type.Types;
 import io.karma.ferrous.manganese.util.Identifier;
+import io.karma.ferrous.manganese.util.ScopeStack;
 import io.karma.ferrous.manganese.util.Utils;
 import io.karma.ferrous.vanadium.FerrousParser.FloatTypeContext;
 import io.karma.ferrous.vanadium.FerrousParser.IdentContext;
@@ -43,20 +44,22 @@ import java.util.Stack;
  */
 public final class TypeParser extends ParseAdapter {
     private final Stack<TypeAttribute> attributes = new Stack<>();
+    private final ScopeStack capturedScopeStack;
     private Type baseType;
 
-    public TypeParser(final Compiler compiler) {
+    public TypeParser(final Compiler compiler, final ScopeStack capturedScopeStack) {
         super(compiler);
+        this.capturedScopeStack = capturedScopeStack;
     }
 
     @Override
-    public void enterPointerType(PointerTypeContext context) {
+    public void enterPointerType(final PointerTypeContext context) {
         attributes.push(TypeAttribute.POINTER);
         super.enterPointerType(context);
     }
 
     @Override
-    public void enterRefType(RefTypeContext context) {
+    public void enterRefType(final RefTypeContext context) {
         if (attributes.contains(TypeAttribute.REFERENCE)) {
             final var error = new CompileError(context.start);
             error.setAdditionalText(Utils.makeCompilerMessage("Type can only have one level of reference", null));
@@ -68,7 +71,7 @@ public final class TypeParser extends ParseAdapter {
     }
 
     @Override
-    public void enterSliceType(SliceTypeContext context) {
+    public void enterSliceType(final SliceTypeContext context) {
         attributes.push(TypeAttribute.SLICE);
         super.enterSliceType(context);
     }
@@ -86,10 +89,10 @@ public final class TypeParser extends ParseAdapter {
     }
 
     @Override
-    public void enterIdent(IdentContext context) {
+    public void enterIdent(final IdentContext context) {
         compiler.doOrReport(context, () -> {
             final var name = Utils.getIdentifier(context);
-            final var udt = compiler.getAnalyzer().getUDTs().get(name);
+            final var udt = compiler.getAnalyzer().findUDTInScope(name, capturedScopeStack.getScopeName());
             if (udt == null) {
                 baseType = Types.incomplete(name);
                 return;
@@ -100,10 +103,10 @@ public final class TypeParser extends ParseAdapter {
     }
 
     @Override
-    public void enterQualifiedIdent(QualifiedIdentContext context) {
+    public void enterQualifiedIdent(final QualifiedIdentContext context) {
         compiler.doOrReport(context, () -> {
             final var name = Utils.getIdentifier(context);
-            final var udt = compiler.getAnalyzer().getUDTs().get(name);
+            final var udt = compiler.getAnalyzer().findUDTInScope(name, capturedScopeStack.getScopeName());
             if (udt == null) {
                 baseType = Types.incomplete(name);
                 return;
@@ -114,25 +117,25 @@ public final class TypeParser extends ParseAdapter {
     }
 
     @Override
-    public void enterMiscType(MiscTypeContext context) {
+    public void enterMiscType(final MiscTypeContext context) {
         parsePrimitiveType(context, "Unknown miscellaneous type");
         super.enterMiscType(context);
     }
 
     @Override
-    public void enterSintType(SintTypeContext context) {
+    public void enterSintType(final SintTypeContext context) {
         parsePrimitiveType(context, "Unknown signed integer type");
         super.enterSintType(context);
     }
 
     @Override
-    public void enterUintType(UintTypeContext context) {
+    public void enterUintType(final UintTypeContext context) {
         parsePrimitiveType(context, "Unknown unsigned integer type");
         super.enterUintType(context);
     }
 
     @Override
-    public void enterFloatType(FloatTypeContext context) {
+    public void enterFloatType(final FloatTypeContext context) {
         parsePrimitiveType(context, "Unknown floating point type");
         super.enterFloatType(context);
     }

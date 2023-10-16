@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.ocm;
+package io.karma.ferrous.manganese.ocm.type;
 
 import io.karma.ferrous.manganese.util.TokenUtils;
 import io.karma.ferrous.vanadium.FerrousLexer;
@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
  * @author Alexander Hinze
  * @since 14/10/2023
  */
-public enum UDTType {
+public enum UDTKind {
     // @formatter:off
     STRUCT    (FerrousLexer.KW_STRUCT),
     CLASS     (FerrousLexer.KW_CLASS),
@@ -38,7 +38,7 @@ public enum UDTType {
 
     private final int[] tokens;
 
-    UDTType(final int... tokens) {
+    UDTKind(final int... tokens) {
         this.tokens = tokens;
     }
 
