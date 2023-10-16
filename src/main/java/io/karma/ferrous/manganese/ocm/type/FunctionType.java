@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.ocm;
+package io.karma.ferrous.manganese.ocm.type;
 
 import io.karma.ferrous.manganese.scope.Scope;
 import io.karma.ferrous.manganese.scope.ScopeProvider;
@@ -31,12 +31,11 @@ import java.util.Objects;
  * @author Alexander Hinze
  * @since 13/10/2023
  */
-public final class FunctionType implements Type {
+public class FunctionType implements Type {
     private final Type returnType;
     private final Type[] paramTypes;
     private final boolean isVarArg;
     private long materializedType = MemoryUtil.NULL;
-    private ScopeProvider enclosingScope = Scope.GLOBAL;
 
     FunctionType(final Type returnType, final boolean isVarArg, final Type... paramTypes) {
         this.returnType = returnType;
@@ -46,12 +45,12 @@ public final class FunctionType implements Type {
 
     @Override
     public ScopeProvider getEnclosingScope() {
-        return enclosingScope;
+        return Scope.GLOBAL;
     }
 
     @Override
     public void setEnclosingScope(final ScopeProvider scope) {
-        enclosingScope = scope;
+        throw new UnsupportedOperationException();
     }
 
     @Override

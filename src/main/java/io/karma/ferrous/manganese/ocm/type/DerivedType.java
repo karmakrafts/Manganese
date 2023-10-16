@@ -13,57 +13,38 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.ocm;
+package io.karma.ferrous.manganese.ocm.type;
 
-import io.karma.ferrous.manganese.scope.Scope;
 import io.karma.ferrous.manganese.scope.ScopeProvider;
 import io.karma.ferrous.manganese.target.Target;
-import io.karma.ferrous.manganese.util.Identifier;
-import io.karma.ferrous.manganese.util.Target2LongFunction;
-import io.karma.ferrous.manganese.util.TokenUtils;
+import org.lwjgl.llvm.LLVMCore;
 import org.lwjgl.system.MemoryUtil;
+
+import java.util.Arrays;
+import java.util.Objects;
 
 /**
  * @author Alexander Hinze
- * @since 13/10/2023
+ * @since 14/10/2023
  */
-public final class BuiltinType implements Type {
-    private final Identifier identifier;
-    private final Target2LongFunction typeProvider;
+public final class DerivedType implements Type {
+    private final Type baseType;
+    private final TypeAttribute[] attributes;
     private long materializedType = MemoryUtil.NULL;
 
-    BuiltinType(final Identifier identifier, final Target2LongFunction typeProvider) {
-        this.identifier = identifier;
-        this.typeProvider = typeProvider;
-    }
-
-    BuiltinType(final int token, final Target2LongFunction typeProvider) {
-        this(new Identifier(TokenUtils.getLiteral(token)), typeProvider);
+    DerivedType(Type baseType, TypeAttribute... attributes) {
+        this.baseType = baseType;
+        this.attributes = attributes;
     }
 
     @Override
     public ScopeProvider getEnclosingScope() {
-        return Scope.GLOBAL;
-    }
-
-    @Override
-    public Identifier getName() {
-        return identifier;
-    }
-
-    @Override
-    public boolean isBuiltin() {
-        return true;
-    }
-
-    @Override
-    public boolean isComplete() {
-        return true;
+        return baseType.getEnclosingScope();
     }
 
     @Override
     public Type getBaseType() {
-        return this;
+        return baseType;
     }
 
     @Override
@@ -71,29 +52,37 @@ public final class BuiltinType implements Type {
         if (materializedType != MemoryUtil.NULL) {
             return materializedType;
         }
-        return materializedType = typeProvider.getAddress(target);
+        materializedType = baseType.materialize(target);
+        for (var i = 0; i < attributes.length; i++) {
+            materializedType = LLVMCore.LLVMPointerType(materializedType, 0);
+        }
+        return materializedType;
     }
 
     @Override
     public TypeAttribute[] getAttributes() {
-        return new TypeAttribute[0];
+        return attributes;
     }
 
     @Override
     public int hashCode() {
-        return identifier.hashCode();
+        return Objects.hash(baseType, Arrays.hashCode(attributes));
     }
 
     @Override
     public boolean equals(Object obj) {
-        if (obj instanceof BuiltinType type) {
-            return identifier.equals(type.identifier);
+        if (obj instanceof DerivedType type) {
+            return baseType.equals(type.baseType) && Arrays.equals(attributes, type.attributes);
         }
         return false;
     }
 
     @Override
     public String toString() {
-        return identifier.toString();
+        var result = baseType.toString();
+        for (final var attrib : attributes) {
+            result = attrib.format(result);
+        }
+        return result;
     }
 }

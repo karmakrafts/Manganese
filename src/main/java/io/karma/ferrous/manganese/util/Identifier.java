@@ -17,6 +17,7 @@ package io.karma.ferrous.manganese.util;
 
 import io.karma.ferrous.vanadium.FerrousLexer;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 
 /**
@@ -32,6 +33,14 @@ public record Identifier(String... components) {
             return new Identifier(value);
         }
         return new Identifier(value.split(DELIMITER));
+    }
+
+    public Identifier[] split(final String delimiter) {
+        final var result = new ArrayList<Identifier>();
+        for (final var comp : components) {
+            result.addAll(Arrays.stream(comp.split(delimiter)).map(Identifier::parse).toList());
+        }
+        return result.toArray(Identifier[]::new);
     }
 
     public Identifier join(final Identifier other, final char delimiter) {

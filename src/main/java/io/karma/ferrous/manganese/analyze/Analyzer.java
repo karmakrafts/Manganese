@@ -15,15 +15,17 @@
 
 package io.karma.ferrous.manganese.analyze;
 
+import io.karma.ferrous.manganese.CompileError;
+import io.karma.ferrous.manganese.CompileStatus;
 import io.karma.ferrous.manganese.Compiler;
 import io.karma.ferrous.manganese.ParseAdapter;
 import io.karma.ferrous.manganese.ocm.Field;
 import io.karma.ferrous.manganese.ocm.Function;
-import io.karma.ferrous.manganese.ocm.StructureType;
-import io.karma.ferrous.manganese.ocm.Type;
-import io.karma.ferrous.manganese.ocm.Types;
 import io.karma.ferrous.manganese.ocm.UDT;
 import io.karma.ferrous.manganese.ocm.UDTType;
+import io.karma.ferrous.manganese.ocm.type.StructureType;
+import io.karma.ferrous.manganese.ocm.type.Type;
+import io.karma.ferrous.manganese.ocm.type.Types;
 import io.karma.ferrous.manganese.scope.ScopeStack;
 import io.karma.ferrous.manganese.util.FunctionUtils;
 import io.karma.ferrous.manganese.util.Identifier;
@@ -42,6 +44,7 @@ import io.karma.ferrous.vanadium.FerrousParser.TraitContext;
 import io.karma.kommons.topo.TopoNode;
 import io.karma.kommons.topo.TopoSorter;
 import io.karma.kommons.tuple.Pair;
+import io.karma.kommons.util.ArrayUtils;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import org.jetbrains.annotations.Nullable;
@@ -64,6 +67,31 @@ public final class Analyzer extends ParseAdapter {
         super(compiler);
     }
 
+    private @Nullable UDT resolveType(final Identifier name, final Identifier scopeName) {
+        var completeUdt = udts.get(name);
+        if (completeUdt == null) {
+            // Attempt to resolve field types from the inside scope outwards
+            final var partialScopeNames = scopeName.split("\\.");
+            final var numPartialScopeNames = partialScopeNames.length;
+            for (var j = numPartialScopeNames; j > 0; j--) {
+                final var slicedScopeNames = ArrayUtils.slice(partialScopeNames, 0, j, Identifier[]::new);
+                var currentScopeName = new Identifier("");
+                for (final var partialScopeName : slicedScopeNames) {
+                    currentScopeName = currentScopeName.join(partialScopeName, '.');
+                }
+                Logger.INSTANCE.debugln("Attempting to find '%s' in '%s'", name, currentScopeName);
+                completeUdt = udts.get(currentScopeName.join(name, '.'));
+                if (completeUdt != null) {
+                    break; // Stop if we found it
+                }
+            }
+            if (completeUdt == null) {
+                compiler.reportError(new CompileError(String.format("Failed to resolve field types for '%s'", scopeName)), CompileStatus.TRANSLATION_ERROR);
+            }
+        }
+        return completeUdt;
+    }
+
     private void resolveFieldTypes(final UDT udt, final Identifier scopeName) {
         final var type = udt.structureType();
         final var fieldTypes = type.getFieldTypes();
@@ -75,13 +103,7 @@ public final class Analyzer extends ParseAdapter {
             }
             final var fieldTypeName = fieldType.getInternalName();
             Logger.INSTANCE.debugln("Found incomplete field type '%s' in '%s'", fieldTypeName, scopeName);
-            var completeUdt = udts.get(fieldTypeName);
-            if (completeUdt == null) {
-                completeUdt = udts.get(scopeName.join(fieldTypeName, '.')); // Second attempt
-                if (completeUdt == null) {
-                    continue; // TODO: report error
-                }
-            }
+            final var completeUdt = resolveType(fieldTypeName, scopeName);
             final var completeType = completeUdt.structureType();
             Logger.INSTANCE.debugln("   Resolved to complete type '%s'", completeType.getInternalName());
             type.setFieldType(i, completeType);

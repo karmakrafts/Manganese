@@ -16,9 +16,9 @@
 package io.karma.ferrous.manganese.util;
 
 import io.karma.ferrous.manganese.Compiler;
-import io.karma.ferrous.manganese.ocm.FunctionType;
-import io.karma.ferrous.manganese.ocm.Type;
-import io.karma.ferrous.manganese.ocm.Types;
+import io.karma.ferrous.manganese.ocm.type.FunctionType;
+import io.karma.ferrous.manganese.ocm.type.Type;
+import io.karma.ferrous.manganese.ocm.type.Types;
 import io.karma.ferrous.manganese.scope.ScopeStack;
 import io.karma.ferrous.manganese.translate.TranslationException;
 import io.karma.ferrous.manganese.translate.TypeParser;

@@ -15,14 +15,31 @@
 
 package io.karma.ferrous.manganese.ocm;
 
+import io.karma.ferrous.manganese.ocm.type.FunctionType;
+import io.karma.ferrous.manganese.ocm.type.NamedFunctionType;
+import io.karma.ferrous.manganese.ocm.type.Type;
+import io.karma.ferrous.manganese.ocm.type.Types;
 import io.karma.ferrous.manganese.util.Identifier;
+
+import java.util.Arrays;
 
 /**
  * @author Alexander Hinze
  * @since 14/10/2023
  */
-public record Function(Identifier identifier, FunctionType type, boolean isExtern) {
-    public Function(final Identifier identifier, final FunctionType type) {
-        this(identifier, type, false);
+public record Function(Identifier identifier, boolean isExtern, boolean isVarArg, Type returnType,
+                       Parameter... params) {
+    public Function(final Identifier identifier, final Type returnType, final Parameter... params) {
+        this(identifier, false, false, returnType, params);
+    }
+
+    public FunctionType makeType() {
+        final var paramTypes = Arrays.stream(params).map(Parameter::type).toList();
+        return Types.function(returnType, paramTypes, isVarArg);
+    }
+
+    public NamedFunctionType makeNamedType(final Identifier name) {
+        final var paramTypes = Arrays.stream(params).map(Parameter::type).toList();
+        return Types.namedFunction(name, returnType, paramTypes, isVarArg);
     }
 }

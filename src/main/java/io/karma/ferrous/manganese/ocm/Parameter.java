@@ -15,26 +15,12 @@
 
 package io.karma.ferrous.manganese.ocm;
 
-import java.util.function.Function;
+import io.karma.ferrous.manganese.ocm.type.Type;
+import io.karma.ferrous.manganese.util.Identifier;
 
 /**
  * @author Alexander Hinze
- * @since 14/10/2023
+ * @since 16/10/2023
  */
-public enum TypeAttribute {
-    // @formatter:off
-    SLICE    (type -> String.format("[%s]", type)),
-    POINTER  (type -> String.format("*%s", type)),
-    REFERENCE(type -> String.format("&%s", type));
-    // @formatter:on
-
-    private final Function<String, String> formatter;
-
-    TypeAttribute(final Function<String, String> formatter) {
-        this.formatter = formatter;
-    }
-
-    public String format(final String type) {
-        return formatter.apply(type);
-    }
+public record Parameter(Identifier name, Type type) {
 }

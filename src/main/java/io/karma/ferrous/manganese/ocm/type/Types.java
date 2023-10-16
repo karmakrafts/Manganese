@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.ocm;
+package io.karma.ferrous.manganese.ocm.type;
 
 import io.karma.ferrous.manganese.CompileError;
 import io.karma.ferrous.manganese.target.Target;
@@ -99,6 +99,16 @@ public final class Types {
 
     public static FunctionType function(final Type returnType, final boolean isVarArg, final Type... paramTypes) {
         return cached(new FunctionType(returnType, isVarArg, paramTypes));
+    }
+
+    public static NamedFunctionType namedFunction(final Identifier name, final Type returnType,
+                                                  final List<? extends Type> paramTypes, final boolean isVarArg) {
+        return cached(new NamedFunctionType(name, returnType, isVarArg, paramTypes.toArray(Type[]::new)));
+    }
+
+    public static NamedFunctionType namedFunction(final Identifier name, final Type returnType, final boolean isVarArg,
+                                                  final Type... paramTypes) {
+        return cached(new NamedFunctionType(name, returnType, isVarArg, paramTypes));
     }
 
     public static StructureType structure(final Identifier name, final boolean isPacked, final Type... fieldTypes) {

@@ -15,6 +15,8 @@
 
 package io.karma.ferrous.manganese.ocm;
 
+import io.karma.ferrous.manganese.ocm.type.StructureType;
+
 /**
  * @author Alexander Hinze
  * @since 14/10/2023

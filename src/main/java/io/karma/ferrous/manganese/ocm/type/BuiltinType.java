@@ -13,37 +13,37 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.ocm;
+package io.karma.ferrous.manganese.ocm.type;
 
+import io.karma.ferrous.manganese.scope.Scope;
 import io.karma.ferrous.manganese.scope.ScopeProvider;
 import io.karma.ferrous.manganese.target.Target;
 import io.karma.ferrous.manganese.util.Identifier;
-import org.lwjgl.llvm.LLVMCore;
+import io.karma.ferrous.manganese.util.Target2LongFunction;
+import io.karma.ferrous.manganese.util.TokenUtils;
 import org.lwjgl.system.MemoryUtil;
-
-import static org.lwjgl.llvm.LLVMCore.LLVMGetGlobalContext;
 
 /**
  * @author Alexander Hinze
- * @since 15/10/2023
+ * @since 13/10/2023
  */
-public final class IncompleteType implements Type {
+public final class BuiltinType implements Type {
     private final Identifier identifier;
+    private final Target2LongFunction typeProvider;
     private long materializedType = MemoryUtil.NULL;
-    private ScopeProvider enclosingType;
 
-    IncompleteType(final Identifier identifier) {
+    BuiltinType(final Identifier identifier, final Target2LongFunction typeProvider) {
         this.identifier = identifier;
+        this.typeProvider = typeProvider;
+    }
+
+    BuiltinType(final int token, final Target2LongFunction typeProvider) {
+        this(new Identifier(TokenUtils.getLiteral(token)), typeProvider);
     }
 
     @Override
     public ScopeProvider getEnclosingScope() {
-        return enclosingType;
-    }
-
-    @Override
-    public void setEnclosingScope(final ScopeProvider scope) {
-        enclosingType = scope;
+        return Scope.GLOBAL;
     }
 
     @Override
@@ -53,25 +53,12 @@ public final class IncompleteType implements Type {
 
     @Override
     public boolean isBuiltin() {
-        return false;
+        return true;
     }
 
     @Override
     public boolean isComplete() {
-        return false;
-    }
-
-    @Override
-    public long materialize(final Target target) {
-        if (materializedType != MemoryUtil.NULL) {
-            return materializedType;
-        }
-        return materializedType = LLVMCore.LLVMStructCreateNamed(LLVMGetGlobalContext(), getInternalName().toString());
-    }
-
-    @Override
-    public TypeAttribute[] getAttributes() {
-        return new TypeAttribute[0];
+        return true;
     }
 
     @Override
@@ -80,20 +67,33 @@ public final class IncompleteType implements Type {
     }
 
     @Override
+    public long materialize(final Target target) {
+        if (materializedType != MemoryUtil.NULL) {
+            return materializedType;
+        }
+        return materializedType = typeProvider.getAddress(target);
+    }
+
+    @Override
+    public TypeAttribute[] getAttributes() {
+        return new TypeAttribute[0];
+    }
+
+    @Override
     public int hashCode() {
-        return getInternalName().hashCode();
+        return identifier.hashCode();
     }
 
     @Override
     public boolean equals(Object obj) {
-        if (obj instanceof IncompleteType type) {
-            return getInternalName().equals(type.getInternalName());
+        if (obj instanceof BuiltinType type) {
+            return identifier.equals(type.identifier);
         }
         return false;
     }
 
     @Override
     public String toString() {
-        return getInternalName().toString();
+        return identifier.toString();
     }
 }

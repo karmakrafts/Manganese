@@ -13,38 +13,52 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.ocm;
+package io.karma.ferrous.manganese.ocm.type;
 
 import io.karma.ferrous.manganese.scope.ScopeProvider;
 import io.karma.ferrous.manganese.target.Target;
+import io.karma.ferrous.manganese.util.Identifier;
 import org.lwjgl.llvm.LLVMCore;
 import org.lwjgl.system.MemoryUtil;
 
-import java.util.Arrays;
-import java.util.Objects;
+import static org.lwjgl.llvm.LLVMCore.LLVMGetGlobalContext;
 
 /**
  * @author Alexander Hinze
- * @since 14/10/2023
+ * @since 15/10/2023
  */
-public final class DerivedType implements Type {
-    private final Type baseType;
-    private final TypeAttribute[] attributes;
+public final class IncompleteType implements Type {
+    private final Identifier identifier;
     private long materializedType = MemoryUtil.NULL;
+    private ScopeProvider enclosingType;
 
-    DerivedType(Type baseType, TypeAttribute... attributes) {
-        this.baseType = baseType;
-        this.attributes = attributes;
+    IncompleteType(final Identifier identifier) {
+        this.identifier = identifier;
     }
 
     @Override
     public ScopeProvider getEnclosingScope() {
-        return baseType.getEnclosingScope();
+        return enclosingType;
     }
 
     @Override
-    public Type getBaseType() {
-        return baseType;
+    public void setEnclosingScope(final ScopeProvider scope) {
+        enclosingType = scope;
+    }
+
+    @Override
+    public Identifier getName() {
+        return identifier;
+    }
+
+    @Override
+    public boolean isBuiltin() {
+        return false;
+    }
+
+    @Override
+    public boolean isComplete() {
+        return false;
     }
 
     @Override
@@ -52,37 +66,34 @@ public final class DerivedType implements Type {
         if (materializedType != MemoryUtil.NULL) {
             return materializedType;
         }
-        materializedType = baseType.materialize(target);
-        for (var i = 0; i < attributes.length; i++) {
-            materializedType = LLVMCore.LLVMPointerType(materializedType, 0);
-        }
-        return materializedType;
+        return materializedType = LLVMCore.LLVMStructCreateNamed(LLVMGetGlobalContext(), getInternalName().toString());
     }
 
     @Override
     public TypeAttribute[] getAttributes() {
-        return attributes;
+        return new TypeAttribute[0];
+    }
+
+    @Override
+    public Type getBaseType() {
+        return this;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(baseType, Arrays.hashCode(attributes));
+        return getInternalName().hashCode();
     }
 
     @Override
     public boolean equals(Object obj) {
-        if (obj instanceof DerivedType type) {
-            return baseType.equals(type.baseType) && Arrays.equals(attributes, type.attributes);
+        if (obj instanceof IncompleteType type) {
+            return getInternalName().equals(type.getInternalName());
         }
         return false;
     }
 
     @Override
     public String toString() {
-        var result = baseType.toString();
-        for (final var attrib : attributes) {
-            result = attrib.format(result);
-        }
-        return result;
+        return getInternalName().toString();
     }
 }

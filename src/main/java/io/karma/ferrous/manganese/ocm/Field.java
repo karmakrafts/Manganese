@@ -15,6 +15,7 @@
 
 package io.karma.ferrous.manganese.ocm;
 
+import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.util.Identifier;
 
 /**
