@@ -15,8 +15,6 @@
 
 package io.karma.ferrous.manganese.scope;
 
-import io.karma.ferrous.manganese.CompileError;
-import io.karma.ferrous.manganese.translate.TranslationException;
 import io.karma.ferrous.manganese.util.Identifier;
 
 import java.util.Stack;
@@ -26,22 +24,44 @@ import java.util.Stack;
  * @since 15/10/2023
  */
 public final class ScopeStack extends Stack<Scope> {
-    public Identifier getNestedName() {
-        final var numScopes = size();
-        final var buffer = new StringBuilder();
-        for (var i = 0; i < numScopes; i++) {
-            final var name = get(i).getName();
-            if (name == null) {
-                continue; // TODO: fix this to allow anon scopes
-            }
-            if (name.isQualified()) {
-                throw new TranslationException(new CompileError("Qualified scope names are not supported right now"));
-            }
-            buffer.append(name);
-            if (i < numScopes - 1) {
-                buffer.append('.');
-            }
-        }
-        return new Identifier(buffer.toString());
+    public static final ScopeStack EMPTY = new ScopeStack();
+
+    public ScopeStack() {
     }
+
+    public ScopeStack(final ScopeStack other) {
+        addAll(other);
+    }
+
+    public <S extends ScopeProvider> S applyEnclosingScopes(final S provider) {
+        ScopeProvider currentScope = provider;
+        for (final var scope : reversed()) {
+            currentScope.setEnclosingScope(scope);
+            currentScope = scope;
+        }
+        return provider;
+    }
+
+    public Identifier getInternalName(final Identifier name) {
+        return name;
+    }
+
+    //public Identifier getNestedName() {
+    //    final var numScopes = size();
+    //    final var buffer = new StringBuilder();
+    //    for (var i = 0; i < numScopes; i++) {
+    //        final var name = get(i).getName();
+    //        if (name == null) {
+    //            continue; // TODO: fix this to allow anon scopes
+    //        }
+    //        if (name.isQualified()) {
+    //            throw new TranslationException(new CompileError("Qualified scope names are not supported right now"));
+    //        }
+    //        buffer.append(name);
+    //        if (i < numScopes - 1) {
+    //            buffer.append('.');
+    //        }
+    //    }
+    //    return new Identifier(buffer.toString());
+    //}
 }

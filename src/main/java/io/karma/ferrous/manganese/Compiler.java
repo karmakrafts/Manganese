@@ -16,7 +16,6 @@
 package io.karma.ferrous.manganese;
 
 import io.karma.ferrous.manganese.analyze.Analyzer;
-import io.karma.ferrous.manganese.ocm.Types;
 import io.karma.ferrous.manganese.target.Target;
 import io.karma.ferrous.manganese.translate.TranslationException;
 import io.karma.ferrous.manganese.translate.TranslationUnit;
@@ -152,7 +151,6 @@ public final class Compiler implements ANTLRErrorListener {
         translationUnit = null;
         errors.clear();
         target = null;
-        Types.invalidateCache();
     }
 
     public void doOrReport(final ParserRuleContext context, final XRunnable<?> closure) {
@@ -425,7 +423,7 @@ public final class Compiler implements ANTLRErrorListener {
         currentPass = CompilePass.ANALYZE;
         analyzer = new Analyzer(this);
         ParseTreeWalker.DEFAULT.walk(analyzer, fileContext);
-        analyzer.preMaterialize(); // Pre-materializes all UDTs in the right order
+        analyzer.preProcessTypes(); // Pre-materializes all UDTs in the right order
         final var time = System.currentTimeMillis() - startTime;
         Logger.INSTANCE.debugln("Finished pass ANALYZE in %dms", time);
         return checkStatus();

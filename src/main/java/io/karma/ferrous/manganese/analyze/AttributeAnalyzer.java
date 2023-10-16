@@ -13,12 +13,17 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.ocm;
+package io.karma.ferrous.manganese.analyze;
+
+import io.karma.ferrous.manganese.Compiler;
+import io.karma.ferrous.manganese.ParseAdapter;
 
 /**
  * @author Alexander Hinze
- * @since 14/10/2023
+ * @since 15/10/2023
  */
-public record UDT(UDTType type, StructureType structureType) {
-    public static final UDT NULL = new UDT(UDTType.STRUCT, null);
+public final class AttributeAnalyzer extends ParseAdapter {
+    public AttributeAnalyzer(Compiler compiler) {
+        super(compiler);
+    }
 }

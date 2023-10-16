@@ -15,13 +15,16 @@
 
 package io.karma.ferrous.manganese.ocm;
 
+import io.karma.ferrous.manganese.scope.Scope;
+import io.karma.ferrous.manganese.scope.ScopeProvider;
 import io.karma.ferrous.manganese.target.Target;
+import io.karma.ferrous.manganese.util.Identifier;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.llvm.LLVMCore;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 
-import java.util.List;
+import java.util.Arrays;
 import java.util.Objects;
 
 /**
@@ -30,14 +33,40 @@ import java.util.Objects;
  */
 public final class FunctionType implements Type {
     private final Type returnType;
-    private final List<? extends Type> paramTypes;
+    private final Type[] paramTypes;
     private final boolean isVarArg;
     private long materializedType = MemoryUtil.NULL;
+    private ScopeProvider enclosingScope = Scope.GLOBAL;
 
-    FunctionType(final Type returnType, final List<? extends Type> paramTypes, final boolean isVarArg) {
+    FunctionType(final Type returnType, final boolean isVarArg, final Type... paramTypes) {
         this.returnType = returnType;
         this.paramTypes = paramTypes;
         this.isVarArg = isVarArg;
+    }
+
+    @Override
+    public ScopeProvider getEnclosingScope() {
+        return enclosingScope;
+    }
+
+    @Override
+    public void setEnclosingScope(final ScopeProvider scope) {
+        enclosingScope = scope;
+    }
+
+    @Override
+    public Identifier getName() {
+        return new Identifier(toString()); // TODO: find a better solution for this..
+    }
+
+    @Override
+    public boolean isBuiltin() {
+        return false;
+    }
+
+    @Override
+    public boolean isComplete() {
+        return false; // TOOD: ...
     }
 
     @Override
@@ -52,7 +81,7 @@ public final class FunctionType implements Type {
         }
         try (final var stack = MemoryStack.stackPush()) {
             final var returnType = this.returnType.materialize(target);
-            final var paramTypes = this.paramTypes.stream().mapToLong(type -> type.materialize(target)).toArray();
+            final var paramTypes = Arrays.stream(this.paramTypes).mapToLong(type -> type.materialize(target)).toArray();
             return materializedType = LLVMCore.LLVMFunctionType(returnType, stack.pointers(paramTypes), isVarArg);
         }
     }
@@ -72,9 +101,9 @@ public final class FunctionType implements Type {
         }
 
         builder.append('(');
-        final var numParams = paramTypes.size();
+        final var numParams = paramTypes.length;
         for (var i = 0; i < numParams; i++) {
-            builder.append(paramTypes.get(i));
+            builder.append(paramTypes[i]);
             if (i < numParams - 1) {
                 builder.append(", ");
             }
@@ -89,14 +118,14 @@ public final class FunctionType implements Type {
 
     @Override
     public int hashCode() {
-        return Objects.hash(returnType, paramTypes, isVarArg);
+        return Objects.hash(returnType, Arrays.hashCode(paramTypes), isVarArg);
     }
 
     @Override
     public boolean equals(Object obj) {
         if(obj instanceof FunctionType type) { // @formatter:off
             return returnType.equals(type.returnType)
-                && paramTypes.equals(type.paramTypes)
+                && Arrays.equals(paramTypes, type.paramTypes)
                 && isVarArg == type.isVarArg;
         } // @formatter:on
         return false;

@@ -15,6 +15,10 @@
 
 package io.karma.ferrous.manganese;
 
+import io.karma.ferrous.manganese.scope.Scope;
+import io.karma.ferrous.manganese.scope.ScopeStack;
+import io.karma.ferrous.manganese.scope.ScopeType;
+import io.karma.ferrous.manganese.util.Utils;
 import io.karma.ferrous.vanadium.FerrousParser.*;
 import io.karma.ferrous.vanadium.FerrousParserListener;
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -26,6 +30,7 @@ import org.antlr.v4.runtime.tree.TerminalNode;
  * @since 11/10/2023
  */
 public abstract class ParseAdapter implements FerrousParserListener {
+    protected ScopeStack scopeStack = new ScopeStack();
     protected Compiler compiler;
 
     protected ParseAdapter(final Compiler compiler) {
@@ -36,18 +41,30 @@ public abstract class ParseAdapter implements FerrousParserListener {
         return compiler;
     }
 
+    public ScopeStack getScopeStack() {
+        return scopeStack;
+    }
+
     // @formatter:off
     @Override
-    public void enterFile(FileContext fileContext) {}
+    public void enterFile(FileContext fileContext) {
+        scopeStack.push(Scope.GLOBAL);
+    }
 
     @Override
-    public void exitFile(FileContext fileContext) {}
+    public void exitFile(FileContext fileContext) {
+        scopeStack.pop();
+    }
 
     @Override
-    public void enterModuleFile(ModuleFileContext moduleFileContext) {}
+    public void enterModuleFile(ModuleFileContext moduleFileContext) {
+        scopeStack.push(Scope.GLOBAL);
+    }
 
     @Override
-    public void exitModuleFile(ModuleFileContext moduleFileContext) {}
+    public void exitModuleFile(ModuleFileContext moduleFileContext) {
+        scopeStack.pop();
+    }
 
     @Override
     public void enterModule(ModuleContext moduleContext) {}
@@ -104,22 +121,30 @@ public abstract class ParseAdapter implements FerrousParserListener {
     public void exitUdt(UdtContext udtDeclContext) {}
 
     @Override
-    public void enterEnumClassBody(EnumClassBodyContext enumClassBodyContext) {}
+    public void enterEnumClassBody(EnumClassBodyContext context) {}
 
     @Override
-    public void exitEnumClassBody(EnumClassBodyContext enumClassBodyContext) {}
+    public void exitEnumClassBody(EnumClassBodyContext context) {}
 
     @Override
-    public void enterEnumClass(EnumClassContext enumClassContext) {}
+    public void enterEnumClass(EnumClassContext context) {
+        scopeStack.push(new Scope(ScopeType.ENUM_CLASS, Utils.getIdentifier(context.ident())));
+    }
 
     @Override
-    public void exitEnumClass(EnumClassContext enumClassContext) {}
+    public void exitEnumClass(EnumClassContext context) {
+        scopeStack.pop();
+    }
 
     @Override
-    public void enterClass(ClassContext classContext) {}
+    public void enterClass(ClassContext context) {
+        scopeStack.push(new Scope(ScopeType.CLASS, Utils.getIdentifier(context.ident())));
+    }
 
     @Override
-    public void exitClass(ClassContext classContext) {}
+    public void exitClass(ClassContext context) {
+        scopeStack.pop();
+    }
 
     @Override
     public void enterClassBody(ClassBodyContext classBodyContext) {}
@@ -134,10 +159,14 @@ public abstract class ParseAdapter implements FerrousParserListener {
     public void exitEnumBody(EnumBodyContext enumBodyContext) {}
 
     @Override
-    public void enterEnum(EnumContext enumContext) {}
+    public void enterEnum(EnumContext context) {
+        scopeStack.push(new Scope(ScopeType.ENUM, Utils.getIdentifier(context.ident())));
+    }
 
     @Override
-    public void exitEnum(EnumContext enumContext) {}
+    public void exitEnum(EnumContext enumContext) {
+        scopeStack.pop();
+    }
 
     @Override
     public void enterEnumConstantList(EnumConstantListContext enumConstantListContext) {}
@@ -152,10 +181,14 @@ public abstract class ParseAdapter implements FerrousParserListener {
     public void exitEnumConstant(EnumConstantContext enumConstantContext) {}
 
     @Override
-    public void enterStruct(StructContext structContext) {}
+    public void enterStruct(StructContext context) {
+        scopeStack.push(new Scope(ScopeType.STRUCT, Utils.getIdentifier(context.ident())));
+    }
 
     @Override
-    public void exitStruct(StructContext structContext) {}
+    public void exitStruct(StructContext context) {
+        scopeStack.pop();
+    }
 
     @Override
     public void enterInterfaceBody(InterfaceBodyContext interfaceBodyContext) {}
@@ -164,10 +197,14 @@ public abstract class ParseAdapter implements FerrousParserListener {
     public void exitInterfaceBody(InterfaceBodyContext interfaceBodyContext) {}
 
     @Override
-    public void enterInterface(InterfaceContext interfaceContext) {}
+    public void enterInterface(InterfaceContext context) {
+        scopeStack.push(new Scope(ScopeType.INTERFACE, Utils.getIdentifier(context.ident())));
+    }
 
     @Override
-    public void exitInterface(InterfaceContext interfaceContext) {}
+    public void exitInterface(InterfaceContext context) {
+        scopeStack.pop();
+    }
 
     @Override
     public void enterAttribBody(AttribBodyContext attribBodyContext) {}
@@ -176,16 +213,24 @@ public abstract class ParseAdapter implements FerrousParserListener {
     public void exitAttribBody(AttribBodyContext attribBodyContext) {}
 
     @Override
-    public void enterAttrib(AttribContext attribContext) {}
+    public void enterAttrib(AttribContext context) {
+        scopeStack.push(new Scope(ScopeType.ATTRIBUTE, Utils.getIdentifier(context.ident())));
+    }
 
     @Override
-    public void exitAttrib(AttribContext attribContext) {}
+    public void exitAttrib(AttribContext context) {
+        scopeStack.pop();
+    }
 
     @Override
-    public void enterTrait(TraitContext traitContext) {}
+    public void enterTrait(TraitContext context) {
+        scopeStack.push(new Scope(ScopeType.TRAIT, Utils.getIdentifier(context.ident())));
+    }
 
     @Override
-    public void exitTrait(TraitContext traitContext) {}
+    public void exitTrait(TraitContext context) {
+        scopeStack.pop();
+    }
 
     @Override
     public void enterAttributeList(AttributeListContext attributeListContext) {}

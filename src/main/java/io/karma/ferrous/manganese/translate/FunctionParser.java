@@ -23,8 +23,6 @@ import io.karma.ferrous.manganese.util.CallingConvention;
 import io.karma.ferrous.manganese.util.FunctionUtils;
 import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.TypeUtils;
-import io.karma.ferrous.vanadium.FerrousParser.FunctionBodyContext;
-import io.karma.ferrous.vanadium.FerrousParser.InlineFunctionBodyContext;
 import io.karma.ferrous.vanadium.FerrousParser.ProtoFunctionContext;
 
 /**
@@ -44,19 +42,10 @@ public final class FunctionParser extends ParseAdapter {
     public void enterProtoFunction(ProtoFunctionContext context) {
         compiler.doOrReport(context, () -> {
             identifier = FunctionUtils.getFunctionName(context.functionIdent());
-            type = TypeUtils.getFunctionType(compiler, context);
+            type = TypeUtils.getFunctionType(compiler, scopeStack, context);
             callConv = FunctionUtils.getCallingConvention(compiler, context);
         });
-    }
-
-    @Override
-    public void enterFunctionBody(FunctionBodyContext context) {
-
-    }
-
-    @Override
-    public void enterInlineFunctionBody(InlineFunctionBodyContext context) {
-
+        super.enterProtoFunction(context);
     }
 
     public Function getFunction() {

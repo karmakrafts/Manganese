@@ -85,7 +85,7 @@ public final class Types {
         return type;
     }
 
-    public static BuiltinType builtin(final String name) { // @formatter:off
+    public static BuiltinType builtin(final Identifier name) { // @formatter:off
         return Arrays.stream(BUILTIN_TYPES)
             .filter(type -> type.getName().equals(name))
             .findFirst()
@@ -94,7 +94,11 @@ public final class Types {
 
     public static FunctionType function(final Type returnType, final List<? extends Type> paramTypes,
                                         final boolean isVarArg) {
-        return cached(new FunctionType(returnType, paramTypes, isVarArg));
+        return cached(new FunctionType(returnType, isVarArg, paramTypes.toArray(Type[]::new)));
+    }
+
+    public static FunctionType function(final Type returnType, final boolean isVarArg, final Type... paramTypes) {
+        return cached(new FunctionType(returnType, isVarArg, paramTypes));
     }
 
     public static StructureType structure(final Identifier name, final boolean isPacked, final Type... fieldTypes) {

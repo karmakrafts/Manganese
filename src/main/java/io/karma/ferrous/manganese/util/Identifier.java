@@ -24,6 +24,7 @@ import java.util.Arrays;
  * @since 15/10/2023
  */
 public record Identifier(String... components) {
+    public static final Identifier EMPTY = new Identifier("");
     public static final String DELIMITER = TokenUtils.getLiteral(FerrousLexer.DOUBLE_COLON);
 
     public static Identifier parse(final String value) {

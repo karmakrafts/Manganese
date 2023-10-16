@@ -49,7 +49,6 @@ public class TranslationUnit extends ParseAdapter {
             throw new RuntimeException("Could not allocate module");
         }
         LLVMSetSourceFileName(module, name); // Same as source file name
-
         Logger.INSTANCE.debugln("Allocated translation unit at 0x%08X", module);
     }
 
@@ -57,7 +56,7 @@ public class TranslationUnit extends ParseAdapter {
     public void enterExternFunction(ExternFunctionContext context) {
         compiler.doOrReport(context, () -> {
             final var prototype = context.protoFunction();
-            final var type = TypeUtils.getFunctionType(compiler, prototype);
+            final var type = TypeUtils.getFunctionType(compiler, scopeStack, prototype);
             final var function = LLVMAddFunction(module, FunctionUtils.getFunctionName(prototype.functionIdent()).toString(), type.materialize(compiler.getTarget()));
             if (function == NULL) {
                 throw new TranslationException(context.start, "Could not create function");
@@ -65,6 +64,7 @@ public class TranslationUnit extends ParseAdapter {
             LLVMSetLinkage(function, LLVMExternalLinkage);
             LLVMSetFunctionCallConv(function, FunctionUtils.getCallingConvention(compiler, prototype).getLlvmType());
         });
+        super.enterExternFunction(context);
     }
 
     public void dispose() {

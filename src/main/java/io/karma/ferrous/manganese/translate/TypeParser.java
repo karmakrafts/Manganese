@@ -22,6 +22,8 @@ import io.karma.ferrous.manganese.ParseAdapter;
 import io.karma.ferrous.manganese.ocm.Type;
 import io.karma.ferrous.manganese.ocm.TypeAttribute;
 import io.karma.ferrous.manganese.ocm.Types;
+import io.karma.ferrous.manganese.scope.ScopeStack;
+import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.Utils;
 import io.karma.ferrous.vanadium.FerrousParser.FloatTypeContext;
 import io.karma.ferrous.vanadium.FerrousParser.IdentContext;
@@ -42,15 +44,18 @@ import java.util.Stack;
  */
 public final class TypeParser extends ParseAdapter {
     private final Stack<TypeAttribute> attributes = new Stack<>();
+    private final ScopeStack capturedScopeStack;
     private Type baseType;
 
-    public TypeParser(Compiler compiler) {
+    public TypeParser(final Compiler compiler, final ScopeStack scopeStack) {
         super(compiler);
+        capturedScopeStack = scopeStack;
     }
 
     @Override
     public void enterPointerType(PointerTypeContext context) {
         attributes.push(TypeAttribute.POINTER);
+        super.enterPointerType(context);
     }
 
     @Override
@@ -62,22 +67,24 @@ public final class TypeParser extends ParseAdapter {
             return;
         }
         attributes.push(TypeAttribute.REFERENCE);
+        super.enterRefType(context);
     }
 
     @Override
-    public void enterSliceType(SliceTypeContext arrayTypeContext) {
+    public void enterSliceType(SliceTypeContext context) {
         attributes.push(TypeAttribute.SLICE);
+        super.enterSliceType(context);
     }
 
     // Actual types
 
-    private void handlePrimitiveType(final ParserRuleContext context, final String errorMessage) {
+    private void parsePrimitiveType(final ParserRuleContext context, final String errorMessage) {
         final var text = context.getText();
         compiler.doOrReport(context, () -> {
             if (baseType != null) {
-                throw new TranslationException(context.start, "Type already translated, how did this happen?");
+                throw new TranslationException(context.start, errorMessage);
             }
-            baseType = Types.builtin(text);
+            baseType = Types.builtin(Identifier.parse(text));
         });
     }
 
@@ -85,46 +92,52 @@ public final class TypeParser extends ParseAdapter {
     public void enterIdent(IdentContext context) {
         compiler.doOrReport(context, () -> {
             final var name = Utils.getIdentifier(context);
-            final var udt = compiler.getAnalyzer().getUDTs().get(name);
+            final var udt = compiler.getAnalyzer().getUDTs().get(capturedScopeStack.getInternalName(name));
             if (udt == null) {
-                baseType = Types.incomplete(name);
+                baseType = capturedScopeStack.applyEnclosingScopes(Types.incomplete(name));
                 return;
             }
             baseType = udt.structureType();
         });
+        super.enterIdent(context);
     }
 
     @Override
     public void enterQualifiedIdent(QualifiedIdentContext context) {
         compiler.doOrReport(context, () -> {
             final var name = Utils.getIdentifier(context);
-            final var udt = compiler.getAnalyzer().getUDTs().get(name);
+            final var udt = compiler.getAnalyzer().getUDTs().get(capturedScopeStack.getInternalName(name));
             if (udt == null) {
-                baseType = Types.incomplete(name);
+                baseType = capturedScopeStack.applyEnclosingScopes(Types.incomplete(name));
                 return;
             }
             baseType = udt.structureType();
         });
+        super.enterQualifiedIdent(context);
     }
 
     @Override
     public void enterMiscType(MiscTypeContext context) {
-        handlePrimitiveType(context, "Unknown miscellaneous type");
+        parsePrimitiveType(context, "Unknown miscellaneous type");
+        super.enterMiscType(context);
     }
 
     @Override
     public void enterSintType(SintTypeContext context) {
-        handlePrimitiveType(context, "Unknown signed integer type");
+        parsePrimitiveType(context, "Unknown signed integer type");
+        super.enterSintType(context);
     }
 
     @Override
     public void enterUintType(UintTypeContext context) {
-        handlePrimitiveType(context, "Unknown unsigned integer type");
+        parsePrimitiveType(context, "Unknown unsigned integer type");
+        super.enterUintType(context);
     }
 
     @Override
     public void enterFloatType(FloatTypeContext context) {
-        handlePrimitiveType(context, "Unknown floating point type");
+        parsePrimitiveType(context, "Unknown floating point type");
+        super.enterFloatType(context);
     }
 
     public Type getType() {

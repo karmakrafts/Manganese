@@ -15,6 +15,7 @@
 
 package io.karma.ferrous.manganese.ocm;
 
+import io.karma.ferrous.manganese.scope.ScopeProvider;
 import io.karma.ferrous.manganese.target.Target;
 import io.karma.ferrous.manganese.util.Identifier;
 import org.lwjgl.llvm.LLVMCore;
@@ -22,6 +23,7 @@ import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 
 import static org.lwjgl.llvm.LLVMCore.LLVMGetGlobalContext;
@@ -31,15 +33,63 @@ import static org.lwjgl.llvm.LLVMCore.LLVMGetGlobalContext;
  * @since 14/10/2023
  */
 public final class StructureType implements Type {
-    private final Identifier identifier;
+    private final Identifier name;
     private final boolean isPacked;
     private final Type[] fieldTypes;
     private long materializedType = MemoryUtil.NULL;
+    private ScopeProvider enclosingScope;
 
-    StructureType(final Identifier identifier, final boolean isPacked, final Type... fieldTypes) {
-        this.identifier = identifier;
+    StructureType(final Identifier name, final boolean isPacked, final Type... fieldTypes) {
+        this.name = name;
         this.isPacked = isPacked;
         this.fieldTypes = fieldTypes;
+    }
+
+    public boolean isPacked() {
+        return isPacked;
+    }
+
+    public void setFieldType(final int index, final Type type) {
+        fieldTypes[index] = type;
+    }
+
+    public Type getFieldType(final int index) {
+        return fieldTypes[index];
+    }
+
+    public List<Type> getFieldTypes() {
+        return Arrays.asList(fieldTypes);
+    }
+
+    @Override
+    public ScopeProvider getEnclosingScope() {
+        return enclosingScope;
+    }
+
+    @Override
+    public void setEnclosingScope(final ScopeProvider scope) {
+        enclosingScope = scope;
+    }
+
+    @Override
+    public Identifier getName() {
+        return name;
+    }
+
+    @Override
+    public boolean isBuiltin() {
+        return false;
+    }
+
+    @Override
+    public boolean isComplete() {
+        for (final var fieldType : fieldTypes) {
+            if (fieldType.isComplete()) {
+                continue;
+            }
+            return false;
+        }
+        return true;
     }
 
     @Override
@@ -58,7 +108,7 @@ public final class StructureType implements Type {
             for (var i = 0; i < numFields; i++) {
                 fields.put(i, fieldTypes[i].materialize(target));
             }
-            materializedType = LLVMCore.LLVMStructCreateNamed(LLVMGetGlobalContext(), identifier.toString());
+            materializedType = LLVMCore.LLVMStructCreateNamed(LLVMGetGlobalContext(), getInternalName().toString());
             LLVMCore.LLVMStructSetBody(materializedType, fields, isPacked);
             return materializedType;
         }
@@ -71,13 +121,14 @@ public final class StructureType implements Type {
 
     @Override
     public int hashCode() {
-        return Objects.hash(identifier, isPacked, Arrays.hashCode(fieldTypes));
+        return Objects.hash(name, getInternalName(), isPacked, Arrays.hashCode(fieldTypes));
     }
 
     @Override
     public boolean equals(Object obj) {
         if(obj instanceof StructureType type) { // @formatter:off
-            return identifier.equals(type.identifier)
+            return name.equals(type.name)
+                && getInternalName().equals(type.getInternalName())
                 && isPacked == type.isPacked
                 && Arrays.equals(fieldTypes, type.fieldTypes);
         } // @formatter:on
@@ -86,6 +137,6 @@ public final class StructureType implements Type {
 
     @Override
     public String toString() {
-        return String.format("%s:%b:%s", identifier, isPacked, Arrays.toString(fieldTypes));
+        return String.format("%s:%b:%s", getInternalName(), isPacked, Arrays.toString(fieldTypes));
     }
 }

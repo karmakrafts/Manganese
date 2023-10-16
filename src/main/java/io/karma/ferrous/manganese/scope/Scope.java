@@ -16,7 +16,6 @@
 package io.karma.ferrous.manganese.scope;
 
 import io.karma.ferrous.manganese.util.Identifier;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 
@@ -24,27 +23,30 @@ import java.util.Objects;
  * @author Alexander Hinze
  * @since 15/10/2023
  */
-public final class Scope {
-    public static final Scope GLOBAL = new Scope(ScopeType.GLOBAL, null);
+public final class Scope implements ScopeProvider {
+    public static final Scope GLOBAL = new Scope(ScopeType.GLOBAL);
 
     private final ScopeType type;
     private final Identifier name;
+    private ScopeProvider enclosingScope = GLOBAL;
 
-    public Scope(final ScopeType type, final @Nullable Identifier name) {
+    public Scope(final ScopeType type, final Identifier name) {
         this.type = type;
         this.name = name;
     }
 
     public Scope(final ScopeType type) {
-        this(type, null);
+        this(type, Identifier.EMPTY);
     }
 
-    public ScopeType getType() {
-        return type;
+    @Override
+    public ScopeProvider getEnclosingScope() {
+        return enclosingScope;
     }
 
-    public @Nullable Identifier getName() {
-        return name;
+    @Override
+    public void setEnclosingScope(ScopeProvider scope) {
+        this.enclosingScope = scope;
     }
 
     @Override
@@ -66,5 +68,14 @@ public final class Scope {
             return String.format("%s [%s]", type, name);
         }
         return type.name();
+    }
+
+    public ScopeType getType() {
+        return type;
+    }
+
+    @Override
+    public Identifier getName() {
+        return name;
     }
 }

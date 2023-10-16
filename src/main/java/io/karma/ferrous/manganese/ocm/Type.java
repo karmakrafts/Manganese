@@ -15,7 +15,10 @@
 
 package io.karma.ferrous.manganese.ocm;
 
+import io.karma.ferrous.manganese.scope.ScopeProvider;
 import io.karma.ferrous.manganese.target.Target;
+import io.karma.ferrous.manganese.util.Identifier;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 
@@ -23,12 +26,37 @@ import java.util.Arrays;
  * @author Alexander Hinze
  * @since 14/10/2023
  */
-public interface Type {
+public interface Type extends ScopeProvider {
     long materialize(final Target target);
 
     TypeAttribute[] getAttributes();
 
     Type getBaseType();
+
+    default @Nullable Type getEnclosingType() {
+        final var scope = getEnclosingScope();
+        if (scope instanceof Type type) {
+            return type;
+        }
+        return null;
+    }
+
+    default void setEnclosingType(final Type enclosingType) {
+        setEnclosingScope(enclosingType);
+    }
+
+    @Override
+    default Identifier getName() {
+        return getBaseType().getName();
+    }
+
+    default boolean isBuiltin() {
+        return getBaseType().isBuiltin();
+    }
+
+    default boolean isComplete() {
+        return getBaseType().isComplete();
+    }
 
     default Type derive(final TypeAttribute... attributes) {
         return Types.cached(new DerivedType(this, attributes));
