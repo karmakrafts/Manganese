@@ -23,6 +23,7 @@ import io.karma.ferrous.manganese.translate.TranslationException;
 import io.karma.ferrous.manganese.util.TypeUtils;
 import io.karma.ferrous.manganese.util.Utils;
 import io.karma.ferrous.vanadium.FerrousParser.FieldContext;
+import io.karma.ferrous.vanadium.FerrousParser.UdtContext;
 
 import java.util.ArrayList;
 
@@ -33,14 +34,32 @@ import java.util.ArrayList;
 public final class FieldLayoutAnalyzer extends ParseAdapter {
     private final ArrayList<Field> fields = new ArrayList<>();
     private final ScopeStack capturedScopeStack;
+    private int nestedScopes = 0;
 
     public FieldLayoutAnalyzer(final Compiler compiler, final ScopeStack scopeStack) {
         super(compiler);
         capturedScopeStack = scopeStack;
     }
 
+    public boolean isOutOfScope() {
+        return nestedScopes > 0;
+    }
+
+    @Override
+    public void enterUdt(UdtContext udtDeclContext) {
+        nestedScopes++;
+    }
+
+    @Override
+    public void exitUdt(UdtContext udtDeclContext) {
+        nestedScopes--;
+    }
+
     @Override
     public void enterField(final FieldContext context) {
+        if (isOutOfScope()) {
+            return;
+        }
         compiler.doOrReport(context, () -> {
             final var name = Utils.getIdentifier(context.ident());
             // @formatter:off

@@ -36,7 +36,7 @@ public interface ScopeProvider {
             return result;
         }
         while (currentParent != null) {
-            result = currentParent.getInternalName().join(result, '.');
+            result = currentParent.getName().join(result, '.');
             currentParent = currentParent.getEnclosingScope();
         }
         return result;

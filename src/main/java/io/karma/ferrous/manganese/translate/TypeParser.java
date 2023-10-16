@@ -94,7 +94,7 @@ public final class TypeParser extends ParseAdapter {
             final var name = Utils.getIdentifier(context);
             final var udt = compiler.getAnalyzer().getUDTs().get(capturedScopeStack.getInternalName(name));
             if (udt == null) {
-                baseType = capturedScopeStack.applyEnclosingScopes(Types.incomplete(name));
+                baseType = Types.incomplete(name);
                 return;
             }
             baseType = udt.structureType();
@@ -108,7 +108,7 @@ public final class TypeParser extends ParseAdapter {
             final var name = Utils.getIdentifier(context);
             final var udt = compiler.getAnalyzer().getUDTs().get(capturedScopeStack.getInternalName(name));
             if (udt == null) {
-                baseType = capturedScopeStack.applyEnclosingScopes(Types.incomplete(name));
+                baseType = Types.incomplete(name);
                 return;
             }
             baseType = udt.structureType();
@@ -141,6 +141,9 @@ public final class TypeParser extends ParseAdapter {
     }
 
     public Type getType() {
+        if (attributes.isEmpty()) {
+            return baseType;
+        }
         return baseType.derive(attributes.toArray(TypeAttribute[]::new));
     }
 }

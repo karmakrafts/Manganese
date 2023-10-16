@@ -24,6 +24,7 @@ import io.karma.ferrous.manganese.ocm.Type;
 import io.karma.ferrous.manganese.ocm.Types;
 import io.karma.ferrous.manganese.ocm.UDT;
 import io.karma.ferrous.manganese.ocm.UDTType;
+import io.karma.ferrous.manganese.scope.ScopeStack;
 import io.karma.ferrous.manganese.util.FunctionUtils;
 import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.Logger;
@@ -52,9 +53,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * Special translation unit ran during the pre-compilation pass
- * to discover declarations throughout the code.
- *
  * @author Alexander Hinze
  * @since 14/10/2023
  */
@@ -66,45 +64,50 @@ public final class Analyzer extends ParseAdapter {
         super(compiler);
     }
 
-    private boolean hasIncompleteTypes() {
-        final var udts = this.udts.values();
-        for (final var udt : udts) {
-            final var type = udt.structureType();
-            if (type == null || type.isComplete()) {
+    private void resolveFieldTypes(final UDT udt, final Identifier scopeName) {
+        final var type = udt.structureType();
+        final var fieldTypes = type.getFieldTypes();
+        final var numFields = fieldTypes.size();
+        for (var i = 0; i < numFields; i++) {
+            final var fieldType = fieldTypes.get(i);
+            if(fieldType.isBuiltin() || fieldType.isComplete()) {
                 continue;
             }
-            return true;
+            final var fieldTypeName = fieldType.getInternalName();
+            Logger.INSTANCE.debugln("Found incomplete field type '%s' in '%s'", fieldTypeName, scopeName);
+            var completeUdt = udts.get(fieldTypeName);
+            if(completeUdt == null) {
+                completeUdt = udts.get(scopeName.join(fieldTypeName, '.')); // Second attempt
+                if(completeUdt == null) {
+                    continue; // TODO: report error
+                }
+            }
+            final var completeType = completeUdt.structureType();
+            Logger.INSTANCE.debugln("   Resolved to complete type '%s'", completeType.getInternalName());
+            type.setFieldType(i, completeType);
         }
-        return false;
+    }
+
+    private void resolveTypes() {
+        final var udts = this.udts.values();
+        for (final var udt : udts) {
+            resolveFieldTypes(udt, udt.structureType().getInternalName());
+        }
+    }
+
+    private void materializeTypes() {
+        for (final var udt : udts.values()) {
+            final var type = udt.structureType();
+            type.materialize(compiler.getTarget());
+            Logger.INSTANCE.debugln("Materializing type %s", type);
+        }
     }
 
     public void preProcessTypes() {
-        //final var udts = this.udts.values();
-        //while (hasIncompleteTypes()) {
-        //    for (final var udt : udts) {
-        //        final var type = udt.structureType();
-        //        if (type == null || type.isComplete()) {
-        //            continue;
-        //        }
-        //
-        //        final var fieldTypes = type.getFieldTypes();
-        //        final var numFields = fieldTypes.size();
-        //        for (var i = 0; i < numFields; i++) {
-        //            final var fieldType = fieldTypes.get(i);
-        //            final var completeUdt = this.udts.get(fieldType.getInternalName());
-        //            if (completeUdt == null) {
-        //                continue; // TODO: show warning/turn compilation irrecoverable?
-        //            }
-        //            final var completeType = completeUdt.structureType();
-        //            if (completeType == null) {
-        //                continue;
-        //            }
-        //            type.setFieldType(i, completeType);
-        //        }
-        //    }
-        //}
-        //
-        //preMaterializeTypes();
+        sortTypes();
+        resolveTypes();
+        materializeTypes();
+        this.udts.values().forEach(System.out::println);
     }
 
     private void addTypesToGraph(final Type type, final TopoNode<UDT> node,
@@ -116,14 +119,19 @@ public final class Analyzer extends ParseAdapter {
             }
             return;
         }
-        final var typeNode = nodes.get(type.getInternalName());
+        var typeNode = nodes.get(type.getInternalName());
         if (typeNode == null) {
-            return;
+            final var enclosingName = node.getValue().structureType().getInternalName();
+            typeNode = nodes.get(enclosingName.join(type.getInternalName(), '.'));
+            if (typeNode == null) {
+                return;
+            }
         }
         node.addDependency(typeNode);
+        Logger.INSTANCE.debugln("%s depends on %s", node.getValue().structureType().getInternalName(), type.getInternalName());
     }
 
-    private void preMaterializeTypes() {
+    private void sortTypes() {
         final var rootNode = new TopoNode<>(UDT.NULL); // Dummy UDT; TODO: improve this
         // @formatter:off
         final var nodes = udts.entrySet()
@@ -152,8 +160,6 @@ public final class Analyzer extends ParseAdapter {
             if (type == null) {
                 continue;
             }
-            Logger.INSTANCE.debugln("Pre-materializing type '%s'", type);
-            type.materialize(compiler.getTarget()); // Pre-materialize
             final var internalName = type.getInternalName();
             sortedMap.put(internalName, udts.get(internalName));
         }
@@ -166,7 +172,7 @@ public final class Analyzer extends ParseAdapter {
                                     final UDTType udtType) {
         final var name = Utils.getIdentifier(identContext);
 
-        final var parser = new FieldLayoutAnalyzer(compiler, scopeStack); // Copy scope stack
+        final var parser = new FieldLayoutAnalyzer(compiler, new ScopeStack(scopeStack)); // Copy scope stack
         ParseTreeWalker.DEFAULT.walk(parser, parent);
 
         final var fieldTypes = parser.getFields().stream().map(Field::type).toArray(Type[]::new);

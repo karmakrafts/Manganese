@@ -66,7 +66,7 @@ public final class IncompleteType implements Type {
         if (materializedType != MemoryUtil.NULL) {
             return materializedType;
         }
-        return materializedType = LLVMCore.LLVMStructCreateNamed(LLVMGetGlobalContext(), identifier.toString());
+        return materializedType = LLVMCore.LLVMStructCreateNamed(LLVMGetGlobalContext(), getInternalName().toString());
     }
 
     @Override
@@ -81,19 +81,19 @@ public final class IncompleteType implements Type {
 
     @Override
     public int hashCode() {
-        return identifier.hashCode();
+        return getInternalName().hashCode();
     }
 
     @Override
     public boolean equals(Object obj) {
         if (obj instanceof IncompleteType type) {
-            return identifier.equals(type.identifier);
+            return getInternalName().equals(type.getInternalName());
         }
         return false;
     }
 
     @Override
     public String toString() {
-        return identifier.toString();
+        return getInternalName().toString();
     }
 }

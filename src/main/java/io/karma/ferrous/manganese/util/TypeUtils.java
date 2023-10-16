@@ -56,7 +56,7 @@ public final class TypeUtils {
         if (!compiler.getStatus().isRecoverable()) {
             return Optional.empty();
         }
-        return Optional.of(scopeStack.applyEnclosingScopes(unit.getType()));
+        return Optional.of(unit.getType());
     }
 
     public static List<Type> getParameterTypes(final Compiler compiler, final ScopeStack scopeStack,

@@ -121,14 +121,13 @@ public final class StructureType implements Type {
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, getInternalName(), isPacked, Arrays.hashCode(fieldTypes));
+        return Objects.hash(getInternalName(), isPacked, Arrays.hashCode(fieldTypes));
     }
 
     @Override
     public boolean equals(Object obj) {
         if(obj instanceof StructureType type) { // @formatter:off
-            return name.equals(type.name)
-                && getInternalName().equals(type.getInternalName())
+            return getInternalName().equals(type.getInternalName())
                 && isPacked == type.isPacked
                 && Arrays.equals(fieldTypes, type.fieldTypes);
         } // @formatter:on

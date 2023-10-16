@@ -23,7 +23,7 @@ import java.util.Stack;
  * @author Alexander Hinze
  * @since 15/10/2023
  */
-public final class ScopeStack extends Stack<Scope> {
+public final class ScopeStack extends Stack<ScopeProvider> {
     public static final ScopeStack EMPTY = new ScopeStack();
 
     public ScopeStack() {
