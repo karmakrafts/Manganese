@@ -370,11 +370,6 @@ public final class Compiler implements ANTLRErrorListener {
                 case FerrousLexer.L_PAREN:
                     indent++;
                     break;
-                case FerrousLexer.R_BRACE:
-                case FerrousLexer.R_BRACKET:
-                case FerrousLexer.R_PAREN:
-                    indent--;
-                    break;
             }
             final var text = token.getText();
             if (!extendedTokenView && text.isBlank()) {
@@ -401,6 +396,13 @@ public final class Compiler implements ANTLRErrorListener {
                 .a(tokenTypeEntry)
                 .a(Attribute.RESET).toString());
             // @formatter:on
+            switch(token.getType()) {
+                case FerrousLexer.R_BRACE:
+                case FerrousLexer.R_BRACKET:
+                case FerrousLexer.R_PAREN:
+                    indent--;
+                    break;
+            }
         }
     }
 
