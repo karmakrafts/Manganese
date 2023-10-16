@@ -64,18 +64,22 @@ public final class Main {
 
             final var parser = new OptionParser("?iodDpPtTsvVbm");
             parser.accepts("?", "Print this help dialog");
-            parser.accepts("i", "A Ferrous file or directory of files from which to compile.").withRequiredArg().ofType(String.class);
-            parser.accepts("o", "An IL file or a directory in which to save the compiled IL blocks.").withRequiredArg().ofType(String.class);
+            parser.accepts("i", "A Ferrous file or directory of files from which to compile.").withRequiredArg()
+                  .ofType(String.class);
+            parser.accepts("o", "An IL file or a directory in which to save the compiled IL blocks.").withRequiredArg()
+                  .ofType(String.class);
             parser.accepts("d", "Disassemble the output and print it into the console.");
             parser.accepts("D", "Debug mode. This will print debug information during the compilation.");
             parser.accepts("p", "Display parser warnings during compilation.").availableIf("d");
-            parser.accepts("t", "Token view. This will print a tree structure containing all tokens during compilation.");
+            parser.accepts("t",
+                           "Token view. This will print a tree structure containing all tokens during compilation.");
             parser.accepts("T", "Extended token view. This will print a tree view of all tokens.").availableIf("t");
             parser.accepts("s", "Silent mode. This will suppress any warning level log messages during compilation.");
             parser.accepts("v", "Prints version information about the compiler and runtime.");
             parser.accepts("V", "Enable verbose errors. This will likely show some garbage.");
             parser.accepts("b", "Dump bitcode to files while compiling.");
-            parser.accepts("m", "Specify the name of the output module, will default to the name of the first input file.");
+            parser.accepts("m",
+                           "Specify the name of the output module, will default to the name of the first input file.");
             parser.accepts("P", "Disable opaque pointers. Useful for disassembling compile output.");
             final var options = parser.parse(args);
 
@@ -85,7 +89,8 @@ public final class Main {
             }
 
             if (options.has("v")) {
-                final var location = Objects.requireNonNull(Compiler.class.getClassLoader().getResource("META-INF/MANIFEST.MF"));
+                final var location = Objects.requireNonNull(
+                        Compiler.class.getClassLoader().getResource("META-INF/MANIFEST.MF"));
                 try (final var stream = location.openStream()) {
                     final var manifest = new Manifest(stream);
                     final var attribs = manifest.getMainAttributes();

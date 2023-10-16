@@ -299,7 +299,8 @@ public final class Compiler implements ANTLRErrorListener {
                 // If the output path is null, derive it
                 out = filePath.getParent().resolve(outFileName);
             }
-            if (!out.getFileName().toString().contains(".")) { // Since isFile/isDirectory doesn't work reliably for non-existent files
+            if (!out.getFileName().toString()
+                    .contains(".")) { // Since isFile/isDirectory doesn't work reliably for non-existent files
                 // If out is a directory, resolve the output file name
                 out = out.resolve(outFileName);
             }
@@ -318,8 +319,10 @@ public final class Compiler implements ANTLRErrorListener {
             Logger.INSTANCE.debugln("Input: %s", filePath);
             Logger.INSTANCE.debugln("Output: %s", out);
 
-            try (final var inStream = Files.newInputStream(filePath); final var inChannel = Channels.newChannel(inStream)) {
-                try (final var outStream = Files.newOutputStream(out); final var outChannel = Channels.newChannel(outStream)) {
+            try (final var inStream = Files.newInputStream(filePath); final var inChannel = Channels.newChannel(
+                    inStream)) {
+                try (final var outStream = Files.newOutputStream(out); final var outChannel = Channels.newChannel(
+                        outStream)) {
                     compile(rawFileName, inChannel, outChannel);
                     status = status.worse(this.status);
                 }
@@ -550,7 +553,8 @@ public final class Compiler implements ANTLRErrorListener {
     public void reportContextSensitivity(final Parser recognizer, final DFA dfa, final int startIndex,
                                          final int stopIndex, final int prediction, final ATNConfigSet configs) {
         if (reportParserWarnings) {
-            Logger.INSTANCE.debugln("Detected abnormally high context sensitivity at %d:%d (%d)", startIndex, stopIndex, dfa.decision);
+            Logger.INSTANCE.debugln("Detected abnormally high context sensitivity at %d:%d (%d)", startIndex, stopIndex,
+                                    dfa.decision);
         }
     }
 }

@@ -57,7 +57,9 @@ public class TranslationUnit extends ParseAdapter {
         compiler.doOrReport(context, () -> {
             final var prototype = context.protoFunction();
             final var type = TypeUtils.getFunctionType(compiler, scopeStack, prototype);
-            final var function = LLVMAddFunction(module, FunctionUtils.getFunctionName(prototype.functionIdent()).toString(), type.materialize(compiler.getTarget()));
+            final var function = LLVMAddFunction(module,
+                                                 FunctionUtils.getFunctionName(prototype.functionIdent()).toString(),
+                                                 type.materialize(compiler.getTarget()));
             if (function == NULL) {
                 throw new TranslationException(context.start, "Could not create function");
             }

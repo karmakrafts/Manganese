@@ -67,7 +67,7 @@ public final class Analyzer extends ParseAdapter {
         super(compiler);
     }
 
-    private @Nullable UDT resolveType(final Identifier name, final Identifier scopeName) {
+    private @Nullable UDT findTypeInScope(final Identifier name, final Identifier scopeName) {
         var completeUdt = udts.get(name);
         if (completeUdt == null) {
             // Attempt to resolve field types from the inside scope outwards
@@ -85,9 +85,6 @@ public final class Analyzer extends ParseAdapter {
                     break; // Stop if we found it
                 }
             }
-            if (completeUdt == null) {
-                compiler.reportError(new CompileError(String.format("Failed to resolve field types for '%s'", scopeName)), CompileStatus.TRANSLATION_ERROR);
-            }
         }
         return completeUdt;
     }
@@ -103,8 +100,20 @@ public final class Analyzer extends ParseAdapter {
             }
             final var fieldTypeName = fieldType.getInternalName();
             Logger.INSTANCE.debugln("Found incomplete field type '%s' in '%s'", fieldTypeName, scopeName);
-            final var completeUdt = resolveType(fieldTypeName, scopeName);
+            final var completeUdt = findTypeInScope(fieldTypeName, scopeName);
+            if (completeUdt == null) {
+                compiler.reportError(
+                        new CompileError(String.format("Failed to resolve field types for '%s'", scopeName)),
+                        CompileStatus.ANALYZER_ERROR);
+                continue;
+            }
             final var completeType = completeUdt.structureType();
+            if (completeType == null) {
+                compiler.reportError(
+                        new CompileError(String.format("Failed to resolve field types for '%s'", scopeName)),
+                        CompileStatus.ANALYZER_ERROR);
+                continue;
+            }
             Logger.INSTANCE.debugln("   Resolved to complete type '%s'", completeType.getInternalName());
             type.setFieldType(i, completeType);
         }
@@ -125,12 +134,6 @@ public final class Analyzer extends ParseAdapter {
         }
     }
 
-    public void preProcessTypes() {
-        sortTypes();
-        resolveTypes();
-        materializeTypes();
-    }
-
     private void addTypesToGraph(final Type type, final TopoNode<UDT> node,
                                  final Map<Identifier, TopoNode<UDT>> nodes) {
         if (type instanceof StructureType struct) {
@@ -149,7 +152,8 @@ public final class Analyzer extends ParseAdapter {
             }
         }
         node.addDependency(typeNode);
-        Logger.INSTANCE.debugln("%s depends on %s", node.getValue().structureType().getInternalName(), type.getInternalName());
+        Logger.INSTANCE.debugln("%s depends on %s", node.getValue().structureType().getInternalName(),
+                                type.getInternalName());
     }
 
     private void sortTypes() {
@@ -210,6 +214,12 @@ public final class Analyzer extends ParseAdapter {
         // TODO: ...
     }
 
+    public void preProcessTypes() {
+        sortTypes();
+        resolveTypes();
+        materializeTypes();
+    }
+
     @Override
     public void enterStruct(StructContext context) {
         final var identifier = context.ident();
@@ -260,7 +270,8 @@ public final class Analyzer extends ParseAdapter {
         final var type = TypeUtils.getFunctionType(compiler, scopeStack, context);
         final var function = new Function(name, type);
         functions.put(name, function);
-        Logger.INSTANCE.debugln("Found function '%s' in '%s'", function.identifier(), scopeStack.getInternalName(Identifier.EMPTY));
+        Logger.INSTANCE.debugln("Found function '%s' in '%s'", function.identifier(),
+                                scopeStack.getInternalName(Identifier.EMPTY));
         super.enterProtoFunction(context);
     }
 

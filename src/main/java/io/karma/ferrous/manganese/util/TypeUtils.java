@@ -84,7 +84,8 @@ public final class TypeUtils {
         if (!params.isEmpty()) {
             final var paramType = params.getLast().functionParamType();
             final var nodes = paramType.children;
-            isVarArg = nodes.size() == 1 && nodes.get(0).getText().equals(TokenUtils.getLiteral(FerrousLexer.KW_VAARGS));
+            isVarArg = nodes.size() == 1 && nodes.get(0).getText()
+                                                 .equals(TokenUtils.getLiteral(FerrousLexer.KW_VAARGS));
         }
 
         final var paramTypes = TypeUtils.getParameterTypes(compiler, scopeStack, context);
