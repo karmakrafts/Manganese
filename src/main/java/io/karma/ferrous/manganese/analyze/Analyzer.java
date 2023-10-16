@@ -70,15 +70,15 @@ public final class Analyzer extends ParseAdapter {
         final var numFields = fieldTypes.size();
         for (var i = 0; i < numFields; i++) {
             final var fieldType = fieldTypes.get(i);
-            if(fieldType.isBuiltin() || fieldType.isComplete()) {
+            if (fieldType.isBuiltin() || fieldType.isComplete()) {
                 continue;
             }
             final var fieldTypeName = fieldType.getInternalName();
             Logger.INSTANCE.debugln("Found incomplete field type '%s' in '%s'", fieldTypeName, scopeName);
             var completeUdt = udts.get(fieldTypeName);
-            if(completeUdt == null) {
+            if (completeUdt == null) {
                 completeUdt = udts.get(scopeName.join(fieldTypeName, '.')); // Second attempt
-                if(completeUdt == null) {
+                if (completeUdt == null) {
                     continue; // TODO: report error
                 }
             }
@@ -99,7 +99,7 @@ public final class Analyzer extends ParseAdapter {
         for (final var udt : udts.values()) {
             final var type = udt.structureType();
             type.materialize(compiler.getTarget());
-            Logger.INSTANCE.debugln("Materializing type %s", type);
+            Logger.INSTANCE.debugln("Materializing type %s", type.getInternalName());
         }
     }
 
@@ -107,7 +107,6 @@ public final class Analyzer extends ParseAdapter {
         sortTypes();
         resolveTypes();
         materializeTypes();
-        this.udts.values().forEach(System.out::println);
     }
 
     private void addTypesToGraph(final Type type, final TopoNode<UDT> node,
@@ -180,7 +179,7 @@ public final class Analyzer extends ParseAdapter {
 
         final var udt = new UDT(udtType, type);
         udts.put(type.getInternalName(), udt);
-        Logger.INSTANCE.debugln("Captured field layout '%s'", udt);
+        Logger.INSTANCE.debugln("Captured field layout for type '%s'", udt.structureType().getInternalName());
     }
 
     private void analyzeAttributes(final @Nullable AttributeListContext context) {
@@ -239,7 +238,7 @@ public final class Analyzer extends ParseAdapter {
         final var type = TypeUtils.getFunctionType(compiler, scopeStack, context);
         final var function = new Function(name, type);
         functions.put(name, function);
-        Logger.INSTANCE.debugln("Found function '%s'", function);
+        Logger.INSTANCE.debugln("Found function '%s' in '%s'", function.identifier(), scopeStack.getInternalName(Identifier.EMPTY));
         super.enterProtoFunction(context);
     }
 
