@@ -45,23 +45,4 @@ public final class ScopeStack extends Stack<ScopeProvider> {
     public Identifier getInternalName(final Identifier name) {
         return name;
     }
-
-    //public Identifier getNestedName() {
-    //    final var numScopes = size();
-    //    final var buffer = new StringBuilder();
-    //    for (var i = 0; i < numScopes; i++) {
-    //        final var name = get(i).getName();
-    //        if (name == null) {
-    //            continue; // TODO: fix this to allow anon scopes
-    //        }
-    //        if (name.isQualified()) {
-    //            throw new TranslationException(new CompileError("Qualified scope names are not supported right now"));
-    //        }
-    //        buffer.append(name);
-    //        if (i < numScopes - 1) {
-    //            buffer.append('.');
-    //        }
-    //    }
-    //    return new Identifier(buffer.toString());
-    //}
 }
