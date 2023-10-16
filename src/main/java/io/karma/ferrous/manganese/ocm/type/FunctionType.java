@@ -15,8 +15,8 @@
 
 package io.karma.ferrous.manganese.ocm.type;
 
-import io.karma.ferrous.manganese.scope.Scope;
-import io.karma.ferrous.manganese.scope.ScopeProvider;
+import io.karma.ferrous.manganese.ocm.scope.EnclosingScopeProvider;
+import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.target.Target;
 import io.karma.ferrous.manganese.util.Identifier;
 import org.jetbrains.annotations.Nullable;
@@ -44,12 +44,12 @@ public class FunctionType implements Type {
     }
 
     @Override
-    public ScopeProvider getEnclosingScope() {
+    public EnclosingScopeProvider getEnclosingScope() {
         return Scope.GLOBAL;
     }
 
     @Override
-    public void setEnclosingScope(final ScopeProvider scope) {
+    public void setEnclosingScope(final EnclosingScopeProvider scope) {
         throw new UnsupportedOperationException();
     }
 

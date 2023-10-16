@@ -15,7 +15,7 @@
 
 package io.karma.ferrous.manganese.ocm.type;
 
-import io.karma.ferrous.manganese.scope.ScopeProvider;
+import io.karma.ferrous.manganese.ocm.scope.EnclosingScopeProvider;
 import io.karma.ferrous.manganese.target.Target;
 import io.karma.ferrous.manganese.util.Identifier;
 import org.jetbrains.annotations.Nullable;
@@ -26,7 +26,7 @@ import java.util.Arrays;
  * @author Alexander Hinze
  * @since 14/10/2023
  */
-public interface Type extends ScopeProvider {
+public interface Type extends EnclosingScopeProvider {
     long materialize(final Target target);
 
     TypeAttribute[] getAttributes();
@@ -48,6 +48,11 @@ public interface Type extends ScopeProvider {
     @Override
     default Identifier getName() {
         return getBaseType().getName();
+    }
+
+    @Override
+    default Identifier getScopeName() {
+        return getBaseType().getScopeName();
     }
 
     default boolean isBuiltin() {

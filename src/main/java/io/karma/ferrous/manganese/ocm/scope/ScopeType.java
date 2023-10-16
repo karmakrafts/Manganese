@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.scope;
+package io.karma.ferrous.manganese.ocm.scope;
 
 /**
  * @author Alexander Hinze

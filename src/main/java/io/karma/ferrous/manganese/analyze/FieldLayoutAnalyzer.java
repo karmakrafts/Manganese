@@ -15,10 +15,10 @@
 
 package io.karma.ferrous.manganese.analyze;
 
+import io.karma.ferrous.manganese.CompileStatus;
 import io.karma.ferrous.manganese.Compiler;
 import io.karma.ferrous.manganese.ParseAdapter;
 import io.karma.ferrous.manganese.ocm.Field;
-import io.karma.ferrous.manganese.scope.ScopeStack;
 import io.karma.ferrous.manganese.translate.TranslationException;
 import io.karma.ferrous.manganese.util.TypeUtils;
 import io.karma.ferrous.manganese.util.Utils;
@@ -33,12 +33,10 @@ import java.util.ArrayList;
  */
 public final class FieldLayoutAnalyzer extends ParseAdapter {
     private final ArrayList<Field> fields = new ArrayList<>();
-    private final ScopeStack capturedScopeStack;
     private int nestedScopes = 0;
 
-    public FieldLayoutAnalyzer(final Compiler compiler, final ScopeStack scopeStack) {
+    public FieldLayoutAnalyzer(final Compiler compiler) {
         super(compiler);
-        capturedScopeStack = scopeStack;
     }
 
     public boolean isOutOfScope() {
@@ -63,11 +61,11 @@ public final class FieldLayoutAnalyzer extends ParseAdapter {
         compiler.doOrReport(context, () -> {
             final var name = Utils.getIdentifier(context.ident());
             // @formatter:off
-            final var type = TypeUtils.getType(compiler, capturedScopeStack, context.type())
+            final var type = TypeUtils.getType(compiler, context.type())
                 .orElseThrow(() -> new TranslationException(context.start, "Unknown field type"));
             // @formatter:on
             fields.add(new Field(name, type));
-        });
+        }, CompileStatus.TRANSLATION_ERROR);
         super.enterField(context);
     }
 

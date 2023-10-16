@@ -15,8 +15,8 @@
 
 package io.karma.ferrous.manganese.ocm.type;
 
-import io.karma.ferrous.manganese.scope.Scope;
-import io.karma.ferrous.manganese.scope.ScopeProvider;
+import io.karma.ferrous.manganese.ocm.scope.EnclosingScopeProvider;
+import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.target.Target;
 import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.Target2LongFunction;
@@ -28,12 +28,12 @@ import org.lwjgl.system.MemoryUtil;
  * @since 13/10/2023
  */
 public final class BuiltinType implements Type {
-    private final Identifier identifier;
+    private final Identifier name;
     private final Target2LongFunction typeProvider;
     private long materializedType = MemoryUtil.NULL;
 
-    BuiltinType(final Identifier identifier, final Target2LongFunction typeProvider) {
-        this.identifier = identifier;
+    BuiltinType(final Identifier name, final Target2LongFunction typeProvider) {
+        this.name = name;
         this.typeProvider = typeProvider;
     }
 
@@ -42,13 +42,13 @@ public final class BuiltinType implements Type {
     }
 
     @Override
-    public ScopeProvider getEnclosingScope() {
+    public EnclosingScopeProvider getEnclosingScope() {
         return Scope.GLOBAL;
     }
 
     @Override
     public Identifier getName() {
-        return identifier;
+        return name;
     }
 
     @Override
@@ -81,19 +81,19 @@ public final class BuiltinType implements Type {
 
     @Override
     public int hashCode() {
-        return identifier.hashCode();
+        return name.hashCode();
     }
 
     @Override
     public boolean equals(Object obj) {
         if (obj instanceof BuiltinType type) {
-            return identifier.equals(type.identifier);
+            return name.equals(type.name);
         }
         return false;
     }
 
     @Override
     public String toString() {
-        return identifier.toString();
+        return name.toString();
     }
 }

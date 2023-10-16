@@ -13,9 +13,9 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.scope;
+package io.karma.ferrous.manganese.util;
 
-import io.karma.ferrous.manganese.util.Identifier;
+import io.karma.ferrous.manganese.ocm.scope.EnclosingScopeProvider;
 
 import java.util.Stack;
 
@@ -23,7 +23,7 @@ import java.util.Stack;
  * @author Alexander Hinze
  * @since 15/10/2023
  */
-public final class ScopeStack extends Stack<ScopeProvider> {
+public final class ScopeStack extends Stack<EnclosingScopeProvider> {
     public static final ScopeStack EMPTY = new ScopeStack();
 
     public ScopeStack() {
@@ -33,16 +33,12 @@ public final class ScopeStack extends Stack<ScopeProvider> {
         addAll(other);
     }
 
-    public <S extends ScopeProvider> S applyEnclosingScopes(final S provider) {
-        ScopeProvider currentScope = provider;
+    public <S extends EnclosingScopeProvider> S applyEnclosingScopes(final S provider) {
+        EnclosingScopeProvider currentScope = provider;
         for (final var scope : reversed()) {
             currentScope.setEnclosingScope(scope);
             currentScope = scope;
         }
         return provider;
-    }
-
-    public Identifier getInternalName(final Identifier name) {
-        return name;
     }
 }

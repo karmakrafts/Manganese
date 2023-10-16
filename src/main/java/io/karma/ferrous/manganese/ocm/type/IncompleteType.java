@@ -15,7 +15,7 @@
 
 package io.karma.ferrous.manganese.ocm.type;
 
-import io.karma.ferrous.manganese.scope.ScopeProvider;
+import io.karma.ferrous.manganese.ocm.scope.EnclosingScopeProvider;
 import io.karma.ferrous.manganese.target.Target;
 import io.karma.ferrous.manganese.util.Identifier;
 import org.lwjgl.llvm.LLVMCore;
@@ -28,27 +28,27 @@ import static org.lwjgl.llvm.LLVMCore.LLVMGetGlobalContext;
  * @since 15/10/2023
  */
 public final class IncompleteType implements Type {
-    private final Identifier identifier;
+    private final Identifier name;
     private long materializedType = MemoryUtil.NULL;
-    private ScopeProvider enclosingType;
+    private EnclosingScopeProvider enclosingType;
 
-    IncompleteType(final Identifier identifier) {
-        this.identifier = identifier;
+    IncompleteType(final Identifier name) {
+        this.name = name;
     }
 
     @Override
-    public ScopeProvider getEnclosingScope() {
+    public EnclosingScopeProvider getEnclosingScope() {
         return enclosingType;
     }
 
     @Override
-    public void setEnclosingScope(final ScopeProvider scope) {
+    public void setEnclosingScope(final EnclosingScopeProvider scope) {
         enclosingType = scope;
     }
 
     @Override
     public Identifier getName() {
-        return identifier;
+        return name;
     }
 
     @Override

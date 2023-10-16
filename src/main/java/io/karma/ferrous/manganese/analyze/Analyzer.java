@@ -26,7 +26,7 @@ import io.karma.ferrous.manganese.ocm.UDTType;
 import io.karma.ferrous.manganese.ocm.type.StructureType;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.ocm.type.Types;
-import io.karma.ferrous.manganese.scope.ScopeStack;
+import io.karma.ferrous.manganese.translate.TranslationException;
 import io.karma.ferrous.manganese.util.FunctionUtils;
 import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.Logger;
@@ -67,7 +67,7 @@ public final class Analyzer extends ParseAdapter {
         super(compiler);
     }
 
-    private @Nullable UDT findTypeInScope(final Identifier name, final Identifier scopeName) {
+    public @Nullable UDT findTypeInScope(final Identifier name, final Identifier scopeName) {
         var completeUdt = udts.get(name);
         if (completeUdt == null) {
             // Attempt to resolve field types from the inside scope outwards
@@ -87,6 +87,14 @@ public final class Analyzer extends ParseAdapter {
             }
         }
         return completeUdt;
+    }
+
+    private void resolveFunctionTypes(final Function function, final Identifier scopeName) {
+
+    }
+
+    private void resolveFunctionTypes() {
+
     }
 
     private void resolveFieldTypes(final UDT udt, final Identifier scopeName) {
@@ -176,8 +184,7 @@ public final class Analyzer extends ParseAdapter {
         }
 
         Logger.INSTANCE.debugln("Reordering %d UDT entries", udts.size());
-        final var sorter = new TopoSorter<>(rootNode);
-        final var sortedNodes = sorter.sort(ArrayList::new);
+        final var sortedNodes = new TopoSorter<>(rootNode).sort(ArrayList::new);
         final var sortedMap = new LinkedHashMap<Identifier, UDT>();
 
         for (final var node : sortedNodes) {
@@ -197,10 +204,10 @@ public final class Analyzer extends ParseAdapter {
                                     final UDTType udtType) {
         final var name = Utils.getIdentifier(identContext);
 
-        final var parser = new FieldLayoutAnalyzer(compiler, new ScopeStack(scopeStack)); // Copy scope stack
+        final var parser = new FieldLayoutAnalyzer(compiler); // Copy scope stack
         ParseTreeWalker.DEFAULT.walk(parser, parent);
 
-        final var fieldTypes = parser.getFields().stream().map(Field::type).toArray(Type[]::new);
+        final var fieldTypes = parser.getFields().stream().map(Field::getType).toArray(Type[]::new);
         final var type = scopeStack.applyEnclosingScopes(Types.structure(name, fieldTypes));
 
         final var udt = new UDT(udtType, type);
@@ -215,9 +222,17 @@ public final class Analyzer extends ParseAdapter {
     }
 
     public void preProcessTypes() {
-        sortTypes();
-        resolveTypes();
-        materializeTypes();
+        compiler.doOrReport(() -> {
+            try {
+                sortTypes();
+                resolveTypes();
+                materializeTypes();
+                resolveFunctionTypes();
+            }
+            catch (Throwable error) {
+                throw new TranslationException(new CompileError("Unknown issue during type resolution"));
+            }
+        }, CompileStatus.ANALYZER_ERROR);
     }
 
     @Override
@@ -267,11 +282,10 @@ public final class Analyzer extends ParseAdapter {
     @Override
     public void enterProtoFunction(ProtoFunctionContext context) {
         final var name = FunctionUtils.getFunctionName(context.functionIdent());
-        final var type = TypeUtils.getFunctionType(compiler, scopeStack, context);
+        final var type = TypeUtils.getFunctionType(compiler, context);
         final var function = new Function(name, type);
         functions.put(name, function);
-        Logger.INSTANCE.debugln("Found function '%s' in '%s'", function.identifier(),
-                                scopeStack.getInternalName(Identifier.EMPTY));
+        Logger.INSTANCE.debugln("Found function '%s' in '%s'", function.getName(), type.getInternalName());
         super.enterProtoFunction(context);
     }
 

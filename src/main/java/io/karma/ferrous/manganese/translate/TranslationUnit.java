@@ -15,6 +15,7 @@
 
 package io.karma.ferrous.manganese.translate;
 
+import io.karma.ferrous.manganese.CompileStatus;
 import io.karma.ferrous.manganese.Compiler;
 import io.karma.ferrous.manganese.ParseAdapter;
 import io.karma.ferrous.manganese.util.FunctionUtils;
@@ -56,7 +57,7 @@ public class TranslationUnit extends ParseAdapter {
     public void enterExternFunction(ExternFunctionContext context) {
         compiler.doOrReport(context, () -> {
             final var prototype = context.protoFunction();
-            final var type = TypeUtils.getFunctionType(compiler, scopeStack, prototype);
+            final var type = TypeUtils.getFunctionType(compiler, prototype);
             final var function = LLVMAddFunction(module,
                                                  FunctionUtils.getFunctionName(prototype.functionIdent()).toString(),
                                                  type.materialize(compiler.getTarget()));
@@ -65,7 +66,7 @@ public class TranslationUnit extends ParseAdapter {
             }
             LLVMSetLinkage(function, LLVMExternalLinkage);
             LLVMSetFunctionCallConv(function, FunctionUtils.getCallingConvention(compiler, prototype).getLlvmType());
-        });
+        }, CompileStatus.TRANSLATION_ERROR);
         super.enterExternFunction(context);
     }
 

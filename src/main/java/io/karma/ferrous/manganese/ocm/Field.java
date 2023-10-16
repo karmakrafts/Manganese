@@ -15,6 +15,7 @@
 
 package io.karma.ferrous.manganese.ocm;
 
+import io.karma.ferrous.manganese.ocm.scope.EnclosingScopeProvider;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.util.Identifier;
 
@@ -22,5 +23,32 @@ import io.karma.ferrous.manganese.util.Identifier;
  * @author Alexander Hinze
  * @since 15/10/2023
  */
-public record Field(Identifier identifier, Type type) {
+public final class Field implements EnclosingScopeProvider {
+    private final Identifier name;
+    private final Type type;
+    private EnclosingScopeProvider enclosingScope;
+
+    public Field(final Identifier name, final Type type) {
+        this.name = name;
+        this.type = type;
+    }
+
+    public Type getType() {
+        return type;
+    }
+
+    @Override
+    public Identifier getName() {
+        return name;
+    }
+
+    @Override
+    public EnclosingScopeProvider getEnclosingScope() {
+        return enclosingScope;
+    }
+
+    @Override
+    public void setEnclosingScope(final EnclosingScopeProvider scope) {
+        enclosingScope = scope;
+    }
 }

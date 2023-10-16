@@ -153,31 +153,32 @@ public final class Compiler implements ANTLRErrorListener {
         target = null;
     }
 
-    public void doOrReport(final ParserRuleContext context, final XRunnable<?> closure) {
+    public void doOrReport(final ParserRuleContext context, final XRunnable<?> closure,
+                           final CompileStatus errorStatus) {
         if (!isVerbose && !status.isRecoverable()) {
             return; // Don't report translation errors after we are unrecoverable
         }
         Functions.tryDo(closure, exception -> {
             if (exception instanceof TranslationException tExcept) {
-                reportError(tExcept.getError(), CompileStatus.TRANSLATION_ERROR);
+                reportError(tExcept.getError(), errorStatus);
                 return;
             }
             final var error = new CompileError(context.start);
             error.setAdditionalText(Utils.makeCompilerMessage(exception.toString()));
-            reportError(error, CompileStatus.TRANSLATION_ERROR);
+            reportError(error, errorStatus);
         });
     }
 
-    public void doOrReport(final XRunnable<?> closure) {
+    public void doOrReport(final XRunnable<?> closure, final CompileStatus errorStatus) {
         if (!isVerbose && !status.isRecoverable()) {
             return; // Don't report translation errors after we are unrecoverable
         }
         Functions.tryDo(closure, exception -> {
             if (exception instanceof TranslationException tExcept) {
-                reportError(tExcept.getError(), CompileStatus.TRANSLATION_ERROR);
+                reportError(tExcept.getError(), errorStatus);
                 return;
             }
-            reportError(new CompileError(exception.toString()), CompileStatus.TRANSLATION_ERROR);
+            reportError(new CompileError(exception.toString()), errorStatus);
         });
     }
 

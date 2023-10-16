@@ -22,7 +22,6 @@ import io.karma.ferrous.manganese.ParseAdapter;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.ocm.type.TypeAttribute;
 import io.karma.ferrous.manganese.ocm.type.Types;
-import io.karma.ferrous.manganese.scope.ScopeStack;
 import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.Utils;
 import io.karma.ferrous.vanadium.FerrousParser.FloatTypeContext;
@@ -44,12 +43,10 @@ import java.util.Stack;
  */
 public final class TypeParser extends ParseAdapter {
     private final Stack<TypeAttribute> attributes = new Stack<>();
-    private final ScopeStack capturedScopeStack;
     private Type baseType;
 
-    public TypeParser(final Compiler compiler, final ScopeStack scopeStack) {
+    public TypeParser(final Compiler compiler) {
         super(compiler);
-        capturedScopeStack = scopeStack;
     }
 
     @Override
@@ -85,20 +82,20 @@ public final class TypeParser extends ParseAdapter {
                 throw new TranslationException(context.start, errorMessage);
             }
             baseType = Types.builtin(Identifier.parse(text));
-        });
+        }, CompileStatus.TRANSLATION_ERROR);
     }
 
     @Override
     public void enterIdent(IdentContext context) {
         compiler.doOrReport(context, () -> {
             final var name = Utils.getIdentifier(context);
-            final var udt = compiler.getAnalyzer().getUDTs().get(capturedScopeStack.getInternalName(name));
+            final var udt = compiler.getAnalyzer().getUDTs().get(name);
             if (udt == null) {
                 baseType = Types.incomplete(name);
                 return;
             }
             baseType = udt.structureType();
-        });
+        }, CompileStatus.TRANSLATION_ERROR);
         super.enterIdent(context);
     }
 
@@ -106,13 +103,13 @@ public final class TypeParser extends ParseAdapter {
     public void enterQualifiedIdent(QualifiedIdentContext context) {
         compiler.doOrReport(context, () -> {
             final var name = Utils.getIdentifier(context);
-            final var udt = compiler.getAnalyzer().getUDTs().get(capturedScopeStack.getInternalName(name));
+            final var udt = compiler.getAnalyzer().getUDTs().get(name);
             if (udt == null) {
                 baseType = Types.incomplete(name);
                 return;
             }
             baseType = udt.structureType();
-        });
+        }, CompileStatus.TRANSLATION_ERROR);
         super.enterQualifiedIdent(context);
     }
 

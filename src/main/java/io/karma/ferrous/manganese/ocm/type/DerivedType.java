@@ -15,8 +15,9 @@
 
 package io.karma.ferrous.manganese.ocm.type;
 
-import io.karma.ferrous.manganese.scope.ScopeProvider;
+import io.karma.ferrous.manganese.ocm.scope.EnclosingScopeProvider;
 import io.karma.ferrous.manganese.target.Target;
+import io.karma.ferrous.manganese.util.Identifier;
 import org.lwjgl.llvm.LLVMCore;
 import org.lwjgl.system.MemoryUtil;
 
@@ -38,7 +39,12 @@ public final class DerivedType implements Type {
     }
 
     @Override
-    public ScopeProvider getEnclosingScope() {
+    public Identifier getName() {
+        return new Identifier(toString()); // TODO: find a better solution
+    }
+
+    @Override
+    public EnclosingScopeProvider getEnclosingScope() {
         return baseType.getEnclosingScope();
     }
 

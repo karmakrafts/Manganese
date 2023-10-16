@@ -15,7 +15,7 @@
 
 package io.karma.ferrous.manganese.ocm.type;
 
-import io.karma.ferrous.manganese.scope.ScopeProvider;
+import io.karma.ferrous.manganese.ocm.scope.EnclosingScopeProvider;
 import io.karma.ferrous.manganese.util.Identifier;
 
 import java.util.Objects;
@@ -26,7 +26,7 @@ import java.util.Objects;
  */
 public final class NamedFunctionType extends FunctionType {
     private final Identifier name;
-    private ScopeProvider enclosingScope;
+    private EnclosingScopeProvider enclosingScope;
 
     NamedFunctionType(final Identifier name, final Type returnType, final boolean isVarArg, final Type... paramTypes) {
         super(returnType, isVarArg, paramTypes);
@@ -34,12 +34,17 @@ public final class NamedFunctionType extends FunctionType {
     }
 
     @Override
-    public ScopeProvider getEnclosingScope() {
+    public Identifier getName() {
+        return name;
+    }
+
+    @Override
+    public EnclosingScopeProvider getEnclosingScope() {
         return enclosingScope;
     }
 
     @Override
-    public void setEnclosingScope(final ScopeProvider scope) {
+    public void setEnclosingScope(final EnclosingScopeProvider scope) {
         enclosingScope = scope;
     }
 

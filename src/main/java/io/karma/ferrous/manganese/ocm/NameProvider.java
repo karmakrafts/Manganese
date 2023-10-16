@@ -15,16 +15,12 @@
 
 package io.karma.ferrous.manganese.ocm;
 
-import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.util.Identifier;
 
 /**
  * @author Alexander Hinze
  * @since 16/10/2023
  */
-public record Parameter(Identifier name, Type type) implements NameProvider {
-    @Override
-    public Identifier getName() {
-        return name;
-    }
+public interface NameProvider {
+    Identifier getName();
 }

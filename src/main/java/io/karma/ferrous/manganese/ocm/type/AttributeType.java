@@ -15,7 +15,7 @@
 
 package io.karma.ferrous.manganese.ocm.type;
 
-import io.karma.ferrous.manganese.scope.ScopeProvider;
+import io.karma.ferrous.manganese.ocm.scope.EnclosingScopeProvider;
 import io.karma.ferrous.manganese.target.Target;
 import io.karma.ferrous.manganese.util.Identifier;
 
@@ -27,10 +27,15 @@ import java.util.Objects;
  */
 public final class AttributeType implements Type {
     private final Identifier name;
-    private ScopeProvider enclosingScope;
+    private EnclosingScopeProvider enclosingScope;
 
     public AttributeType(final Identifier name) {
         this.name = name;
+    }
+
+    @Override
+    public Identifier getName() {
+        return name;
     }
 
     @Override
@@ -49,12 +54,12 @@ public final class AttributeType implements Type {
     }
 
     @Override
-    public ScopeProvider getEnclosingScope() {
+    public EnclosingScopeProvider getEnclosingScope() {
         return enclosingScope;
     }
 
     @Override
-    public void setEnclosingScope(final ScopeProvider scope) {
+    public void setEnclosingScope(final EnclosingScopeProvider scope) {
         enclosingScope = scope;
     }
 

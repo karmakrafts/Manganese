@@ -15,7 +15,7 @@
 
 package io.karma.ferrous.manganese.ocm.type;
 
-import io.karma.ferrous.manganese.scope.ScopeProvider;
+import io.karma.ferrous.manganese.ocm.scope.EnclosingScopeProvider;
 import io.karma.ferrous.manganese.target.Target;
 import io.karma.ferrous.manganese.util.Identifier;
 import org.lwjgl.llvm.LLVMCore;
@@ -37,7 +37,7 @@ public final class StructureType implements Type {
     private final boolean isPacked;
     private final Type[] fieldTypes;
     private long materializedType = MemoryUtil.NULL;
-    private ScopeProvider enclosingScope;
+    private EnclosingScopeProvider enclosingScope;
 
     StructureType(final Identifier name, final boolean isPacked, final Type... fieldTypes) {
         this.name = name;
@@ -62,12 +62,12 @@ public final class StructureType implements Type {
     }
 
     @Override
-    public ScopeProvider getEnclosingScope() {
+    public EnclosingScopeProvider getEnclosingScope() {
         return enclosingScope;
     }
 
     @Override
-    public void setEnclosingScope(final ScopeProvider scope) {
+    public void setEnclosingScope(final EnclosingScopeProvider scope) {
         enclosingScope = scope;
     }
 

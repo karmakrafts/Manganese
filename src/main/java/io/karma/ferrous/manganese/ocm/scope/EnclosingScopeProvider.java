@@ -13,32 +13,40 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.scope;
+package io.karma.ferrous.manganese.ocm.scope;
 
+import io.karma.ferrous.manganese.ocm.NameProvider;
 import io.karma.ferrous.manganese.util.Identifier;
 
 /**
  * @author Alexander Hinze
  * @since 16/10/2023
  */
-public interface ScopeProvider {
-    Identifier getName();
+public interface EnclosingScopeProvider extends NameProvider {
+    EnclosingScopeProvider getEnclosingScope();
 
-    ScopeProvider getEnclosingScope();
+    default void setEnclosingScope(EnclosingScopeProvider scope) {
+    }
 
-    default void setEnclosingScope(ScopeProvider scope) {
+    default Identifier getScopeName() {
+        return getEnclosingScope().getScopeName();
     }
 
     default Identifier getInternalName() {
         var currentParent = getEnclosingScope();
         var result = getName();
         if (currentParent == null) {
-            return result;
+            return getName();
         }
         while (currentParent != null) {
             result = currentParent.getName().join(result, '.');
             currentParent = currentParent.getEnclosingScope();
         }
         return result;
+    }
+
+    @Override
+    default Identifier getName() {
+        return getScopeName();
     }
 }

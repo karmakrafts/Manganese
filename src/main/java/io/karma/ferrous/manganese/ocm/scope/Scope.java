@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.scope;
+package io.karma.ferrous.manganese.ocm.scope;
 
 import io.karma.ferrous.manganese.util.Identifier;
 
@@ -23,12 +23,12 @@ import java.util.Objects;
  * @author Alexander Hinze
  * @since 15/10/2023
  */
-public final class Scope implements ScopeProvider {
+public final class Scope implements EnclosingScopeProvider {
     public static final Scope GLOBAL = new Scope(ScopeType.GLOBAL);
 
     private final ScopeType type;
     private final Identifier name;
-    private ScopeProvider enclosingScope = GLOBAL;
+    private EnclosingScopeProvider enclosingScope = GLOBAL;
 
     public Scope(final ScopeType type, final Identifier name) {
         this.type = type;
@@ -40,12 +40,17 @@ public final class Scope implements ScopeProvider {
     }
 
     @Override
-    public ScopeProvider getEnclosingScope() {
+    public Identifier getScopeName() {
+        return name;
+    }
+
+    @Override
+    public EnclosingScopeProvider getEnclosingScope() {
         return enclosingScope;
     }
 
     @Override
-    public void setEnclosingScope(ScopeProvider scope) {
+    public void setEnclosingScope(final EnclosingScopeProvider scope) {
         this.enclosingScope = scope;
     }
 
