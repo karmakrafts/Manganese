@@ -1,7 +1,7 @@
 # Manganese
 
 Bootstrap compiler backend for the Ferrous programming language written in Java.
-This is a temporary compiler implementation used for self-hosting and this it
+This is a temporary compiler implementation used for self-hosting and thus it
 only supports LLVM as its backend. **Other backends will not be supported**.
 
 ### Running
