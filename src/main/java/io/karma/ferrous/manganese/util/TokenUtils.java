@@ -18,9 +18,18 @@ package io.karma.ferrous.manganese.util;
 import io.karma.ferrous.vanadium.FerrousLexer;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.TokenStream;
+import org.barfuin.texttree.api.DefaultNode;
+import org.barfuin.texttree.api.TextTree;
+import org.barfuin.texttree.api.TreeOptions;
+import org.barfuin.texttree.api.style.TreeStyles;
+import org.fusesource.jansi.Ansi;
+import org.fusesource.jansi.Ansi.Attribute;
+import org.fusesource.jansi.Ansi.Color;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Stack;
 
 /**
  * @author Alexander Hinze
@@ -30,6 +39,59 @@ public final class TokenUtils {
     // @formatter:off
     private TokenUtils() {}
     // @formatter:on
+
+    public static String renderTokenTree(final String name, final boolean printHiddenTokens, final FerrousLexer lexer,
+                                         final Collection<Token> tokens) {
+        final var nodeStack = new Stack<DefaultNode>();
+        nodeStack.push(new DefaultNode(name));
+        for (final var token : tokens) {
+            switch (token.getType()) {
+                case FerrousLexer.R_BRACE:
+                case FerrousLexer.R_BRACKET:
+                case FerrousLexer.R_PAREN:
+                    final var lastNode = nodeStack.pop();
+                    nodeStack.peek().addChild(lastNode);
+                    break;
+            }
+            final var text = token.getText();
+            if (!printHiddenTokens && text.isBlank()) {
+                continue; // Skip blank tokens if extended mode is disabled
+            }
+            // @formatter:off
+            final var tokenTypeEntry = lexer.getTokenTypeMap()
+                .entrySet()
+                .stream()
+                .filter(e -> e.getValue().equals(token.getType()))
+                .findFirst()
+                .orElseThrow();
+            final var formattedText = Ansi.ansi()
+                .fg(Color.BLUE)
+                .a(String.format("%06d", token.getTokenIndex()))
+                .a(Attribute.RESET)
+                .a(": ")
+                .fgBright(Color.CYAN)
+                .a(text.equals("\n") ? " " : text)
+                .a(Attribute.RESET)
+                .a(' ')
+                .fg(Color.GREEN)
+                .a(tokenTypeEntry)
+                .a(Attribute.RESET).toString();
+            // @formatter:on
+            switch (token.getType()) {
+                case FerrousLexer.L_BRACE:
+                case FerrousLexer.L_BRACKET:
+                case FerrousLexer.L_PAREN:
+                    nodeStack.push(new DefaultNode(formattedText));
+                    break;
+                default:
+                    nodeStack.peek().addChild(new DefaultNode(formattedText));
+                    break;
+            }
+        }
+        final var options = new TreeOptions();
+        options.setStyle(TreeStyles.UNICODE_ROUNDED);
+        return TextTree.newInstance(options).render(nodeStack.pop());
+    }
 
     public static String getLiteral(final int token) {
         final var name = FerrousLexer.VOCABULARY.getLiteralName(token);

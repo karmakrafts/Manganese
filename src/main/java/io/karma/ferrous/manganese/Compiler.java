@@ -21,6 +21,7 @@ import io.karma.ferrous.manganese.translate.TranslationException;
 import io.karma.ferrous.manganese.translate.TranslationUnit;
 import io.karma.ferrous.manganese.util.Logger;
 import io.karma.ferrous.manganese.util.SimpleFileVisitor;
+import io.karma.ferrous.manganese.util.TokenUtils;
 import io.karma.ferrous.manganese.util.Utils;
 import io.karma.ferrous.vanadium.FerrousLexer;
 import io.karma.ferrous.vanadium.FerrousParser;
@@ -52,6 +53,7 @@ import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
@@ -274,7 +276,24 @@ public final class Compiler implements ANTLRErrorListener {
         this.status = this.status.worse(status);
     }
 
-    public CompileResult compile(final Path in, @Nullable Path out) {
+    public CompileResult compile(Path in, @Nullable Path out) {
+        in = in.toAbsolutePath().normalize();
+        final var inputIsDirectory = Files.isDirectory(in);
+        if (out != null) {
+            out = out.toAbsolutePath().normalize();
+            if (inputIsDirectory && !Files.isDirectory(out)) {
+                throw new RuntimeException("Output cannot be a file if input is a directory");
+            }
+        }
+        else {
+            if (inputIsDirectory) {
+                out = in;
+            }
+            else {
+                out = in.getParent();
+            }
+        }
+
         final var inputFiles = findCompilableFiles(in);
         final var numFiles = inputFiles.size();
         var status = CompileStatus.SKIPPED;
@@ -294,41 +313,28 @@ public final class Compiler implements ANTLRErrorListener {
                 .toString());
             // @formatter:on
 
-            final var rawFileName = Utils.getRawFileName(filePath);
-            final var outFileName = String.format("%s.%s", rawFileName, OUT_EXTENSION);
-            if (moduleName == null || moduleName.isBlank()) {
-                moduleName = rawFileName; // Derive module name if not present
-            }
+            moduleName = Utils.getRawFileName(filePath);
+            final var outFileName = String.format("%s.%s", moduleName, OUT_EXTENSION);
 
-            if (out == null) {
-                // If the output path is null, derive it
-                out = filePath.getParent().resolve(outFileName);
-            }
-            if (!out.getFileName().toString()
-                    .contains(".")) { // Since isFile/isDirectory doesn't work reliably for non-existent files
-                // If out is a directory, resolve the output file name
-                out = out.resolve(outFileName);
-            }
-
-            final var outParentFile = out.getParent();
-            if (!Files.exists(outParentFile)) {
+            if (!Files.exists(out)) {
                 try {
-                    Files.createDirectories(outParentFile);
-                    Logger.INSTANCE.debugln("Created directory %s", outParentFile);
+                    Files.createDirectories(out);
+                    Logger.INSTANCE.debugln("Created directory %s", out);
                 }
                 catch (Exception error) {
-                    Logger.INSTANCE.errorln("Could not create directory at %s, skipping", outParentFile.toString());
+                    Logger.INSTANCE.errorln("Could not create directory at %s, skipping", out);
                 }
             }
 
+            final var outFile = Files.isDirectory(out) ? out.resolve(outFileName) : out;
             Logger.INSTANCE.debugln("Input: %s", filePath);
-            Logger.INSTANCE.debugln("Output: %s", out);
+            Logger.INSTANCE.debugln("Output: %s", outFile);
 
             try (final var inStream = Files.newInputStream(filePath); final var inChannel = Channels.newChannel(
                     inStream)) {
-                try (final var outStream = Files.newOutputStream(out); final var outChannel = Channels.newChannel(
+                try (final var outStream = Files.newOutputStream(outFile); final var outChannel = Channels.newChannel(
                         outStream)) {
-                    compile(rawFileName, inChannel, outChannel);
+                    compile(moduleName, inChannel, outChannel);
                     status = status.worse(this.status);
                 }
             }
@@ -360,52 +366,6 @@ public final class Compiler implements ANTLRErrorListener {
         }
     }
 
-    private void printTokens(final FerrousLexer lexer) {
-        final var tokens = tokenStream.getTokens();
-        var indent = 0;
-        for (final var token : tokens) {
-            switch (token.getType()) {
-                case FerrousLexer.L_BRACE:
-                case FerrousLexer.L_BRACKET:
-                case FerrousLexer.L_PAREN:
-                    indent++;
-                    break;
-            }
-            final var text = token.getText();
-            if (!extendedTokenView && text.isBlank()) {
-                continue; // Skip blank tokens if extended mode is disabled
-            }
-            // @formatter:off
-            final var tokenTypeEntry = lexer.getTokenTypeMap()
-                .entrySet()
-                .stream()
-                .filter(e -> e.getValue().equals(token.getType()))
-                .findFirst()
-                .orElseThrow();
-            System.out.println(Ansi.ansi()
-                .fg(Color.BLUE)
-                .a(" ".repeat(indent << 2))
-                .a(String.format("%06d", token.getTokenIndex()))
-                .a(Attribute.RESET)
-                .a(": ")
-                .fgBright(Color.CYAN)
-                .a(text)
-                .a(Attribute.RESET)
-                .a(' ')
-                .fg(Color.GREEN)
-                .a(tokenTypeEntry)
-                .a(Attribute.RESET).toString());
-            // @formatter:on
-            switch(token.getType()) {
-                case FerrousLexer.R_BRACE:
-                case FerrousLexer.R_BRACKET:
-                case FerrousLexer.R_PAREN:
-                    indent--;
-                    break;
-            }
-        }
-    }
-
     private boolean checkStatus() {
         if (!status.isRecoverable()) {
             Logger.INSTANCE.errorln("Compilation is irrecoverable, continuing to report syntax errors");
@@ -427,7 +387,8 @@ public final class Compiler implements ANTLRErrorListener {
         final var time = System.currentTimeMillis() - startTime;
         Logger.INSTANCE.debugln("Finished pass TOKENIZE in %dms", time);
         if (tokenView) {
-            printTokens(lexer);
+            System.out.printf("\n%s\n", TokenUtils.renderTokenTree(moduleName, extendedTokenView, lexer,
+                                                                   tokenStream.getTokens()));
         }
     }
 
@@ -478,28 +439,20 @@ public final class Compiler implements ANTLRErrorListener {
         return checkStatus();
     }
 
-    private void saveBitcode(final Path path) {
+    private @Nullable ByteBuffer getBitcode() {
         final var module = translationUnit.getModule();
         final var buffer = LLVMBitWriter.LLVMWriteBitcodeToMemoryBuffer(module);
         Logger.INSTANCE.debugln("Wrote bitcode to memory at 0x%08X", buffer);
         if (buffer == NULL) {
             reportError(new CompileError("Could not allocate buffer for module bitcode"), CompileStatus.IO_ERROR);
             translationUnit.dispose();
-            return;
+            return null;
         }
-
-        try (final var stream = Files.newOutputStream(path)) {
-            final var size = (int) LLVMGetBufferSize(buffer);
-            final var address = nLLVMGetBufferStart(buffer); // LWJGL codegen is a pita
-            try (final var channel = Channels.newChannel(stream)) {
-                channel.write(MemoryUtil.memByteBuffer(address, size));
-            }
-        }
-        catch (Exception error) {
-            Logger.INSTANCE.warnln("Could not save bitcode to file: %s", error.toString());
-        }
-
+        final var size = (int) LLVMGetBufferSize(buffer);
+        final var address = nLLVMGetBufferStart(buffer); // LWJGL codegen is a pita
+        final var result = MemoryUtil.memByteBuffer(address, size);
         LLVMDisposeMemoryBuffer(buffer);
+        return result;
     }
 
     public void compile(final String name, final ReadableByteChannel in, final WritableByteChannel out) {
@@ -529,9 +482,6 @@ public final class Compiler implements ANTLRErrorListener {
             }
             if (disassemble) {
                 disassemble();
-            }
-            if (saveBitcode) {
-                saveBitcode(Path.of(String.format("%s.bc", name)));
             }
 
             status = CompileStatus.SUCCESS;

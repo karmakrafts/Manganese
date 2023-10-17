@@ -53,6 +53,7 @@ dependencies {
     implementation group: 'net.sf.jopt-simple', name: 'jopt-simple', version: config.jopt_version, changing: true
     implementation group: 'org.antlr', name: 'antlr4-runtime', version: config.antlr_version, changing: true
     implementation group: 'org.apiguardian', name: 'apiguardian-api', version: config.apiguard_version, changing: true
+    implementation group: 'org.barfuin.texttree', name: 'text-tree', version: config.text_tree_version, changing: true
 
     implementation group: 'io.karma.kommons', name: 'kommons', version: config.kommons_version, changing: true
     implementation group: 'io.karma.ferrous', name: 'vanadium', version: config.vanadium_version, changing: true

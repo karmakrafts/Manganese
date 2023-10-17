@@ -76,16 +76,20 @@ public final class Analyzer extends ParseAdapter {
             Logger.INSTANCE.debugln("Found incomplete field type '%s' in '%s'", fieldTypeName, scopeName);
             final var completeUdt = findUDTInScope(fieldTypeName, scopeName);
             if (completeUdt == null) {
+                // @formatter:off
                 compiler.reportError(new CompileError(Utils.makeCompilerMessage(
-                                             String.format("Failed to resolve field type '%s' for '%s'", fieldTypeName, scopeName))),
-                                     CompileStatus.ANALYZER_ERROR);
+                    String.format("Failed to resolve field type '%s' for '%s'", fieldTypeName, scopeName))),
+                    CompileStatus.ANALYZER_ERROR);
+                // @formatter:on
                 continue;
             }
             final var completeType = completeUdt.structureType();
             if (completeType == null) {
+                // @formatter:off
                 compiler.reportError(new CompileError(Utils.makeCompilerMessage(
-                                             String.format("Failed to resolve field type '%s' for '%s'", fieldTypeName, scopeName))),
-                                     CompileStatus.ANALYZER_ERROR);
+                    String.format("Failed to resolve field type '%s' for '%s'", fieldTypeName, scopeName))),
+                    CompileStatus.ANALYZER_ERROR);
+                // @formatter:on
                 continue;
             }
             Logger.INSTANCE.debugln("   Resolved to complete type '%s'", completeType.getInternalName());
@@ -93,7 +97,7 @@ public final class Analyzer extends ParseAdapter {
         }
     }
 
-    private void resolveTypes() {
+    private void resolveFieldTypes() {
         final var udts = this.udts.values();
         for (final var udt : udts) {
             resolveFieldTypes(udt, udt.structureType().getInternalName());
@@ -185,7 +189,7 @@ public final class Analyzer extends ParseAdapter {
         compiler.doOrReport(() -> {
             try {
                 sortTypes();
-                resolveTypes();
+                resolveFieldTypes();
                 materializeTypes();
             }
             catch (Throwable error) {
