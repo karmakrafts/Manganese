@@ -39,14 +39,6 @@ public final class TypeUtils {
     private TypeUtils() {}
     // @formatter:on
 
-    /**
-     * Look up the given type in the current context. This means unrolling
-     * the scope stack in reverse to find the first match of an unqualified type name.
-     *
-     * @param compiler The compiler instance.
-     * @param context  The actual type context AST node.
-     * @return An optional with a type if one is found, otherwise empty.
-     */
     public static Optional<Type> getType(final Compiler compiler, final ScopeStack capturedScopeStack,
                                          final TypeContext context) {
         final TypeParser unit = new TypeParser(compiler, capturedScopeStack);
@@ -61,9 +53,9 @@ public final class TypeUtils {
                                                final ProtoFunctionContext context) throws TranslationException {
         // @formatter:off
         return context.functionParamList().functionParam().stream()
-            .map(FunctionParamContext::functionParamType)
-            .filter(type -> !type.getText().equals(TokenUtils.getLiteral(FerrousLexer.KW_VAARGS)))
-            .map(type -> getType(compiler, capturedScopeStack, type.type())
+            .map(FunctionParamContext::type)
+            .filter(type -> type != null && !type.getText().equals(TokenUtils.getLiteral(FerrousLexer.KW_VAARGS)))
+            .map(type -> getType(compiler, capturedScopeStack, type)
                 .orElseThrow(() -> new TranslationException(context.start, "Unknown function parameter type '%s'", type.getText())))
             .toList();
         // @formatter:on
@@ -76,16 +68,7 @@ public final class TypeUtils {
         final var returnType = getType(compiler, capturedScopeStack, type)
             .orElseThrow(() -> new TranslationException(context.start, "Unknown function return type '%s'", type.getText()));
         // @formatter:on
-        final var params = context.functionParamList().functionParam();
-        var isVarArg = false;
-
-        if (!params.isEmpty()) {
-            final var paramType = params.getLast().functionParamType();
-            final var nodes = paramType.children;
-            isVarArg = nodes.size() == 1 && nodes.get(0).getText()
-                                                 .equals(TokenUtils.getLiteral(FerrousLexer.KW_VAARGS));
-        }
-
+        final var isVarArg = context.functionParamList().vaFunctionParam() != null;
         final var paramTypes = TypeUtils.getParameterTypes(compiler, capturedScopeStack, context);
         return Types.function(returnType, paramTypes, isVarArg);
     }

@@ -17,21 +17,16 @@ package io.karma.ferrous.manganese.translate;
 
 import io.karma.ferrous.manganese.CompileStatus;
 import io.karma.ferrous.manganese.Compiler;
+import io.karma.ferrous.manganese.Module;
 import io.karma.ferrous.manganese.ParseAdapter;
 import io.karma.ferrous.manganese.util.FunctionUtils;
-import io.karma.ferrous.manganese.util.Logger;
 import io.karma.ferrous.manganese.util.TypeUtils;
 import io.karma.ferrous.vanadium.FerrousParser.ExternFunctionContext;
 
 import static org.lwjgl.llvm.LLVMCore.LLVMAddFunction;
-import static org.lwjgl.llvm.LLVMCore.LLVMDisposeModule;
 import static org.lwjgl.llvm.LLVMCore.LLVMExternalLinkage;
-import static org.lwjgl.llvm.LLVMCore.LLVMGetGlobalContext;
-import static org.lwjgl.llvm.LLVMCore.LLVMGetModuleIdentifier;
-import static org.lwjgl.llvm.LLVMCore.LLVMModuleCreateWithNameInContext;
 import static org.lwjgl.llvm.LLVMCore.LLVMSetFunctionCallConv;
 import static org.lwjgl.llvm.LLVMCore.LLVMSetLinkage;
-import static org.lwjgl.llvm.LLVMCore.LLVMSetSourceFileName;
 import static org.lwjgl.system.MemoryUtil.NULL;
 
 /**
@@ -39,18 +34,11 @@ import static org.lwjgl.system.MemoryUtil.NULL;
  * @since 12/10/2023
  */
 public class TranslationUnit extends ParseAdapter {
-    private final long module;
-    private boolean isDisposed;
+    private final Module module;
 
     public TranslationUnit(final Compiler compiler, final String name) {
         super(compiler);
-
-        module = LLVMModuleCreateWithNameInContext(name, LLVMGetGlobalContext());
-        if (module == NULL) {
-            throw new RuntimeException("Could not allocate module");
-        }
-        LLVMSetSourceFileName(module, name); // Same as source file name
-        Logger.INSTANCE.debugln("Allocated translation unit at 0x%08X", module);
+        module = new Module(name);
     }
 
     @Override
@@ -58,9 +46,7 @@ public class TranslationUnit extends ParseAdapter {
         compiler.doOrReport(context, () -> {
             final var prototype = context.protoFunction();
             final var type = TypeUtils.getFunctionType(compiler, scopeStack, prototype);
-            final var function = LLVMAddFunction(module,
-                                                 FunctionUtils.getFunctionName(prototype.functionIdent()).toString(),
-                                                 type.materialize(compiler.getTarget()));
+            final var function = LLVMAddFunction(module.getAddress(), FunctionUtils.getFunctionName(prototype.functionIdent()).toString(), type.materialize(compiler.getTarget()));
             if (function == NULL) {
                 throw new TranslationException(context.start, "Could not create function");
             }
@@ -70,20 +56,7 @@ public class TranslationUnit extends ParseAdapter {
         super.enterExternFunction(context);
     }
 
-    public void dispose() {
-        if (isDisposed) {
-            return;
-        }
-        Logger.INSTANCE.debugln("Disposing translation unit at 0x%08X", module);
-        LLVMDisposeModule(module);
-        isDisposed = true;
-    }
-
-    public long getModule() {
+    public Module getModule() {
         return module;
-    }
-
-    public String getModuleName() {
-        return LLVMGetModuleIdentifier(module);
     }
 }

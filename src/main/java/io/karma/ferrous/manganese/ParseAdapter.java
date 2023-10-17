@@ -49,6 +49,42 @@ public abstract class ParseAdapter implements FerrousParserListener {
 
     // @formatter:off
     @Override
+    public void enterTypeAlias(TypeAliasContext typeAliasContext) {}
+
+    @Override
+    public void exitTypeAlias(TypeAliasContext typeAliasContext) {}
+
+    @Override
+    public void enterVaFunctionParam(VaFunctionParamContext vaFunctionParamContext) {}
+
+    @Override
+    public void exitVaFunctionParam(VaFunctionParamContext vaFunctionParamContext) {}
+
+    @Override
+    public void enterLambdaExpr(LambdaExprContext lambdaExprContext) {}
+
+    @Override
+    public void exitLambdaExpr(LambdaExprContext lambdaExprContext) {}
+
+    @Override
+    public void enterRefIdent(RefIdentContext refIdentContext) {}
+
+    @Override
+    public void exitRefIdent(RefIdentContext refIdentContext) {}
+
+    @Override
+    public void enterTupleType(TupleTypeContext tupleTypeContext) {}
+
+    @Override
+    public void exitTupleType(TupleTypeContext tupleTypeContext) {}
+
+    @Override
+    public void enterFunctionType(FunctionTypeContext functionTypeContext) {}
+
+    @Override
+    public void exitFunctionType(FunctionTypeContext functionTypeContext) {}
+
+    @Override
     public void enterFile(FileContext fileContext) {
         scopeStack.push(new Scope(ScopeType.FILE, Identifier.parse(compiler.getCurrentName())));
     }
@@ -461,12 +497,6 @@ public abstract class ParseAdapter implements FerrousParserListener {
 
     @Override
     public void exitFunctionParam(FunctionParamContext functionParamContext) {}
-
-    @Override
-    public void enterFunctionParamType(FunctionParamTypeContext functionParamTypeContext) {}
-
-    @Override
-    public void exitFunctionParamType(FunctionParamTypeContext functionParamTypeContext) {}
 
     @Override
     public void enterExprList(ExprListContext exprListContext) {}

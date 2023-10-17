@@ -40,8 +40,7 @@ public final class FunctionUtils {
         final var conv = CallingConvention.findByText(name);
         if (conv.isEmpty()) {
             final var error = new CompileError(identifier.getSymbol());
-            final var message = String.format(
-                    "'%s' is not a valid calling convention, expected one of the following values", name);
+            final var message = String.format("'%s' is not a valid calling convention, expected one of the following values", name);
             error.setAdditionalText(Utils.makeCompilerMessage(message, CallingConvention.EXPECTED_VALUES));
             compiler.reportError(error, CompileStatus.SEMANTIC_ERROR);
             return CallingConvention.CDECL;

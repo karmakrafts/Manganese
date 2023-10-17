@@ -13,21 +13,27 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.ocm.type;
+package io.karma.ferrous.manganese.analyze;
 
+import io.karma.ferrous.manganese.Compiler;
+import io.karma.ferrous.manganese.ParseAdapter;
 import io.karma.ferrous.manganese.ocm.access.Access;
-import io.karma.ferrous.manganese.ocm.access.AccessProvider;
 import io.karma.ferrous.manganese.ocm.access.DefaultAccess;
+import io.karma.ferrous.vanadium.FerrousParser.AccessModContext;
 
 /**
  * @author Alexander Hinze
- * @since 14/10/2023
+ * @since 17/10/2023
  */
-public record UDT(UDTKind type, StructureType structureType, Access access) implements AccessProvider {
-    public static final UDT NULL = new UDT(UDTKind.STRUCT, null, DefaultAccess.PUBLIC);
+public final class AccessAnalyzer extends ParseAdapter {
+    private final Access access = DefaultAccess.PRIVATE;
+
+    public AccessAnalyzer(final Compiler compiler) {
+        super(compiler);
+    }
 
     @Override
-    public Access getAccess() {
-        return access;
+    public void enterAccessMod(final AccessModContext context) {
+
     }
 }

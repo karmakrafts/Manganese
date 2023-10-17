@@ -20,6 +20,7 @@ import io.karma.ferrous.manganese.CompileStatus;
 import io.karma.ferrous.manganese.Compiler;
 import io.karma.ferrous.manganese.ParseAdapter;
 import io.karma.ferrous.manganese.ocm.Field;
+import io.karma.ferrous.manganese.ocm.access.DefaultAccess;
 import io.karma.ferrous.manganese.ocm.type.StructureType;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.ocm.type.Types;
@@ -130,8 +131,7 @@ public final class Analyzer extends ParseAdapter {
             }
         }
         node.addDependency(typeNode);
-        Logger.INSTANCE.debugln("%s depends on %s", node.getValue().structureType().getInternalName(),
-                                type.getInternalName());
+        Logger.INSTANCE.debugln("%s depends on %s", node.getValue().structureType().getInternalName(), type.getInternalName());
     }
 
     private void sortTypes() {
@@ -174,13 +174,13 @@ public final class Analyzer extends ParseAdapter {
                                     final UDTKind udtKind) {
         final var name = Utils.getIdentifier(identContext);
 
-        final var parser = new FieldLayoutAnalyzer(compiler); // Copy scope stack
-        ParseTreeWalker.DEFAULT.walk(parser, parent);
+        final var layoutAnalyzer = new FieldLayoutAnalyzer(compiler); // Copy scope stack
+        ParseTreeWalker.DEFAULT.walk(layoutAnalyzer, parent);
 
-        final var fieldTypes = parser.getFields().stream().map(Field::getType).toArray(Type[]::new);
+        final var fieldTypes = layoutAnalyzer.getFields().stream().map(Field::getType).toArray(Type[]::new);
         final var type = scopeStack.applyEnclosingScopes(Types.structure(name, fieldTypes));
 
-        final var udt = new UDT(udtKind, type);
+        final var udt = new UDT(udtKind, type, DefaultAccess.PRIVATE);
         udts.put(type.getInternalName(), udt);
         Logger.INSTANCE.debugln("Captured field layout for type '%s'", udt.structureType().getInternalName());
     }

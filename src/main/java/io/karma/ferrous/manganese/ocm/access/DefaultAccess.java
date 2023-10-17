@@ -13,21 +13,28 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.ocm.type;
-
-import io.karma.ferrous.manganese.ocm.access.Access;
-import io.karma.ferrous.manganese.ocm.access.AccessProvider;
-import io.karma.ferrous.manganese.ocm.access.DefaultAccess;
+package io.karma.ferrous.manganese.ocm.access;
 
 /**
  * @author Alexander Hinze
- * @since 14/10/2023
+ * @since 17/10/2023
  */
-public record UDT(UDTKind type, StructureType structureType, Access access) implements AccessProvider {
-    public static final UDT NULL = new UDT(UDTKind.STRUCT, null, DefaultAccess.PUBLIC);
+public enum DefaultAccess implements Access {
+    // @formatter:off
+    PRIVATE (AccessKind.PRIVATE),
+    PUBLIC  (AccessKind.PUBLIC),
+    MODULE  (AccessKind.MODULE),
+    THIS    (AccessKind.THIS);
+    // @formatter:on
+
+    private final AccessKind kind;
+
+    DefaultAccess(final AccessKind kind) {
+        this.kind = kind;
+    }
 
     @Override
-    public Access getAccess() {
-        return access;
+    public AccessKind getKind() {
+        return kind;
     }
 }

@@ -48,12 +48,9 @@ import org.fusesource.jansi.Ansi;
 import org.fusesource.jansi.Ansi.Attribute;
 import org.fusesource.jansi.Ansi.Color;
 import org.jetbrains.annotations.Nullable;
-import org.lwjgl.llvm.LLVMBitWriter;
 import org.lwjgl.system.MemoryStack;
-import org.lwjgl.system.MemoryUtil;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
@@ -63,15 +60,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.BitSet;
+import java.util.HashMap;
 import java.util.List;
 
 import static org.lwjgl.llvm.LLVMAnalysis.LLVMReturnStatusAction;
 import static org.lwjgl.llvm.LLVMAnalysis.LLVMVerifyModule;
-import static org.lwjgl.llvm.LLVMCore.LLVMDisposeMemoryBuffer;
-import static org.lwjgl.llvm.LLVMCore.LLVMGetBufferSize;
-import static org.lwjgl.llvm.LLVMCore.LLVMPrintModuleToString;
 import static org.lwjgl.llvm.LLVMCore.nLLVMDisposeMessage;
-import static org.lwjgl.llvm.LLVMCore.nLLVMGetBufferStart;
 import static org.lwjgl.system.MemoryUtil.NULL;
 
 /**
@@ -88,6 +82,7 @@ public final class Compiler implements ANTLRErrorListener {
     private static final ThreadLocal<Compiler> INSTANCE = ThreadLocal.withInitial(Compiler::new);
 
     private final ArrayList<CompileError> errors = new ArrayList<>();
+    private final HashMap<String, Module> modules = new HashMap<>();
     private CompilePass currentPass = CompilePass.NONE;
     private String currentName;
     private CompileStatus status = CompileStatus.SKIPPED;
@@ -114,6 +109,10 @@ public final class Compiler implements ANTLRErrorListener {
         return INSTANCE.get();
     }
 
+    private static Module loadEmbeddedModule(final String name) {
+        return null; // TODO: ...
+    }
+
     private static List<Path> findCompilableFiles(final Path path) {
         final var files = new ArrayList<Path>();
         if (!Files.isDirectory(path)) {
@@ -137,10 +136,37 @@ public final class Compiler implements ANTLRErrorListener {
         return files;
     }
 
-    private void disassemble() {
-        Logger.INSTANCE.infoln("");
-        Logger.INSTANCE.info("%s", LLVMPrintModuleToString(translationUnit.getModule()));
-        Logger.INSTANCE.infoln("");
+    @Override
+    public void syntaxError(final Recognizer<?, ?> recognizer, final Object offendingSymbol, final int line,
+                            final int charPositionInLine, final String msg, final RecognitionException e) {
+        final var error = new CompileError((Token) offendingSymbol, tokenStream, line, charPositionInLine);
+        error.setAdditionalText(Utils.makeCompilerMessage(Utils.capitalize(msg), null));
+        reportError(error, CompileStatus.SYNTAX_ERROR);
+    }
+
+    @Override
+    public void reportAmbiguity(final Parser recognizer, final DFA dfa, final int startIndex, final int stopIndex,
+                                final boolean exact, final BitSet ambigAlts, final ATNConfigSet configs) {
+        if (reportParserWarnings) {
+            Logger.INSTANCE.debugln("Detected ambiguity at %d:%d (%d)", startIndex, stopIndex, dfa.decision);
+        }
+    }
+
+    @Override
+    public void reportAttemptingFullContext(final Parser recognizer, final DFA dfa, final int startIndex,
+                                            final int stopIndex, final BitSet conflictingAlts,
+                                            final ATNConfigSet configs) {
+        if (reportParserWarnings) {
+            Logger.INSTANCE.debugln("Detected full context at %d:%d (%d)", startIndex, stopIndex, dfa.decision);
+        }
+    }
+
+    @Override
+    public void reportContextSensitivity(final Parser recognizer, final DFA dfa, final int startIndex,
+                                         final int stopIndex, final int prediction, final ATNConfigSet configs) {
+        if (reportParserWarnings) {
+            Logger.INSTANCE.debugln("Detected abnormally high context sensitivity at %d:%d (%d)", startIndex, stopIndex, dfa.decision);
+        }
     }
 
     private void resetCompilation() {
@@ -182,6 +208,220 @@ public final class Compiler implements ANTLRErrorListener {
             }
             reportError(new CompileError(exception.toString()), errorStatus);
         });
+    }
+
+    public void reportError(final CompileError error, final CompileStatus status) {
+        if (tokenStream.size() == 0) {
+            tokenStream.fill();
+        }
+        if (errors.contains(error)) {
+            return; // Don't report duplicates
+        }
+        errors.add(error);
+        this.status = this.status.worse(status);
+    }
+
+    public CompileResult compile(Path in, @Nullable Path out) {
+        in = in.toAbsolutePath().normalize();
+        final var inputIsDirectory = Files.isDirectory(in);
+        if (out != null) {
+            out = out.toAbsolutePath().normalize();
+            if (inputIsDirectory && !Files.isDirectory(out)) {
+                throw new RuntimeException("Output cannot be a file if input is a directory");
+            }
+        }
+        else {
+            if (inputIsDirectory) {
+                out = in;
+            }
+            else {
+                out = in.getParent();
+            }
+        }
+
+        final var inputFiles = findCompilableFiles(in);
+        final var numFiles = inputFiles.size();
+        var status = CompileStatus.SKIPPED;
+
+        for (var i = 0; i < numFiles; ++i) {
+            final var filePath = inputFiles.get(i);
+            // @formatter:off
+            Logger.INSTANCE.infoln(Ansi.ansi()
+                .fg(Color.GREEN)
+                .a(Utils.getProgressIndicator(numFiles, i))
+                .a(Attribute.RESET)
+                .a(" Compiling file ")
+                .fg(Color.BLUE)
+                .a(Attribute.INTENSITY_BOLD)
+                .a(filePath.toAbsolutePath().toString())
+                .a(Attribute.RESET)
+                .toString());
+            // @formatter:on
+
+            moduleName = Utils.getRawFileName(filePath);
+            final var outFileName = String.format("%s.%s", moduleName, OUT_EXTENSION);
+
+            if (!Files.exists(out)) {
+                try {
+                    Files.createDirectories(out);
+                    Logger.INSTANCE.debugln("Created directory %s", out);
+                }
+                catch (Exception error) {
+                    Logger.INSTANCE.errorln("Could not create directory at %s, skipping", out);
+                }
+            }
+
+            final var outFile = Files.isDirectory(out) ? out.resolve(outFileName) : out;
+            Logger.INSTANCE.debugln("Input: %s", filePath);
+            Logger.INSTANCE.debugln("Output: %s", outFile);
+
+            try (final var inStream = Files.newInputStream(filePath); final var inChannel = Channels.newChannel(inStream)) {
+                try (final var outStream = Files.newOutputStream(outFile); final var outChannel = Channels.newChannel(outStream)) {
+                    compile(moduleName, inChannel, outChannel);
+                    status = status.worse(this.status);
+                }
+            }
+            catch (IOException error) {
+                reportError(new CompileError(error.toString()), CompileStatus.IO_ERROR);
+            }
+            catch (Exception error) {
+                reportError(new CompileError(error.toString()), CompileStatus.UNKNOWN_ERROR);
+            }
+        }
+
+        return new CompileResult(status, inputFiles, new ArrayList<>(errors));
+    }
+
+    private boolean verifyModule(final Module module) {
+        try (final var stack = MemoryStack.stackPush()) {
+            final var messageBuffer = stack.callocPointer(1);
+            if (LLVMVerifyModule(module.getAddress(), LLVMReturnStatusAction, messageBuffer)) {
+                final var message = messageBuffer.get(0);
+                if (message != NULL) {
+                    reportError(new CompileError(messageBuffer.getStringUTF8(0)), CompileStatus.VERIFY_ERROR);
+                    nLLVMDisposeMessage(message);
+                    return false;
+                }
+                reportError(new CompileError("Unknown verify error"), CompileStatus.VERIFY_ERROR);
+                return false;
+            }
+            return true;
+        }
+    }
+
+    private boolean checkStatus() {
+        if (!status.isRecoverable()) {
+            Logger.INSTANCE.errorln("Compilation is irrecoverable, continuing to report syntax errors");
+            return false;
+        }
+        return true;
+    }
+
+    private void processTokens(final List<Token> tokens) {
+        // TODO: implement here
+    }
+
+    private void tokenize(final CharStream stream) {
+        final var startTime = System.currentTimeMillis();
+        currentPass = CompilePass.TOKENIZE;
+        final var lexer = new FerrousLexer(stream);
+        tokenStream = new CommonTokenStream(lexer);
+        tokenStream.fill();
+        final var time = System.currentTimeMillis() - startTime;
+        Logger.INSTANCE.debugln("Finished pass TOKENIZE in %dms", time);
+        if (tokenView) {
+            System.out.printf("\n%s\n", TokenUtils.renderTokenTree(moduleName, extendedTokenView, lexer, tokenStream.getTokens()));
+        }
+    }
+
+    private void parse() {
+        final var startTime = System.currentTimeMillis();
+        currentPass = CompilePass.PARSE;
+        parser = new FerrousParser(tokenStream);
+        parser.removeErrorListeners(); // Remove default error listener
+        parser.addErrorListener(this);
+        fileContext = parser.file();
+        final var time = System.currentTimeMillis() - startTime;
+        Logger.INSTANCE.debugln("Finished pass PARSE in %dms", time);
+    }
+
+    private boolean analyze() {
+        final var startTime = System.currentTimeMillis();
+        currentPass = CompilePass.ANALYZE;
+        analyzer = new Analyzer(this);
+        ParseTreeWalker.DEFAULT.walk(analyzer, fileContext);
+        analyzer.preProcessTypes(); // Pre-materializes all UDTs in the right order
+        final var time = System.currentTimeMillis() - startTime;
+        Logger.INSTANCE.debugln("Finished pass ANALYZE in %dms", time);
+        return checkStatus();
+    }
+
+    private void process() {
+        final var startTime = System.currentTimeMillis();
+        currentPass = CompilePass.PROCESS;
+        final var tokens = tokenStream.getTokens();
+        processTokens(tokens);
+        final var time = System.currentTimeMillis() - startTime;
+        Logger.INSTANCE.debugln("Finished pass PROCESS in %dms", time);
+        tokenStream = new CommonTokenStream(new ListTokenSource(tokens));
+        tokenStream.fill();
+        parser.setTokenStream(tokenStream);
+        parser.reset();
+        parser.removeErrorListeners();
+        parser.addErrorListener(this);
+    }
+
+    private boolean compile(final String name) {
+        final var startTime = System.currentTimeMillis();
+        currentPass = CompilePass.COMPILE;
+        translationUnit = new TranslationUnit(this, name);
+        ParseTreeWalker.DEFAULT.walk(translationUnit, fileContext); // Walk the entire AST with the TU
+        final var time = System.currentTimeMillis() - startTime;
+        Logger.INSTANCE.debugln("Finished pass COMPILE in %dms", time);
+        return checkStatus();
+    }
+
+    public void compile(final String name, final ReadableByteChannel in, final WritableByteChannel out) {
+        resetCompilation(); // Reset before each compilation
+        currentName = name;
+
+        try {
+            final var charStream = CharStreams.fromChannel(in, StandardCharsets.UTF_8);
+            if (charStream.size() == 0) {
+                Logger.INSTANCE.warnln("No input data, skipping compilation");
+                return;
+            }
+
+            tokenize(charStream);
+            parse();
+            if (!analyze()) {
+                return;
+            }
+            process();
+            if (!compile(name)) {
+                return;
+            }
+
+            final var module = translationUnit.getModule();
+            if (!verifyModule(module)) {
+                return;
+            }
+            if (disassemble) {
+                Logger.INSTANCE.infoln("");
+                Logger.INSTANCE.info("%s", translationUnit.getModule().disassemble());
+                Logger.INSTANCE.infoln("");
+            }
+
+            modules.put(currentName, module);
+            status = CompileStatus.SUCCESS;
+            currentPass = CompilePass.NONE;
+        }
+        catch (IOException error) {
+            reportError(new CompileError(error.toString()), CompileStatus.IO_ERROR);
+        }
+        catch (Exception error) {
+            reportError(new CompileError(error.toString()), CompileStatus.UNKNOWN_ERROR);
+        }
     }
 
     public BufferedTokenStream getTokenStream() {
@@ -265,268 +505,14 @@ public final class Compiler implements ANTLRErrorListener {
         return errors;
     }
 
-    public void reportError(final CompileError error, final CompileStatus status) {
-        if (tokenStream.size() == 0) {
-            tokenStream.fill();
-        }
-        if (errors.contains(error)) {
-            return; // Don't report duplicates
-        }
-        errors.add(error);
-        this.status = this.status.worse(status);
+    public HashMap<String, Module> getModules() {
+        return modules;
     }
 
-    public CompileResult compile(Path in, @Nullable Path out) {
-        in = in.toAbsolutePath().normalize();
-        final var inputIsDirectory = Files.isDirectory(in);
-        if (out != null) {
-            out = out.toAbsolutePath().normalize();
-            if (inputIsDirectory && !Files.isDirectory(out)) {
-                throw new RuntimeException("Output cannot be a file if input is a directory");
-            }
+    public void cleanup() {
+        for (final var module : modules.values()) {
+            module.dispose();
         }
-        else {
-            if (inputIsDirectory) {
-                out = in;
-            }
-            else {
-                out = in.getParent();
-            }
-        }
-
-        final var inputFiles = findCompilableFiles(in);
-        final var numFiles = inputFiles.size();
-        var status = CompileStatus.SKIPPED;
-
-        for (var i = 0; i < numFiles; ++i) {
-            final var filePath = inputFiles.get(i);
-            // @formatter:off
-            Logger.INSTANCE.infoln(Ansi.ansi()
-                .fg(Color.GREEN)
-                .a(Utils.getProgressIndicator(numFiles, i))
-                .a(Attribute.RESET)
-                .a(" Compiling file ")
-                .fg(Color.BLUE)
-                .a(Attribute.INTENSITY_BOLD)
-                .a(filePath.toAbsolutePath().toString())
-                .a(Attribute.RESET)
-                .toString());
-            // @formatter:on
-
-            moduleName = Utils.getRawFileName(filePath);
-            final var outFileName = String.format("%s.%s", moduleName, OUT_EXTENSION);
-
-            if (!Files.exists(out)) {
-                try {
-                    Files.createDirectories(out);
-                    Logger.INSTANCE.debugln("Created directory %s", out);
-                }
-                catch (Exception error) {
-                    Logger.INSTANCE.errorln("Could not create directory at %s, skipping", out);
-                }
-            }
-
-            final var outFile = Files.isDirectory(out) ? out.resolve(outFileName) : out;
-            Logger.INSTANCE.debugln("Input: %s", filePath);
-            Logger.INSTANCE.debugln("Output: %s", outFile);
-
-            try (final var inStream = Files.newInputStream(filePath); final var inChannel = Channels.newChannel(
-                    inStream)) {
-                try (final var outStream = Files.newOutputStream(outFile); final var outChannel = Channels.newChannel(
-                        outStream)) {
-                    compile(moduleName, inChannel, outChannel);
-                    status = status.worse(this.status);
-                }
-            }
-            catch (IOException error) {
-                reportError(new CompileError(error.toString()), CompileStatus.IO_ERROR);
-            }
-            catch (Exception error) {
-                reportError(new CompileError(error.toString()), CompileStatus.UNKNOWN_ERROR);
-            }
-        }
-
-        return new CompileResult(status, inputFiles, new ArrayList<>(errors));
-    }
-
-    private boolean verifyModule(final long module) {
-        try (final var stack = MemoryStack.stackPush()) {
-            final var messageBuffer = stack.callocPointer(1);
-            if (LLVMVerifyModule(module, LLVMReturnStatusAction, messageBuffer)) {
-                final var message = messageBuffer.get(0);
-                if (message != NULL) {
-                    reportError(new CompileError(messageBuffer.getStringUTF8(0)), CompileStatus.VERIFY_ERROR);
-                    nLLVMDisposeMessage(message);
-                    return false;
-                }
-                reportError(new CompileError("Unknown verify error"), CompileStatus.VERIFY_ERROR);
-                return false;
-            }
-            return true;
-        }
-    }
-
-    private boolean checkStatus() {
-        if (!status.isRecoverable()) {
-            Logger.INSTANCE.errorln("Compilation is irrecoverable, continuing to report syntax errors");
-            return false;
-        }
-        return true;
-    }
-
-    private void processTokens(final List<Token> tokens) {
-        // TODO: implement here
-    }
-
-    private void tokenize(final CharStream stream) {
-        final var startTime = System.currentTimeMillis();
-        currentPass = CompilePass.TOKENIZE;
-        final var lexer = new FerrousLexer(stream);
-        tokenStream = new CommonTokenStream(lexer);
-        tokenStream.fill();
-        final var time = System.currentTimeMillis() - startTime;
-        Logger.INSTANCE.debugln("Finished pass TOKENIZE in %dms", time);
-        if (tokenView) {
-            System.out.printf("\n%s\n", TokenUtils.renderTokenTree(moduleName, extendedTokenView, lexer,
-                                                                   tokenStream.getTokens()));
-        }
-    }
-
-    private void parse() {
-        final var startTime = System.currentTimeMillis();
-        currentPass = CompilePass.PARSE;
-        parser = new FerrousParser(tokenStream);
-        parser.removeErrorListeners(); // Remove default error listener
-        parser.addErrorListener(this);
-        fileContext = parser.file();
-        final var time = System.currentTimeMillis() - startTime;
-        Logger.INSTANCE.debugln("Finished pass PARSE in %dms", time);
-    }
-
-    private boolean analyze() {
-        final var startTime = System.currentTimeMillis();
-        currentPass = CompilePass.ANALYZE;
-        analyzer = new Analyzer(this);
-        ParseTreeWalker.DEFAULT.walk(analyzer, fileContext);
-        analyzer.preProcessTypes(); // Pre-materializes all UDTs in the right order
-        final var time = System.currentTimeMillis() - startTime;
-        Logger.INSTANCE.debugln("Finished pass ANALYZE in %dms", time);
-        return checkStatus();
-    }
-
-    private void process() {
-        final var startTime = System.currentTimeMillis();
-        currentPass = CompilePass.PROCESS;
-        final var tokens = tokenStream.getTokens();
-        processTokens(tokens);
-        final var time = System.currentTimeMillis() - startTime;
-        Logger.INSTANCE.debugln("Finished pass PROCESS in %dms", time);
-        tokenStream = new CommonTokenStream(new ListTokenSource(tokens));
-        tokenStream.fill();
-        parser.setTokenStream(tokenStream);
-        parser.reset();
-        parser.removeErrorListeners();
-        parser.addErrorListener(this);
-    }
-
-    private boolean compile(final String name) {
-        final var startTime = System.currentTimeMillis();
-        currentPass = CompilePass.COMPILE;
-        translationUnit = new TranslationUnit(this, name);
-        ParseTreeWalker.DEFAULT.walk(translationUnit, fileContext); // Walk the entire AST with the TU
-        final var time = System.currentTimeMillis() - startTime;
-        Logger.INSTANCE.debugln("Finished pass COMPILE in %dms", time);
-        return checkStatus();
-    }
-
-    private @Nullable ByteBuffer getBitcode() {
-        final var module = translationUnit.getModule();
-        final var buffer = LLVMBitWriter.LLVMWriteBitcodeToMemoryBuffer(module);
-        Logger.INSTANCE.debugln("Wrote bitcode to memory at 0x%08X", buffer);
-        if (buffer == NULL) {
-            reportError(new CompileError("Could not allocate buffer for module bitcode"), CompileStatus.IO_ERROR);
-            translationUnit.dispose();
-            return null;
-        }
-        final var size = (int) LLVMGetBufferSize(buffer);
-        final var address = nLLVMGetBufferStart(buffer); // LWJGL codegen is a pita
-        final var result = MemoryUtil.memByteBuffer(address, size);
-        LLVMDisposeMemoryBuffer(buffer);
-        return result;
-    }
-
-    public void compile(final String name, final ReadableByteChannel in, final WritableByteChannel out) {
-        resetCompilation(); // Reset before each compilation
-        currentName = name;
-
-        try {
-            final var charStream = CharStreams.fromChannel(in, StandardCharsets.UTF_8);
-            if (charStream.size() == 0) {
-                Logger.INSTANCE.warnln("No input data, skipping compilation");
-                return;
-            }
-
-            tokenize(charStream);
-            parse();
-            if (!analyze()) {
-                return;
-            }
-            process();
-            if (!compile(name)) {
-                return;
-            }
-
-            final var module = translationUnit.getModule();
-            if (!verifyModule(module)) {
-                return;
-            }
-            if (disassemble) {
-                disassemble();
-            }
-
-            status = CompileStatus.SUCCESS;
-            translationUnit.dispose();
-            currentPass = CompilePass.NONE;
-        }
-        catch (IOException error) {
-            reportError(new CompileError(error.toString()), CompileStatus.IO_ERROR);
-        }
-        catch (Exception error) {
-            reportError(new CompileError(error.toString()), CompileStatus.UNKNOWN_ERROR);
-        }
-    }
-
-    @Override
-    public void syntaxError(final Recognizer<?, ?> recognizer, final Object offendingSymbol, final int line,
-                            final int charPositionInLine, final String msg, final RecognitionException e) {
-        final var error = new CompileError((Token) offendingSymbol, tokenStream, line, charPositionInLine);
-        error.setAdditionalText(Utils.makeCompilerMessage(Utils.capitalize(msg), null));
-        reportError(error, CompileStatus.SYNTAX_ERROR);
-    }
-
-    @Override
-    public void reportAmbiguity(final Parser recognizer, final DFA dfa, final int startIndex, final int stopIndex,
-                                final boolean exact, final BitSet ambigAlts, final ATNConfigSet configs) {
-        if (reportParserWarnings) {
-            Logger.INSTANCE.debugln("Detected ambiguity at %d:%d (%d)", startIndex, stopIndex, dfa.decision);
-        }
-    }
-
-    @Override
-    public void reportAttemptingFullContext(final Parser recognizer, final DFA dfa, final int startIndex,
-                                            final int stopIndex, final BitSet conflictingAlts,
-                                            final ATNConfigSet configs) {
-        if (reportParserWarnings) {
-            Logger.INSTANCE.debugln("Detected full context at %d:%d (%d)", startIndex, stopIndex, dfa.decision);
-        }
-    }
-
-    @Override
-    public void reportContextSensitivity(final Parser recognizer, final DFA dfa, final int startIndex,
-                                         final int stopIndex, final int prediction, final ATNConfigSet configs) {
-        if (reportParserWarnings) {
-            Logger.INSTANCE.debugln("Detected abnormally high context sensitivity at %d:%d (%d)", startIndex, stopIndex,
-                                    dfa.decision);
-        }
+        modules.clear();
     }
 }
