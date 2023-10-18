@@ -48,7 +48,36 @@ dependencies {
 </project>
 ```
 
-You can obtain the latest version from the provided repository batch at the top of the page.
+You can obtain the latest version from the provided repository batch at the top of the page.  
+The following demonstrates the programmatical use of the compiler:
+
+```java
+import io.karma.ferrous.manganese.Compiler;
+import io.karma.ferrous.manganese.CompileStatus;
+import java.io.ByteArrayOutputStream;
+import java.nio.ByteBuffer;
+import java.nio.channels.Channels;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
+public CompileStatus compileSomething(final Path inPath, final ByteBuffer outBuffer) {
+    final var compiler = Compiler.getInstance();
+    // @formatter:off
+    try (final var inStream = Files.newInputStream(inPath); 
+         final var inChannel = Channels.newChannel(inStream); 
+         final var outStream = new ByteArrayOutputStream();
+         final var outChannel = Channels.newChannel(outStream)) {
+        // @formatter:on
+        final var result = compiler.compile(inChannel, outChannel);
+        if(result.getStatus() != CompileStatus.SUCCESS) {
+            // Throw first compiler error as runtime exception
+            throw new RuntimeException(result.getErrors().get(0));
+        }
+        outBuffer.put(outStream.toByteArray());
+        outBuffer.flip();
+    }
+}
+```
 
 ### Building
 

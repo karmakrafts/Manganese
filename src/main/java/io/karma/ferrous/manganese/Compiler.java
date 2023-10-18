@@ -59,6 +59,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.BitSet;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
@@ -231,7 +232,7 @@ public final class Compiler implements ANTLRErrorListener {
 
         final var inputFiles = findCompilableFiles(in);
         final var numFiles = inputFiles.size();
-        var status = CompileStatus.SKIPPED;
+        var result = new CompileResult(CompileStatus.SKIPPED, Collections.emptyList(), Collections.emptyList());
 
         for (var i = 0; i < numFiles; ++i) {
             final var filePath = inputFiles.get(i);
@@ -267,19 +268,21 @@ public final class Compiler implements ANTLRErrorListener {
 
             try (final var inStream = Files.newInputStream(filePath); final var inChannel = Channels.newChannel(inStream)) {
                 try (final var outStream = Files.newOutputStream(outFile); final var outChannel = Channels.newChannel(outStream)) {
-                    compile(moduleName, inChannel, outChannel);
-                    status = status.worse(this.status);
+                    result = result.merge(compile(moduleName, inChannel, outChannel));
                 }
             }
             catch (IOException error) {
                 reportError(new CompileError(error.toString()), CompileStatus.IO_ERROR);
+                return new CompileResult(CompileStatus.IO_ERROR, Collections.emptyList(), new ArrayList<>(errors));
             }
             catch (Exception error) {
                 reportError(new CompileError(error.toString()), CompileStatus.UNKNOWN_ERROR);
+                return new CompileResult(CompileStatus.UNKNOWN_ERROR, Collections.emptyList(), new ArrayList<>(errors));
             }
         }
 
-        return new CompileResult(status, inputFiles, new ArrayList<>(errors));
+        result.getCompiledFiles().add(in);
+        return result;
     }
 
     private boolean checkStatus() {
@@ -354,7 +357,7 @@ public final class Compiler implements ANTLRErrorListener {
         return checkStatus();
     }
 
-    public void compile(final String name, final ReadableByteChannel in, final WritableByteChannel out) {
+    public CompileResult compile(final String name, final ReadableByteChannel in, final WritableByteChannel out) {
         resetCompilation(); // Reset before each compilation
         currentName = name;
 
@@ -362,24 +365,24 @@ public final class Compiler implements ANTLRErrorListener {
             final var charStream = CharStreams.fromChannel(in, StandardCharsets.UTF_8);
             if (charStream.size() == 0) {
                 Logger.INSTANCE.warnln("No input data, skipping compilation");
-                return;
+                return new CompileResult(CompileStatus.SKIPPED, Collections.emptyList(), new ArrayList<>(errors));
             }
 
             tokenize(charStream);
             parse();
             if (!analyze()) {
-                return;
+                return new CompileResult(CompileStatus.ANALYZER_ERROR, Collections.emptyList(), new ArrayList<>(errors));
             }
             process();
             if (!compile(name)) {
-                return;
+                return new CompileResult(CompileStatus.TRANSLATION_ERROR, Collections.emptyList(), new ArrayList<>(errors));
             }
 
             final var module = translationUnit.getModule();
             final var verificationStatus = module.verify();
             if (verificationStatus != null) {
                 reportError(new CompileError(verificationStatus), CompileStatus.TRANSLATION_ERROR);
-                return;
+                return new CompileResult(CompileStatus.VERIFY_ERROR, Collections.emptyList(), new ArrayList<>(errors));
             }
 
             if (disassemble) {
@@ -391,12 +394,15 @@ public final class Compiler implements ANTLRErrorListener {
             modules.put(currentName, module);
             status = CompileStatus.SUCCESS;
             currentPass = CompilePass.NONE;
+            return new CompileResult(CompileStatus.SUCCESS, Collections.emptyList(), Collections.emptyList());
         }
         catch (IOException error) {
             reportError(new CompileError(error.toString()), CompileStatus.IO_ERROR);
+            return new CompileResult(CompileStatus.IO_ERROR, Collections.emptyList(), new ArrayList<>(errors));
         }
         catch (Exception error) {
             reportError(new CompileError(error.toString()), CompileStatus.UNKNOWN_ERROR);
+            return new CompileResult(CompileStatus.UNKNOWN_ERROR, Collections.emptyList(), new ArrayList<>(errors));
         }
     }
 
