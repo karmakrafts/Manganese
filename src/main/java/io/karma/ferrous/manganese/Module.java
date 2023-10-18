@@ -17,23 +17,24 @@ package io.karma.ferrous.manganese;
 
 import io.karma.ferrous.manganese.util.Logger;
 import org.jetbrains.annotations.Nullable;
-import org.lwjgl.llvm.LLVMBitWriter;
-import org.lwjgl.llvm.LLVMLinker;
+import org.lwjgl.PointerBuffer;
+import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
-import static org.lwjgl.llvm.LLVMCore.LLVMDisposeMemoryBuffer;
-import static org.lwjgl.llvm.LLVMCore.LLVMDisposeModule;
-import static org.lwjgl.llvm.LLVMCore.LLVMGetBufferSize;
-import static org.lwjgl.llvm.LLVMCore.LLVMGetGlobalContext;
-import static org.lwjgl.llvm.LLVMCore.LLVMGetModuleIdentifier;
-import static org.lwjgl.llvm.LLVMCore.LLVMGetSourceFileName;
-import static org.lwjgl.llvm.LLVMCore.LLVMModuleCreateWithNameInContext;
-import static org.lwjgl.llvm.LLVMCore.LLVMPrintModuleToString;
-import static org.lwjgl.llvm.LLVMCore.LLVMSetSourceFileName;
-import static org.lwjgl.llvm.LLVMCore.nLLVMGetBufferStart;
+import static org.lwjgl.llvm.LLVMAnalysis.LLVMReturnStatusAction;
+import static org.lwjgl.llvm.LLVMAnalysis.LLVMVerifyModule;
+import static org.lwjgl.llvm.LLVMBitReader.LLVMParseBitcodeInContext;
+import static org.lwjgl.llvm.LLVMBitWriter.LLVMWriteBitcodeToMemoryBuffer;
+import static org.lwjgl.llvm.LLVMCore.*;
+import static org.lwjgl.llvm.LLVMIRReader.LLVMParseIRInContext;
+import static org.lwjgl.llvm.LLVMLinker.LLVMLinkModules2;
 import static org.lwjgl.system.MemoryUtil.NULL;
 
 /**
@@ -57,6 +58,83 @@ public final class Module {
         this(name, LLVMGetGlobalContext());
     }
 
+    private Module(final long context, final long address) {
+        this.context = context;
+        this.address = address;
+    }
+
+    private static void checkStatus(final PointerBuffer buffer) throws RuntimeException {
+        final var message = buffer.get(0);
+        if (message != NULL) {
+            final var result = buffer.getStringUTF8(0);
+            nLLVMDisposeMessage(message);
+            throw new RuntimeException(result);
+        }
+        throw new RuntimeException("Unknown error");
+    }
+
+    public static Module fromIR(final long context, final String name, final String source) throws RuntimeException {
+        try (final var stack = MemoryStack.stackPush()) {
+            final var buffer = stack.callocPointer(1);
+            final var messageBuffer = stack.callocPointer(1);
+            final var sourceBuffer = stack.UTF8(source, true);
+            final var sourceAddr = MemoryUtil.memAddress(sourceBuffer);
+            if (!LLVMParseIRInContext(context, sourceAddr, buffer, messageBuffer)) {
+                checkStatus(messageBuffer);
+            }
+            final var bufferAddr = buffer.get(0);
+            if (bufferAddr == NULL) {
+                throw new RuntimeException("Could not retrieve bitcode address");
+            }
+            final var moduleBuffer = stack.callocPointer(1);
+            if (!LLVMParseBitcodeInContext(context, bufferAddr, moduleBuffer, messageBuffer)) {
+                checkStatus(messageBuffer);
+            }
+            final var moduleAddr = moduleBuffer.get(0);
+            if (moduleAddr == NULL) {
+                throw new RuntimeException("Could not retrieve module address");
+            }
+            final var module = new Module(context, moduleAddr);
+            module.setName(name);
+            return module;
+        }
+    }
+
+    public static Module loadEmbedded(final long context, final String name) throws IOException {
+        // @formatter:off
+        try(final var stream = Module.class.getResourceAsStream(String.format("/%s.ll", name));
+            final var reader = new BufferedReader(new InputStreamReader(Objects.requireNonNull(stream)))) {
+            // @formatter:on
+            final var source = reader.lines().collect(Collectors.joining("\n"));
+            return fromIR(context, name, source);
+        }
+    }
+
+    public @Nullable String verify() {
+        try (final var stack = MemoryStack.stackPush()) {
+            final var messageBuffer = stack.callocPointer(1);
+            if (LLVMVerifyModule(address, LLVMReturnStatusAction, messageBuffer)) {
+                final var message = messageBuffer.get(0);
+                if (message != NULL) {
+                    final var result = messageBuffer.getStringUTF8(0);
+                    nLLVMDisposeMessage(message);
+                    return result;
+                }
+                return "Unknown error";
+            }
+            return null;
+        }
+    }
+
+    public void linkInto(final Module module) {
+        LLVMLinkModules2(module.address, address);
+    }
+
+    public Module linkWith(final Module module) {
+        linkInto(this);
+        return this;
+    }
+
     public String disassemble() {
         return LLVMPrintModuleToString(address);
     }
@@ -65,21 +143,16 @@ public final class Module {
         return LLVMGetModuleIdentifier(address);
     }
 
+    public void setName(final String name) {
+        LLVMSetModuleIdentifier(address, name);
+    }
+
     public String getSourceFileName() {
         return LLVMGetSourceFileName(address);
     }
 
     public void setSourceFileName(final String fileName) {
         LLVMSetSourceFileName(address, fileName);
-    }
-
-    public void linkInto(final Module module) {
-        LLVMLinker.LLVMLinkModules2(module.address, address);
-    }
-
-    public Module linkWith(final Module module) {
-        linkInto(this);
-        return this;
     }
 
     public void dispose() {
@@ -99,7 +172,7 @@ public final class Module {
     }
 
     public @Nullable ByteBuffer getBitcode() {
-        final var buffer = LLVMBitWriter.LLVMWriteBitcodeToMemoryBuffer(address);
+        final var buffer = LLVMWriteBitcodeToMemoryBuffer(address);
         Logger.INSTANCE.debugln("Wrote bitcode to memory at 0x%08X", buffer);
         if (buffer == NULL) {
             return null;

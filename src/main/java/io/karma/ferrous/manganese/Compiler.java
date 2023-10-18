@@ -48,7 +48,6 @@ import org.fusesource.jansi.Ansi;
 import org.fusesource.jansi.Ansi.Attribute;
 import org.fusesource.jansi.Ansi.Color;
 import org.jetbrains.annotations.Nullable;
-import org.lwjgl.system.MemoryStack;
 
 import java.io.IOException;
 import java.nio.channels.Channels;
@@ -62,11 +61,6 @@ import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.HashMap;
 import java.util.List;
-
-import static org.lwjgl.llvm.LLVMAnalysis.LLVMReturnStatusAction;
-import static org.lwjgl.llvm.LLVMAnalysis.LLVMVerifyModule;
-import static org.lwjgl.llvm.LLVMCore.nLLVMDisposeMessage;
-import static org.lwjgl.system.MemoryUtil.NULL;
 
 /**
  * Main class for invoking a compilation, either programmatically
@@ -107,10 +101,6 @@ public final class Compiler implements ANTLRErrorListener {
 
     public static Compiler getInstance() {
         return INSTANCE.get();
-    }
-
-    private static Module loadEmbeddedModule(final String name) {
-        return null; // TODO: ...
     }
 
     private static List<Path> findCompilableFiles(final Path path) {
@@ -292,23 +282,6 @@ public final class Compiler implements ANTLRErrorListener {
         return new CompileResult(status, inputFiles, new ArrayList<>(errors));
     }
 
-    private boolean verifyModule(final Module module) {
-        try (final var stack = MemoryStack.stackPush()) {
-            final var messageBuffer = stack.callocPointer(1);
-            if (LLVMVerifyModule(module.getAddress(), LLVMReturnStatusAction, messageBuffer)) {
-                final var message = messageBuffer.get(0);
-                if (message != NULL) {
-                    reportError(new CompileError(messageBuffer.getStringUTF8(0)), CompileStatus.VERIFY_ERROR);
-                    nLLVMDisposeMessage(message);
-                    return false;
-                }
-                reportError(new CompileError("Unknown verify error"), CompileStatus.VERIFY_ERROR);
-                return false;
-            }
-            return true;
-        }
-    }
-
     private boolean checkStatus() {
         if (!status.isRecoverable()) {
             Logger.INSTANCE.errorln("Compilation is irrecoverable, continuing to report syntax errors");
@@ -403,9 +376,12 @@ public final class Compiler implements ANTLRErrorListener {
             }
 
             final var module = translationUnit.getModule();
-            if (!verifyModule(module)) {
+            final var verificationStatus = module.verify();
+            if (verificationStatus != null) {
+                reportError(new CompileError(verificationStatus), CompileStatus.TRANSLATION_ERROR);
                 return;
             }
+
             if (disassemble) {
                 Logger.INSTANCE.infoln("");
                 Logger.INSTANCE.info("%s", translationUnit.getModule().disassemble());

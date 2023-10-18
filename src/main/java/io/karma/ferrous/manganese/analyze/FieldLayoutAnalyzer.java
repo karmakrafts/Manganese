@@ -45,12 +45,12 @@ public final class FieldLayoutAnalyzer extends ParseAdapter {
     }
 
     @Override
-    public void enterUdt(UdtContext udtDeclContext) {
+    public void enterUdt(final UdtContext context) {
         nestedScopes++;
     }
 
     @Override
-    public void exitUdt(UdtContext udtDeclContext) {
+    public void exitUdt(final UdtContext context) {
         nestedScopes--;
     }
 
