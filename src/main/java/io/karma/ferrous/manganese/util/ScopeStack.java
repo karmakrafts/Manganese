@@ -17,6 +17,8 @@ package io.karma.ferrous.manganese.util;
 
 import io.karma.ferrous.manganese.ocm.scope.EnclosingScopeProvider;
 import io.karma.ferrous.manganese.ocm.scope.ScopeType;
+import org.apiguardian.api.API;
+import org.apiguardian.api.API.Status;
 
 import java.util.Stack;
 
@@ -24,6 +26,7 @@ import java.util.Stack;
  * @author Alexander Hinze
  * @since 15/10/2023
  */
+@API(status = Status.INTERNAL)
 public final class ScopeStack extends Stack<EnclosingScopeProvider> {
     public static final ScopeStack EMPTY = new ScopeStack();
 

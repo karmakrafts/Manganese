@@ -19,6 +19,8 @@ import io.karma.ferrous.manganese.util.TokenUtils;
 import io.karma.ferrous.vanadium.FerrousLexer;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.TokenStream;
+import org.apiguardian.api.API;
+import org.apiguardian.api.API.Status;
 import org.fusesource.jansi.Ansi;
 import org.fusesource.jansi.Ansi.Attribute;
 import org.fusesource.jansi.Ansi.Color;
@@ -34,6 +36,7 @@ import java.util.Optional;
  * @author Alexander Hinze
  * @since 12/10/2023
  */
+@API(status = Status.STABLE)
 public final class CompileError implements Comparable<CompileError> {
     private final Token token;
     private final List<Token> lineTokens;

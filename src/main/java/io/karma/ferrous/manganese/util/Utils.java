@@ -18,6 +18,8 @@ package io.karma.ferrous.manganese.util;
 import io.karma.ferrous.vanadium.FerrousParser.IdentContext;
 import io.karma.ferrous.vanadium.FerrousParser.LerpIdentContext;
 import io.karma.ferrous.vanadium.FerrousParser.QualifiedIdentContext;
+import org.apiguardian.api.API;
+import org.apiguardian.api.API.Status;
 import org.fusesource.jansi.Ansi;
 import org.fusesource.jansi.Ansi.Attribute;
 import org.fusesource.jansi.Ansi.Color;
@@ -30,6 +32,7 @@ import java.util.List;
  * @author Alexander Hinze
  * @since 13/10/2023
  */
+@API(status = Status.INTERNAL)
 public final class Utils {
     // @formatter:off
     private Utils() {}

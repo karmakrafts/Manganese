@@ -18,11 +18,14 @@ package io.karma.ferrous.manganese.ocm.type;
 import io.karma.ferrous.manganese.ocm.access.Access;
 import io.karma.ferrous.manganese.ocm.access.AccessProvider;
 import io.karma.ferrous.manganese.ocm.access.DefaultAccess;
+import org.apiguardian.api.API;
+import org.apiguardian.api.API.Status;
 
 /**
  * @author Alexander Hinze
  * @since 14/10/2023
  */
+@API(status = Status.INTERNAL)
 public record UDT(UDTKind type, StructureType structureType, Access access) implements AccessProvider {
     public static final UDT NULL = new UDT(UDTKind.STRUCT, null, DefaultAccess.PUBLIC);
 

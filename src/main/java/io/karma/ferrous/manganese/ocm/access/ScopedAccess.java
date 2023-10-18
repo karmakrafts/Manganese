@@ -15,10 +15,14 @@
 
 package io.karma.ferrous.manganese.ocm.access;
 
+import org.apiguardian.api.API;
+import org.apiguardian.api.API.Status;
+
 /**
  * @author Alexander Hinze
  * @since 17/10/2023
  */
+@API(status = Status.INTERNAL)
 public final class ScopedAccess implements Access {
     @Override
     public AccessKind getKind() {

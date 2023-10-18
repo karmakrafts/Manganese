@@ -17,6 +17,8 @@ package io.karma.ferrous.manganese.ocm.scope;
 
 import io.karma.ferrous.manganese.ocm.NameProvider;
 import io.karma.ferrous.manganese.util.Identifier;
+import org.apiguardian.api.API;
+import org.apiguardian.api.API.Status;
 
 import java.util.EnumSet;
 
@@ -24,6 +26,7 @@ import java.util.EnumSet;
  * @author Alexander Hinze
  * @since 16/10/2023
  */
+@API(status = Status.INTERNAL)
 public interface EnclosingScopeProvider extends NameProvider {
     EnumSet<ScopeType> INVISIBLE_SCOPE_TYPES = EnumSet.of(ScopeType.GLOBAL, ScopeType.FILE, ScopeType.MODULE_FILE);
 

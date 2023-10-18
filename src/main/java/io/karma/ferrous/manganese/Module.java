@@ -16,6 +16,8 @@
 package io.karma.ferrous.manganese;
 
 import io.karma.ferrous.manganese.util.Logger;
+import org.apiguardian.api.API;
+import org.apiguardian.api.API.Status;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
@@ -41,6 +43,7 @@ import static org.lwjgl.system.MemoryUtil.NULL;
  * @author Alexander Hinze
  * @since 17/10/2023
  */
+@API(status = Status.INTERNAL)
 public final class Module {
     private final long context;
     private final long address;

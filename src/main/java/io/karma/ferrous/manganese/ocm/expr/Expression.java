@@ -16,10 +16,13 @@
 package io.karma.ferrous.manganese.ocm.expr;
 
 import io.karma.ferrous.manganese.ocm.value.Value;
+import org.apiguardian.api.API;
+import org.apiguardian.api.API.Status;
 
 /**
  * @author Alexander Hinze
  * @since 16/10/2023
  */
+@API(status = Status.INTERNAL)
 public interface Expression extends Value {
 }

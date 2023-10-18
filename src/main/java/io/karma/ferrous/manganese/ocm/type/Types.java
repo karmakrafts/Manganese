@@ -20,6 +20,8 @@ import io.karma.ferrous.manganese.target.Target;
 import io.karma.ferrous.manganese.translate.TranslationException;
 import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.vanadium.FerrousLexer;
+import org.apiguardian.api.API;
+import org.apiguardian.api.API.Status;
 import org.lwjgl.llvm.LLVMCore;
 
 import java.util.Arrays;
@@ -30,6 +32,7 @@ import java.util.List;
  * @author Alexander Hinze
  * @since 15/10/2023
  */
+@API(status = Status.INTERNAL)
 public final class Types {
     public static final BuiltinType VOID = new BuiltinType(FerrousLexer.KW_VOID, target -> LLVMCore.LLVMVoidType());
     public static final BuiltinType BOOL = new BuiltinType(FerrousLexer.KW_BOOL, target -> LLVMCore.LLVMInt8Type());

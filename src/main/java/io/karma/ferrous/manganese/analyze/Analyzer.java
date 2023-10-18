@@ -42,6 +42,8 @@ import io.karma.kommons.topo.TopoSorter;
 import io.karma.kommons.tuple.Pair;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
+import org.apiguardian.api.API;
+import org.apiguardian.api.API.Status;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -53,6 +55,7 @@ import java.util.stream.Collectors;
  * @author Alexander Hinze
  * @since 14/10/2023
  */
+@API(status = Status.INTERNAL)
 public final class Analyzer extends ParseAdapter {
     private final LinkedHashMap<Identifier, UDT> udts = new LinkedHashMap<>();
 

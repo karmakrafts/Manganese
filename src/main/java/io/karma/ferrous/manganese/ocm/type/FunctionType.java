@@ -20,6 +20,8 @@ import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.ocm.scope.ScopeType;
 import io.karma.ferrous.manganese.target.Target;
 import io.karma.ferrous.manganese.util.Identifier;
+import org.apiguardian.api.API;
+import org.apiguardian.api.API.Status;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.llvm.LLVMCore;
 import org.lwjgl.system.MemoryStack;
@@ -32,6 +34,7 @@ import java.util.Objects;
  * @author Alexander Hinze
  * @since 13/10/2023
  */
+@API(status = Status.INTERNAL)
 public class FunctionType implements Type {
     private final Type returnType;
     private final Type[] paramTypes;

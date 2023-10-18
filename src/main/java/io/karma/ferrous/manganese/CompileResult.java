@@ -15,8 +15,12 @@
 
 package io.karma.ferrous.manganese;
 
+import org.apiguardian.api.API;
+import org.apiguardian.api.API.Status;
+
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -26,31 +30,10 @@ import java.util.List;
  * @author Alexander Hinze
  * @since 02/07/2022
  */
-public final class CompileResult {
-    private final CompileStatus status;
-    private final List<Path> compiledFiles;
-    private final List<CompileError> errors;
-
-    public CompileResult(final CompileStatus status, final List<Path> compiledFiles, final List<CompileError> errors) {
-        this.status = status;
-        this.compiledFiles = compiledFiles;
-        this.errors = errors;
-    }
-
-    public CompileStatus getStatus() {
-        return status;
-    }
-
-    public List<Path> getCompiledFiles() {
-        return compiledFiles;
-    }
-
-    public int getCompiledFileCount() {
-        return compiledFiles.size();
-    }
-
-    public List<CompileError> getErrors() {
-        return errors;
+@API(status = Status.STABLE)
+public record CompileResult(CompileStatus status, List<Path> compiledFiles, List<CompileError> errors) {
+    public CompileResult(final CompileStatus status) {
+        this(status, Collections.emptyList(), Collections.emptyList());
     }
 
     public CompileResult merge(final CompileResult other) {

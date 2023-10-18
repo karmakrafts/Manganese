@@ -16,6 +16,8 @@
 package io.karma.ferrous.manganese.util;
 
 import io.karma.kommons.util.ArrayUtils;
+import org.apiguardian.api.API;
+import org.apiguardian.api.API.Status;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
@@ -24,6 +26,7 @@ import java.util.Map;
  * @author Alexander Hinze
  * @since 16/10/2023
  */
+@API(status = Status.INTERNAL)
 public final class ScopeUtils {
     // @formatter:off
     private ScopeUtils() {}

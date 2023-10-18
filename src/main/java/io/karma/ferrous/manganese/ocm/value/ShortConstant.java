@@ -15,10 +15,14 @@
 
 package io.karma.ferrous.manganese.ocm.value;
 
+import org.apiguardian.api.API;
+import org.apiguardian.api.API.Status;
+
 /**
  * @author Alexander Hinze
  * @since 16/10/2023
  */
+@API(status = Status.INTERNAL)
 public final class ShortConstant implements Constant {
     public short value;
 }

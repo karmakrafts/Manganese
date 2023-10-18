@@ -21,6 +21,8 @@ import io.karma.ferrous.manganese.ocm.type.NamedFunctionType;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.ocm.type.Types;
 import io.karma.ferrous.manganese.util.Identifier;
+import org.apiguardian.api.API;
+import org.apiguardian.api.API.Status;
 
 import java.util.Arrays;
 
@@ -28,6 +30,7 @@ import java.util.Arrays;
  * @author Alexander Hinze
  * @since 14/10/2023
  */
+@API(status = Status.INTERNAL)
 public final class Function implements EnclosingScopeProvider {
     private final Identifier name;
     private final boolean isExtern;

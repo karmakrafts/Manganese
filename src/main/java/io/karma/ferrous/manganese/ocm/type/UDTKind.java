@@ -17,6 +17,8 @@ package io.karma.ferrous.manganese.ocm.type;
 
 import io.karma.ferrous.manganese.util.TokenUtils;
 import io.karma.ferrous.vanadium.FerrousLexer;
+import org.apiguardian.api.API;
+import org.apiguardian.api.API.Status;
 
 import java.util.Arrays;
 import java.util.stream.Collectors;
@@ -25,6 +27,7 @@ import java.util.stream.Collectors;
  * @author Alexander Hinze
  * @since 14/10/2023
  */
+@API(status = Status.INTERNAL)
 public enum UDTKind {
     // @formatter:off
     STRUCT    (FerrousLexer.KW_STRUCT),

@@ -17,6 +17,8 @@ package io.karma.ferrous.manganese.ocm.type;
 
 import io.karma.ferrous.manganese.ocm.scope.EnclosingScopeProvider;
 import io.karma.ferrous.manganese.util.Identifier;
+import org.apiguardian.api.API;
+import org.apiguardian.api.API.Status;
 
 import java.util.Objects;
 
@@ -24,6 +26,7 @@ import java.util.Objects;
  * @author Alexander Hinze
  * @since 16/10/2023
  */
+@API(status = Status.INTERNAL)
 public final class NamedFunctionType extends FunctionType {
     private final Identifier name;
     private EnclosingScopeProvider enclosingScope;

@@ -33,7 +33,7 @@ import java.util.function.Consumer;
  * @author Alexander Hinze
  * @since 02/07/2022
  */
-@API(status = Status.STABLE)
+@API(status = Status.INTERNAL)
 public final class Logger extends Writer {
     public static final Logger INSTANCE = new Logger();
     private static final String[] LOGO_LINES = { // @formatter:off

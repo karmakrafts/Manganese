@@ -18,11 +18,14 @@ package io.karma.ferrous.manganese.translate;
 import io.karma.ferrous.manganese.CompileError;
 import io.karma.ferrous.manganese.util.Utils;
 import org.antlr.v4.runtime.Token;
+import org.apiguardian.api.API;
+import org.apiguardian.api.API.Status;
 
 /**
  * @author Alexander Hinze
  * @since 13/10/2023
  */
+@API(status = Status.INTERNAL)
 public final class TranslationException extends RuntimeException {
     private final CompileError error;
 

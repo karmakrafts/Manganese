@@ -20,11 +20,14 @@ import io.karma.ferrous.manganese.ParseAdapter;
 import io.karma.ferrous.manganese.ocm.access.Access;
 import io.karma.ferrous.manganese.ocm.access.DefaultAccess;
 import io.karma.ferrous.vanadium.FerrousParser.AccessModContext;
+import org.apiguardian.api.API;
+import org.apiguardian.api.API.Status;
 
 /**
  * @author Alexander Hinze
  * @since 17/10/2023
  */
+@API(status = Status.INTERNAL)
 public final class AccessAnalyzer extends ParseAdapter {
     private final Access access = DefaultAccess.PRIVATE;
 

@@ -15,10 +15,14 @@
 
 package io.karma.ferrous.manganese.target;
 
+import org.apiguardian.api.API;
+import org.apiguardian.api.API.Status;
+
 /**
  * @author Alexander Hinze
  * @since 13/10/2023
  */
+@API(status = Status.STABLE)
 public enum ABI {
     // @formatter:off
     GNU     ("gnu"),

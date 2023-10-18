@@ -16,12 +16,15 @@
 package io.karma.ferrous.manganese.target;
 
 import io.karma.kommons.util.SystemInfo;
+import org.apiguardian.api.API;
+import org.apiguardian.api.API.Status;
 import org.lwjgl.llvm.LLVMTargetX86;
 
 /**
  * @author Alexander Hinze
  * @since 13/10/2023
  */
+@API(status = Status.STABLE)
 public enum Architecture {
     // @formatter:off
     UNKNOWN ("unknown", SystemInfo.is64Bit() ? 8 : 4, () -> {}),

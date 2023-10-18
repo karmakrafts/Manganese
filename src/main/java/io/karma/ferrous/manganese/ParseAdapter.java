@@ -25,11 +25,14 @@ import io.karma.ferrous.vanadium.FerrousParserListener;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.TerminalNode;
+import org.apiguardian.api.API;
+import org.apiguardian.api.API.Status;
 
 /**
  * @author Alexander Hinze
  * @since 11/10/2023
  */
+@API(status = Status.INTERNAL)
 public abstract class ParseAdapter implements FerrousParserListener {
     protected ScopeStack scopeStack = new ScopeStack();
     protected Compiler compiler;

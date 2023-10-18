@@ -281,7 +281,7 @@ public final class Compiler implements ANTLRErrorListener {
             }
         }
 
-        result.getCompiledFiles().add(in);
+        result.compiledFiles().add(in);
         return result;
     }
 

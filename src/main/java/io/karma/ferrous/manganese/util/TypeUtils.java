@@ -26,6 +26,8 @@ import io.karma.ferrous.vanadium.FerrousParser.FunctionParamContext;
 import io.karma.ferrous.vanadium.FerrousParser.ProtoFunctionContext;
 import io.karma.ferrous.vanadium.FerrousParser.TypeContext;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
+import org.apiguardian.api.API;
+import org.apiguardian.api.API.Status;
 
 import java.util.List;
 import java.util.Optional;
@@ -34,6 +36,7 @@ import java.util.Optional;
  * @author Alexander Hinze
  * @since 13/10/2023
  */
+@API(status = Status.INTERNAL)
 public final class TypeUtils {
     // @formatter:off
     private TypeUtils() {}

@@ -26,6 +26,8 @@ import io.karma.ferrous.manganese.util.TypeUtils;
 import io.karma.ferrous.vanadium.FerrousParser.ExternFunctionContext;
 import io.karma.ferrous.vanadium.FerrousParser.FunctionContext;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
+import org.apiguardian.api.API;
+import org.apiguardian.api.API.Status;
 
 import java.util.HashMap;
 
@@ -36,6 +38,7 @@ import static org.lwjgl.system.MemoryUtil.NULL;
  * @author Alexander Hinze
  * @since 12/10/2023
  */
+@API(status = Status.INTERNAL)
 public class TranslationUnit extends ParseAdapter {
     private final HashMap<Identifier, Function> functions = new HashMap<>();
     private final Module module;

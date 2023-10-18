@@ -15,10 +15,14 @@
 
 package io.karma.ferrous.manganese;
 
+import org.apiguardian.api.API;
+import org.apiguardian.api.API.Status;
+
 /**
  * @author Alexander Hinze
  * @since 14/10/2023
  */
+@API(status = Status.STABLE)
 public enum CompilePass {
     NONE,
     TOKENIZE,

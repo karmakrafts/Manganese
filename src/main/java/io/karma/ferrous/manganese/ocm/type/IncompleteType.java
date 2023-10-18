@@ -19,6 +19,8 @@ import io.karma.ferrous.manganese.ocm.scope.EnclosingScopeProvider;
 import io.karma.ferrous.manganese.ocm.scope.ScopeType;
 import io.karma.ferrous.manganese.target.Target;
 import io.karma.ferrous.manganese.util.Identifier;
+import org.apiguardian.api.API;
+import org.apiguardian.api.API.Status;
 import org.lwjgl.llvm.LLVMCore;
 import org.lwjgl.system.MemoryUtil;
 
@@ -28,6 +30,7 @@ import static org.lwjgl.llvm.LLVMCore.LLVMGetGlobalContext;
  * @author Alexander Hinze
  * @since 15/10/2023
  */
+@API(status = Status.INTERNAL)
 public final class IncompleteType implements Type {
     private final Identifier name;
     private long materializedType = MemoryUtil.NULL;

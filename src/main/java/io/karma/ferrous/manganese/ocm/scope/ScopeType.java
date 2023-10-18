@@ -15,10 +15,14 @@
 
 package io.karma.ferrous.manganese.ocm.scope;
 
+import org.apiguardian.api.API;
+import org.apiguardian.api.API.Status;
+
 /**
  * @author Alexander Hinze
  * @since 15/10/2023
  */
+@API(status = Status.INTERNAL)
 public enum ScopeType {
     GLOBAL,
     FILE,

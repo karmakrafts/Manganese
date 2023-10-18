@@ -38,6 +38,7 @@ import static org.lwjgl.llvm.LLVMCore.LLVMGetGlobalContext;
  * @author Alexander Hinze
  * @since 11/10/2023
  */
+@API(status = Status.INTERNAL)
 public final class Main {
     static {
         try {
@@ -125,9 +126,9 @@ public final class Main {
             // @formatter:on
 
             final var result = compiler.compile(in, out);
-            status = status.worse(result.getStatus());
+            status = status.worse(result.status());
 
-            final var errors = result.getErrors();
+            final var errors = result.errors();
             Collections.sort(errors);
             errors.forEach(error -> error.print(System.out));
         }

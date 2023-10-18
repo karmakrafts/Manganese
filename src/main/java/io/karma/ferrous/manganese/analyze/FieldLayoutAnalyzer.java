@@ -25,6 +25,8 @@ import io.karma.ferrous.manganese.util.TypeUtils;
 import io.karma.ferrous.manganese.util.Utils;
 import io.karma.ferrous.vanadium.FerrousParser.FieldContext;
 import io.karma.ferrous.vanadium.FerrousParser.UdtContext;
+import org.apiguardian.api.API;
+import org.apiguardian.api.API.Status;
 
 import java.util.ArrayList;
 
@@ -32,6 +34,7 @@ import java.util.ArrayList;
  * @author Alexander Hinze
  * @since 15/10/2023
  */
+@API(status = Status.INTERNAL)
 public final class FieldLayoutAnalyzer extends ParseAdapter {
     private final ArrayList<Field> fields = new ArrayList<>();
     private int nestedScopes = 0;

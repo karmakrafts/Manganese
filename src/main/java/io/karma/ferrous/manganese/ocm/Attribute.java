@@ -16,11 +16,14 @@
 package io.karma.ferrous.manganese.ocm;
 
 import io.karma.ferrous.manganese.util.Identifier;
+import org.apiguardian.api.API;
+import org.apiguardian.api.API.Status;
 
 /**
  * @author Alexander Hinze
  * @since 16/10/2023
  */
+@API(status = Status.INTERNAL)
 public final class Attribute implements NameProvider {
     private final Identifier name;
     private final Parameter[] parameters;

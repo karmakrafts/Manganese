@@ -35,6 +35,8 @@ import io.karma.ferrous.vanadium.FerrousParser.SintTypeContext;
 import io.karma.ferrous.vanadium.FerrousParser.SliceTypeContext;
 import io.karma.ferrous.vanadium.FerrousParser.UintTypeContext;
 import org.antlr.v4.runtime.ParserRuleContext;
+import org.apiguardian.api.API;
+import org.apiguardian.api.API.Status;
 
 import java.util.Stack;
 
@@ -42,6 +44,7 @@ import java.util.Stack;
  * @author Alexander Hinze
  * @since 13/10/2023
  */
+@API(status = Status.INTERNAL)
 public final class TypeParser extends ParseAdapter {
     private final Stack<TypeAttribute> attributes = new Stack<>();
     private final ScopeStack capturedScopeStack;

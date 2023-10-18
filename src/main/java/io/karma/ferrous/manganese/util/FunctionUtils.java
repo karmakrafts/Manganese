@@ -20,11 +20,14 @@ import io.karma.ferrous.manganese.CompileStatus;
 import io.karma.ferrous.manganese.Compiler;
 import io.karma.ferrous.vanadium.FerrousParser.FunctionIdentContext;
 import io.karma.ferrous.vanadium.FerrousParser.ProtoFunctionContext;
+import org.apiguardian.api.API;
+import org.apiguardian.api.API.Status;
 
 /**
  * @author Alexander Hinze
  * @since 14/10/2023
  */
+@API(status = Status.INTERNAL)
 public final class FunctionUtils {
     // @formatter:off
     private FunctionUtils() {}

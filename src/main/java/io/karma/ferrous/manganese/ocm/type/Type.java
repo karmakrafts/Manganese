@@ -18,6 +18,8 @@ package io.karma.ferrous.manganese.ocm.type;
 import io.karma.ferrous.manganese.ocm.scope.EnclosingScopeProvider;
 import io.karma.ferrous.manganese.target.Target;
 import io.karma.ferrous.manganese.util.Identifier;
+import org.apiguardian.api.API;
+import org.apiguardian.api.API.Status;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
@@ -26,6 +28,7 @@ import java.util.Arrays;
  * @author Alexander Hinze
  * @since 14/10/2023
  */
+@API(status = Status.INTERNAL)
 public interface Type extends EnclosingScopeProvider {
     long materialize(final Target target);
 

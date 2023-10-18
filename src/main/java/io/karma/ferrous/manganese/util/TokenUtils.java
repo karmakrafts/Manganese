@@ -18,6 +18,8 @@ package io.karma.ferrous.manganese.util;
 import io.karma.ferrous.vanadium.FerrousLexer;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.TokenStream;
+import org.apiguardian.api.API;
+import org.apiguardian.api.API.Status;
 import org.barfuin.texttree.api.DefaultNode;
 import org.barfuin.texttree.api.TextTree;
 import org.barfuin.texttree.api.TreeOptions;
@@ -35,6 +37,7 @@ import java.util.Stack;
  * @author Alexander Hinze
  * @since 12/10/2023
  */
+@API(status = Status.INTERNAL)
 public final class TokenUtils {
     // @formatter:off
     private TokenUtils() {}

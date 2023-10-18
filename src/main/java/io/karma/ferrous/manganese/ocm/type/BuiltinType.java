@@ -21,12 +21,15 @@ import io.karma.ferrous.manganese.target.Target;
 import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.Target2LongFunction;
 import io.karma.ferrous.manganese.util.TokenUtils;
+import org.apiguardian.api.API;
+import org.apiguardian.api.API.Status;
 import org.lwjgl.system.MemoryUtil;
 
 /**
  * @author Alexander Hinze
  * @since 13/10/2023
  */
+@API(status = Status.INTERNAL)
 public final class BuiltinType implements Type {
     private final Identifier name;
     private final Target2LongFunction typeProvider;

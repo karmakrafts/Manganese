@@ -15,12 +15,16 @@
 
 package io.karma.ferrous.manganese.ocm.type;
 
+import org.apiguardian.api.API;
+import org.apiguardian.api.API.Status;
+
 import java.util.function.Function;
 
 /**
  * @author Alexander Hinze
  * @since 14/10/2023
  */
+@API(status = Status.INTERNAL)
 public enum TypeAttribute {
     // @formatter:off
     SLICE    (type -> String.format("[%s]", type)),

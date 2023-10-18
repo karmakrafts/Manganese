@@ -15,12 +15,16 @@
 
 package io.karma.ferrous.manganese.target;
 
+import org.apiguardian.api.API;
+import org.apiguardian.api.API.Status;
+
 import java.util.Objects;
 
 /**
  * @author Alexander Hinze
  * @since 13/10/2023
  */
+@API(status = Status.STABLE)
 public final class Target {
     private final Architecture architecture;
     private final int pointerSize;

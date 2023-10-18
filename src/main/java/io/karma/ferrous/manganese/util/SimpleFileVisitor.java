@@ -15,6 +15,9 @@
 
 package io.karma.ferrous.manganese.util;
 
+import org.apiguardian.api.API;
+import org.apiguardian.api.API.Status;
+
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.FileVisitor;
@@ -26,6 +29,7 @@ import java.util.function.Function;
  * @author Alexander Hinze
  * @since 11/10/2023
  */
+@API(status = Status.INTERNAL)
 public final class SimpleFileVisitor implements FileVisitor<Path> {
     private final Function<Path, FileVisitResult> callback;
 

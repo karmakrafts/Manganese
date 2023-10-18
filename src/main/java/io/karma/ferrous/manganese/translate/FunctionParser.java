@@ -26,11 +26,14 @@ import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.ScopeStack;
 import io.karma.ferrous.manganese.util.TypeUtils;
 import io.karma.ferrous.vanadium.FerrousParser.ProtoFunctionContext;
+import org.apiguardian.api.API;
+import org.apiguardian.api.API.Status;
 
 /**
  * @author Alexander Hinze
  * @since 14/10/2023
  */
+@API(status = Status.INTERNAL)
 public final class FunctionParser extends ParseAdapter {
     private final ScopeStack capturedScopeStack;
     private Identifier identifier;

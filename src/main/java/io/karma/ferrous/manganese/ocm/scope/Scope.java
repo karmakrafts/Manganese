@@ -16,6 +16,8 @@
 package io.karma.ferrous.manganese.ocm.scope;
 
 import io.karma.ferrous.manganese.util.Identifier;
+import org.apiguardian.api.API;
+import org.apiguardian.api.API.Status;
 
 import java.util.Objects;
 
@@ -23,6 +25,7 @@ import java.util.Objects;
  * @author Alexander Hinze
  * @since 15/10/2023
  */
+@API(status = Status.INTERNAL)
 public final class Scope implements EnclosingScopeProvider {
     public static final Scope GLOBAL = new Scope(ScopeType.GLOBAL, Identifier.EMPTY);
     private final ScopeType type;
