@@ -25,7 +25,10 @@ import org.fusesource.jansi.Ansi.Attribute;
 import org.fusesource.jansi.Ansi.Color;
 import org.jetbrains.annotations.Nullable;
 
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -37,6 +40,29 @@ public final class Utils {
     // @formatter:off
     private Utils() {}
     // @formatter:on
+
+    public static List<Path> findFilesWithExtensions(final Path path, final String... extensions) {
+        final var files = new ArrayList<Path>();
+        if (!Files.isDirectory(path)) {
+            files.add(path);
+            return files;
+        }
+        try {
+            Files.walkFileTree(path, new SimpleFileVisitor(filePath -> {
+                final var fileName = filePath.getFileName().toString();
+                for (final var ext : extensions) {
+                    if (!fileName.endsWith(String.format(".%s", ext))) {
+                        continue;
+                    }
+                    files.add(filePath);
+                    break;
+                }
+                return FileVisitResult.CONTINUE;
+            }));
+        }
+        catch (Exception error) { /* swallow exception */ }
+        return files;
+    }
 
     public static Identifier getIdentifier(final IdentContext context) {
         final var children = context.children;

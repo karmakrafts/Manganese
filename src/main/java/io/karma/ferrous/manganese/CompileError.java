@@ -56,21 +56,18 @@ public final class CompileError implements Comparable<CompileError> {
         this.pass = pass;
     }
 
-    public CompileError(final String additionalText) {
-        this(null, null, -1, -1, null, null);
-        this.additionalText = additionalText;
-    }
-
     public CompileError(final Token token, final TokenStream tokenStream, final int line, final int column) {
         this(token, TokenUtils.getLineTokens(tokenStream, token), line, column, null, null);
     }
 
-    public CompileError(final Token token, final int line, final int column) {
-        this(token, Compiler.getInstance().getTokenStream(), line, column);
+    public CompileError(final Token token, final TokenStream tokenStream) {
+        this(token, TokenUtils.getLineTokens(tokenStream, token), token.getLine(), token.getCharPositionInLine(), null,
+             null);
     }
 
-    public CompileError(final Token token) {
-        this(token, token.getLine(), token.getCharPositionInLine());
+    public CompileError(final String additionalText) {
+        this(null, null, -1, -1, null, null);
+        this.additionalText = additionalText;
     }
 
     private static void handleTokenColor(final Token token, final Ansi buffer) {

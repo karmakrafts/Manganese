@@ -50,28 +50,32 @@ public class TranslationUnit extends ParseAdapter {
 
     @Override
     public void enterFunction(final FunctionContext context) {
-        compiler.doOrReport(context, () -> {
-            final var parser = new FunctionParser(compiler, scopeStack);
-            ParseTreeWalker.DEFAULT.walk(parser, context);
-            final var function = parser.getFunction();
-            functions.put(function.getInternalName(), function);
-        }, CompileStatus.TRANSLATION_ERROR);
+        final var parser = new FunctionParser(compiler, scopeStack);
+        ParseTreeWalker.DEFAULT.walk(parser, context);
+        final var function = parser.getFunction();
+        functions.put(function.getInternalName(), function);
         super.enterFunction(context);
     }
 
     @Override
     public void enterExternFunction(final ExternFunctionContext context) {
-        compiler.doOrReport(context, () -> {
-            final var prototype = context.protoFunction();
-            final var type = TypeUtils.getFunctionType(compiler, scopeStack, prototype);
-            final var name = FunctionUtils.getFunctionName(prototype.functionIdent()).toString();
-            final var function = LLVMAddFunction(module.getAddress(), name, type.materialize(compiler.getTarget()));
-            if (function == NULL) {
-                throw new TranslationException(context.start, "Could not create function");
-            }
-            LLVMSetLinkage(function, LLVMExternalLinkage);
-            LLVMSetFunctionCallConv(function, FunctionUtils.getCallingConvention(compiler, prototype).getLlvmType());
-        }, CompileStatus.TRANSLATION_ERROR);
+        final var prototype = context.protoFunction();
+        // @formatter:off
+        final var type = TypeUtils.getFunctionType(compiler, scopeStack, prototype)
+            .unwrapOrReport(compiler, context.start, CompileStatus.TRANSLATION_ERROR);
+        // @formatter:on
+        if (type.isEmpty()) {
+            return;
+        }
+        final var name = FunctionUtils.getFunctionName(prototype.functionIdent()).toString();
+        final var function = LLVMAddFunction(module.getAddress(), name, type.get().materialize(compiler.getTarget()));
+        if (function == NULL) {
+            compiler.reportError(compiler.makeError(context.start, "Could not materialize function"),
+                                 CompileStatus.TRANSLATION_ERROR);
+            return;
+        }
+        LLVMSetLinkage(function, LLVMExternalLinkage);
+        LLVMSetFunctionCallConv(function, FunctionUtils.getCallingConvention(compiler, prototype).getLlvmType());
         super.enterExternFunction(context);
     }
 

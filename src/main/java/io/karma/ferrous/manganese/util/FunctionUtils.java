@@ -15,7 +15,6 @@
 
 package io.karma.ferrous.manganese.util;
 
-import io.karma.ferrous.manganese.CompileError;
 import io.karma.ferrous.manganese.CompileStatus;
 import io.karma.ferrous.manganese.Compiler;
 import io.karma.ferrous.vanadium.FerrousParser.FunctionIdentContext;
@@ -42,10 +41,11 @@ public final class FunctionUtils {
         final var name = identifier.getText();
         final var conv = CallingConvention.findByText(name);
         if (conv.isEmpty()) {
-            final var error = new CompileError(identifier.getSymbol());
-            final var message = String.format("'%s' is not a valid calling convention, expected one of the following values", name);
-            error.setAdditionalText(Utils.makeCompilerMessage(message, CallingConvention.EXPECTED_VALUES));
-            compiler.reportError(error, CompileStatus.SEMANTIC_ERROR);
+            final var message = String.format(
+                    "'%s' is not a valid calling convention, expected one of the following values", name);
+            final var formattedMessage = Utils.makeCompilerMessage(message, CallingConvention.EXPECTED_VALUES);
+            compiler.reportError(compiler.makeError(identifier.getSymbol(), formattedMessage),
+                                 CompileStatus.SEMANTIC_ERROR);
             return CallingConvention.CDECL;
         }
         return conv.get();
@@ -54,7 +54,7 @@ public final class FunctionUtils {
     public static Identifier getFunctionName(final FunctionIdentContext context) {
         final var children = context.children;
         if (children.size() == 1) {
-            final var text = children.get(0).getText();
+            final var text = children.getFirst().getText();
             final var op = Operator.findByText(text);
             if (op.isPresent()) {
                 return Identifier.parse(op.get().getFunctionName());

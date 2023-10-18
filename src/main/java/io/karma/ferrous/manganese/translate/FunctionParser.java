@@ -47,15 +47,20 @@ public final class FunctionParser extends ParseAdapter {
 
     @Override
     public void enterProtoFunction(ProtoFunctionContext context) {
-        compiler.doOrReport(context, () -> {
-            identifier = FunctionUtils.getFunctionName(context.functionIdent());
-            type = TypeUtils.getFunctionType(compiler, capturedScopeStack, context);
-            callConv = FunctionUtils.getCallingConvention(compiler, context);
-        }, CompileStatus.TRANSLATION_ERROR);
+        identifier = FunctionUtils.getFunctionName(context.functionIdent());
+        callConv = FunctionUtils.getCallingConvention(compiler, context);
+        // @formatter:off
+        final var type = TypeUtils.getFunctionType(compiler, capturedScopeStack, context)
+            .unwrapOrReport(compiler, context.start, CompileStatus.TRANSLATION_ERROR);
+        // @formatter:on
+        if (type.isEmpty()) {
+            return;
+        }
+        this.type = type.get();
         super.enterProtoFunction(context);
     }
 
     public Function getFunction() {
-        return new Function(identifier, type);
+        return new Function(identifier, callConv, type);
     }
 }

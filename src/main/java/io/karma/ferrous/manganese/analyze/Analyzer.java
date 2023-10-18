@@ -26,7 +26,6 @@ import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.ocm.type.Types;
 import io.karma.ferrous.manganese.ocm.type.UDT;
 import io.karma.ferrous.manganese.ocm.type.UDTKind;
-import io.karma.ferrous.manganese.translate.TranslationException;
 import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.Logger;
 import io.karma.ferrous.manganese.util.ScopeUtils;
@@ -134,7 +133,8 @@ public final class Analyzer extends ParseAdapter {
             }
         }
         node.addDependency(typeNode);
-        Logger.INSTANCE.debugln("%s depends on %s", node.getValue().structureType().getInternalName(), type.getInternalName());
+        Logger.INSTANCE.debugln("%s depends on %s", node.getValue().structureType().getInternalName(),
+                                type.getInternalName());
     }
 
     private void sortTypes() {
@@ -189,16 +189,15 @@ public final class Analyzer extends ParseAdapter {
     }
 
     public void preProcessTypes() {
-        compiler.doOrReport(() -> {
-            try {
-                sortTypes();
-                resolveFieldTypes();
-                materializeTypes();
-            }
-            catch (Throwable error) {
-                throw new TranslationException(new CompileError("Unknown issue during type resolution"));
-            }
-        }, CompileStatus.ANALYZER_ERROR);
+        try {
+            sortTypes();
+            resolveFieldTypes();
+            materializeTypes();
+        }
+        catch (Throwable error) {
+            compiler.reportError(new CompileError(String.format("Could not pre-process types: %s", error.getMessage())),
+                                 CompileStatus.ANALYZER_ERROR);
+        }
     }
 
     @Override

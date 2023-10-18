@@ -19,7 +19,6 @@ import io.karma.ferrous.manganese.Compiler;
 import io.karma.ferrous.manganese.ocm.type.FunctionType;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.ocm.type.Types;
-import io.karma.ferrous.manganese.translate.TranslationException;
 import io.karma.ferrous.manganese.translate.TypeParser;
 import io.karma.ferrous.vanadium.FerrousLexer;
 import io.karma.ferrous.vanadium.FerrousParser.FunctionParamContext;
@@ -30,7 +29,6 @@ import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 
 import java.util.List;
-import java.util.Optional;
 
 /**
  * @author Alexander Hinze
@@ -42,37 +40,39 @@ public final class TypeUtils {
     private TypeUtils() {}
     // @formatter:on
 
-    public static Optional<Type> getType(final Compiler compiler, final ScopeStack capturedScopeStack,
-                                         final TypeContext context) {
+    public static Result<Type, String> getType(final Compiler compiler, final ScopeStack capturedScopeStack,
+                                               final TypeContext context) {
         final TypeParser unit = new TypeParser(compiler, capturedScopeStack);
         ParseTreeWalker.DEFAULT.walk(unit, context);
         if (!compiler.getStatus().isRecoverable()) {
-            return Optional.empty();
+            return Result.error("Compilation is irrecoverable");
         }
-        return Optional.of(unit.getType());
+        return Result.ok(unit.getType());
     }
 
-    public static List<Type> getParameterTypes(final Compiler compiler, final ScopeStack capturedScopeStack,
-                                               final ProtoFunctionContext context) throws TranslationException {
-        // @formatter:off
-        return context.functionParamList().functionParam().stream()
-            .map(FunctionParamContext::type)
-            .filter(type -> type != null && !type.getText().equals(TokenUtils.getLiteral(FerrousLexer.KW_VAARGS)))
-            .map(type -> getType(compiler, capturedScopeStack, type)
-                .orElseThrow(() -> new TranslationException(context.start, "Unknown function parameter type '%s'", type.getText())))
-            .toList();
-        // @formatter:on
+    public static Result<List<Type>, String> getParameterTypes(final Compiler compiler,
+                                                               final ScopeStack capturedScopeStack,
+                                                               final ProtoFunctionContext context) {
+        return Result.tryGet(() -> {
+            // @formatter:off
+            return context.functionParamList().functionParam().stream()
+                .map(FunctionParamContext::type)
+                .filter(type -> type != null && !type.getText().equals(TokenUtils.getLiteral(FerrousLexer.KW_VAARGS)))
+                .map(type -> getType(compiler, capturedScopeStack, type).unwrap())
+                .toList();
+            // @formatter:on
+        });
     }
 
-    public static FunctionType getFunctionType(final Compiler compiler, final ScopeStack capturedScopeStack,
-                                               final ProtoFunctionContext context) throws TranslationException {
-        final var type = context.type();
-        // @formatter:off
-        final var returnType = getType(compiler, capturedScopeStack, type)
-            .orElseThrow(() -> new TranslationException(context.start, "Unknown function return type '%s'", type.getText()));
-        // @formatter:on
-        final var isVarArg = context.functionParamList().vaFunctionParam() != null;
-        final var paramTypes = TypeUtils.getParameterTypes(compiler, capturedScopeStack, context);
-        return Types.function(returnType, paramTypes, isVarArg);
+    public static Result<FunctionType, String> getFunctionType(final Compiler compiler,
+                                                               final ScopeStack capturedScopeStack,
+                                                               final ProtoFunctionContext context) {
+        return Result.tryGet(() -> {
+            final var type = context.type();
+            final var returnType = getType(compiler, capturedScopeStack, type).unwrap();
+            final var isVarArg = context.functionParamList().vaFunctionParam() != null;
+            final var paramTypes = TypeUtils.getParameterTypes(compiler, capturedScopeStack, context).unwrap();
+            return Types.function(returnType, paramTypes, isVarArg);
+        });
     }
 }

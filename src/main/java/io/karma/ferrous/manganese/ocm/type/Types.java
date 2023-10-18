@@ -15,9 +15,7 @@
 
 package io.karma.ferrous.manganese.ocm.type;
 
-import io.karma.ferrous.manganese.CompileError;
 import io.karma.ferrous.manganese.target.Target;
-import io.karma.ferrous.manganese.translate.TranslationException;
 import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.vanadium.FerrousLexer;
 import org.apiguardian.api.API;
@@ -27,6 +25,7 @@ import org.lwjgl.llvm.LLVMCore;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * @author Alexander Hinze
@@ -88,11 +87,10 @@ public final class Types {
         return type;
     }
 
-    public static BuiltinType builtin(final Identifier name) { // @formatter:off
+    public static Optional<BuiltinType> builtin(final Identifier name) { // @formatter:off
         return Arrays.stream(BUILTIN_TYPES)
             .filter(type -> type.getName().equals(name))
-            .findFirst()
-            .orElseThrow(() -> new TranslationException(new CompileError(String.format("Unknown builtin '%s'", name))));
+            .findFirst();
     } // @formatter:on
 
     public static FunctionType function(final Type returnType, final List<? extends Type> paramTypes,

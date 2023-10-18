@@ -21,27 +21,35 @@ import org.apiguardian.api.API.Status;
 
 /**
  * @author Alexander Hinze
- * @since 13/10/2023
+ * @since 18/10/2023
  */
 @API(status = Status.STABLE)
-public enum ABI {
+public enum Platform {
     // @formatter:off
-    GNU     ("gnu"),
-    GNU_EABI("gnueabi"),
-    MSVC    ("msvc");
+    UNKNOWN ("unknown"),
+    LINUX   ("linux"),
+    WINDOWS ("windows"),
+    MACOS   ("macos");
     // @formatter:on
 
     private final String name;
 
-    ABI(final String name) {
+    Platform(final String name) {
         this.name = name;
     }
 
-    public static ABI getHostABI() {
-        switch(SystemInfo.Platform.getCurrent()) { // @formatter:off
-            case WINDOWS:   return MSVC;
-            default:        return GNU;
-        } // @formatter:on
+    public static Platform getHostPlatform() {
+        final var current = SystemInfo.Platform.getCurrent();
+        if (current == SystemInfo.Platform.UNIX) {
+            return LINUX;
+        }
+        if (current == SystemInfo.Platform.WINDOWS) {
+            return WINDOWS;
+        }
+        if (current == SystemInfo.Platform.MAC) {
+            return MACOS;
+        }
+        return UNKNOWN;
     }
 
     public String getName() {

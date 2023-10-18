@@ -15,6 +15,10 @@
 
 package io.karma.ferrous.manganese;
 
+import io.karma.ferrous.manganese.target.CodeModel;
+import io.karma.ferrous.manganese.target.OptimizationLevel;
+import io.karma.ferrous.manganese.target.Relocation;
+import io.karma.ferrous.manganese.target.Target;
 import io.karma.ferrous.manganese.util.Logger;
 import io.karma.ferrous.manganese.util.Logger.LogLevel;
 import io.karma.kommons.util.SystemInfo;
@@ -22,7 +26,6 @@ import joptsimple.OptionException;
 import joptsimple.OptionParser;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
-import org.lwjgl.llvm.LLVMCore;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -40,44 +43,41 @@ import static org.lwjgl.llvm.LLVMCore.LLVMGetGlobalContext;
  */
 @API(status = Status.INTERNAL)
 public final class Main {
-    static {
-        try {
-            LLVMCore.getLibrary();
-        }
-        catch (UnsatisfiedLinkError e) { // @formatter:off
-            throw new IllegalStateException("""
-                Please configure the LLVM (13, 14 or 15) shared libraries path with:
-                \t-Dorg.lwjgl.llvm.libname=<LLVM shared library path> or
-                \t-Dorg.lwjgl.librarypath=<path that contains LLVM shared libraries>
-            """, e);
-        } // @formatter:on
-    }
-
     @API(status = Status.INTERNAL)
     public static void main(final String[] args) {
         var status = CompileStatus.SKIPPED;
-        final var compiler = Compiler.getInstance();
 
         try {
             if (args.length == 0) {
                 throw new NoArgsException();
             }
 
-            final var parser = new OptionParser("?iodDpPtTsvVbm");
+            final var parser = new OptionParser("?iodDpPtTsvVbBm");
+            // @formatter:off
             parser.accepts("?", "Print this help dialog");
-            parser.accepts("i", "A Ferrous file or directory of files from which to compile.").withRequiredArg().ofType(String.class);
-            parser.accepts("o", "An IL file or a directory in which to save the compiled IL blocks.").withRequiredArg().ofType(String.class);
+            parser.accepts("i", "A Ferrous file or directory of files from which to compile.")
+                .withRequiredArg()
+                .ofType(String.class);
+            parser.accepts("o", "The path to the linked binary.")
+                .withRequiredArg()
+                .ofType(String.class);
             parser.accepts("d", "Disassemble the output and print it into the console.");
             parser.accepts("D", "Debug mode. This will print debug information during the compilation.");
-            parser.accepts("p", "Display parser warnings during compilation.").availableIf("d");
-            parser.accepts("t", "Token view. This will print a tree structure containing all tokens during compilation.");
-            parser.accepts("T", "Extended token view. This will print a tree view of all tokens.").availableIf("t");
+            parser.accepts("p", "Display parser warnings during compilation.")
+                .availableIf("d");
+            parser.accepts("P", "Disable opaque pointers. Useful for disassembling compile output.");
+            parser.accepts("t", "The target triple for which to compile the code.");
+            parser.accepts("T", "Token view. This will print a tree structure containing all tokens during compilation.");
             parser.accepts("s", "Silent mode. This will suppress any warning level log messages during compilation.");
             parser.accepts("v", "Prints version information about the compiler and runtime.");
             parser.accepts("V", "Enable verbose errors. This will likely show some garbage.");
-            parser.accepts("b", "Dump bitcode to files while compiling.");
-            parser.accepts("m", "Specify the name of the output module, will default to the name of the first input file.");
-            parser.accepts("P", "Disable opaque pointers. Useful for disassembling compile output.");
+            parser.accepts("b", "The path to the build directory used for storing compiled IL objects.")
+                .withOptionalArg()
+                .ofType(String.class)
+                .defaultsTo("build");
+            parser.accepts("B", "Dump bitcode to files while compiling.");
+            parser.accepts("m", "The name of the output module, will default to the name of the first input file.");
+            // @formatter:on
             final var options = parser.parse(args);
 
             if (options.has("?")) {
@@ -86,7 +86,8 @@ public final class Main {
             }
 
             if (options.has("v")) {
-                final var location = Objects.requireNonNull(Compiler.class.getClassLoader().getResource("META-INF/MANIFEST.MF"));
+                final var location = Objects.requireNonNull(
+                        Compiler.class.getClassLoader().getResource("META-INF/MANIFEST.MF"));
                 try (final var stream = location.openStream()) {
                     final var manifest = new Manifest(stream);
                     final var attribs = manifest.getMainAttributes();
@@ -108,14 +109,17 @@ public final class Main {
                 LLVMContextSetOpaquePointers(LLVMGetGlobalContext(), false);
             }
 
+            final var compiler = new Compiler(Target.getHostTarget(), "", OptimizationLevel.DEFAULT, Relocation.DEFAULT,
+                                              CodeModel.DEFAULT);
             compiler.setDisassemble(options.has("d"));
-            compiler.setTokenView(options.has("t"), options.has("T"));
+            compiler.setTokenView(options.has("T"), false);
             compiler.setReportParserWarnings(options.has("p"));
             compiler.setVerbose(options.has("V"));
-            compiler.setSaveBitcode(options.has("b"));
+            compiler.setSaveBitcode(options.has("B"));
 
             final var in = Paths.get((String) options.valueOf("i")).toAbsolutePath().normalize();
             if (!Files.exists(in)) {
+                compiler.dispose();
                 throw new IOException("Input file/directory does not exist");
             }
 
@@ -126,6 +130,7 @@ public final class Main {
             // @formatter:on
 
             final var result = compiler.compile(in, out);
+            compiler.dispose();
             status = status.worse(result.status());
 
             final var errors = result.errors();
@@ -144,7 +149,6 @@ public final class Main {
             status = status.worse(CompileStatus.UNKNOWN_ERROR);
         }
 
-        compiler.cleanup(); // Make sure to drop all resources before terminating
         Logger.INSTANCE.infoln("%s", status.getFormattedMessage());
         System.exit(status.getExitCode());
     }

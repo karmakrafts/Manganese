@@ -1,6 +1,8 @@
+source_filename = "global"
+
 declare void @abort()
 
-declare void @fe.panic(i8* %message) {
+define void @fe.panic(i8* %message) {
     %current = %message
     %cond0 = icmp ne i64 %message, 0
     br i1 %cond0, label %if_not_null, label %return

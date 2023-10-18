@@ -15,11 +15,11 @@
 
 package io.karma.ferrous.manganese;
 
+import io.karma.ferrous.manganese.util.LLVMUtils;
 import io.karma.ferrous.manganese.util.Logger;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 import org.jetbrains.annotations.Nullable;
-import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 
@@ -55,6 +55,7 @@ public final class Module {
         if (address == MemoryUtil.NULL) {
             throw new RuntimeException("Could not allocate module");
         }
+        Logger.INSTANCE.debugln("Allocated module '%s' at 0x%08X in context 0x%08X", name, address, context);
     }
 
     public Module(final String name) {
@@ -64,16 +65,7 @@ public final class Module {
     private Module(final long context, final long address) {
         this.context = context;
         this.address = address;
-    }
-
-    private static void checkStatus(final PointerBuffer buffer) throws RuntimeException {
-        final var message = buffer.get(0);
-        if (message != NULL) {
-            final var result = buffer.getStringUTF8(0);
-            nLLVMDisposeMessage(message);
-            throw new RuntimeException(result);
-        }
-        throw new RuntimeException("Unknown error");
+        Logger.INSTANCE.debugln("Created external module at 0x%08X in context 0x%08X", address, context);
     }
 
     public static Module fromIR(final long context, final String name, final String source) throws RuntimeException {
@@ -83,7 +75,7 @@ public final class Module {
             final var sourceBuffer = stack.UTF8(source, true);
             final var sourceAddr = MemoryUtil.memAddress(sourceBuffer);
             if (!LLVMParseIRInContext(context, sourceAddr, buffer, messageBuffer)) {
-                checkStatus(messageBuffer);
+                LLVMUtils.checkStatus(messageBuffer);
             }
             final var bufferAddr = buffer.get(0);
             if (bufferAddr == NULL) {
@@ -91,7 +83,7 @@ public final class Module {
             }
             final var moduleBuffer = stack.callocPointer(1);
             if (!LLVMParseBitcodeInContext(context, bufferAddr, moduleBuffer, messageBuffer)) {
-                checkStatus(messageBuffer);
+                LLVMUtils.checkStatus(messageBuffer);
             }
             final var moduleAddr = moduleBuffer.get(0);
             if (moduleAddr == NULL) {
@@ -163,6 +155,7 @@ public final class Module {
             return;
         }
         LLVMDisposeModule(address);
+        Logger.INSTANCE.debugln("Disposed module '%s' at 0x%08X in context 0x%08X", getName(), address, context);
         isDisposed = true;
     }
 
@@ -181,7 +174,7 @@ public final class Module {
             return null;
         }
         final var size = (int) LLVMGetBufferSize(buffer);
-        final var address = nLLVMGetBufferStart(buffer); // LWJGL codegen is a pita
+        final var address = nLLVMGetBufferStart(buffer);
         final var result = MemoryUtil.memByteBuffer(address, size);
         LLVMDisposeMemoryBuffer(buffer);
         return result;

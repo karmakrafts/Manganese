@@ -27,7 +27,6 @@ import org.lwjgl.llvm.LLVMTargetX86;
 @API(status = Status.STABLE)
 public enum Architecture {
     // @formatter:off
-    UNKNOWN ("unknown", SystemInfo.is64Bit() ? 8 : 4, () -> {}),
     ARM     ("arm",     4, () -> {}),
     AARCH64 ("aarch64", 8, () -> {}),
     X86     ("x86",     4, LLVMTargetX86::LLVMInitializeX86Target),
@@ -67,7 +66,7 @@ public enum Architecture {
         if (SystemInfo.isRiscV32()) {
             return Architecture.RISCV_32;
         }
-        return Architecture.UNKNOWN;
+        throw new UnsupportedOperationException("Unknown host architecture");
     }
 
     public String getName() {

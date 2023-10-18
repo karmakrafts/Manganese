@@ -16,18 +16,19 @@
 package io.karma.ferrous.manganese;
 
 import io.karma.ferrous.manganese.analyze.Analyzer;
+import io.karma.ferrous.manganese.target.CodeModel;
+import io.karma.ferrous.manganese.target.OptimizationLevel;
+import io.karma.ferrous.manganese.target.Relocation;
 import io.karma.ferrous.manganese.target.Target;
-import io.karma.ferrous.manganese.translate.TranslationException;
+import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.translate.TranslationUnit;
+import io.karma.ferrous.manganese.util.LLVMUtils;
 import io.karma.ferrous.manganese.util.Logger;
-import io.karma.ferrous.manganese.util.SimpleFileVisitor;
 import io.karma.ferrous.manganese.util.TokenUtils;
 import io.karma.ferrous.manganese.util.Utils;
 import io.karma.ferrous.vanadium.FerrousLexer;
 import io.karma.ferrous.vanadium.FerrousParser;
 import io.karma.ferrous.vanadium.FerrousParser.FileContext;
-import io.karma.kommons.function.Functions;
-import io.karma.kommons.function.XRunnable;
 import org.antlr.v4.runtime.ANTLRErrorListener;
 import org.antlr.v4.runtime.BufferedTokenStream;
 import org.antlr.v4.runtime.CharStream;
@@ -35,7 +36,6 @@ import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.ListTokenSource;
 import org.antlr.v4.runtime.Parser;
-import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.RecognitionException;
 import org.antlr.v4.runtime.Recognizer;
 import org.antlr.v4.runtime.Token;
@@ -54,7 +54,6 @@ import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -74,10 +73,16 @@ import java.util.List;
 public final class Compiler implements ANTLRErrorListener {
     private static final String[] IN_EXTENSIONS = {"ferrous", "fe"};
     private static final String OUT_EXTENSION = "o";
-    private static final ThreadLocal<Compiler> INSTANCE = ThreadLocal.withInitial(Compiler::new);
+
+    static {
+        LLVMUtils.checkNatives();
+    }
 
     private final ArrayList<CompileError> errors = new ArrayList<>();
     private final HashMap<String, Module> modules = new HashMap<>();
+    private final Target target;
+    private final TargetMachine targetMachine;
+
     private CompilePass currentPass = CompilePass.NONE;
     private String currentName;
     private CompileStatus status = CompileStatus.SKIPPED;
@@ -86,8 +91,6 @@ public final class Compiler implements ANTLRErrorListener {
     private FileContext fileContext;
     private Analyzer analyzer;
     private TranslationUnit translationUnit;
-
-    private Target target = null;
     private boolean tokenView = false;
     private boolean extendedTokenView = false;
     private boolean reportParserWarnings = false;
@@ -96,35 +99,10 @@ public final class Compiler implements ANTLRErrorListener {
     private boolean isVerbose = false;
     private String moduleName = null;
 
-    // @formatter:off
-    private Compiler() {}
-    // @formatter:on
-
-    public static Compiler getInstance() {
-        return INSTANCE.get();
-    }
-
-    private static List<Path> findCompilableFiles(final Path path) {
-        final var files = new ArrayList<Path>();
-        if (!Files.isDirectory(path)) {
-            files.add(path);
-            return files;
-        }
-        try {
-            Files.walkFileTree(path, new SimpleFileVisitor(filePath -> {
-                final var fileName = filePath.getFileName().toString();
-                for (final var ext : IN_EXTENSIONS) {
-                    if (!fileName.endsWith(String.format(".%s", ext))) {
-                        continue;
-                    }
-                    files.add(filePath);
-                    break;
-                }
-                return FileVisitResult.CONTINUE;
-            }));
-        }
-        catch (Exception error) { /* swallow exception */ }
-        return files;
+    public Compiler(final Target target, final String features, final OptimizationLevel optLevel,
+                    final Relocation relocation, final CodeModel codeModel) {
+        this.target = target;
+        targetMachine = target.createMachine(features, optLevel, relocation, codeModel);
     }
 
     @Override
@@ -156,7 +134,8 @@ public final class Compiler implements ANTLRErrorListener {
     public void reportContextSensitivity(final Parser recognizer, final DFA dfa, final int startIndex,
                                          final int stopIndex, final int prediction, final ATNConfigSet configs) {
         if (reportParserWarnings) {
-            Logger.INSTANCE.debugln("Detected abnormally high context sensitivity at %d:%d (%d)", startIndex, stopIndex, dfa.decision);
+            Logger.INSTANCE.debugln("Detected abnormally high context sensitivity at %d:%d (%d)", startIndex, stopIndex,
+                                    dfa.decision);
         }
     }
 
@@ -169,36 +148,16 @@ public final class Compiler implements ANTLRErrorListener {
         analyzer = null;
         translationUnit = null;
         errors.clear();
-        target = null;
     }
 
-    public void doOrReport(final ParserRuleContext context, final XRunnable<?> closure,
-                           final CompileStatus errorStatus) {
-        if (!isVerbose && !status.isRecoverable()) {
-            return; // Don't report translation errors after we are unrecoverable
-        }
-        Functions.tryDo(closure, exception -> {
-            if (exception instanceof TranslationException tExcept) {
-                reportError(tExcept.getError(), errorStatus);
-                return;
-            }
-            final var error = new CompileError(context.start);
-            error.setAdditionalText(Utils.makeCompilerMessage(exception.toString()));
-            reportError(error, errorStatus);
-        });
+    public CompileError makeError(final Token token) {
+        return new CompileError(token, tokenStream);
     }
 
-    public void doOrReport(final XRunnable<?> closure, final CompileStatus errorStatus) {
-        if (!isVerbose && !status.isRecoverable()) {
-            return; // Don't report translation errors after we are unrecoverable
-        }
-        Functions.tryDo(closure, exception -> {
-            if (exception instanceof TranslationException tExcept) {
-                reportError(tExcept.getError(), errorStatus);
-                return;
-            }
-            reportError(new CompileError(exception.toString()), errorStatus);
-        });
+    public CompileError makeError(final Token token, final String additionalText) {
+        final var error = new CompileError(token, tokenStream);
+        error.setAdditionalText(additionalText);
+        return error;
     }
 
     public void reportError(final CompileError error, final CompileStatus status) {
@@ -214,25 +173,10 @@ public final class Compiler implements ANTLRErrorListener {
 
     public CompileResult compile(Path in, @Nullable Path out) {
         in = in.toAbsolutePath().normalize();
-        final var inputIsDirectory = Files.isDirectory(in);
-        if (out != null) {
-            out = out.toAbsolutePath().normalize();
-            if (inputIsDirectory && !Files.isDirectory(out)) {
-                throw new RuntimeException("Output cannot be a file if input is a directory");
-            }
-        }
-        else {
-            if (inputIsDirectory) {
-                out = in;
-            }
-            else {
-                out = in.getParent();
-            }
-        }
 
-        final var inputFiles = findCompilableFiles(in);
+        final var inputFiles = Utils.findFilesWithExtensions(in, IN_EXTENSIONS);
         final var numFiles = inputFiles.size();
-        var result = new CompileResult(CompileStatus.SKIPPED, Collections.emptyList(), Collections.emptyList());
+        var result = new CompileResult(CompileStatus.SKIPPED);
 
         for (var i = 0; i < numFiles; ++i) {
             final var filePath = inputFiles.get(i);
@@ -266,8 +210,10 @@ public final class Compiler implements ANTLRErrorListener {
             Logger.INSTANCE.debugln("Input: %s", filePath);
             Logger.INSTANCE.debugln("Output: %s", outFile);
 
-            try (final var inStream = Files.newInputStream(filePath); final var inChannel = Channels.newChannel(inStream)) {
-                try (final var outStream = Files.newOutputStream(outFile); final var outChannel = Channels.newChannel(outStream)) {
+            try (final var inStream = Files.newInputStream(filePath); final var inChannel = Channels.newChannel(
+                    inStream)) {
+                try (final var outStream = Files.newOutputStream(outFile); final var outChannel = Channels.newChannel(
+                        outStream)) {
                     result = result.merge(compile(moduleName, inChannel, outChannel));
                 }
             }
@@ -306,7 +252,8 @@ public final class Compiler implements ANTLRErrorListener {
         final var time = System.currentTimeMillis() - startTime;
         Logger.INSTANCE.debugln("Finished pass TOKENIZE in %dms", time);
         if (tokenView) {
-            System.out.printf("\n%s\n", TokenUtils.renderTokenTree(moduleName, extendedTokenView, lexer, tokenStream.getTokens()));
+            System.out.printf("\n%s\n", TokenUtils.renderTokenTree(moduleName, extendedTokenView, lexer,
+                                                                   tokenStream.getTokens()));
         }
     }
 
@@ -371,11 +318,13 @@ public final class Compiler implements ANTLRErrorListener {
             tokenize(charStream);
             parse();
             if (!analyze()) {
-                return new CompileResult(CompileStatus.ANALYZER_ERROR, Collections.emptyList(), new ArrayList<>(errors));
+                return new CompileResult(CompileStatus.ANALYZER_ERROR, Collections.emptyList(),
+                                         new ArrayList<>(errors));
             }
             process();
             if (!compile(name)) {
-                return new CompileResult(CompileStatus.TRANSLATION_ERROR, Collections.emptyList(), new ArrayList<>(errors));
+                return new CompileResult(CompileStatus.TRANSLATION_ERROR, Collections.emptyList(),
+                                         new ArrayList<>(errors));
             }
 
             final var module = translationUnit.getModule();
@@ -394,7 +343,7 @@ public final class Compiler implements ANTLRErrorListener {
             modules.put(currentName, module);
             status = CompileStatus.SUCCESS;
             currentPass = CompilePass.NONE;
-            return new CompileResult(CompileStatus.SUCCESS, Collections.emptyList(), Collections.emptyList());
+            return new CompileResult(CompileStatus.SUCCESS);
         }
         catch (IOException error) {
             reportError(new CompileError(error.toString()), CompileStatus.IO_ERROR);
@@ -475,26 +424,16 @@ public final class Compiler implements ANTLRErrorListener {
         return target;
     }
 
-    public void setTarget(final Target target) {
-        this.target = target;
+    public TargetMachine getTargetMachine() {
+        return targetMachine;
     }
 
-    public void setModuleName(final String moduleName) {
-        this.moduleName = moduleName;
-    }
-
-    public ArrayList<CompileError> getErrors() {
-        return errors;
-    }
-
-    public HashMap<String, Module> getModules() {
-        return modules;
-    }
-
-    public void cleanup() {
+    public void dispose() {
         for (final var module : modules.values()) {
             module.dispose();
         }
         modules.clear();
+        targetMachine.dispose();
+        target.dispose();
     }
 }

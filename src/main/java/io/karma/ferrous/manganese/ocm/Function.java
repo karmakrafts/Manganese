@@ -20,6 +20,7 @@ import io.karma.ferrous.manganese.ocm.type.FunctionType;
 import io.karma.ferrous.manganese.ocm.type.NamedFunctionType;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.ocm.type.Types;
+import io.karma.ferrous.manganese.util.CallingConvention;
 import io.karma.ferrous.manganese.util.Identifier;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
@@ -33,22 +34,34 @@ import java.util.Arrays;
 @API(status = Status.INTERNAL)
 public final class Function implements EnclosingScopeProvider {
     private final Identifier name;
+    private final CallingConvention callConv;
     private final boolean isExtern;
     private final boolean isVarArg;
     private final Type returnType;
     private final Parameter[] parameters;
     private EnclosingScopeProvider enclosingScope;
 
-    public Function(Identifier name, boolean isExtern, boolean isVarArg, Type returnType, Parameter... params) {
+    public Function(final Identifier name, final CallingConvention callConv, final boolean isExtern,
+                    final boolean isVarArg, final Type returnType, final Parameter... params) {
         this.name = name;
+        this.callConv = callConv;
         this.isExtern = isExtern;
         this.isVarArg = isVarArg;
         this.returnType = returnType;
         this.parameters = params;
     }
 
+    public Function(final Identifier name, final CallingConvention callConv, final Type returnType,
+                    final Parameter... params) {
+        this(name, callConv, false, false, returnType, params);
+    }
+
     public Function(final Identifier name, final Type returnType, final Parameter... params) {
-        this(name, false, false, returnType, params);
+        this(name, CallingConvention.CDECL, false, false, returnType, params);
+    }
+
+    public CallingConvention getCallConv() {
+        return callConv;
     }
 
     public boolean isExtern() {

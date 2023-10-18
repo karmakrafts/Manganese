@@ -15,8 +15,14 @@
 
 package io.karma.ferrous.manganese.target;
 
+import io.karma.ferrous.manganese.util.LLVMUtils;
+import io.karma.ferrous.manganese.util.Logger;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
+import org.lwjgl.llvm.LLVMTarget;
+import org.lwjgl.llvm.LLVMTargetMachine;
+import org.lwjgl.system.MemoryStack;
+import org.lwjgl.system.MemoryUtil;
 
 import java.util.Objects;
 
@@ -27,50 +33,96 @@ import java.util.Objects;
 @API(status = Status.STABLE)
 public final class Target {
     private final Architecture architecture;
-    private final int pointerSize;
+    private final Platform platform;
     private final ABI abi;
+    private final long address;
+    private final long dataAddress;
+    private boolean isDisposed = false;
 
-    public Target(final Architecture architecture, final int pointerSize, final ABI abi) {
+    public Target(final Architecture architecture, final Platform platform, final ABI abi) {
         this.architecture = architecture;
-        this.pointerSize = pointerSize;
+        this.platform = platform;
         this.abi = abi;
+
+        try (final var stack = MemoryStack.stackPush()) {
+            final var buffer = stack.callocPointer(1);
+            final var messageBuffer = stack.callocPointer(1);
+            if (!LLVMTargetMachine.LLVMGetTargetFromTriple(toString(), buffer, messageBuffer)) {
+                LLVMUtils.checkStatus(messageBuffer);
+            }
+            address = buffer.get(0);
+            if (address == MemoryUtil.NULL) {
+                throw new RuntimeException("Could not retrieve target address");
+            }
+        }
+
+        dataAddress = LLVMTarget.LLVMCreateTargetData(toString());
+        if (dataAddress == MemoryUtil.NULL) {
+            throw new RuntimeException("Could not retrieve target data address");
+        }
+
+        Logger.INSTANCE.debugln("Allocated target %s at 0x%08X [0x%08X]", toString(), address, dataAddress);
     }
 
-    public Target(final Architecture architecture, final ABI abi) {
-        this(architecture, architecture.getPointerSize(), abi);
+    public static Target getHostTarget() {
+        return new Target(Architecture.getHostArchitecture(), Platform.getHostPlatform(), ABI.getHostABI());
+    }
+
+    public TargetMachine createMachine(final String features, final OptimizationLevel level, final Relocation reloc,
+                                       final CodeModel model) {
+        return new TargetMachine(this, features, level, reloc, model);
+    }
+
+    public void dispose() {
+        if (isDisposed) {
+            return;
+        }
+        LLVMTarget.LLVMDisposeTargetData(dataAddress);
+        Logger.INSTANCE.debugln("Disposed target %s at 0x%08X [0x%08X]", toString(), address, dataAddress);
+        isDisposed = true;
+    }
+
+    public int getPointerSize() {
+        return LLVMTarget.LLVMPointerSize(dataAddress);
+    }
+
+    public long getDataAddress() {
+        return dataAddress;
+    }
+
+    public long getAddress() {
+        return address;
     }
 
     public Architecture getArchitecture() {
         return architecture;
     }
 
-    public int getPointerSize() {
-        return pointerSize;
+    public Platform getPlatform() {
+        return platform;
     }
 
-    public ABI getAbi() {
+    public ABI getABI() {
         return abi;
-    }
-
-    public String getTriple() {
-        return String.format("%s-unknown-%s", architecture.getName(), abi.getName());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(architecture, pointerSize, abi);
+        return Objects.hash(architecture, platform, abi);
     }
 
     @Override
     public boolean equals(Object obj) {
-        if (obj instanceof Target target) {
-            return pointerSize == target.pointerSize;
-        }
+        if(obj instanceof Target target) { // @formatter:off
+            return architecture == target.architecture
+                && platform == target.platform
+                && abi == target.abi;
+        } // @formatter:on
         return false;
     }
 
     @Override
     public String toString() {
-        return String.format("%s (%d byte pointers)", getTriple(), pointerSize);
+        return String.format("%s-%s-%s", architecture.getName(), platform.getName(), abi.getName());
     }
 }

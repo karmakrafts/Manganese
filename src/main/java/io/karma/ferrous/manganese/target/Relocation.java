@@ -15,36 +15,33 @@
 
 package io.karma.ferrous.manganese.target;
 
-import io.karma.kommons.util.SystemInfo;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
+import org.lwjgl.llvm.LLVMTargetMachine;
 
 /**
  * @author Alexander Hinze
- * @since 13/10/2023
+ * @since 18/10/2023
  */
 @API(status = Status.STABLE)
-public enum ABI {
+public enum Relocation {
     // @formatter:off
-    GNU     ("gnu"),
-    GNU_EABI("gnueabi"),
-    MSVC    ("msvc");
+    DEFAULT     (LLVMTargetMachine.LLVMRelocDefault),
+    STATIC      (LLVMTargetMachine.LLVMRelocStatic),
+    PIC         (LLVMTargetMachine.LLVMRelocPIC),
+    DynamicNoPIC(LLVMTargetMachine.LLVMRelocDynamicNoPic),
+    ROPI        (LLVMTargetMachine.LLVMRelocROPI),
+    RWPI        (LLVMTargetMachine.LLVMRelocRWPI),
+    ROPI_RWPI   (LLVMTargetMachine.LLVMRelocROPI_RWPI);
     // @formatter:on
 
-    private final String name;
+    private final int llvmValue;
 
-    ABI(final String name) {
-        this.name = name;
+    Relocation(final int llvmValue) {
+        this.llvmValue = llvmValue;
     }
 
-    public static ABI getHostABI() {
-        switch(SystemInfo.Platform.getCurrent()) { // @formatter:off
-            case WINDOWS:   return MSVC;
-            default:        return GNU;
-        } // @formatter:on
-    }
-
-    public String getName() {
-        return name;
+    public int getLlvmValue() {
+        return llvmValue;
     }
 }
