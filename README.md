@@ -52,16 +52,20 @@ You can obtain the latest version from the provided repository batch at the top 
 The following demonstrates the programmatical use of the compiler:
 
 ```java
-import io.karma.ferrous.manganese.Compiler;
-import io.karma.ferrous.manganese.CompileStatus;
+import io.karma.ferrous.manganese.Manganese;
+import io.karma.ferrous.manganese.target.FileType;
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+static {
+    Manganese.init();
+}
+
 public CompileStatus compileSomething(final Path inPath, final ByteBuffer outBuffer) {
-    final var compiler = Compiler.getInstance();
+    final var compiler = Manganese.createCompiler(FileType.ELF);
     // @formatter:off
     try (final var inStream = Files.newInputStream(inPath); 
          final var inChannel = Channels.newChannel(inStream); 
@@ -76,6 +80,7 @@ public CompileStatus compileSomething(final Path inPath, final ByteBuffer outBuf
         outBuffer.put(outStream.toByteArray());
         outBuffer.flip();
     }
+    compiler.dispose();
 }
 ```
 

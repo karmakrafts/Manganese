@@ -98,4 +98,8 @@ public final class Manganese {
         }
         return new Compiler(machine);
     }
+
+    public static Compiler createCompiler(final FileType fileType) {
+        return createCompiler(new TargetMachine(Target.getHostTarget(), "", OptimizationLevel.DEFAULT, Relocation.DEFAULT, CodeModel.DEFAULT, fileType));
+    }
 }
