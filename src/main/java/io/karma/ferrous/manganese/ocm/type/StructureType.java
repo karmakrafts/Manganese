@@ -16,7 +16,7 @@
 package io.karma.ferrous.manganese.ocm.type;
 
 import io.karma.ferrous.manganese.ocm.scope.EnclosingScopeProvider;
-import io.karma.ferrous.manganese.target.Target;
+import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Identifier;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
@@ -101,7 +101,7 @@ public final class StructureType implements Type {
     }
 
     @Override
-    public long materialize(final Target target) {
+    public long materialize(final TargetMachine machine) {
         if (materializedType != MemoryUtil.NULL) {
             return materializedType;
         }
@@ -109,7 +109,7 @@ public final class StructureType implements Type {
             final var numFields = fieldTypes.length;
             final var fields = stack.callocPointer(numFields);
             for (var i = 0; i < numFields; i++) {
-                fields.put(i, fieldTypes[i].materialize(target));
+                fields.put(i, fieldTypes[i].materialize(machine));
             }
             materializedType = LLVMCore.LLVMStructCreateNamed(LLVMGetGlobalContext(), getInternalName().toString());
             LLVMCore.LLVMStructSetBody(materializedType, fields, isPacked);

@@ -19,6 +19,9 @@ import io.karma.kommons.util.SystemInfo;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 
+import java.util.Arrays;
+import java.util.Optional;
+
 /**
  * @author Alexander Hinze
  * @since 13/10/2023
@@ -42,6 +45,10 @@ public enum ABI {
             case WINDOWS:   return MSVC;
             default:        return GNU;
         } // @formatter:on
+    }
+
+    public static Optional<ABI> byName(final String name) {
+        return Arrays.stream(values()).filter(abi -> abi.name.equals(name)).findFirst();
     }
 
     public String getName() {

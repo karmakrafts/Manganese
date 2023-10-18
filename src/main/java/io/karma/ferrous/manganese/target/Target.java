@@ -19,12 +19,14 @@ import io.karma.ferrous.manganese.util.LLVMUtils;
 import io.karma.ferrous.manganese.util.Logger;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
-import org.lwjgl.llvm.LLVMTarget;
-import org.lwjgl.llvm.LLVMTargetMachine;
 import org.lwjgl.system.MemoryStack;
-import org.lwjgl.system.MemoryUtil;
 
 import java.util.Objects;
+import java.util.Optional;
+
+import static org.lwjgl.llvm.LLVMTargetMachine.LLVMGetTargetFromTriple;
+import static org.lwjgl.llvm.LLVMTargetMachine.LLVMNormalizeTargetTriple;
+import static org.lwjgl.system.MemoryUtil.NULL;
 
 /**
  * @author Alexander Hinze
@@ -36,58 +38,49 @@ public final class Target {
     private final Platform platform;
     private final ABI abi;
     private final long address;
-    private final long dataAddress;
-    private boolean isDisposed = false;
 
+    @API(status = Status.INTERNAL)
     public Target(final Architecture architecture, final Platform platform, final ABI abi) {
         this.architecture = architecture;
         this.platform = platform;
         this.abi = abi;
 
+        final var triple = getNormalizedTriple();
         try (final var stack = MemoryStack.stackPush()) {
             final var buffer = stack.callocPointer(1);
             final var messageBuffer = stack.callocPointer(1);
-            if (!LLVMTargetMachine.LLVMGetTargetFromTriple(toString(), buffer, messageBuffer)) {
+            if (LLVMGetTargetFromTriple(triple, buffer, messageBuffer)) {
                 LLVMUtils.checkStatus(messageBuffer);
             }
             address = buffer.get(0);
-            if (address == MemoryUtil.NULL) {
+            if (address == NULL) {
                 throw new RuntimeException("Could not retrieve target address");
             }
         }
-
-        dataAddress = LLVMTarget.LLVMCreateTargetData(toString());
-        if (dataAddress == MemoryUtil.NULL) {
-            throw new RuntimeException("Could not retrieve target data address");
-        }
-
-        Logger.INSTANCE.debugln("Allocated target %s at 0x%08X [0x%08X]", toString(), address, dataAddress);
+        Logger.INSTANCE.debugln("Allocated target %s at 0x%08X", triple, address);
     }
 
     public static Target getHostTarget() {
         return new Target(Architecture.getHostArchitecture(), Platform.getHostPlatform(), ABI.getHostABI());
     }
 
-    public TargetMachine createMachine(final String features, final OptimizationLevel level, final Relocation reloc,
-                                       final CodeModel model) {
-        return new TargetMachine(this, features, level, reloc, model);
+    public static String getHostTargetTriple() {
+        return String.format("%s-%s-%s", Architecture.getHostArchitecture().getName(),
+                             Platform.getHostPlatform().getName(), ABI.getHostABI().getName());
     }
 
-    public void dispose() {
-        if (isDisposed) {
-            return;
+    public static Optional<Target> parse(final String value) {
+        final var parts = value.split("-");
+        if (parts.length != 3) {
+            return Optional.empty();
         }
-        LLVMTarget.LLVMDisposeTargetData(dataAddress);
-        Logger.INSTANCE.debugln("Disposed target %s at 0x%08X [0x%08X]", toString(), address, dataAddress);
-        isDisposed = true;
-    }
-
-    public int getPointerSize() {
-        return LLVMTarget.LLVMPointerSize(dataAddress);
-    }
-
-    public long getDataAddress() {
-        return dataAddress;
+        final var arch = Architecture.byName(parts[0]);
+        final var platform = Platform.byName(parts[1]);
+        final var abi = ABI.byName(parts[2]);
+        if (arch.isEmpty() || platform.isEmpty() || abi.isEmpty()) {
+            return Optional.empty();
+        }
+        return Optional.of(new Target(arch.get(), platform.get(), abi.get()));
     }
 
     public long getAddress() {
@@ -104,6 +97,10 @@ public final class Target {
 
     public ABI getABI() {
         return abi;
+    }
+
+    public String getNormalizedTriple() {
+        return Objects.requireNonNull(LLVMNormalizeTargetTriple(toString()));
     }
 
     @Override

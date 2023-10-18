@@ -18,12 +18,12 @@ package io.karma.ferrous.manganese.target;
 import io.karma.ferrous.manganese.util.Logger;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
-import org.lwjgl.system.MemoryUtil;
 
 import java.util.Objects;
 
-import static org.lwjgl.llvm.LLVMTargetMachine.LLVMCreateTargetMachine;
-import static org.lwjgl.llvm.LLVMTargetMachine.LLVMDisposeTargetMachine;
+import static org.lwjgl.llvm.LLVMTarget.*;
+import static org.lwjgl.llvm.LLVMTargetMachine.*;
+import static org.lwjgl.system.MemoryUtil.NULL;
 
 /**
  * @author Alexander Hinze
@@ -36,23 +36,53 @@ public final class TargetMachine {
     private final OptimizationLevel level;
     private final Relocation relocation;
     private final CodeModel codeModel;
+    private final FileType fileType;
     private final long address;
+    private final long dataAddress;
     private boolean isDisposed = false;
 
-    TargetMachine(final Target target, final String features, final OptimizationLevel level, final Relocation reloc,
-                  final CodeModel model) {
+    @API(status = Status.INTERNAL)
+    public TargetMachine(final Target target, final String features, final OptimizationLevel level,
+                         final Relocation reloc, final CodeModel model, final FileType fileType) {
         this.target = target;
         this.features = features;
         this.level = level;
         this.relocation = reloc;
         this.codeModel = model;
+        this.fileType = fileType;
 
-        address = LLVMCreateTargetMachine(target.getAddress(), target.toString(), target.getArchitecture().getName(),
-                                          features, level.getLlvmValue(), reloc.getLlvmValue(), model.getLlvmValue());
-        if (address == MemoryUtil.NULL) {
+        address = LLVMCreateTargetMachine(target.getAddress(), target.toString(), "", features, level.getLlvmValue(),
+                                          reloc.getLlvmValue(), model.getLlvmValue());
+        if (address == NULL) {
             throw new RuntimeException("Could not create target machine");
         }
         Logger.INSTANCE.debugln("Allocated target machine %s at 0x%08X", toString(), address);
+
+        dataAddress = LLVMCreateTargetDataLayout(address);
+        if (dataAddress == NULL) {
+            throw new RuntimeException("Could not allocate target machine data");
+        }
+        Logger.INSTANCE.debugln("Allocated target machine data at 0x%08X", toString(), dataAddress);
+    }
+
+    public int getPointerSize() {
+        return LLVMPointerSize(dataAddress);
+    }
+
+    public int getTypeAlignment(final long type) {
+        return LLVMPreferredAlignmentOfType(dataAddress, type);
+    }
+
+    public int getGlobalAlignment(final long global) {
+        return LLVMPreferredAlignmentOfGlobal(dataAddress, global);
+    }
+
+    public long getDataAddress() {
+        return dataAddress;
+    }
+
+    public FileType getFileType() {
+        return fileType;
     }
 
     public Target getTarget() {
@@ -83,6 +113,8 @@ public final class TargetMachine {
         if (isDisposed) {
             return;
         }
+        LLVMDisposeTargetData(dataAddress);
+        Logger.INSTANCE.debugln("Disposed target machine data at 0x%08X", dataAddress);
         LLVMDisposeTargetMachine(address);
         Logger.INSTANCE.debugln("Disposed target machine %s at 0x%08X", toString(), address);
         isDisposed = true;
@@ -90,7 +122,7 @@ public final class TargetMachine {
 
     @Override
     public int hashCode() {
-        return Objects.hash(target, features, level, relocation, codeModel);
+        return Objects.hash(target, features, level, relocation, codeModel, fileType);
     }
 
     @Override
@@ -100,13 +132,14 @@ public final class TargetMachine {
                 && features.equals(machine.features)
                 && level == machine.level
                 && relocation == machine.relocation
-                && codeModel == machine.codeModel;
+                && codeModel == machine.codeModel
+                && fileType == machine.fileType;
         } // @formatter:on
         return false;
     }
 
     @Override
     public String toString() {
-        return String.format("%s (%s/%s/%s/%s)", address, features, level, relocation, codeModel);
+        return String.format("%s (%s/%s/%s/%s/%s)", target, features, level, relocation, codeModel, fileType);
     }
 }

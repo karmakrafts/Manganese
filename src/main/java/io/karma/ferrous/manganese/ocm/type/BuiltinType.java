@@ -17,9 +17,9 @@ package io.karma.ferrous.manganese.ocm.type;
 
 import io.karma.ferrous.manganese.ocm.scope.EnclosingScopeProvider;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
-import io.karma.ferrous.manganese.target.Target;
+import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Identifier;
-import io.karma.ferrous.manganese.util.Target2LongFunction;
+import io.karma.ferrous.manganese.util.TM2LongFunction;
 import io.karma.ferrous.manganese.util.TokenUtils;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
@@ -32,15 +32,15 @@ import org.lwjgl.system.MemoryUtil;
 @API(status = Status.INTERNAL)
 public final class BuiltinType implements Type {
     private final Identifier name;
-    private final Target2LongFunction typeProvider;
+    private final TM2LongFunction typeProvider;
     private long materializedType = MemoryUtil.NULL;
 
-    BuiltinType(final Identifier name, final Target2LongFunction typeProvider) {
+    BuiltinType(final Identifier name, final TM2LongFunction typeProvider) {
         this.name = name;
         this.typeProvider = typeProvider;
     }
 
-    BuiltinType(final int token, final Target2LongFunction typeProvider) {
+    BuiltinType(final int token, final TM2LongFunction typeProvider) {
         this(new Identifier(TokenUtils.getLiteral(token)), typeProvider);
     }
 
@@ -70,11 +70,11 @@ public final class BuiltinType implements Type {
     }
 
     @Override
-    public long materialize(final Target target) {
+    public long materialize(final TargetMachine machine) {
         if (materializedType != MemoryUtil.NULL) {
             return materializedType;
         }
-        return materializedType = typeProvider.getAddress(target);
+        return materializedType = typeProvider.getAddress(machine);
     }
 
     @Override

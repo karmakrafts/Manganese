@@ -16,7 +16,7 @@
 package io.karma.ferrous.manganese.ocm.type;
 
 import io.karma.ferrous.manganese.ocm.scope.EnclosingScopeProvider;
-import io.karma.ferrous.manganese.target.Target;
+import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Identifier;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
@@ -57,11 +57,11 @@ public final class DerivedType implements Type {
     }
 
     @Override
-    public long materialize(final Target target) {
+    public long materialize(final TargetMachine machine) {
         if (materializedType != MemoryUtil.NULL) {
             return materializedType;
         }
-        materializedType = baseType.materialize(target);
+        materializedType = baseType.materialize(machine);
         for (var i = 0; i < attributes.length; i++) {
             materializedType = LLVMCore.LLVMPointerType(materializedType, 0);
         }

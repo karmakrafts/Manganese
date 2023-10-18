@@ -15,7 +15,7 @@
 
 package io.karma.ferrous.manganese.util;
 
-import io.karma.ferrous.manganese.target.Target;
+import io.karma.ferrous.manganese.target.TargetMachine;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 
@@ -25,6 +25,6 @@ import org.apiguardian.api.API.Status;
  */
 @API(status = Status.INTERNAL)
 @FunctionalInterface
-public interface Target2LongFunction {
-    long getAddress(final Target target);
+public interface TM2LongFunction {
+    long getAddress(final TargetMachine target);
 }

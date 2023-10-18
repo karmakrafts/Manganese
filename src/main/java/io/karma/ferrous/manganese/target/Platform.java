@@ -19,6 +19,9 @@ import io.karma.kommons.util.SystemInfo;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 
+import java.util.Arrays;
+import java.util.Optional;
+
 /**
  * @author Alexander Hinze
  * @since 18/10/2023
@@ -50,6 +53,10 @@ public enum Platform {
             return MACOS;
         }
         return UNKNOWN;
+    }
+
+    public static Optional<Platform> byName(final String name) {
+        return Arrays.stream(values()).filter(platform -> platform.name.equals(name)).findFirst();
     }
 
     public String getName() {

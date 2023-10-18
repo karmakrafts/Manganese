@@ -110,7 +110,7 @@ public final class Analyzer extends ParseAdapter {
     private void materializeTypes() {
         for (final var udt : udts.values()) {
             final var type = udt.structureType();
-            type.materialize(compiler.getTarget());
+            type.materialize(compiler.getTargetMachine());
             Logger.INSTANCE.debugln("Materializing type %s", type.getInternalName());
         }
     }

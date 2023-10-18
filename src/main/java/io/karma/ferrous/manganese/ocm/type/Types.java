@@ -15,7 +15,7 @@
 
 package io.karma.ferrous.manganese.ocm.type;
 
-import io.karma.ferrous.manganese.target.Target;
+import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.vanadium.FerrousLexer;
 import org.apiguardian.api.API;
@@ -72,8 +72,8 @@ public final class Types {
         CACHE.clear();
     }
 
-    private static long getSizedIntType(final Target target) {
-        return target.getPointerSize() == 8 ? LLVMCore.LLVMInt64Type() : LLVMCore.LLVMInt32Type();
+    private static long getSizedIntType(final TargetMachine machine) {
+        return machine.getPointerSize() == 8 ? LLVMCore.LLVMInt64Type() : LLVMCore.LLVMInt32Type();
     }
 
     @SuppressWarnings("unchecked")

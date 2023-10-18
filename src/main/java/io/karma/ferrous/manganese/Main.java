@@ -16,35 +16,37 @@
 package io.karma.ferrous.manganese;
 
 import io.karma.ferrous.manganese.target.CodeModel;
+import io.karma.ferrous.manganese.target.FileType;
 import io.karma.ferrous.manganese.target.OptimizationLevel;
 import io.karma.ferrous.manganese.target.Relocation;
 import io.karma.ferrous.manganese.target.Target;
 import io.karma.ferrous.manganese.util.Logger;
 import io.karma.ferrous.manganese.util.Logger.LogLevel;
 import io.karma.kommons.util.SystemInfo;
+import joptsimple.BuiltinHelpFormatter;
 import joptsimple.OptionException;
 import joptsimple.OptionParser;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.jar.Manifest;
 
 import static org.lwjgl.llvm.LLVMCore.LLVMContextSetOpaquePointers;
 import static org.lwjgl.llvm.LLVMCore.LLVMGetGlobalContext;
+import static org.lwjgl.llvm.LLVMTargetMachine.LLVMGetHostCPUFeatures;
 
 /**
  * @author Alexander Hinze
  * @since 11/10/2023
  */
 @API(status = Status.INTERNAL)
-public final class Main {
-    @API(status = Status.INTERNAL)
+final class Main {
     public static void main(final String[] args) {
+        Manganese.init();
         var status = CompileStatus.SKIPPED;
 
         try {
@@ -52,40 +54,95 @@ public final class Main {
                 throw new NoArgsException();
             }
 
-            final var parser = new OptionParser("?iodDpPtTsvVbBm");
+            final var parser = new OptionParser(true);
             // @formatter:off
-            parser.accepts("?", "Print this help dialog");
-            parser.accepts("i", "A Ferrous file or directory of files from which to compile.")
+            final var helpOpt = parser.accepts("?", "Print this help dialog or list valid values for an enum option.");
+            final var inOpt = parser.accepts("i", "A Ferrous file or directory of files from which to compile.")
                 .withRequiredArg()
                 .ofType(String.class);
-            parser.accepts("o", "The path to the linked binary.")
-                .withRequiredArg()
+            final var outOpt = parser.accepts("o", "The path to the linked binary.")
+                .withOptionalArg()
                 .ofType(String.class);
-            parser.accepts("d", "Disassemble the output and print it into the console.");
-            parser.accepts("D", "Debug mode. This will print debug information during the compilation.");
-            parser.accepts("p", "Display parser warnings during compilation.")
-                .availableIf("d");
-            parser.accepts("P", "Disable opaque pointers. Useful for disassembling compile output.");
-            parser.accepts("t", "The target triple for which to compile the code.");
-            parser.accepts("T", "Token view. This will print a tree structure containing all tokens during compilation.");
-            parser.accepts("s", "Silent mode. This will suppress any warning level log messages during compilation.");
-            parser.accepts("v", "Prints version information about the compiler and runtime.");
-            parser.accepts("V", "Enable verbose errors. This will likely show some garbage.");
-            parser.accepts("b", "The path to the build directory used for storing compiled IL objects.")
+            final var optimizationOpt = parser.accepts("O", "The level of optimization.")
+                .withOptionalArg()
+                .ofType(String.class)
+                .defaultsTo(OptimizationLevel.DEFAULT.getName());
+            final var disassembleOpt = parser.accepts("d", "Disassemble the output and print it into the console.");
+            final var debugOpt = parser.accepts("D", "Debug mode. This will print debug information during the compilation.");
+            final var parseWarningsOpt = parser.accepts("p", "Display parser warnings during compilation.")
+                .availableIf("D");
+            final var opaquePointerOpt = parser.accepts("P", "Disable opaque pointers. Useful for disassembling compile output.");
+            final var targetOpt = parser.accepts("t", "The target triple for which to compile the code.")
+                .withOptionalArg()
+                .ofType(String.class)
+                .defaultsTo(Target.getHostTargetTriple());
+            final var tokenViewOpt = parser.accepts("T", "Token view. This will print a tree structure containing all tokens during compilation.");
+            final var silentOpt = parser.accepts("s", "Silent mode. This will suppress any warning level log messages during compilation.");
+            final var versionOpt = parser.accepts("v", "Prints version information about the compiler and runtime.");
+            final var verboseOpt = parser.accepts("V", "Enable verbose errors. This will likely show some garbage.");
+            final var buildDirOpt = parser.accepts("b", "The path to the build directory used for storing compiled IL objects.")
                 .withOptionalArg()
                 .ofType(String.class)
                 .defaultsTo("build");
-            parser.accepts("B", "Dump bitcode to files while compiling.");
-            parser.accepts("m", "The name of the output module, will default to the name of the first input file.");
+            final var bitcodeOpt = parser.accepts("B", "Dump bitcode to files while compiling.");
+            final var moduleNameOpt = parser.accepts("m", "The name of the output module, will default to the name of the first input file.")
+                .withOptionalArg()
+                .ofType(String.class);
+            final var codeModelOpt = parser.accepts("M", "The code model to use when generating assembly code for the target machine.")
+                .withOptionalArg()
+                .ofType(String.class)
+                .defaultsTo(CodeModel.DEFAULT.getName());
+            final var featuresOpt = parser.accepts("f", "Feature options forwarded to LLVM during compilation.")
+                .withOptionalArg()
+                .ofType(String.class)
+                .defaultsTo(Objects.requireNonNull(LLVMGetHostCPUFeatures()));
+            final var fileTypeOpt = parser.accepts("F", "The type of the output file.")
+                .withOptionalArg()
+                .ofType(String.class)
+                .defaultsTo(FileType.ELF.getExtension());
+            final var relocOpt = parser.accepts("r", "The type of relocation used when linking the final object.")
+                .withOptionalArg()
+                .ofType(String.class)
+                .defaultsTo(Relocation.DEFAULT.getName());
             // @formatter:on
             final var options = parser.parse(args);
 
-            if (options.has("?")) {
+            if (options.has(helpOpt)) {
+                if (options.has(optimizationOpt)) {
+                    Logger.INSTANCE.infoln("Available optimization levels:");
+                    for (final var level : OptimizationLevel.values()) {
+                        Logger.INSTANCE.infoln("  - %s", level.getName());
+                    }
+                    return;
+                }
+                if (options.has(fileTypeOpt)) {
+                    Logger.INSTANCE.infoln("Available file types:");
+                    for (final var type : FileType.values()) {
+                        Logger.INSTANCE.infoln("  - %s", type.getExtension());
+                    }
+                    return;
+                }
+                if (options.has(codeModelOpt)) {
+                    Logger.INSTANCE.infoln("Available code models:");
+                    for (final var model : CodeModel.values()) {
+                        Logger.INSTANCE.infoln("  - %s", model.getName());
+                    }
+                    return;
+                }
+                if (options.has(relocOpt)) {
+                    Logger.INSTANCE.infoln("Available relocation types:");
+                    for (final var type : Relocation.values()) {
+                        Logger.INSTANCE.infoln("  - %s", type.getName());
+                    }
+                    return;
+                }
+                parser.formatHelpWith(new BuiltinHelpFormatter(120, 8));
                 parser.printHelpOn(Logger.INSTANCE); // Print help
+                Logger.INSTANCE.infoln("You can also combine the following options with -?:");
+                Logger.INSTANCE.infoln("  -O, -F, -M, -r");
                 return;
             }
-
-            if (options.has("v")) {
+            if (options.has(versionOpt)) {
                 final var location = Objects.requireNonNull(
                         Compiler.class.getClassLoader().getResource("META-INF/MANIFEST.MF"));
                 try (final var stream = location.openStream()) {
@@ -98,38 +155,45 @@ public final class Main {
                 return;
             }
 
+            final var targetTriple = options.valueOf(targetOpt);
+            final var target = Manganese.createTarget(targetTriple);
+
+            final var features = options.has(featuresOpt) ? options.valueOf(featuresOpt) : "";
+            final var optLevel = OptimizationLevel.byName(options.valueOf(optimizationOpt));
+            final var relocation = Relocation.byName(options.valueOf(relocOpt));
+            final var codeModel = CodeModel.byName(options.valueOf(codeModelOpt));
+            final var fileType = FileType.byExtension(options.valueOf(fileTypeOpt));
+            if (optLevel.isEmpty() || relocation.isEmpty() || codeModel.isEmpty() || fileType.isEmpty()) {
+                Logger.INSTANCE.error("Malformed parameter");
+                return;
+            }
+
+            final var targetMachine = Manganese.createTargetMachine(target, features, optLevel.get(), relocation.get(),
+                                                                    codeModel.get(), fileType.get());
+            final var compiler = Manganese.createCompiler(targetMachine);
+            compiler.setDisassemble(options.has(disassembleOpt));
+            compiler.setTokenView(options.has(tokenViewOpt), false);
+            compiler.setReportParserWarnings(options.has(parseWarningsOpt));
+            compiler.setVerbose(options.has(verboseOpt));
+            compiler.setSaveBitcode(options.has(bitcodeOpt));
+            compiler.setModuleName(options.valueOf(moduleNameOpt));
+
             // Update the log level if we are in verbose mode.
-            if (options.has("D")) {
+            if (options.has(debugOpt)) {
                 Logger.INSTANCE.setLogLevel(LogLevel.DEBUG);
             }
-            if (options.has("s")) {
+            if (options.has(silentOpt)) {
                 Logger.INSTANCE.disableLogLevel(LogLevel.WARN);
             }
-            if (options.has("P")) {
+            if (options.has(opaquePointerOpt)) {
                 LLVMContextSetOpaquePointers(LLVMGetGlobalContext(), false);
             }
 
-            final var compiler = new Compiler(Target.getHostTarget(), "", OptimizationLevel.DEFAULT, Relocation.DEFAULT,
-                                              CodeModel.DEFAULT);
-            compiler.setDisassemble(options.has("d"));
-            compiler.setTokenView(options.has("T"), false);
-            compiler.setReportParserWarnings(options.has("p"));
-            compiler.setVerbose(options.has("V"));
-            compiler.setSaveBitcode(options.has("B"));
+            final var in = Path.of(options.valueOf(inOpt));
+            final var out = options.has(outOpt) ? Path.of(options.valueOf(outOpt)) : null;
+            final var buildDir = Path.of(options.valueOf(buildDirOpt));
 
-            final var in = Paths.get((String) options.valueOf("i")).toAbsolutePath().normalize();
-            if (!Files.exists(in)) {
-                compiler.dispose();
-                throw new IOException("Input file/directory does not exist");
-            }
-
-            // @formatter:off
-            final var out = options.has("o")
-                ? Paths.get((String)options.valueOf("o")).toAbsolutePath().normalize()
-                : null;
-            // @formatter:on
-
-            final var result = compiler.compile(in, out);
+            final var result = compiler.compile(in, out, buildDir);
             compiler.dispose();
             status = status.worse(result.status());
 
@@ -137,15 +201,17 @@ public final class Main {
             Collections.sort(errors);
             errors.forEach(error -> error.print(System.out));
         }
-        catch (OptionException | NoArgsException e) {
+        catch (OptionException | NoArgsException error) {
             // Special case; display help instead of logging the exception.
             Logger.INSTANCE.infoln("Try running with -? to get some help!");
             System.exit(0);
         }
         catch (IOException error) {
+            Logger.INSTANCE.errorln(error.toString());
             status = status.worse(CompileStatus.IO_ERROR);
         }
         catch (Throwable error) {
+            Logger.INSTANCE.errorln(error.toString());
             status = status.worse(CompileStatus.UNKNOWN_ERROR);
         }
 

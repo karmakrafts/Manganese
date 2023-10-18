@@ -15,8 +15,6 @@
 
 package io.karma.ferrous.manganese.target;
 
-import org.apiguardian.api.API;
-import org.apiguardian.api.API.Status;
 import org.lwjgl.llvm.LLVMTargetMachine;
 
 import java.util.Arrays;
@@ -26,29 +24,29 @@ import java.util.Optional;
  * @author Alexander Hinze
  * @since 18/10/2023
  */
-@API(status = Status.STABLE)
-public enum OptimizationLevel {
+public enum FileType {
     // @formatter:off
-    NONE        ("none",        LLVMTargetMachine.LLVMCodeGenLevelNone),
-    LESS        ("less",        LLVMTargetMachine.LLVMCodeGenLevelLess),
-    DEFAULT     ("default",     LLVMTargetMachine.LLVMCodeGenLevelDefault),
-    AGGRESSIVE  ("aggressive",  LLVMTargetMachine.LLVMCodeGenLevelAggressive);
+    ASSEMBLY("S", LLVMTargetMachine.LLVMAssemblyFile),
+    SO      ("so", LLVMTargetMachine.LLVMObjectFile),
+    DLL     ("dll", LLVMTargetMachine.LLVMObjectFile),
+    ELF     ("elf", LLVMTargetMachine.LLVMObjectFile),
+    EXE     ("exe", LLVMTargetMachine.LLVMObjectFile);
     // @formatter:on
 
-    private final String name;
+    private final String extension;
     private final int llvmValue;
 
-    OptimizationLevel(final String name, final int llvmValue) {
-        this.name = name;
+    FileType(final String extension, final int llvmValue) {
+        this.extension = extension;
         this.llvmValue = llvmValue;
     }
 
-    public static Optional<OptimizationLevel> byName(final String name) {
-        return Arrays.stream(values()).filter(level -> level.name.equals(name)).findFirst();
+    public static Optional<FileType> byExtension(final String extension) {
+        return Arrays.stream(values()).filter(type -> type.extension.equals(extension)).findFirst();
     }
 
-    public String getName() {
-        return name;
+    public String getExtension() {
+        return extension;
     }
 
     public int getLlvmValue() {

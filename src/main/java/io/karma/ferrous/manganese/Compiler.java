@@ -16,13 +16,8 @@
 package io.karma.ferrous.manganese;
 
 import io.karma.ferrous.manganese.analyze.Analyzer;
-import io.karma.ferrous.manganese.target.CodeModel;
-import io.karma.ferrous.manganese.target.OptimizationLevel;
-import io.karma.ferrous.manganese.target.Relocation;
-import io.karma.ferrous.manganese.target.Target;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.translate.TranslationUnit;
-import io.karma.ferrous.manganese.util.LLVMUtils;
 import io.karma.ferrous.manganese.util.Logger;
 import io.karma.ferrous.manganese.util.TokenUtils;
 import io.karma.ferrous.manganese.util.Utils;
@@ -47,7 +42,6 @@ import org.apiguardian.api.API.Status;
 import org.fusesource.jansi.Ansi;
 import org.fusesource.jansi.Ansi.Attribute;
 import org.fusesource.jansi.Ansi.Color;
-import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.nio.channels.Channels;
@@ -63,24 +57,15 @@ import java.util.HashMap;
 import java.util.List;
 
 /**
- * Main class for invoking a compilation, either programmatically
- * or via a command line interface through the given main entry point.
- *
  * @author Alexander Hinze
  * @since 02/07/2022
  */
 @API(status = Status.STABLE)
 public final class Compiler implements ANTLRErrorListener {
     private static final String[] IN_EXTENSIONS = {"ferrous", "fe"};
-    private static final String OUT_EXTENSION = "o";
-
-    static {
-        LLVMUtils.checkNatives();
-    }
 
     private final ArrayList<CompileError> errors = new ArrayList<>();
     private final HashMap<String, Module> modules = new HashMap<>();
-    private final Target target;
     private final TargetMachine targetMachine;
 
     private CompilePass currentPass = CompilePass.NONE;
@@ -99,10 +84,8 @@ public final class Compiler implements ANTLRErrorListener {
     private boolean isVerbose = false;
     private String moduleName = null;
 
-    public Compiler(final Target target, final String features, final OptimizationLevel optLevel,
-                    final Relocation relocation, final CodeModel codeModel) {
-        this.target = target;
-        targetMachine = target.createMachine(features, optLevel, relocation, codeModel);
+    Compiler(final TargetMachine targetMachine) {
+        this.targetMachine = targetMachine;
     }
 
     @Override
@@ -171,9 +154,7 @@ public final class Compiler implements ANTLRErrorListener {
         this.status = this.status.worse(status);
     }
 
-    public CompileResult compile(Path in, @Nullable Path out) {
-        in = in.toAbsolutePath().normalize();
-
+    public CompileResult compile(final Path in, final Path out, final Path buildDir) {
         final var inputFiles = Utils.findFilesWithExtensions(in, IN_EXTENSIONS);
         final var numFiles = inputFiles.size();
         var result = new CompileResult(CompileStatus.SKIPPED);
@@ -193,20 +174,9 @@ public final class Compiler implements ANTLRErrorListener {
                 .toString());
             // @formatter:on
 
-            moduleName = Utils.getRawFileName(filePath);
-            final var outFileName = String.format("%s.%s", moduleName, OUT_EXTENSION);
-
-            if (!Files.exists(out)) {
-                try {
-                    Files.createDirectories(out);
-                    Logger.INSTANCE.debugln("Created directory %s", out);
-                }
-                catch (Exception error) {
-                    Logger.INSTANCE.errorln("Could not create directory at %s, skipping", out);
-                }
-            }
-
-            final var outFile = Files.isDirectory(out) ? out.resolve(outFileName) : out;
+            final var rawFileName = Utils.getRawFileName(filePath);
+            final var outFile = out.resolve(
+                    String.format("%s.%s", rawFileName, targetMachine.getFileType().getExtension()));
             Logger.INSTANCE.debugln("Input: %s", filePath);
             Logger.INSTANCE.debugln("Output: %s", outFile);
 
@@ -214,7 +184,7 @@ public final class Compiler implements ANTLRErrorListener {
                     inStream)) {
                 try (final var outStream = Files.newOutputStream(outFile); final var outChannel = Channels.newChannel(
                         outStream)) {
-                    result = result.merge(compile(moduleName, inChannel, outChannel));
+                    result = result.merge(compile(rawFileName, inChannel, outChannel));
                 }
             }
             catch (IOException error) {
@@ -346,13 +316,17 @@ public final class Compiler implements ANTLRErrorListener {
             return new CompileResult(CompileStatus.SUCCESS);
         }
         catch (IOException error) {
-            reportError(new CompileError(error.toString()), CompileStatus.IO_ERROR);
+            reportError(new CompileError(Utils.makeCompilerMessage(error.toString())), CompileStatus.IO_ERROR);
             return new CompileResult(CompileStatus.IO_ERROR, Collections.emptyList(), new ArrayList<>(errors));
         }
         catch (Exception error) {
-            reportError(new CompileError(error.toString()), CompileStatus.UNKNOWN_ERROR);
+            reportError(new CompileError(Utils.makeCompilerMessage(error.toString())), CompileStatus.UNKNOWN_ERROR);
             return new CompileResult(CompileStatus.UNKNOWN_ERROR, Collections.emptyList(), new ArrayList<>(errors));
         }
+    }
+
+    public void setModuleName(final String moduleName) {
+        this.moduleName = moduleName;
     }
 
     public BufferedTokenStream getTokenStream() {
@@ -420,10 +394,6 @@ public final class Compiler implements ANTLRErrorListener {
         isVerbose = verbose;
     }
 
-    public Target getTarget() {
-        return target;
-    }
-
     public TargetMachine getTargetMachine() {
         return targetMachine;
     }
@@ -434,6 +404,5 @@ public final class Compiler implements ANTLRErrorListener {
         }
         modules.clear();
         targetMachine.dispose();
-        target.dispose();
     }
 }

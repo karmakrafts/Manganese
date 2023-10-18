@@ -18,7 +18,7 @@ package io.karma.ferrous.manganese.ocm.type;
 import io.karma.ferrous.manganese.ocm.scope.EnclosingScopeProvider;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.ocm.scope.ScopeType;
-import io.karma.ferrous.manganese.target.Target;
+import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Identifier;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
@@ -83,13 +83,14 @@ public class FunctionType implements Type {
     }
 
     @Override
-    public long materialize(final Target target) {
+    public long materialize(final TargetMachine machine) {
         if (materializedType != MemoryUtil.NULL) {
             return materializedType;
         }
         try (final var stack = MemoryStack.stackPush()) {
-            final var returnType = this.returnType.materialize(target);
-            final var paramTypes = Arrays.stream(this.paramTypes).mapToLong(type -> type.materialize(target)).toArray();
+            final var returnType = this.returnType.materialize(machine);
+            final var paramTypes = Arrays.stream(this.paramTypes).mapToLong(
+                    type -> type.materialize(machine)).toArray();
             return materializedType = LLVMCore.LLVMFunctionType(returnType, stack.pointers(paramTypes), isVarArg);
         }
     }

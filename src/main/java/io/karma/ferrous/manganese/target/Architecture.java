@@ -18,7 +18,9 @@ package io.karma.ferrous.manganese.target;
 import io.karma.kommons.util.SystemInfo;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
-import org.lwjgl.llvm.LLVMTargetX86;
+
+import java.util.Arrays;
+import java.util.Optional;
 
 /**
  * @author Alexander Hinze
@@ -27,24 +29,20 @@ import org.lwjgl.llvm.LLVMTargetX86;
 @API(status = Status.STABLE)
 public enum Architecture {
     // @formatter:off
-    ARM     ("arm",     4, () -> {}),
-    AARCH64 ("aarch64", 8, () -> {}),
-    X86     ("x86",     4, LLVMTargetX86::LLVMInitializeX86Target),
-    X86_64  ("x86_64",  8, LLVMTargetX86::LLVMInitializeX86Target),
-    RISCV_32("riscv32", 4, () -> {}),
-    RISCV_64("riscv64", 8, () -> {}),
-    WASM_32 ("wasm32",  4, () -> {}),
-    WASM_64 ("wasm64",  8, () -> {});
+    ARM     ("arm"),
+    AARCH64 ("aarch64"),
+    X86     ("x86"),
+    X86_64  ("x86_64"),
+    RISCV_32("riscv32"),
+    RISCV_64("riscv64"),
+    WASM_32 ("wasm32"),
+    WASM_64 ("wasm64");
     // @formatter:on
 
     private final String name;
-    private final int pointerSize;
-    private final Runnable initClosure;
 
-    Architecture(final String name, final int pointerSize, final Runnable initClosure) {
+    Architecture(final String name) {
         this.name = name;
-        this.pointerSize = pointerSize;
-        this.initClosure = initClosure;
     }
 
     public static Architecture getHostArchitecture() {
@@ -69,15 +67,11 @@ public enum Architecture {
         throw new UnsupportedOperationException("Unknown host architecture");
     }
 
+    public static Optional<Architecture> byName(final String name) {
+        return Arrays.stream(values()).filter(arch -> arch.name.equals(name)).findFirst();
+    }
+
     public String getName() {
         return name;
-    }
-
-    public int getPointerSize() {
-        return pointerSize;
-    }
-
-    public void init() {
-        initClosure.run();
     }
 }

@@ -16,7 +16,7 @@
 package io.karma.ferrous.manganese.ocm.type;
 
 import io.karma.ferrous.manganese.ocm.scope.EnclosingScopeProvider;
-import io.karma.ferrous.manganese.target.Target;
+import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Identifier;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
@@ -30,7 +30,7 @@ import java.util.Arrays;
  */
 @API(status = Status.INTERNAL)
 public interface Type extends EnclosingScopeProvider {
-    long materialize(final Target target);
+    long materialize(final TargetMachine machine);
 
     TypeAttribute[] getAttributes();
 

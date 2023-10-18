@@ -68,7 +68,8 @@ public class TranslationUnit extends ParseAdapter {
             return;
         }
         final var name = FunctionUtils.getFunctionName(prototype.functionIdent()).toString();
-        final var function = LLVMAddFunction(module.getAddress(), name, type.get().materialize(compiler.getTarget()));
+        final var function = LLVMAddFunction(module.getAddress(), name,
+                                             type.get().materialize(compiler.getTargetMachine()));
         if (function == NULL) {
             compiler.reportError(compiler.makeError(context.start, "Could not materialize function"),
                                  CompileStatus.TRANSLATION_ERROR);

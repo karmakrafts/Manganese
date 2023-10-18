@@ -74,7 +74,7 @@ public final class Module {
             final var messageBuffer = stack.callocPointer(1);
             final var sourceBuffer = stack.UTF8(source, true);
             final var sourceAddr = MemoryUtil.memAddress(sourceBuffer);
-            if (!LLVMParseIRInContext(context, sourceAddr, buffer, messageBuffer)) {
+            if (LLVMParseIRInContext(context, sourceAddr, buffer, messageBuffer)) {
                 LLVMUtils.checkStatus(messageBuffer);
             }
             final var bufferAddr = buffer.get(0);
@@ -82,7 +82,7 @@ public final class Module {
                 throw new RuntimeException("Could not retrieve bitcode address");
             }
             final var moduleBuffer = stack.callocPointer(1);
-            if (!LLVMParseBitcodeInContext(context, bufferAddr, moduleBuffer, messageBuffer)) {
+            if (LLVMParseBitcodeInContext(context, bufferAddr, moduleBuffer, messageBuffer)) {
                 LLVMUtils.checkStatus(messageBuffer);
             }
             final var moduleAddr = moduleBuffer.get(0);

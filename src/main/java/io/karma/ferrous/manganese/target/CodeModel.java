@@ -19,6 +19,9 @@ import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 import org.lwjgl.llvm.LLVMTargetMachine;
 
+import java.util.Arrays;
+import java.util.Optional;
+
 /**
  * @author Alexander Hinze
  * @since 18/10/2023
@@ -26,18 +29,28 @@ import org.lwjgl.llvm.LLVMTargetMachine;
 @API(status = Status.STABLE)
 public enum CodeModel {
     // @formatter:off
-    DEFAULT (LLVMTargetMachine.LLVMCodeModelDefault),
-    KERNEL  (LLVMTargetMachine.LLVMCodeModelKernel),
-    LARGE   (LLVMTargetMachine.LLVMCodeModelLarge),
-    MEDIUM  (LLVMTargetMachine.LLVMCodeModelMedium),
-    SMALL   (LLVMTargetMachine.LLVMCodeModelSmall),
-    TINY    (LLVMTargetMachine.LLVMCodeModelTiny);
+    DEFAULT ("default", LLVMTargetMachine.LLVMCodeModelDefault),
+    KERNEL  ("kernel",  LLVMTargetMachine.LLVMCodeModelKernel),
+    LARGE   ("large",   LLVMTargetMachine.LLVMCodeModelLarge),
+    MEDIUM  ("medium",  LLVMTargetMachine.LLVMCodeModelMedium),
+    SMALL   ("small",   LLVMTargetMachine.LLVMCodeModelSmall),
+    TINY    ("tiny",    LLVMTargetMachine.LLVMCodeModelTiny);
     // @formatter:on
 
+    private final String name;
     private final int llvmValue;
 
-    CodeModel(final int llvmValue) {
+    CodeModel(final String name, final int llvmValue) {
+        this.name = name;
         this.llvmValue = llvmValue;
+    }
+
+    public static Optional<CodeModel> byName(final String name) {
+        return Arrays.stream(values()).filter(model -> model.name.equals(name)).findFirst();
+    }
+
+    public String getName() {
+        return name;
     }
 
     public int getLlvmValue() {

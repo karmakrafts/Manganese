@@ -19,6 +19,9 @@ import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 import org.lwjgl.llvm.LLVMTargetMachine;
 
+import java.util.Arrays;
+import java.util.Optional;
+
 /**
  * @author Alexander Hinze
  * @since 18/10/2023
@@ -26,19 +29,29 @@ import org.lwjgl.llvm.LLVMTargetMachine;
 @API(status = Status.STABLE)
 public enum Relocation {
     // @formatter:off
-    DEFAULT     (LLVMTargetMachine.LLVMRelocDefault),
-    STATIC      (LLVMTargetMachine.LLVMRelocStatic),
-    PIC         (LLVMTargetMachine.LLVMRelocPIC),
-    DynamicNoPIC(LLVMTargetMachine.LLVMRelocDynamicNoPic),
-    ROPI        (LLVMTargetMachine.LLVMRelocROPI),
-    RWPI        (LLVMTargetMachine.LLVMRelocRWPI),
-    ROPI_RWPI   (LLVMTargetMachine.LLVMRelocROPI_RWPI);
+    DEFAULT     ("default",         LLVMTargetMachine.LLVMRelocDefault),
+    STATIC      ("static",          LLVMTargetMachine.LLVMRelocStatic),
+    PIC         ("pic",             LLVMTargetMachine.LLVMRelocPIC),
+    DYN_NO_PIC  ("dynamic_nopic",   LLVMTargetMachine.LLVMRelocDynamicNoPic),
+    ROPI        ("ropi",            LLVMTargetMachine.LLVMRelocROPI),
+    RWPI        ("rwpi",            LLVMTargetMachine.LLVMRelocRWPI),
+    ROPI_RWPI   ("ropi_rwpi",       LLVMTargetMachine.LLVMRelocROPI_RWPI);
     // @formatter:on
 
+    private final String name;
     private final int llvmValue;
 
-    Relocation(final int llvmValue) {
+    Relocation(final String name, final int llvmValue) {
+        this.name = name;
         this.llvmValue = llvmValue;
+    }
+
+    public static Optional<Relocation> byName(final String name) {
+        return Arrays.stream(values()).filter(reloc -> reloc.name.equals(name)).findFirst();
+    }
+
+    public String getName() {
+        return name;
     }
 
     public int getLlvmValue() {
