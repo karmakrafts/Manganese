@@ -296,6 +296,7 @@ public final class Compiler implements ANTLRErrorListener {
         final var startTime = System.currentTimeMillis();
         context.setCurrentPass(CompilePass.TOKENIZE);
         final var lexer = new FerrousLexer(stream);
+        context.setLexer(lexer);
         final var tokenStream = new CommonTokenStream(lexer);
         tokenStream.fill();
         context.setTokenStream(tokenStream);
