@@ -59,6 +59,7 @@ public final class Manganese {
             return;
         }
 
+        LLVMUtils.loadLLVM();
         LLVMUtils.checkNatives();
         final var registry = LLVMCore.LLVMGetGlobalPassRegistry();
         if (registry == NULL) {

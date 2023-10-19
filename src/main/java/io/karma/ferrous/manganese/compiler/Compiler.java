@@ -133,7 +133,7 @@ public final class Compiler implements ANTLRErrorListener {
         }
     }
 
-    public void compile(final String name, final WritableByteChannel out, final CompileContext context) {
+    public void compile(final String name, final String sourceName, final WritableByteChannel out, final CompileContext context) {
         try {
             context.setModuleName(name);
             this.context = context; // Update context for every compilation
@@ -143,6 +143,7 @@ public final class Compiler implements ANTLRErrorListener {
             }
 
             final var module = Objects.requireNonNull(context.getTranslationUnit()).getModule();
+            module.setSourceFileName(sourceName);
             final var verificationStatus = module.verify();
             if (verificationStatus != null) {
                 context.reportError(new CompileError(verificationStatus), CompileStatus.VERIFY_ERROR);
@@ -232,7 +233,7 @@ public final class Compiler implements ANTLRErrorListener {
             Logger.INSTANCE.debugln("Output: %s", outFile);
 
             try (final var stream = Files.newOutputStream(outFile); final var channel = Channels.newChannel(stream)) {
-                compile(rawFileName, channel, context);
+                compile(rawFileName, file.getFileName().toString(), channel, context);
             }
             catch (IOException error) {
                 context.reportError(new CompileError(error.toString()), CompileStatus.IO_ERROR);

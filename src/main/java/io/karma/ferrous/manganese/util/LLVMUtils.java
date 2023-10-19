@@ -20,6 +20,9 @@ import org.apiguardian.api.API.Status;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.llvm.LLVMCore;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+
 import static org.lwjgl.llvm.LLVMCore.nLLVMDisposeMessage;
 import static org.lwjgl.system.MemoryUtil.NULL;
 
@@ -29,9 +32,31 @@ import static org.lwjgl.system.MemoryUtil.NULL;
  */
 @API(status = Status.INTERNAL)
 public final class LLVMUtils {
+    private static final String[] PATHS_TO_SEARCH = {"/usr/share/lib", "/usr/lib", "/Library", "/"};
+    private static final String[] NAMES_TO_SEARCH = {"llvm-15/build/Release", "llvm-14/build/Release", "llvm-13/build/Release", "llvm-12/build/Release", "llvm-11/build/Release", "llvm/build/Release", "LLVM/build/Release", "llvm-15", "llvm-14", "llvm-13", "llvm-12", "llvm-11", "llvm", "LLVM"};
+
     // @formatter:off
     private LLVMUtils() {}
     // @formatter:on
+
+    public static void loadLLVM() {
+        for (final var searchPath : PATHS_TO_SEARCH) {
+            for (final var directory : NAMES_TO_SEARCH) {
+                final var path = Path.of(searchPath).resolve(directory);
+                if (!Files.exists(path) || !Files.isDirectory(path)) {
+                    continue;
+                }
+                final var libFolder = path.resolve("lib");
+                if (!Files.exists(libFolder) || !Files.isDirectory(libFolder)) {
+                    continue;
+                }
+                final var pathString = libFolder.toAbsolutePath().normalize().toString();
+                System.setProperty("org.lwjgl.librarypath", pathString);
+                System.out.printf("Loading LLVM from %s..\n\n", pathString);
+                break;
+            }
+        }
+    }
 
     public static void checkNatives() {
         try {
