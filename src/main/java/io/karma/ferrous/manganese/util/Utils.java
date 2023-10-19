@@ -94,6 +94,9 @@ public final class Utils {
 
     public static String getRawFileName(final Path path) {
         final var fileName = path.getFileName().toString();
+        if (!fileName.contains(".")) {
+            return fileName;
+        }
         final var lastDot = fileName.lastIndexOf('.');
         return fileName.substring(0, lastDot);
     }

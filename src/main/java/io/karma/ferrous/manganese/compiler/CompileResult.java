@@ -18,7 +18,6 @@ package io.karma.ferrous.manganese.compiler;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -31,17 +30,15 @@ import java.util.List;
  * @since 02/07/2022
  */
 @API(status = Status.STABLE)
-public record CompileResult(CompileStatus status, List<Path> compiledFiles, List<CompileError> errors) {
+public record CompileResult(CompileStatus status, List<CompileError> errors) {
     public CompileResult(final CompileStatus status) {
-        this(status, Collections.emptyList(), Collections.emptyList());
+        this(status, Collections.emptyList());
     }
 
     public CompileResult merge(final CompileResult other) {
         final var status = this.status.worse(other.status);
-        final var compiledFiles = new ArrayList<>(this.compiledFiles);
-        compiledFiles.addAll(other.compiledFiles);
         final var errors = new ArrayList<>(this.errors);
         errors.addAll(other.errors);
-        return new CompileResult(status, compiledFiles, errors);
+        return new CompileResult(status, errors);
     }
 }

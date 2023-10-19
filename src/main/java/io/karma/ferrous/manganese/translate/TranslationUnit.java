@@ -15,10 +15,10 @@
 
 package io.karma.ferrous.manganese.translate;
 
-import io.karma.ferrous.manganese.Module;
 import io.karma.ferrous.manganese.ParseAdapter;
 import io.karma.ferrous.manganese.compiler.CompileStatus;
 import io.karma.ferrous.manganese.compiler.Compiler;
+import io.karma.ferrous.manganese.module.Module;
 import io.karma.ferrous.manganese.ocm.Function;
 import io.karma.ferrous.manganese.util.FunctionUtils;
 import io.karma.ferrous.manganese.util.Identifier;

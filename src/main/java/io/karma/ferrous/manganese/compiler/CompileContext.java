@@ -15,58 +15,62 @@
 
 package io.karma.ferrous.manganese.compiler;
 
-import io.karma.ferrous.manganese.Module;
 import io.karma.ferrous.manganese.analyze.Analyzer;
+import io.karma.ferrous.manganese.module.Module;
+import io.karma.ferrous.manganese.module.ModuleData;
 import io.karma.ferrous.manganese.translate.TranslationUnit;
 import io.karma.ferrous.vanadium.FerrousLexer;
 import io.karma.ferrous.vanadium.FerrousParser;
 import io.karma.ferrous.vanadium.FerrousParser.FileContext;
 import org.antlr.v4.runtime.BufferedTokenStream;
 import org.antlr.v4.runtime.Token;
+import org.apiguardian.api.API;
+import org.apiguardian.api.API.Status;
+import org.jetbrains.annotations.Nullable;
 
-import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 
 /**
  * @author Alexander Hinze
  * @since 19/10/2023
  */
+@API(status = Status.STABLE)
 public final class CompileContext {
     private final ArrayList<CompileError> errors = new ArrayList<>();
     private final HashMap<String, Module> modules = new HashMap<>();
+    private final HashMap<String, ModuleData> moduleData = new HashMap<>();
+
     private CompilePass currentPass = CompilePass.NONE;
     private CompileStatus status = CompileStatus.SKIPPED;
-    private FerrousLexer lexer;
-    private BufferedTokenStream tokenStream;
-    private FerrousParser parser;
-    private FileContext fileContext;
-    private Analyzer analyzer;
-    private TranslationUnit translationUnit;
     private String moduleName;
 
-    public CompileResult makeResult(final List<Path> compiledFiles) {
-        return new CompileResult(status, compiledFiles, new ArrayList<>(errors));
+    private ModuleData getOrCreateModuleData(final String name) {
+        var result = moduleData.get(name);
+        if (result == null) {
+            result = new ModuleData(name);
+            moduleData.put(name, result);
+        }
+        return result;
     }
 
-    public CompileResult makeResult(final Path... compiledFiles) {
-        return makeResult(Arrays.asList(compiledFiles));
+    public CompileResult makeResult() {
+        return new CompileResult(status, new ArrayList<>(errors));
     }
 
     public CompileError makeError(final Token token) {
-        return new CompileError(token, tokenStream);
+        return new CompileError(token, getTokenStream());
     }
 
     public CompileError makeError(final Token token, final String additionalText) {
-        final var error = new CompileError(token, tokenStream);
+        final var error = new CompileError(token, getTokenStream());
         error.setAdditionalText(additionalText);
         return error;
     }
 
     public void reportError(final CompileError error, final CompileStatus status) {
-        if (tokenStream.size() == 0) {
+        final var tokenStream = getTokenStream();
+        if (tokenStream != null && tokenStream.size() == 0) {
             tokenStream.fill();
         }
         if (errors.contains(error)) {
@@ -92,52 +96,94 @@ public final class CompileContext {
         this.status = status;
     }
 
-    public FerrousLexer getLexer() {
-        return lexer;
+    public @Nullable FerrousLexer getLexer() {
+        final var moduleData = this.moduleData.get(moduleName);
+        if (moduleData != null) {
+            return moduleData.getLexer();
+        }
+        return null;
     }
 
     void setLexer(final FerrousLexer lexer) {
-        this.lexer = lexer;
+        if (moduleName == null) {
+            throw new IllegalStateException("Module name not provided");
+        }
+        getOrCreateModuleData(moduleName).setLexer(lexer);
     }
 
-    public BufferedTokenStream getTokenStream() {
-        return tokenStream;
+    public @Nullable BufferedTokenStream getTokenStream() {
+        final var moduleData = this.moduleData.get(moduleName);
+        if (moduleData != null) {
+            return moduleData.getTokenStream();
+        }
+        return null;
     }
 
     void setTokenStream(final BufferedTokenStream tokenStream) {
-        this.tokenStream = tokenStream;
+        if (moduleName == null) {
+            throw new IllegalStateException("Module name not provided");
+        }
+        getOrCreateModuleData(moduleName).setTokenStream(tokenStream);
     }
 
-    public FerrousParser getParser() {
-        return parser;
+    public @Nullable FerrousParser getParser() {
+        final var moduleData = this.moduleData.get(moduleName);
+        if (moduleData != null) {
+            return moduleData.getParser();
+        }
+        return null;
     }
 
     void setParser(final FerrousParser parser) {
-        this.parser = parser;
+        if (moduleName == null) {
+            throw new IllegalStateException("Module name not provided");
+        }
+        getOrCreateModuleData(moduleName).setParser(parser);
     }
 
-    public FileContext getFileContext() {
-        return fileContext;
+    public @Nullable FileContext getFileContext() {
+        final var moduleData = this.moduleData.get(moduleName);
+        if (moduleData != null) {
+            return moduleData.getFileContext();
+        }
+        return null;
     }
 
     void setFileContext(final FileContext fileContext) {
-        this.fileContext = fileContext;
+        if (moduleName == null) {
+            throw new IllegalStateException("Module name not provided");
+        }
+        getOrCreateModuleData(moduleName).setFileContext(fileContext);
     }
 
-    public Analyzer getAnalyzer() {
-        return analyzer;
+    public @Nullable Analyzer getAnalyzer() {
+        final var moduleData = this.moduleData.get(moduleName);
+        if (moduleData != null) {
+            return moduleData.getAnalyzer();
+        }
+        return null;
     }
 
     void setAnalyzer(final Analyzer analyzer) {
-        this.analyzer = analyzer;
+        if (moduleName == null) {
+            throw new IllegalStateException("Analyzer not provided");
+        }
+        getOrCreateModuleData(moduleName).setAnalyzer(analyzer);
     }
 
-    public TranslationUnit getTranslationUnit() {
-        return translationUnit;
+    public @Nullable TranslationUnit getTranslationUnit() {
+        final var moduleData = this.moduleData.get(moduleName);
+        if (moduleData != null) {
+            return moduleData.getTranslationUnit();
+        }
+        return null;
     }
 
     void setTranslationUnit(final TranslationUnit translationUnit) {
-        this.translationUnit = translationUnit;
+        if (moduleName == null) {
+            throw new IllegalStateException("Analyzer not provided");
+        }
+        getOrCreateModuleData(moduleName).setTranslationUnit(translationUnit);
     }
 
     public String getModuleName() {
@@ -145,7 +191,7 @@ public final class CompileContext {
     }
 
     void setModuleName(final String currentName) {
-        this.moduleName = currentName;
+        moduleName = currentName;
     }
 
     public ArrayList<CompileError> getErrors() {
@@ -156,11 +202,17 @@ public final class CompileContext {
         return modules;
     }
 
+    public HashMap<String, ModuleData> getModuleData() {
+        return moduleData;
+    }
+
     public void dispose() {
-        if (translationUnit != null) {
-            translationUnit.dispose();
-        }
-        modules.values().forEach(Module::dispose);
+        modules.values().forEach(Module::dispose); // Dispose the actual modules
         modules.clear();
+        moduleData.clear();
+    }
+
+    public void addModule(final Module module) {
+        modules.put(moduleName, module);
     }
 }

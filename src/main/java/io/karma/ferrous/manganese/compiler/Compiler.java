@@ -16,6 +16,7 @@
 package io.karma.ferrous.manganese.compiler;
 
 import io.karma.ferrous.manganese.analyze.Analyzer;
+import io.karma.ferrous.manganese.module.Module;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.translate.TranslationUnit;
 import io.karma.ferrous.manganese.util.Logger;
@@ -40,7 +41,6 @@ import org.apiguardian.api.API.Status;
 import org.fusesource.jansi.Ansi;
 import org.fusesource.jansi.Ansi.Attribute;
 import org.fusesource.jansi.Ansi.Color;
-import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.nio.channels.Channels;
@@ -49,10 +49,9 @@ import java.nio.channels.WritableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.BitSet;
-import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * @author Alexander Hinze
@@ -61,6 +60,7 @@ import java.util.List;
 @API(status = Status.STABLE)
 public final class Compiler implements ANTLRErrorListener {
     private static final String[] IN_EXTENSIONS = {"ferrous", "fe"};
+    private static final String OBJECT_FILE_EXTENSION = "o";
 
     private final TargetMachine targetMachine;
 
@@ -71,7 +71,6 @@ public final class Compiler implements ANTLRErrorListener {
     private boolean disassemble = false;
     private boolean saveBitcode = false;
     private boolean isVerbose = false;
-    private String defaultModuleName = null;
 
     @API(status = Status.INTERNAL)
     public Compiler(final TargetMachine targetMachine) {
@@ -112,114 +111,139 @@ public final class Compiler implements ANTLRErrorListener {
         }
     }
 
-    public CompileResult compile(final Path in, final Path out, final Path buildDir, final CompileContext context) {
-        final var inputFiles = Utils.findFilesWithExtensions(in, IN_EXTENSIONS);
-        final var numFiles = inputFiles.size();
-        var result = new CompileResult(CompileStatus.SKIPPED);
-
-        for (var i = 0; i < numFiles; ++i) {
-            final var filePath = inputFiles.get(i);
-            // @formatter:off
-            Logger.INSTANCE.infoln(Ansi.ansi()
-                .fg(Color.GREEN)
-                .a(Utils.getProgressIndicator(numFiles, i))
-                .a(Attribute.RESET)
-                .a(" Compiling file ")
-                .fg(Color.BLUE)
-                .a(Attribute.INTENSITY_BOLD)
-                .a(filePath.toAbsolutePath().toString())
-                .a(Attribute.RESET)
-                .toString());
-            // @formatter:on
-
-            final var rawFileName = Utils.getRawFileName(filePath);
-            final var outFile = out.resolve(
-                    String.format("%s.%s", rawFileName, targetMachine.getFileType().getExtension()));
-            Logger.INSTANCE.debugln("Input: %s", filePath);
-            Logger.INSTANCE.debugln("Output: %s", outFile);
-
-            try (final var inStream = Files.newInputStream(filePath); final var inChannel = Channels.newChannel(
-                    inStream)) {
-                try (final var outStream = Files.newOutputStream(outFile); final var outChannel = Channels.newChannel(
-                        outStream)) {
-                    result = result.merge(compile(rawFileName, inChannel, outChannel, context));
-                }
-            }
-            catch (IOException error) {
-                context.reportError(new CompileError(error.toString()), CompileStatus.IO_ERROR);
-                return new CompileResult(CompileStatus.IO_ERROR, Collections.emptyList(),
-                                         new ArrayList<>(context.getErrors()));
-            }
-            catch (Exception error) {
-                context.reportError(new CompileError(error.toString()), CompileStatus.UNKNOWN_ERROR);
-                return new CompileResult(CompileStatus.UNKNOWN_ERROR, Collections.emptyList(),
-                                         new ArrayList<>(context.getErrors()));
-            }
-        }
-
-        return context.makeResult(in);
-    }
-
-    public CompileResult analyze(final String name, final ReadableByteChannel in, final WritableByteChannel out,
-                                 final CompileContext context) {
-        this.context = context; // Update context for every analysis
-        return new CompileResult(CompileStatus.UNKNOWN_ERROR);
-    }
-
-    public CompileResult compile(final String name, final ReadableByteChannel in, final WritableByteChannel out,
-                                 final CompileContext context) {
-        this.context = context; // Update context for every compilation
-        context.setModuleName(defaultModuleName != null ? defaultModuleName : name);
-
+    public void analyze(final String name, final ReadableByteChannel in, final CompileContext context) {
         try {
+            context.setModuleName(name);
+            this.context = context; // Update context for every analysis
+
             final var charStream = CharStreams.fromChannel(in, StandardCharsets.UTF_8);
-            if (charStream.size() == 0) {
-                Logger.INSTANCE.warnln("No input data, skipping compilation");
-                return new CompileResult(CompileStatus.SKIPPED, Collections.emptyList(),
-                                         new ArrayList<>(context.getErrors()));
-            }
 
             tokenize(context, charStream);
             parse(context);
             if (!analyze(context)) {
-                return new CompileResult(CompileStatus.ANALYZER_ERROR, Collections.emptyList(),
-                                         new ArrayList<>(context.getErrors()));
+                return;
             }
             process(context);
-            if (!compile(context, name)) {
-                return new CompileResult(CompileStatus.TRANSLATION_ERROR, Collections.emptyList(),
-                                         new ArrayList<>(context.getErrors()));
+            context.setCurrentPass(CompilePass.NONE);
+        }
+        catch (Throwable error) {
+            context.setCurrentPass(CompilePass.NONE);
+            context.reportError(new CompileError(Utils.makeCompilerMessage(error.getMessage())),
+                                CompileStatus.UNKNOWN_ERROR);
+        }
+    }
+
+    public void compile(final String name, final WritableByteChannel out, final CompileContext context) {
+        try {
+            context.setModuleName(name);
+            this.context = context; // Update context for every compilation
+
+            if (!compile(context)) {
+                return;
             }
 
-            final var module = context.getTranslationUnit().getModule();
+            final var module = Objects.requireNonNull(context.getTranslationUnit()).getModule();
             final var verificationStatus = module.verify();
             if (verificationStatus != null) {
-                context.reportError(new CompileError(verificationStatus), CompileStatus.TRANSLATION_ERROR);
-                return new CompileResult(CompileStatus.VERIFY_ERROR, Collections.emptyList(),
-                                         new ArrayList<>(context.getErrors()));
+                context.reportError(new CompileError(verificationStatus), CompileStatus.VERIFY_ERROR);
+                return;
             }
 
             if (disassemble) {
                 Logger.INSTANCE.infoln("");
-                Logger.INSTANCE.info("%s", context.getTranslationUnit().getModule().disassemble());
+                Logger.INSTANCE.info("%s", module.disassemble());
                 Logger.INSTANCE.infoln("");
             }
 
-            context.getModules().put(context.getModuleName(), module);
+            context.addModule(module);
             context.setCurrentPass(CompilePass.NONE);
-            return new CompileResult(CompileStatus.SUCCESS);
-        }
-        catch (IOException error) {
-            context.reportError(new CompileError(Utils.makeCompilerMessage(error.toString())), CompileStatus.IO_ERROR);
-            return new CompileResult(CompileStatus.IO_ERROR, Collections.emptyList(),
-                                     new ArrayList<>(context.getErrors()));
         }
         catch (Exception error) {
+            context.setCurrentPass(CompilePass.NONE);
             context.reportError(new CompileError(Utils.makeCompilerMessage(error.toString())),
                                 CompileStatus.UNKNOWN_ERROR);
-            return new CompileResult(CompileStatus.UNKNOWN_ERROR, Collections.emptyList(),
-                                     new ArrayList<>(context.getErrors()));
         }
+    }
+
+    public CompileResult compile(final Path in, final Path out, final Path buildDir, final CompileContext context) {
+        if (!Files.exists(buildDir)) {
+            try {
+                Files.createDirectories(buildDir);
+            }
+            catch (Throwable error) {
+                context.reportError(new CompileError(Utils.makeCompilerMessage(error.getMessage())),
+                                    CompileStatus.IO_ERROR);
+                return context.makeResult();
+            }
+        }
+
+        final var inputFiles = Utils.findFilesWithExtensions(in, IN_EXTENSIONS);
+        final var numFiles = inputFiles.size();
+        final var maxProgress = numFiles << 1;
+
+        for (var i = 0; i < numFiles; ++i) {
+            final var file = inputFiles.get(i);
+            // @formatter:off
+            Logger.INSTANCE.infoln(Ansi.ansi()
+                .fg(Color.GREEN)
+                .a(Utils.getProgressIndicator(maxProgress, i))
+                .a(Attribute.RESET)
+                .a(" Analyzing file ")
+                .fg(Color.BLUE)
+                .a(Attribute.INTENSITY_BOLD)
+                .a(file.toAbsolutePath().toString())
+                .a(Attribute.RESET)
+                .toString());
+            // @formatter:on
+            final var rawFileName = Utils.getRawFileName(file);
+            Logger.INSTANCE.debugln("Input: %s", file);
+
+            try (final var stream = Files.newInputStream(file); final var channel = Channels.newChannel(stream)) {
+                analyze(rawFileName, channel, context);
+            }
+            catch (IOException error) {
+                context.reportError(new CompileError(error.toString()), CompileStatus.IO_ERROR);
+            }
+            catch (Exception error) {
+                context.reportError(new CompileError(error.toString()), CompileStatus.UNKNOWN_ERROR);
+            }
+        }
+
+        final var moduleName = Utils.getRawFileName(in);
+        final var module = new Module(moduleName);
+        module.setSourceFileName(String.format("%s.%s", moduleName, targetMachine.getFileType().getExtension()));
+
+        for (var i = 0; i < numFiles; ++i) {
+            final var file = inputFiles.get(i);
+            // @formatter:off
+            Logger.INSTANCE.infoln(Ansi.ansi()
+                .fg(Color.GREEN)
+                .a(Utils.getProgressIndicator(maxProgress, numFiles + i))
+                .a(Attribute.RESET)
+                .a(" Compiling file ")
+                .fg(Color.BLUE)
+                .a(Attribute.INTENSITY_BOLD)
+                .a(file.toAbsolutePath().toString())
+                .a(Attribute.RESET)
+                .toString());
+            // @formatter:on
+            final var rawFileName = Utils.getRawFileName(file);
+            final var outFile = buildDir.resolve(String.format("%s.%s", rawFileName, OBJECT_FILE_EXTENSION));
+            Logger.INSTANCE.debugln("Output: %s", outFile);
+
+            try (final var stream = Files.newOutputStream(outFile); final var channel = Channels.newChannel(stream)) {
+                compile(rawFileName, channel, context);
+            }
+            catch (IOException error) {
+                context.reportError(new CompileError(error.toString()), CompileStatus.IO_ERROR);
+            }
+            catch (Exception error) {
+                context.reportError(new CompileError(error.toString()), CompileStatus.UNKNOWN_ERROR);
+            }
+        }
+
+        module.dispose();
+        return context.makeResult();
     }
 
     public void setTokenView(final boolean tokenView, final boolean extendedTokenView) {
@@ -267,14 +291,6 @@ public final class Compiler implements ANTLRErrorListener {
         return targetMachine;
     }
 
-    public @Nullable String getDefaultModuleName() {
-        return defaultModuleName;
-    }
-
-    public void setDefaultModuleName(final @Nullable String defaultModuleName) {
-        this.defaultModuleName = defaultModuleName;
-    }
-
     @API(status = Status.INTERNAL)
     public CompileContext getContext() {
         return context;
@@ -311,7 +327,8 @@ public final class Compiler implements ANTLRErrorListener {
     private void parse(final CompileContext context) {
         final var startTime = System.currentTimeMillis();
         context.setCurrentPass(CompilePass.PARSE);
-        final var parser = new FerrousParser(context.getTokenStream());
+        final var tokenStream = Objects.requireNonNull(context.getTokenStream());
+        final var parser = new FerrousParser(tokenStream);
         parser.removeErrorListeners(); // Remove default error listener
         parser.addErrorListener(this);
         context.setParser(parser);
@@ -324,16 +341,17 @@ public final class Compiler implements ANTLRErrorListener {
         final var startTime = System.currentTimeMillis();
         context.setCurrentPass(CompilePass.ANALYZE);
         final var analyzer = new Analyzer(this);
-        ParseTreeWalker.DEFAULT.walk(analyzer, context.getFileContext());
-        analyzer.preProcessTypes(); // Pre-materializes all UDTs in the right order
         context.setAnalyzer(analyzer);
+        final var fileContext = Objects.requireNonNull(context.getFileContext());
+        ParseTreeWalker.DEFAULT.walk(analyzer, fileContext);
+        analyzer.preProcessTypes(); // Pre-materializes all UDTs in the right order
         final var time = System.currentTimeMillis() - startTime;
         Logger.INSTANCE.debugln("Finished pass ANALYZE in %dms", time);
         return checkStatus();
     }
 
     private void process(final CompileContext context) {
-        final var tokenStream = context.getTokenStream();
+        final var tokenStream = Objects.requireNonNull(context.getTokenStream());
         final var tokens = tokenStream.getTokens();
 
         final var startTime = System.currentTimeMillis();
@@ -346,21 +364,22 @@ public final class Compiler implements ANTLRErrorListener {
         newTokenStream.fill();
         context.setTokenStream(newTokenStream);
 
-        final var parser = context.getParser();
+        final var parser = Objects.requireNonNull(context.getParser());
         parser.setTokenStream(newTokenStream);
         parser.reset();
         parser.removeErrorListeners();
         parser.addErrorListener(this);
+        context.setFileContext(parser.file());
     }
 
-    private boolean compile(final CompileContext context, final String name) {
+    private boolean compile(final CompileContext context) {
         final var startTime = System.currentTimeMillis();
         context.setCurrentPass(CompilePass.COMPILE);
-        final var translationUnit = new TranslationUnit(this, name);
+        final var translationUnit = new TranslationUnit(this, context.getModuleName());
         ParseTreeWalker.DEFAULT.walk(translationUnit, context.getFileContext()); // Walk the entire AST with the TU
+        context.setTranslationUnit(translationUnit);
         final var time = System.currentTimeMillis() - startTime;
         Logger.INSTANCE.debugln("Finished pass COMPILE in %dms", time);
-        context.setTranslationUnit(translationUnit);
         return checkStatus();
     }
 }

@@ -25,6 +25,7 @@ import io.karma.ferrous.manganese.target.Relocation;
 import io.karma.ferrous.manganese.target.Target;
 import io.karma.ferrous.manganese.util.Logger;
 import io.karma.ferrous.manganese.util.Logger.LogLevel;
+import io.karma.ferrous.manganese.util.Utils;
 import io.karma.kommons.util.SystemInfo;
 import joptsimple.BuiltinHelpFormatter;
 import joptsimple.OptionException;
@@ -88,9 +89,6 @@ final class Main {
                 .ofType(String.class)
                 .defaultsTo("build");
             final var bitcodeOpt = parser.accepts("B", "Dump bitcode to files while compiling.");
-            final var moduleNameOpt = parser.accepts("m", "The name of the output module, will default to the name of the first input file.")
-                .withOptionalArg()
-                .ofType(String.class);
             final var codeModelOpt = parser.accepts("M", "The code model to use when generating assembly code for the target machine.")
                 .withOptionalArg()
                 .ofType(String.class)
@@ -179,21 +177,26 @@ final class Main {
             compiler.setReportParserWarnings(options.has(parseWarningsOpt));
             compiler.setVerbose(options.has(verboseOpt));
             compiler.setSaveBitcode(options.has(bitcodeOpt));
-            compiler.setDefaultModuleName(options.valueOf(moduleNameOpt));
 
             // Update the log level if we are in verbose mode.
             if (options.has(debugOpt)) {
                 Logger.INSTANCE.setLogLevel(LogLevel.DEBUG);
             }
             if (options.has(silentOpt)) {
-                Logger.INSTANCE.disableLogLevel(LogLevel.WARN);
+                for (final var level : LogLevel.values()) {
+                    Logger.INSTANCE.disableLogLevel(level);
+                }
             }
             if (options.has(opaquePointerOpt)) {
                 LLVMContextSetOpaquePointers(LLVMGetGlobalContext(), false);
             }
 
             final var in = Path.of(options.valueOf(inOpt));
-            final var out = options.has(outOpt) ? Path.of(options.valueOf(outOpt)) : null;
+            // @formatter:off
+            final var out = options.has(outOpt)
+                ? Path.of(options.valueOf(outOpt))
+                : Path.of(String.format("%s.%s", Utils.getRawFileName(in), fileType.get().getExtension()));
+            // @formatter:on
             final var buildDir = Path.of(options.valueOf(buildDirOpt));
 
             final var context = new CompileContext();
