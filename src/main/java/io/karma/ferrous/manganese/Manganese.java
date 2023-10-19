@@ -15,6 +15,7 @@
 
 package io.karma.ferrous.manganese;
 
+import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.target.ABI;
 import io.karma.ferrous.manganese.target.Architecture;
 import io.karma.ferrous.manganese.target.CodeModel;
@@ -29,8 +30,17 @@ import org.lwjgl.llvm.LLVMCore;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.lwjgl.llvm.LLVMInitialization.*;
-import static org.lwjgl.llvm.LLVMTargetX86.*;
+import static org.lwjgl.llvm.LLVMInitialization.LLVMInitializeAnalysis;
+import static org.lwjgl.llvm.LLVMInitialization.LLVMInitializeCodeGen;
+import static org.lwjgl.llvm.LLVMInitialization.LLVMInitializeCore;
+import static org.lwjgl.llvm.LLVMInitialization.LLVMInitializeTarget;
+import static org.lwjgl.llvm.LLVMInitialization.LLVMInitializeVectorization;
+import static org.lwjgl.llvm.LLVMTargetX86.LLVMInitializeX86AsmParser;
+import static org.lwjgl.llvm.LLVMTargetX86.LLVMInitializeX86AsmPrinter;
+import static org.lwjgl.llvm.LLVMTargetX86.LLVMInitializeX86Disassembler;
+import static org.lwjgl.llvm.LLVMTargetX86.LLVMInitializeX86Target;
+import static org.lwjgl.llvm.LLVMTargetX86.LLVMInitializeX86TargetInfo;
+import static org.lwjgl.llvm.LLVMTargetX86.LLVMInitializeX86TargetMC;
 import static org.lwjgl.system.MemoryUtil.NULL;
 
 /**
@@ -100,6 +110,8 @@ public final class Manganese {
     }
 
     public static Compiler createCompiler(final FileType fileType) {
-        return createCompiler(new TargetMachine(Target.getHostTarget(), "", OptimizationLevel.DEFAULT, Relocation.DEFAULT, CodeModel.DEFAULT, fileType));
+        return createCompiler(
+                new TargetMachine(Target.getHostTarget(), "", OptimizationLevel.DEFAULT, Relocation.DEFAULT,
+                                  CodeModel.DEFAULT, fileType));
     }
 }

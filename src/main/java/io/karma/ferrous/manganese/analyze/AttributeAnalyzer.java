@@ -15,8 +15,8 @@
 
 package io.karma.ferrous.manganese.analyze;
 
-import io.karma.ferrous.manganese.Compiler;
 import io.karma.ferrous.manganese.ParseAdapter;
+import io.karma.ferrous.manganese.compiler.Compiler;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 

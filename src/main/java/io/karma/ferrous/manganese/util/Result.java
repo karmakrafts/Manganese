@@ -15,8 +15,8 @@
 
 package io.karma.ferrous.manganese.util;
 
-import io.karma.ferrous.manganese.CompileStatus;
-import io.karma.ferrous.manganese.Compiler;
+import io.karma.ferrous.manganese.compiler.CompileStatus;
+import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.kommons.function.XRunnable;
 import io.karma.kommons.function.XSupplier;
 import org.antlr.v4.runtime.Token;
@@ -104,7 +104,8 @@ public final class Result<T, E> {
 
     public Optional<T> unwrapOrReport(final Compiler compiler, final Token token, final CompileStatus status) {
         if (isError()) {
-            compiler.reportError(compiler.makeError(token, storage.error().toString()), status);
+            final var context = compiler.getContext();
+            context.reportError(context.makeError(token, storage.error().toString()), status);
             return Optional.empty();
         }
         return Optional.of(storage.value());

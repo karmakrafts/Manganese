@@ -15,8 +15,8 @@
 
 package io.karma.ferrous.manganese.analyze;
 
-import io.karma.ferrous.manganese.Compiler;
 import io.karma.ferrous.manganese.ParseAdapter;
+import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.access.Access;
 import io.karma.ferrous.manganese.ocm.access.DefaultAccess;
 import io.karma.ferrous.vanadium.FerrousParser.AccessModContext;

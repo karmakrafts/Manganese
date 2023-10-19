@@ -15,10 +15,10 @@
 
 package io.karma.ferrous.manganese.translate;
 
-import io.karma.ferrous.manganese.CompileStatus;
-import io.karma.ferrous.manganese.Compiler;
 import io.karma.ferrous.manganese.Module;
 import io.karma.ferrous.manganese.ParseAdapter;
+import io.karma.ferrous.manganese.compiler.CompileStatus;
+import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.Function;
 import io.karma.ferrous.manganese.util.FunctionUtils;
 import io.karma.ferrous.manganese.util.Identifier;
@@ -31,7 +31,10 @@ import org.apiguardian.api.API.Status;
 
 import java.util.HashMap;
 
-import static org.lwjgl.llvm.LLVMCore.*;
+import static org.lwjgl.llvm.LLVMCore.LLVMAddFunction;
+import static org.lwjgl.llvm.LLVMCore.LLVMExternalLinkage;
+import static org.lwjgl.llvm.LLVMCore.LLVMSetFunctionCallConv;
+import static org.lwjgl.llvm.LLVMCore.LLVMSetLinkage;
 import static org.lwjgl.system.MemoryUtil.NULL;
 
 /**
@@ -42,6 +45,7 @@ import static org.lwjgl.system.MemoryUtil.NULL;
 public class TranslationUnit extends ParseAdapter {
     private final HashMap<Identifier, Function> functions = new HashMap<>();
     private final Module module;
+    private boolean isDisposed;
 
     public TranslationUnit(final Compiler compiler, final String name) {
         super(compiler);
@@ -71,8 +75,9 @@ public class TranslationUnit extends ParseAdapter {
         final var function = LLVMAddFunction(module.getAddress(), name,
                                              type.get().materialize(compiler.getTargetMachine()));
         if (function == NULL) {
-            compiler.reportError(compiler.makeError(context.start, "Could not materialize function"),
-                                 CompileStatus.TRANSLATION_ERROR);
+            final var compileContext = compiler.getContext();
+            compileContext.reportError(compileContext.makeError(context.start, "Could not materialize function"),
+                                       CompileStatus.TRANSLATION_ERROR);
             return;
         }
         LLVMSetLinkage(function, LLVMExternalLinkage);
@@ -82,5 +87,13 @@ public class TranslationUnit extends ParseAdapter {
 
     public Module getModule() {
         return module;
+    }
+
+    public void dispose() {
+        if (isDisposed) {
+            return;
+        }
+        module.dispose();
+        isDisposed = true;
     }
 }

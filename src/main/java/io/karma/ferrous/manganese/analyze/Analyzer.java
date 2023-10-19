@@ -15,10 +15,10 @@
 
 package io.karma.ferrous.manganese.analyze;
 
-import io.karma.ferrous.manganese.CompileError;
-import io.karma.ferrous.manganese.CompileStatus;
-import io.karma.ferrous.manganese.Compiler;
 import io.karma.ferrous.manganese.ParseAdapter;
+import io.karma.ferrous.manganese.compiler.CompileError;
+import io.karma.ferrous.manganese.compiler.CompileStatus;
+import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.Field;
 import io.karma.ferrous.manganese.ocm.access.DefaultAccess;
 import io.karma.ferrous.manganese.ocm.type.StructureType;
@@ -30,7 +30,6 @@ import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.Logger;
 import io.karma.ferrous.manganese.util.ScopeUtils;
 import io.karma.ferrous.manganese.util.Utils;
-import io.karma.ferrous.vanadium.FerrousParser.AttribContext;
 import io.karma.ferrous.vanadium.FerrousParser.ClassContext;
 import io.karma.ferrous.vanadium.FerrousParser.EnumClassContext;
 import io.karma.ferrous.vanadium.FerrousParser.IdentContext;
@@ -79,20 +78,18 @@ public final class Analyzer extends ParseAdapter {
             Logger.INSTANCE.debugln("Found incomplete field type '%s' in '%s'", fieldTypeName, scopeName);
             final var completeUdt = findUDTInScope(fieldTypeName, scopeName);
             if (completeUdt == null) {
-                // @formatter:off
-                compiler.reportError(new CompileError(Utils.makeCompilerMessage(
-                    String.format("Failed to resolve field type '%s' for '%s'", fieldTypeName, scopeName))),
-                    CompileStatus.ANALYZER_ERROR);
-                // @formatter:on
+                final var message = String.format("Failed to resolve field type '%s' for '%s'", fieldTypeName,
+                                                  scopeName);
+                compiler.getContext().reportError(new CompileError(Utils.makeCompilerMessage(message)),
+                                                  CompileStatus.ANALYZER_ERROR);
                 continue;
             }
             final var completeType = completeUdt.structureType();
             if (completeType == null) {
-                // @formatter:off
-                compiler.reportError(new CompileError(Utils.makeCompilerMessage(
-                    String.format("Failed to resolve field type '%s' for '%s'", fieldTypeName, scopeName))),
-                    CompileStatus.ANALYZER_ERROR);
-                // @formatter:on
+                final var message = String.format("Failed to resolve field type '%s' for '%s'", fieldTypeName,
+                                                  scopeName);
+                compiler.getContext().reportError(new CompileError(Utils.makeCompilerMessage(message)),
+                                                  CompileStatus.ANALYZER_ERROR);
                 continue;
             }
             Logger.INSTANCE.debugln("   Resolved to complete type '%s'", completeType.getInternalName());
@@ -195,7 +192,8 @@ public final class Analyzer extends ParseAdapter {
             materializeTypes();
         }
         catch (Throwable error) {
-            compiler.reportError(new CompileError(String.format("Could not pre-process types: %s", error.getMessage())),
+            compiler.getContext()
+                    .reportError(new CompileError(String.format("Could not pre-process types: %s", error.getMessage())),
                                  CompileStatus.ANALYZER_ERROR);
         }
     }
@@ -223,12 +221,6 @@ public final class Analyzer extends ParseAdapter {
     public void enterTrait(final TraitContext context) {
         analyzeFieldLayout(context, context.ident(), UDTKind.TRAIT);
         super.enterTrait(context);
-    }
-
-    @Override
-    public void enterAttrib(final AttribContext context) {
-
-        super.enterAttrib(context);
     }
 
     public LinkedHashMap<Identifier, UDT> getUDTs() {

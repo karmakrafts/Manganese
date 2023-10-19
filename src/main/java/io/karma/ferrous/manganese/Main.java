@@ -15,6 +15,9 @@
 
 package io.karma.ferrous.manganese;
 
+import io.karma.ferrous.manganese.compiler.CompileContext;
+import io.karma.ferrous.manganese.compiler.CompileStatus;
+import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.target.CodeModel;
 import io.karma.ferrous.manganese.target.FileType;
 import io.karma.ferrous.manganese.target.OptimizationLevel;
@@ -176,7 +179,7 @@ final class Main {
             compiler.setReportParserWarnings(options.has(parseWarningsOpt));
             compiler.setVerbose(options.has(verboseOpt));
             compiler.setSaveBitcode(options.has(bitcodeOpt));
-            compiler.setModuleName(options.valueOf(moduleNameOpt));
+            compiler.setDefaultModuleName(options.valueOf(moduleNameOpt));
 
             // Update the log level if we are in verbose mode.
             if (options.has(debugOpt)) {
@@ -193,8 +196,9 @@ final class Main {
             final var out = options.has(outOpt) ? Path.of(options.valueOf(outOpt)) : null;
             final var buildDir = Path.of(options.valueOf(buildDirOpt));
 
-            final var result = compiler.compile(in, out, buildDir);
-            compiler.dispose();
+            final var context = new CompileContext();
+            final var result = compiler.compile(in, out, buildDir, context);
+            context.dispose();
             status = status.worse(result.status());
 
             final var errors = result.errors();

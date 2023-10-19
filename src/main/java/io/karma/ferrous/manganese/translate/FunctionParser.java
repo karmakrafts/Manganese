@@ -15,9 +15,9 @@
 
 package io.karma.ferrous.manganese.translate;
 
-import io.karma.ferrous.manganese.CompileStatus;
-import io.karma.ferrous.manganese.Compiler;
 import io.karma.ferrous.manganese.ParseAdapter;
+import io.karma.ferrous.manganese.compiler.CompileStatus;
+import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.Function;
 import io.karma.ferrous.manganese.ocm.type.FunctionType;
 import io.karma.ferrous.manganese.util.CallingConvention;

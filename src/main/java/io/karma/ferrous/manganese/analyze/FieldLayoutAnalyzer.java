@@ -15,9 +15,9 @@
 
 package io.karma.ferrous.manganese.analyze;
 
-import io.karma.ferrous.manganese.CompileStatus;
-import io.karma.ferrous.manganese.Compiler;
 import io.karma.ferrous.manganese.ParseAdapter;
+import io.karma.ferrous.manganese.compiler.CompileStatus;
+import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.Field;
 import io.karma.ferrous.manganese.util.ScopeStack;
 import io.karma.ferrous.manganese.util.TypeUtils;

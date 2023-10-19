@@ -15,7 +15,7 @@
 
 package io.karma.ferrous.manganese.util;
 
-import io.karma.ferrous.manganese.Compiler;
+import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.type.FunctionType;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.ocm.type.Types;
@@ -44,7 +44,7 @@ public final class TypeUtils {
                                                final TypeContext context) {
         final TypeParser unit = new TypeParser(compiler, capturedScopeStack);
         ParseTreeWalker.DEFAULT.walk(unit, context);
-        if (!compiler.getStatus().isRecoverable()) {
+        if (!compiler.getContext().getStatus().isRecoverable()) {
             return Result.error("Compilation is irrecoverable");
         }
         return Result.ok(unit.getType());

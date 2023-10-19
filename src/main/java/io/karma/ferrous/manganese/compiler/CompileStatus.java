@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese;
+package io.karma.ferrous.manganese.compiler;
 
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;

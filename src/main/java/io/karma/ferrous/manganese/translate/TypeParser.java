@@ -15,9 +15,9 @@
 
 package io.karma.ferrous.manganese.translate;
 
-import io.karma.ferrous.manganese.CompileStatus;
-import io.karma.ferrous.manganese.Compiler;
 import io.karma.ferrous.manganese.ParseAdapter;
+import io.karma.ferrous.manganese.compiler.CompileStatus;
+import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.ocm.type.TypeAttribute;
 import io.karma.ferrous.manganese.ocm.type.Types;
@@ -63,7 +63,8 @@ public final class TypeParser extends ParseAdapter {
     @Override
     public void enterRefType(final RefTypeContext context) {
         if (attributes.contains(TypeAttribute.REFERENCE)) {
-            compiler.reportError(compiler.makeError(context.start, Utils.makeCompilerMessage(
+            final var compileContext = compiler.getContext();
+            compileContext.reportError(compileContext.makeError(context.start, Utils.makeCompilerMessage(
                     "Type can only have one level of reference")), CompileStatus.SEMANTIC_ERROR);
             return;
         }
@@ -82,13 +83,16 @@ public final class TypeParser extends ParseAdapter {
     private void parsePrimitiveType(final ParserRuleContext context, final String errorMessage) {
         final var text = context.getText();
         if (baseType != null) {
-            compiler.reportError(compiler.makeError(context.start, errorMessage), CompileStatus.TRANSLATION_ERROR);
+            final var compileContext = compiler.getContext();
+            compileContext.reportError(compileContext.makeError(context.start, errorMessage),
+                                       CompileStatus.TRANSLATION_ERROR);
             return;
         }
         final var opt = Types.builtin(Identifier.parse(text));
         if (opt.isEmpty()) {
-            compiler.reportError(compiler.makeError(context.start, "Invalid builtin type"),
-                                 CompileStatus.TRANSLATION_ERROR);
+            final var compileContext = compiler.getContext();
+            compileContext.reportError(compileContext.makeError(context.start, "Invalid builtin type"),
+                                       CompileStatus.TRANSLATION_ERROR);
             return;
         }
         baseType = opt.get();
@@ -96,8 +100,9 @@ public final class TypeParser extends ParseAdapter {
 
     @Override
     public void enterIdent(final IdentContext context) {
+        final var compileContext = compiler.getContext();
         final var name = Utils.getIdentifier(context);
-        final var udt = compiler.getAnalyzer().findUDTInScope(name, capturedScopeStack.getScopeName());
+        final var udt = compileContext.getAnalyzer().findUDTInScope(name, capturedScopeStack.getScopeName());
         if (udt == null) {
             baseType = Types.incomplete(name);
             return;
@@ -108,8 +113,9 @@ public final class TypeParser extends ParseAdapter {
 
     @Override
     public void enterQualifiedIdent(final QualifiedIdentContext context) {
+        final var compileContext = compiler.getContext();
         final var name = Utils.getIdentifier(context);
-        final var udt = compiler.getAnalyzer().findUDTInScope(name, capturedScopeStack.getScopeName());
+        final var udt = compileContext.getAnalyzer().findUDTInScope(name, capturedScopeStack.getScopeName());
         if (udt == null) {
             baseType = Types.incomplete(name);
             return;
