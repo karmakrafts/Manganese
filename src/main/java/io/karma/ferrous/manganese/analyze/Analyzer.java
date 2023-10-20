@@ -19,6 +19,7 @@ import io.karma.ferrous.manganese.ParseAdapter;
 import io.karma.ferrous.manganese.compiler.CompileError;
 import io.karma.ferrous.manganese.compiler.CompileStatus;
 import io.karma.ferrous.manganese.compiler.Compiler;
+import io.karma.ferrous.manganese.module.Module;
 import io.karma.ferrous.manganese.ocm.Field;
 import io.karma.ferrous.manganese.ocm.access.DefaultAccess;
 import io.karma.ferrous.manganese.ocm.type.StructureType;
