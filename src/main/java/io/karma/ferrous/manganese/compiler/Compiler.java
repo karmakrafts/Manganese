@@ -251,9 +251,10 @@ public final class Compiler implements ANTLRErrorListener {
 
         final var globalModule = Objects.requireNonNull(
                 Functions.tryGet(() -> Module.loadEmbedded(LLVMCore.LLVMGetGlobalContext(), "global")));
+        Logger.INSTANCE.infoln("%s", globalModule.disassemble());
         module.linkIn(globalModule);
         globalModule.dispose();
-        Logger.INSTANCE.debugln("%s", module.disassemble());
+        Logger.INSTANCE.infoln("%s", module.disassemble());
         module.dispose();
         return context.makeResult();
     }

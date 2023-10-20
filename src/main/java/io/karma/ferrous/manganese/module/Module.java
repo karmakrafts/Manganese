@@ -101,6 +101,10 @@ public final class Module {
 
             final var module = new Module(context, moduleAddr);
             module.setName(name);
+            final var verifyStatus = module.verify();
+            if(verifyStatus != null) {
+                throw new RuntimeException(String.format("Failed to verify module %s", name));
+            }
             return module;
         }
     }
