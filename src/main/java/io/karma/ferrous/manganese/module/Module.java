@@ -32,8 +32,9 @@ import java.util.stream.Collectors;
 
 import static org.lwjgl.llvm.LLVMAnalysis.LLVMReturnStatusAction;
 import static org.lwjgl.llvm.LLVMAnalysis.LLVMVerifyModule;
-import static org.lwjgl.llvm.LLVMBitReader.LLVMParseBitcodeInContext;
 import static org.lwjgl.llvm.LLVMBitWriter.LLVMWriteBitcodeToMemoryBuffer;
+import static org.lwjgl.llvm.LLVMCore.LLVMCloneModule;
+import static org.lwjgl.llvm.LLVMCore.LLVMCreateMemoryBufferWithMemoryRangeCopy;
 import static org.lwjgl.llvm.LLVMCore.LLVMDisposeMemoryBuffer;
 import static org.lwjgl.llvm.LLVMCore.LLVMDisposeModule;
 import static org.lwjgl.llvm.LLVMCore.LLVMGetBufferSize;
@@ -84,22 +85,20 @@ public final class Module {
             final var buffer = stack.callocPointer(1);
             final var messageBuffer = stack.callocPointer(1);
             final var sourceBuffer = stack.UTF8(source, true);
-            final var sourceAddr = MemoryUtil.memAddress(sourceBuffer);
-            if (LLVMParseIRInContext(context, sourceAddr, buffer, messageBuffer)) {
+
+            var memBuffAddr = LLVMCreateMemoryBufferWithMemoryRangeCopy(sourceBuffer, name);
+            if (memBuffAddr == NULL) {
+                throw new RuntimeException("Could not allocate-copy IR parser buffer");
+            }
+            if (LLVMParseIRInContext(context, memBuffAddr, buffer, messageBuffer)) {
                 LLVMUtils.checkStatus(messageBuffer);
             }
-            final var bufferAddr = buffer.get(0);
-            if (bufferAddr == NULL) {
-                throw new RuntimeException("Could not retrieve bitcode address");
-            }
-            final var moduleBuffer = stack.callocPointer(1);
-            if (LLVMParseBitcodeInContext(context, bufferAddr, moduleBuffer, messageBuffer)) {
-                LLVMUtils.checkStatus(messageBuffer);
-            }
-            final var moduleAddr = moduleBuffer.get(0);
+
+            final var moduleAddr = buffer.get(0);
             if (moduleAddr == NULL) {
                 throw new RuntimeException("Could not retrieve module address");
             }
+
             final var module = new Module(context, moduleAddr);
             module.setName(name);
             return module;
@@ -132,13 +131,8 @@ public final class Module {
         }
     }
 
-    public void linkInto(final Module module) {
-        LLVMLinkModules2(module.address, address);
-    }
-
-    public Module linkWith(final Module module) {
-        linkInto(this);
-        return this;
+    public void linkIn(final Module module) {
+        LLVMLinkModules2(address, LLVMCloneModule(module.address));
     }
 
     public String disassemble() {

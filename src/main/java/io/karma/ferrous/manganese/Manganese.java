@@ -25,11 +25,19 @@ import io.karma.ferrous.manganese.target.Platform;
 import io.karma.ferrous.manganese.target.Relocation;
 import io.karma.ferrous.manganese.target.Target;
 import io.karma.ferrous.manganese.target.TargetMachine;
+import io.karma.ferrous.manganese.util.DiagnosticSeverity;
 import io.karma.ferrous.manganese.util.LLVMUtils;
+import io.karma.ferrous.manganese.util.Logger;
 import org.lwjgl.llvm.LLVMCore;
+import org.lwjgl.llvm.LLVMDiagnosticHandler;
+import org.lwjgl.system.MemoryUtil;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static org.lwjgl.llvm.LLVMCore.LLVMContextSetDiagnosticHandler;
+import static org.lwjgl.llvm.LLVMCore.LLVMGetDiagInfoDescription;
+import static org.lwjgl.llvm.LLVMCore.LLVMGetDiagInfoSeverity;
+import static org.lwjgl.llvm.LLVMCore.LLVMGetGlobalContext;
 import static org.lwjgl.llvm.LLVMInitialization.LLVMInitializeAnalysis;
 import static org.lwjgl.llvm.LLVMInitialization.LLVMInitializeCodeGen;
 import static org.lwjgl.llvm.LLVMInitialization.LLVMInitializeCore;
@@ -78,6 +86,28 @@ public final class Manganese {
         LLVMInitializeX86AsmParser();
         LLVMInitializeX86AsmPrinter();
         LLVMInitializeX86Disassembler();
+
+        LLVMContextSetDiagnosticHandler(LLVMGetGlobalContext(), LLVMDiagnosticHandler.create((info, ctx) -> {
+            final var severityValue = LLVMGetDiagInfoSeverity(info);
+            final var severity = DiagnosticSeverity.byValue(severityValue);
+            if (severity.isEmpty()) {
+                Logger.INSTANCE.errorln("Unknown diagnostic severity %d", severityValue);
+                return;
+            }
+            final var message = MemoryUtil.memUTF8(LLVMGetDiagInfoDescription(info));
+            switch (severity.get()) {
+                case NOTE:
+                case REMARK:
+                    Logger.INSTANCE.infoln("%s", message);
+                    break;
+                case WARNING:
+                    Logger.INSTANCE.warnln("%s", message);
+                    break;
+                case ERROR:
+                    Logger.INSTANCE.errorln("%s", message);
+                    break;
+            }
+        }), NULL);
     }
 
     public static Target createTarget(final Architecture arch, final Platform platform, final ABI abi) {

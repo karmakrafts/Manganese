@@ -30,6 +30,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Objects;
 
 /**
  * @author Alexander Hinze
@@ -44,6 +45,10 @@ public final class CompileContext {
     private CompilePass currentPass = CompilePass.NONE;
     private CompileStatus status = CompileStatus.SKIPPED;
     private String moduleName;
+
+    public Module getModule() {
+        return Objects.requireNonNull(modules.get(Objects.requireNonNull(moduleName)));
+    }
 
     private ModuleData getOrCreateModuleData(final String name) {
         var result = moduleData.get(name);

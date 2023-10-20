@@ -24,6 +24,7 @@ import io.karma.ferrous.manganese.util.TokenUtils;
 import io.karma.ferrous.manganese.util.Utils;
 import io.karma.ferrous.vanadium.FerrousLexer;
 import io.karma.ferrous.vanadium.FerrousParser;
+import io.karma.kommons.function.Functions;
 import org.antlr.v4.runtime.ANTLRErrorListener;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
@@ -41,6 +42,7 @@ import org.apiguardian.api.API.Status;
 import org.fusesource.jansi.Ansi;
 import org.fusesource.jansi.Ansi.Attribute;
 import org.fusesource.jansi.Ansi.Color;
+import org.lwjgl.llvm.LLVMCore;
 
 import java.io.IOException;
 import java.nio.channels.Channels;
@@ -133,7 +135,8 @@ public final class Compiler implements ANTLRErrorListener {
         }
     }
 
-    public void compile(final String name, final String sourceName, final WritableByteChannel out, final CompileContext context) {
+    public void compile(final String name, final String sourceName, final WritableByteChannel out,
+                        final CompileContext context) {
         try {
             context.setModuleName(name);
             this.context = context; // Update context for every compilation
@@ -234,6 +237,9 @@ public final class Compiler implements ANTLRErrorListener {
 
             try (final var stream = Files.newOutputStream(outFile); final var channel = Channels.newChannel(stream)) {
                 compile(rawFileName, file.getFileName().toString(), channel, context);
+                context.setCurrentPass(CompilePass.LINK);
+                module.linkIn(context.getModule());
+                context.setCurrentPass(CompilePass.NONE);
             }
             catch (IOException error) {
                 context.reportError(new CompileError(error.toString()), CompileStatus.IO_ERROR);
@@ -243,6 +249,11 @@ public final class Compiler implements ANTLRErrorListener {
             }
         }
 
+        final var globalModule = Objects.requireNonNull(
+                Functions.tryGet(() -> Module.loadEmbedded(LLVMCore.LLVMGetGlobalContext(), "global")));
+        module.linkIn(globalModule);
+        globalModule.dispose();
+        Logger.INSTANCE.debugln("%s", module.disassemble());
         module.dispose();
         return context.makeResult();
     }

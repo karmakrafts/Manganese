@@ -29,5 +29,6 @@ public enum CompilePass {
     PARSE,
     ANALYZE,
     PROCESS,
-    COMPILE
+    COMPILE,
+    LINK
 }
