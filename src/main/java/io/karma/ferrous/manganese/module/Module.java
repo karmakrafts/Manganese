@@ -15,11 +15,14 @@
 
 package io.karma.ferrous.manganese.module;
 
+import io.karma.ferrous.manganese.target.Target;
+import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.LLVMUtils;
 import io.karma.ferrous.manganese.util.Logger;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 import org.jetbrains.annotations.Nullable;
+import org.lwjgl.llvm.LLVMCore;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 
@@ -38,13 +41,17 @@ import static org.lwjgl.llvm.LLVMCore.LLVMCreateMemoryBufferWithMemoryRangeCopy;
 import static org.lwjgl.llvm.LLVMCore.LLVMDisposeMemoryBuffer;
 import static org.lwjgl.llvm.LLVMCore.LLVMDisposeModule;
 import static org.lwjgl.llvm.LLVMCore.LLVMGetBufferSize;
+import static org.lwjgl.llvm.LLVMCore.LLVMGetDataLayoutStr;
 import static org.lwjgl.llvm.LLVMCore.LLVMGetGlobalContext;
 import static org.lwjgl.llvm.LLVMCore.LLVMGetModuleIdentifier;
 import static org.lwjgl.llvm.LLVMCore.LLVMGetSourceFileName;
+import static org.lwjgl.llvm.LLVMCore.LLVMGetTarget;
 import static org.lwjgl.llvm.LLVMCore.LLVMModuleCreateWithNameInContext;
 import static org.lwjgl.llvm.LLVMCore.LLVMPrintModuleToString;
+import static org.lwjgl.llvm.LLVMCore.LLVMSetDataLayout;
 import static org.lwjgl.llvm.LLVMCore.LLVMSetModuleIdentifier;
 import static org.lwjgl.llvm.LLVMCore.LLVMSetSourceFileName;
+import static org.lwjgl.llvm.LLVMCore.LLVMSetTarget;
 import static org.lwjgl.llvm.LLVMCore.nLLVMDisposeMessage;
 import static org.lwjgl.llvm.LLVMCore.nLLVMGetBufferStart;
 import static org.lwjgl.llvm.LLVMIRReader.LLVMParseIRInContext;
@@ -135,6 +142,14 @@ public final class Module {
         }
     }
 
+    public void setTargetTriple(final String triple) {
+        LLVMSetTarget(address, triple);
+    }
+
+    public void setDataLayout(final String layout) {
+        LLVMSetDataLayout(address, layout);
+    }
+
     public void linkIn(final Module module) {
         LLVMLinkModules2(address, LLVMCloneModule(module.address));
     }
@@ -157,6 +172,14 @@ public final class Module {
 
     public void setSourceFileName(final String fileName) {
         LLVMSetSourceFileName(address, fileName);
+    }
+
+    public String getDataLayout() {
+        return LLVMGetDataLayoutStr(address);
+    }
+
+    public String getTargetTriple() {
+        return LLVMGetTarget(address);
     }
 
     public void dispose() {

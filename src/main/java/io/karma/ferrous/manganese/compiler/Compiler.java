@@ -55,6 +55,8 @@ import java.util.BitSet;
 import java.util.List;
 import java.util.Objects;
 
+import static org.lwjgl.llvm.LLVMCore.LLVMGetGlobalContext;
+
 /**
  * @author Alexander Hinze
  * @since 02/07/2022
@@ -214,7 +216,7 @@ public final class Compiler implements ANTLRErrorListener {
         }
 
         final var moduleName = Utils.getRawFileName(in);
-        final var module = new Module(moduleName);
+        final var module = targetMachine.createModule(moduleName);
         module.setSourceFileName(String.format("%s.%s", moduleName, targetMachine.getFileType().getExtension()));
 
         for (var i = 0; i < numFiles; ++i) {
@@ -250,11 +252,11 @@ public final class Compiler implements ANTLRErrorListener {
         }
 
         final var globalModule = Objects.requireNonNull(
-                Functions.tryGet(() -> Module.loadEmbedded(LLVMCore.LLVMGetGlobalContext(), "global")));
-        Logger.INSTANCE.infoln("%s", globalModule.disassemble());
+                Functions.tryGet(() -> targetMachine.loadEmbeddedModule("global", LLVMGetGlobalContext())));
+        Logger.INSTANCE.infoln("Global module:\n%s", globalModule.disassemble());
         module.linkIn(globalModule);
         globalModule.dispose();
-        Logger.INSTANCE.infoln("%s", module.disassemble());
+        Logger.INSTANCE.infoln("Linked module:\n%s", module.disassemble());
         module.dispose();
         return context.makeResult();
     }

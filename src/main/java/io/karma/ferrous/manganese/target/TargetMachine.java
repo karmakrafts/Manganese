@@ -21,15 +21,20 @@ import io.karma.ferrous.manganese.util.Logger;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 import org.jetbrains.annotations.Nullable;
+import org.lwjgl.llvm.LLVMCore;
+import org.lwjgl.llvm.LLVMTarget;
+import org.lwjgl.llvm.LLVMTargetMachine;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Objects;
 
 import static org.lwjgl.llvm.LLVMCore.LLVMDisposeMemoryBuffer;
 import static org.lwjgl.llvm.LLVMCore.LLVMGetBufferSize;
+import static org.lwjgl.llvm.LLVMTarget.LLVMCopyStringRepOfTargetData;
 import static org.lwjgl.llvm.LLVMTarget.LLVMDisposeTargetData;
 import static org.lwjgl.llvm.LLVMTarget.LLVMPointerSize;
 import static org.lwjgl.llvm.LLVMTarget.LLVMPreferredAlignmentOfGlobal;
@@ -99,6 +104,31 @@ public final class TargetMachine {
             LLVMDisposeMemoryBuffer(bufferAddr);
             return dstBuffer;
         }
+    }
+
+    public Module loadEmbeddedModule(final String name, final long context) throws IOException {
+        final var module = Module.loadEmbedded(context, name);
+        module.setDataLayout(getDataLayout());
+        module.setTargetTriple(target.getNormalizedTriple());
+        return module;
+    }
+
+    public Module createModule(final String name, final long context) {
+        final var module = new Module(name, context);
+        module.setDataLayout(getDataLayout());
+        module.setTargetTriple(target.getNormalizedTriple());
+        return module;
+    }
+
+    public Module createModule(final String name) {
+        final var module = new Module(name);
+        module.setDataLayout(getDataLayout());
+        module.setTargetTriple(target.getNormalizedTriple());
+        return module;
+    }
+
+    public String getDataLayout() {
+        return LLVMCopyStringRepOfTargetData(dataAddress);
     }
 
     public int getPointerSize() {

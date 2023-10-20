@@ -49,7 +49,7 @@ public class TranslationUnit extends ParseAdapter {
 
     public TranslationUnit(final Compiler compiler, final String name) {
         super(compiler);
-        module = new Module(name);
+        module = compiler.getTargetMachine().createModule(name);
     }
 
     @Override

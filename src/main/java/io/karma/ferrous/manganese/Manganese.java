@@ -96,15 +96,11 @@ public final class Manganese {
             }
             final var message = MemoryUtil.memUTF8(LLVMGetDiagInfoDescription(info));
             switch (severity.get()) {
-                case NOTE:
-                case REMARK:
-                    Logger.INSTANCE.infoln("%s", message);
-                    break;
-                case WARNING:
-                    Logger.INSTANCE.warnln("%s", message);
-                    break;
                 case ERROR:
                     Logger.INSTANCE.errorln("%s", message);
+                    break;
+                default:
+                    Logger.INSTANCE.debugln("%s", message);
                     break;
             }
         }), NULL);
