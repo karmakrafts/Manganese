@@ -23,7 +23,7 @@ import io.karma.ferrous.manganese.util.Identifier;
  * @author Alexander Hinze
  * @since 21/10/2023
  */
-public final class AliasedType implements Type {
+public final class AliasedType implements Type, TypeCarrier {
     private final Identifier name;
     private final Type backingType;
     private Scope enclosingScope;
@@ -31,6 +31,11 @@ public final class AliasedType implements Type {
     AliasedType(final Identifier name, final Type backingType) {
         this.name = name;
         this.backingType = backingType;
+    }
+
+    @Override
+    public Type getType() {
+        return backingType;
     }
 
     @Override

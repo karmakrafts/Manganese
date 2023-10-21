@@ -24,6 +24,7 @@ import io.karma.ferrous.manganese.ocm.access.DefaultAccess;
 import io.karma.ferrous.manganese.ocm.type.AliasedType;
 import io.karma.ferrous.manganese.ocm.type.StructureType;
 import io.karma.ferrous.manganese.ocm.type.Type;
+import io.karma.ferrous.manganese.ocm.type.TypeCarrier;
 import io.karma.ferrous.manganese.ocm.type.Types;
 import io.karma.ferrous.manganese.ocm.type.UDT;
 import io.karma.ferrous.manganese.ocm.type.UDTKind;
@@ -64,6 +65,32 @@ public final class Analyzer extends ParseAdapter {
 
     public Analyzer(Compiler compiler) {
         super(compiler);
+    }
+
+    private static <C extends TypeCarrier> void addTypesToGraph(final ArrayDeque<Type> typesToResolve,
+                                                                final TopoNode<C> node,
+                                                                final Map<Identifier, TopoNode<C>> nodes) {
+        while (!typesToResolve.isEmpty()) {
+            final var type = typesToResolve.pop();
+            if (type instanceof StructureType struct) {
+                final var fieldTypes = struct.getFieldTypes();
+                for (final var fieldType : fieldTypes) {
+                    typesToResolve.push(fieldType);
+                }
+                return;
+            }
+            var typeNode = nodes.get(type.getQualifiedName());
+            if (typeNode == null) {
+                final var enclosingName = node.getValue().getType().getQualifiedName();
+                typeNode = nodes.get(enclosingName.join(type.getQualifiedName()));
+                if (typeNode == null) {
+                    return;
+                }
+            }
+            node.addDependency(typeNode);
+            Logger.INSTANCE.debugln("%s depends on %s", node.getValue().getType().getQualifiedName(),
+                                    type.getQualifiedName());
+        }
     }
 
     @Override
@@ -186,31 +213,6 @@ public final class Analyzer extends ParseAdapter {
             final var type = udt.structureType();
             type.materialize(compiler.getTargetMachine());
             Logger.INSTANCE.debugln("Materializing type %s", type.getQualifiedName());
-        }
-    }
-
-    private void addTypesToGraph(final ArrayDeque<Type> typesToResolve, final TopoNode<UDT> node,
-                                 final Map<Identifier, TopoNode<UDT>> nodes) {
-        while (!typesToResolve.isEmpty()) {
-            final var type = typesToResolve.pop();
-            if (type instanceof StructureType struct) {
-                final var fieldTypes = struct.getFieldTypes();
-                for (final var fieldType : fieldTypes) {
-                    typesToResolve.push(fieldType);
-                }
-                return;
-            }
-            var typeNode = nodes.get(type.getQualifiedName());
-            if (typeNode == null) {
-                final var enclosingName = node.getValue().structureType().getQualifiedName();
-                typeNode = nodes.get(enclosingName.join(type.getQualifiedName()));
-                if (typeNode == null) {
-                    return;
-                }
-            }
-            node.addDependency(typeNode);
-            Logger.INSTANCE.debugln("%s depends on %s", node.getValue().structureType().getQualifiedName(),
-                                    type.getQualifiedName());
         }
     }
 
