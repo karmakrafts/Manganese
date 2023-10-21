@@ -43,12 +43,14 @@ public final class TypeUtils {
 
     public static Result<Type, String> getType(final Compiler compiler, final ScopeStack capturedScopeStack,
                                                final TypeContext context) {
-        final TypeParser unit = new TypeParser(compiler, capturedScopeStack);
-        ParseTreeWalker.DEFAULT.walk(unit, context);
-        if (!compiler.getContext().getStatus().isRecoverable()) {
-            return Result.error("Compilation is irrecoverable");
+        try {
+            final TypeParser unit = new TypeParser(compiler, capturedScopeStack);
+            ParseTreeWalker.DEFAULT.walk(unit, context);
+            return Result.ok(unit.getType());
         }
-        return Result.ok(unit.getType());
+        catch(Exception error) {
+            return Result.error(String.format("Could not resolve type: %s", error));
+        }
     }
 
     public static Result<List<Type>, String> getParameterTypes(final Compiler compiler,

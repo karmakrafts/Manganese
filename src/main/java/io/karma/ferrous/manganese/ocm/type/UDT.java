@@ -18,6 +18,8 @@ package io.karma.ferrous.manganese.ocm.type;
 import io.karma.ferrous.manganese.ocm.access.Access;
 import io.karma.ferrous.manganese.ocm.access.AccessProvider;
 import io.karma.ferrous.manganese.ocm.access.DefaultAccess;
+import io.karma.ferrous.manganese.scope.Scope;
+import io.karma.ferrous.manganese.target.TargetMachine;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 
@@ -26,7 +28,7 @@ import org.apiguardian.api.API.Status;
  * @since 14/10/2023
  */
 @API(status = Status.INTERNAL)
-public record UDT(UDTKind type, StructureType structureType, Access access) implements AccessProvider, TypeCarrier {
+public record UDT(UDTKind type, StructureType structureType, Access access) implements AccessProvider, Type {
     public static final UDT NULL = new UDT(UDTKind.STRUCT, null, DefaultAccess.PUBLIC);
 
     @Override
@@ -35,7 +37,22 @@ public record UDT(UDTKind type, StructureType structureType, Access access) impl
     }
 
     @Override
-    public Type getType() {
-        return structureType;
+    public long materialize(final TargetMachine machine) {
+        return structureType.materialize(machine);
+    }
+
+    @Override
+    public TypeAttribute[] getAttributes() {
+        return structureType.getAttributes();
+    }
+
+    @Override
+    public Type getBaseType() {
+        return this;
+    }
+
+    @Override
+    public Scope getEnclosingScope() {
+        return structureType.getEnclosingScope();
     }
 }

@@ -91,4 +91,12 @@ public final class Types {
     public static AliasedType aliased(final Identifier name, final Type backingType) {
         return cached(new AliasedType(name, backingType));
     }
+
+    public static TupleType tuple(final Type... types) {
+        return cached(new TupleType(types));
+    }
+
+    public static VectorType vector(final Type type, final int elementCount) {
+        return cached(new VectorType(type, elementCount));
+    }
 }

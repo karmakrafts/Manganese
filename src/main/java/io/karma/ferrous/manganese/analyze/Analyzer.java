@@ -24,7 +24,6 @@ import io.karma.ferrous.manganese.ocm.access.DefaultAccess;
 import io.karma.ferrous.manganese.ocm.type.AliasedType;
 import io.karma.ferrous.manganese.ocm.type.StructureType;
 import io.karma.ferrous.manganese.ocm.type.Type;
-import io.karma.ferrous.manganese.ocm.type.TypeCarrier;
 import io.karma.ferrous.manganese.ocm.type.Types;
 import io.karma.ferrous.manganese.ocm.type.UDT;
 import io.karma.ferrous.manganese.ocm.type.UDTKind;
@@ -49,7 +48,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -60,36 +58,36 @@ import java.util.stream.Collectors;
  */
 @API(status = Status.INTERNAL)
 public final class Analyzer extends ParseAdapter {
-    private final LinkedHashMap<Identifier, UDT> udts = new LinkedHashMap<>();
-    private final HashMap<Identifier, AliasedType> typeAliases = new HashMap<>();
+    private final LinkedHashMap<Identifier, Type> udts = new LinkedHashMap<>();
 
     public Analyzer(Compiler compiler) {
         super(compiler);
     }
 
-    private static <C extends TypeCarrier> void addTypesToGraph(final ArrayDeque<Type> typesToResolve,
-                                                                final TopoNode<C> node,
-                                                                final Map<Identifier, TopoNode<C>> nodes) {
+    private static <T extends Type> void addTypesToGraph(final ArrayDeque<Type> typesToResolve, final TopoNode<T> node,
+                                                         final Map<Identifier, TopoNode<T>> nodes) {
         while (!typesToResolve.isEmpty()) {
             final var type = typesToResolve.pop();
             if (type instanceof StructureType struct) {
                 final var fieldTypes = struct.getFieldTypes();
                 for (final var fieldType : fieldTypes) {
+                    if (fieldType.isBuiltin() || fieldType.isComplete()) {
+                        continue; // Skip all types which are complete to save time
+                    }
                     typesToResolve.push(fieldType);
                 }
                 return;
             }
             var typeNode = nodes.get(type.getQualifiedName());
             if (typeNode == null) {
-                final var enclosingName = node.getValue().getType().getQualifiedName();
+                final var enclosingName = node.getValue().getQualifiedName();
                 typeNode = nodes.get(enclosingName.join(type.getQualifiedName()));
                 if (typeNode == null) {
                     return;
                 }
             }
             node.addDependency(typeNode);
-            Logger.INSTANCE.debugln("%s depends on %s", node.getValue().getType().getQualifiedName(),
-                                    type.getQualifiedName());
+            Logger.INSTANCE.debugln("%s depends on %s", node.getValue().getQualifiedName(), type.getQualifiedName());
         }
     }
 
@@ -106,7 +104,7 @@ public final class Analyzer extends ParseAdapter {
         if (type.isEmpty()) {
             return;
         }
-        typeAliases.put(name, Types.aliased(name, type.get()));
+        udts.put(name, Types.aliased(name, type.get()));
         super.enterTypeAlias(context);
     }
 
@@ -161,20 +159,8 @@ public final class Analyzer extends ParseAdapter {
         return false;
     }
 
-    public @Nullable UDT findUDTInScope(final Identifier name, final Identifier scopeName) {
-        return ScopeUtils.findInScope(udts, name, scopeName);
-    }
-
-    public @Nullable Type findAliasedTypeInScope(final Identifier name, final Identifier scopeName) {
-        return ScopeUtils.findInScope(typeAliases, name, scopeName);
-    }
-
     public @Nullable Type findTypeInScope(final Identifier name, final Identifier scopeName) {
-        final var udt = findUDTInScope(name, scopeName);
-        if (udt == null) {
-            return findAliasedTypeInScope(name, scopeName);
-        }
-        return udt.structureType();
+        return ScopeUtils.findInScope(udts, name, scopeName);
     }
 
     private void resolveFieldTypes(final UDT udt, final Identifier scopeName) {
@@ -204,20 +190,23 @@ public final class Analyzer extends ParseAdapter {
     private void resolveFieldTypes() {
         final var udts = this.udts.values();
         for (final var udt : udts) {
-            resolveFieldTypes(udt, udt.structureType().getQualifiedName());
+            if (udt instanceof AliasedType alias) {
+                // TODO: resolve type aliases
+                continue;
+            }
+            resolveFieldTypes((UDT) udt, udt.getQualifiedName());
         }
     }
 
     private void materializeTypes() {
         for (final var udt : udts.values()) {
-            final var type = udt.structureType();
-            type.materialize(compiler.getTargetMachine());
-            Logger.INSTANCE.debugln("Materializing type %s", type.getQualifiedName());
+            udt.materialize(compiler.getTargetMachine());
+            Logger.INSTANCE.debugln("Materializing type %s", udt.getQualifiedName());
         }
     }
 
     private void sortTypes() {
-        final var rootNode = new TopoNode<>(UDT.NULL); // Dummy UDT; TODO: improve this
+        final var rootNode = new TopoNode<Type>(UDT.NULL); // Dummy UDT; TODO: improve this
         // @formatter:off
         final var nodes = udts.entrySet()
             .stream()
@@ -227,7 +216,7 @@ public final class Analyzer extends ParseAdapter {
 
         for (final var nodeEntry : nodes.entrySet()) {
             final var node = nodeEntry.getValue();
-            final var type = node.getValue().structureType();
+            final var type = node.getValue();
             if (type == null) {
                 continue; // Skip sorting
             }
@@ -239,10 +228,10 @@ public final class Analyzer extends ParseAdapter {
 
         Logger.INSTANCE.debugln("Reordering %d UDT entries", udts.size());
         final var sortedNodes = new TopoSorter<>(rootNode).sort(ArrayList::new);
-        final var sortedMap = new LinkedHashMap<Identifier, UDT>();
+        final var sortedMap = new LinkedHashMap<Identifier, Type>();
 
         for (final var node : sortedNodes) {
-            final var type = node.getValue().structureType();
+            final var type = node.getValue();
             if (type == null) {
                 continue;
             }
@@ -273,17 +262,9 @@ public final class Analyzer extends ParseAdapter {
             materializeTypes();
         }
         catch (Throwable error) {
-            compiler.getContext()
-                    .reportError(new CompileError(String.format("Could not pre-process types: %s", error.getMessage())),
-                                 CompileStatus.ANALYZER_ERROR);
+            final var message = Utils.makeCompilerMessage(
+                    String.format("Could not pre-process types: %s", error.getMessage()));
+            compiler.getContext().reportError(new CompileError(message), CompileStatus.ANALYZER_ERROR);
         }
-    }
-
-    public LinkedHashMap<Identifier, UDT> getUDTs() {
-        return udts;
-    }
-
-    public HashMap<Identifier, AliasedType> getAliasedTypes() {
-        return typeAliases;
     }
 }

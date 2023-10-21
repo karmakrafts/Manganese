@@ -17,56 +17,22 @@ package io.karma.ferrous.manganese.ocm.type;
 
 import io.karma.ferrous.manganese.scope.Scope;
 import io.karma.ferrous.manganese.target.TargetMachine;
-import io.karma.ferrous.manganese.util.Identifier;
 
+import java.util.Arrays;
 import java.util.Objects;
+
+import static org.lwjgl.system.MemoryUtil.NULL;
 
 /**
  * @author Alexander Hinze
  * @since 21/10/2023
  */
-public final class AliasedType implements Type {
-    private final Identifier name;
-    private final Type backingType;
+public final class TupleType implements Type {
+    private final Type[] types;
     private Scope enclosingScope;
 
-    AliasedType(final Identifier name, final Type backingType) {
-        this.name = name;
-        this.backingType = backingType;
-    }
-
-    public Type getBackingType() {
-        return backingType;
-    }
-
-    @Override
-    public boolean isAliased() {
-        return true;
-    }
-
-    @Override
-    public Identifier getName() {
-        return name; // Override the name only
-    }
-
-    @Override
-    public long materialize(final TargetMachine machine) {
-        return backingType.materialize(machine);
-    }
-
-    @Override
-    public TypeAttribute[] getAttributes() {
-        return backingType.getAttributes();
-    }
-
-    @Override
-    public Type getBaseType() {
-        return backingType.getBaseType();
-    }
-
-    @Override
-    public Scope getEnclosingScope() {
-        return enclosingScope;
+    public TupleType(final Type... types) {
+        this.types = types;
     }
 
     @Override
@@ -75,15 +41,34 @@ public final class AliasedType implements Type {
     }
 
     @Override
+    public long materialize(final TargetMachine machine) {
+        return NULL;
+    }
+
+    @Override
+    public TypeAttribute[] getAttributes() {
+        return new TypeAttribute[0];
+    }
+
+    @Override
+    public Type getBaseType() {
+        return this;
+    }
+
+    @Override
+    public Scope getEnclosingScope() {
+        return enclosingScope;
+    }
+
+    @Override
     public int hashCode() {
-        return Objects.hash(name, backingType, enclosingScope);
+        return Objects.hash(Arrays.hashCode(types), enclosingScope);
     }
 
     @Override
     public boolean equals(Object obj) {
-        if(obj instanceof AliasedType type) { // @formatter:off
-            return name.equals(type.name)
-                && backingType.equals(type.backingType)
+        if(obj instanceof TupleType type) { // @formatter:off
+            return Arrays.equals(types, type.types)
                 && (enclosingScope == null || enclosingScope.equals(type.enclosingScope));
         } // @formatter:on
         return false;
@@ -91,6 +76,16 @@ public final class AliasedType implements Type {
 
     @Override
     public String toString() {
-        return String.format("%s (%s)", name, backingType.getQualifiedName());
+        final var buffer = new StringBuilder();
+        buffer.append('(');
+        final var numTypes = types.length;
+        for (var i = 0; i < numTypes; i++) {
+            buffer.append(types[i]);
+            if (i < numTypes - 1) {
+                buffer.append(", ");
+            }
+        }
+        buffer.append(')');
+        return buffer.toString();
     }
 }

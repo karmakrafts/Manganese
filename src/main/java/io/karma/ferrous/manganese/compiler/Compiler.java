@@ -258,7 +258,9 @@ public final class Compiler implements ANTLRErrorListener {
         module.linkIn(globalModule);
         globalModule.dispose();
 
-        Logger.INSTANCE.infoln("\nLinked disassembly:\n\n%s", module.disassemble());
+        if(disassemble) {
+            Logger.INSTANCE.infoln("\nLinked disassembly:\n\n%s", module.disassemble());
+        }
         module.dispose();
 
         return context.makeResult();

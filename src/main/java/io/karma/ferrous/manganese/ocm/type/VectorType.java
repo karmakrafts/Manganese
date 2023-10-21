@@ -17,51 +17,56 @@ package io.karma.ferrous.manganese.ocm.type;
 
 import io.karma.ferrous.manganese.scope.Scope;
 import io.karma.ferrous.manganese.target.TargetMachine;
-import io.karma.ferrous.manganese.util.Identifier;
+import org.lwjgl.llvm.LLVMCore;
 
 import java.util.Objects;
+
+import static org.lwjgl.system.MemoryUtil.NULL;
 
 /**
  * @author Alexander Hinze
  * @since 21/10/2023
  */
-public final class AliasedType implements Type {
-    private final Identifier name;
-    private final Type backingType;
+public final class VectorType implements Type {
+    private final Type type;
+    private final int elementCount;
+    private long materializedType = NULL;
     private Scope enclosingScope;
 
-    AliasedType(final Identifier name, final Type backingType) {
-        this.name = name;
-        this.backingType = backingType;
+    public VectorType(final Type type, final int elementCount) {
+        this.type = type;
+        this.elementCount = elementCount;
     }
 
-    public Type getBackingType() {
-        return backingType;
+    public Type getType() {
+        return type;
+    }
+
+    public int getElementCount() {
+        return elementCount;
     }
 
     @Override
-    public boolean isAliased() {
-        return true;
-    }
-
-    @Override
-    public Identifier getName() {
-        return name; // Override the name only
+    public void setEnclosingScope(Scope scope) {
+        enclosingScope = scope;
     }
 
     @Override
     public long materialize(final TargetMachine machine) {
-        return backingType.materialize(machine);
+        if (materializedType == NULL) {
+            materializedType = LLVMCore.LLVMVectorType(type.materialize(machine), elementCount);
+        }
+        return materializedType;
     }
 
     @Override
     public TypeAttribute[] getAttributes() {
-        return backingType.getAttributes();
+        return new TypeAttribute[0];
     }
 
     @Override
     public Type getBaseType() {
-        return backingType.getBaseType();
+        return this;
     }
 
     @Override
@@ -70,27 +75,22 @@ public final class AliasedType implements Type {
     }
 
     @Override
-    public void setEnclosingScope(final Scope scope) {
-        enclosingScope = scope;
-    }
-
-    @Override
     public int hashCode() {
-        return Objects.hash(name, backingType, enclosingScope);
+        return Objects.hash(type, elementCount, enclosingScope);
     }
 
     @Override
     public boolean equals(Object obj) {
-        if(obj instanceof AliasedType type) { // @formatter:off
-            return name.equals(type.name)
-                && backingType.equals(type.backingType)
-                && (enclosingScope == null || enclosingScope.equals(type.enclosingScope));
-        } // @formatter:on
+        if(obj instanceof VectorType vecType) {
+            return type.equals(vecType.type)
+                && elementCount == vecType.elementCount
+                && (enclosingScope == null || enclosingScope.equals(vecType.enclosingScope));
+        }
         return false;
     }
 
     @Override
     public String toString() {
-        return String.format("%s (%s)", name, backingType.getQualifiedName());
+        return super.toString();
     }
 }
