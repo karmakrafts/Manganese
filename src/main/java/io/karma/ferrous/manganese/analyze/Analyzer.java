@@ -21,6 +21,7 @@ import io.karma.ferrous.manganese.compiler.CompileStatus;
 import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.Field;
 import io.karma.ferrous.manganese.ocm.access.DefaultAccess;
+import io.karma.ferrous.manganese.ocm.type.AliasedType;
 import io.karma.ferrous.manganese.ocm.type.StructureType;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.ocm.type.Types;
@@ -45,6 +46,7 @@ import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -58,7 +60,7 @@ import java.util.stream.Collectors;
 @API(status = Status.INTERNAL)
 public final class Analyzer extends ParseAdapter {
     private final LinkedHashMap<Identifier, UDT> udts = new LinkedHashMap<>();
-    private final HashMap<Identifier, Type> typeAliases = new HashMap<>();
+    private final HashMap<Identifier, AliasedType> typeAliases = new HashMap<>();
 
     public Analyzer(Compiler compiler) {
         super(compiler);
@@ -77,7 +79,7 @@ public final class Analyzer extends ParseAdapter {
         if (type.isEmpty()) {
             return;
         }
-        typeAliases.put(name, type.get());
+        typeAliases.put(name, Types.aliased(name, type.get()));
         super.enterTypeAlias(context);
     }
 
@@ -122,7 +124,8 @@ public final class Analyzer extends ParseAdapter {
     }
 
     private boolean checkIsAlreadyDefined(final ParserRuleContext context, final Identifier name) {
-        if (udts.containsKey(name) || typeAliases.containsKey(name)) {
+        final var type = findTypeInScope(name, scopeStack.getScopeName());
+        if (type != null) {
             final var compileContext = compiler.getContext();
             final var message = Utils.makeCompilerMessage(String.format("Type '%s' is already defined", name));
             compileContext.reportError(compileContext.makeError(context.start, message), CompileStatus.SEMANTIC_ERROR);
@@ -160,7 +163,6 @@ public final class Analyzer extends ParseAdapter {
             Logger.INSTANCE.debugln("Found incomplete field type '%s' in '%s'", fieldTypeName, scopeName);
             final var completeType = findTypeInScope(fieldTypeName, scopeName);
             if (completeType == null) {
-                // FIXME: also lookup aliased types
                 final var message = String.format("Failed to resolve field type '%s' for '%s'", fieldTypeName,
                                                   scopeName);
                 compiler.getContext().reportError(new CompileError(Utils.makeCompilerMessage(message)),
@@ -187,35 +189,38 @@ public final class Analyzer extends ParseAdapter {
         }
     }
 
-    private void addTypesToGraph(final Type type, final TopoNode<UDT> node,
+    private void addTypesToGraph(final ArrayDeque<Type> typesToResolve, final TopoNode<UDT> node,
                                  final Map<Identifier, TopoNode<UDT>> nodes) {
-        if (type instanceof StructureType struct) {
-            final var fieldTypes = struct.getFieldTypes();
-            for (final var fieldType : fieldTypes) {
-                addTypesToGraph(fieldType, node, nodes);
-            }
-            return;
-        }
-        var typeNode = nodes.get(type.getQualifiedName());
-        if (typeNode == null) {
-            final var enclosingName = node.getValue().structureType().getQualifiedName();
-            typeNode = nodes.get(enclosingName.join(type.getQualifiedName()));
-            if (typeNode == null) {
+        while (!typesToResolve.isEmpty()) {
+            final var type = typesToResolve.pop();
+            if (type instanceof StructureType struct) {
+                final var fieldTypes = struct.getFieldTypes();
+                for (final var fieldType : fieldTypes) {
+                    typesToResolve.push(fieldType);
+                }
                 return;
             }
+            var typeNode = nodes.get(type.getQualifiedName());
+            if (typeNode == null) {
+                final var enclosingName = node.getValue().structureType().getQualifiedName();
+                typeNode = nodes.get(enclosingName.join(type.getQualifiedName()));
+                if (typeNode == null) {
+                    return;
+                }
+            }
+            node.addDependency(typeNode);
+            Logger.INSTANCE.debugln("%s depends on %s", node.getValue().structureType().getQualifiedName(),
+                                    type.getQualifiedName());
         }
-        node.addDependency(typeNode);
-        Logger.INSTANCE.debugln("%s depends on %s", node.getValue().structureType().getQualifiedName(),
-                                type.getQualifiedName());
     }
 
     private void sortTypes() {
         final var rootNode = new TopoNode<>(UDT.NULL); // Dummy UDT; TODO: improve this
         // @formatter:off
         final var nodes = udts.entrySet()
-                              .stream()
-                              .map(e -> Pair.of(e.getKey(), new TopoNode<>(e.getValue())))
-                              .collect(Collectors.toMap(Pair::getLeft, Pair::getRight));
+            .stream()
+            .map(e -> Pair.of(e.getKey(), new TopoNode<>(e.getValue())))
+            .collect(Collectors.toMap(Pair::getLeft, Pair::getRight));
         // @formatter:on
 
         for (final var nodeEntry : nodes.entrySet()) {
@@ -224,7 +229,9 @@ public final class Analyzer extends ParseAdapter {
             if (type == null) {
                 continue; // Skip sorting
             }
-            addTypesToGraph(type, node, nodes);
+            final var queue = new ArrayDeque<Type>();
+            queue.push(type);
+            addTypesToGraph(queue, node, nodes);
             rootNode.addDependency(node);
         }
 
@@ -274,7 +281,7 @@ public final class Analyzer extends ParseAdapter {
         return udts;
     }
 
-    public HashMap<Identifier, Type> getTypeAliases() {
+    public HashMap<Identifier, AliasedType> getAliasedTypes() {
         return typeAliases;
     }
 }
