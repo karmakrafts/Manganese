@@ -46,18 +46,11 @@ public record Identifier(String... components) {
         return result.toArray(Identifier[]::new);
     }
 
-    public Identifier join(final Identifier other, final char delimiter) {
+    public Identifier join(final Identifier other) {
         if (isBlank()) {
             return other;
         }
-        return parse(String.format("%s%c%s", this, delimiter, other));
-    }
-
-    public Identifier join(final Identifier other, final String delimiter) {
-        if (isBlank()) {
-            return other;
-        }
-        return parse(String.format("%s%s%s", this, delimiter, other));
+        return parse(String.format("%s%s%s", this, DELIMITER, other));
     }
 
     public boolean isBlank() {

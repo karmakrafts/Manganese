@@ -43,7 +43,7 @@ public interface Scope extends NameProvider {
         return getEnclosingScope().getScopeName();
     }
 
-    default Identifier getInternalName() {
+    default Identifier getQualifiedName() {
         var currentParent = getEnclosingScope();
         var result = getName();
         if (currentParent == null) {
@@ -54,7 +54,7 @@ public interface Scope extends NameProvider {
                 currentParent = currentParent.getEnclosingScope();
                 continue;
             }
-            result = currentParent.getName().join(result, '.');
+            result = currentParent.getName().join(result);
             currentParent = currentParent.getEnclosingScope();
         }
         return result;

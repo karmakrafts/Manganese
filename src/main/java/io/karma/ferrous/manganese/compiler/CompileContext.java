@@ -26,7 +26,6 @@ import org.antlr.v4.runtime.BufferedTokenStream;
 import org.antlr.v4.runtime.Token;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -101,12 +100,12 @@ public final class CompileContext {
         this.status = status;
     }
 
-    public @Nullable FerrousLexer getLexer() {
+    public FerrousLexer getLexer() {
         final var moduleData = this.moduleData.get(moduleName);
         if (moduleData != null) {
             return moduleData.getLexer();
         }
-        return null;
+        throw new IllegalStateException("Lexer not provided");
     }
 
     void setLexer(final FerrousLexer lexer) {
@@ -116,12 +115,12 @@ public final class CompileContext {
         getOrCreateModuleData(moduleName).setLexer(lexer);
     }
 
-    public @Nullable BufferedTokenStream getTokenStream() {
+    public BufferedTokenStream getTokenStream() {
         final var moduleData = this.moduleData.get(moduleName);
         if (moduleData != null) {
             return moduleData.getTokenStream();
         }
-        return null;
+        throw new IllegalStateException("Token stream not provided");
     }
 
     void setTokenStream(final BufferedTokenStream tokenStream) {
@@ -131,12 +130,12 @@ public final class CompileContext {
         getOrCreateModuleData(moduleName).setTokenStream(tokenStream);
     }
 
-    public @Nullable FerrousParser getParser() {
+    public FerrousParser getParser() {
         final var moduleData = this.moduleData.get(moduleName);
         if (moduleData != null) {
             return moduleData.getParser();
         }
-        return null;
+        throw new IllegalStateException("Parser not provided");
     }
 
     void setParser(final FerrousParser parser) {
@@ -146,12 +145,12 @@ public final class CompileContext {
         getOrCreateModuleData(moduleName).setParser(parser);
     }
 
-    public @Nullable FileContext getFileContext() {
+    public FileContext getFileContext() {
         final var moduleData = this.moduleData.get(moduleName);
         if (moduleData != null) {
             return moduleData.getFileContext();
         }
-        return null;
+        throw new IllegalStateException("File context not provided");
     }
 
     void setFileContext(final FileContext fileContext) {
@@ -161,12 +160,12 @@ public final class CompileContext {
         getOrCreateModuleData(moduleName).setFileContext(fileContext);
     }
 
-    public @Nullable Analyzer getAnalyzer() {
+    public Analyzer getAnalyzer() {
         final var moduleData = this.moduleData.get(moduleName);
         if (moduleData != null) {
             return moduleData.getAnalyzer();
         }
-        return null;
+        throw new IllegalStateException("Analyzer not provided");
     }
 
     void setAnalyzer(final Analyzer analyzer) {
@@ -176,12 +175,12 @@ public final class CompileContext {
         getOrCreateModuleData(moduleName).setAnalyzer(analyzer);
     }
 
-    public @Nullable TranslationUnit getTranslationUnit() {
+    public TranslationUnit getTranslationUnit() {
         final var moduleData = this.moduleData.get(moduleName);
         if (moduleData != null) {
             return moduleData.getTranslationUnit();
         }
-        return null;
+        throw new IllegalStateException("Translation unit not provided");
     }
 
     void setTranslationUnit(final TranslationUnit translationUnit) {

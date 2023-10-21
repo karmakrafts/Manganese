@@ -78,32 +78,19 @@ public final class TypeParser extends ParseAdapter {
         super.enterSliceType(context);
     }
 
-    // Actual types
-
-    private void parsePrimitiveType(final ParserRuleContext context, final String errorMessage) {
-        final var text = context.getText();
-        if (baseType != null) {
-            final var compileContext = compiler.getContext();
-            compileContext.reportError(compileContext.makeError(context.start, errorMessage),
-                                       CompileStatus.TRANSLATION_ERROR);
-            return;
-        }
-        final var opt = Types.builtin(Identifier.parse(text));
-        if (opt.isEmpty()) {
-            final var compileContext = compiler.getContext();
-            compileContext.reportError(compileContext.makeError(context.start, "Invalid builtin type"),
-                                       CompileStatus.TRANSLATION_ERROR);
-            return;
-        }
-        baseType = opt.get();
-    }
-
     @Override
     public void enterIdent(final IdentContext context) {
         final var compileContext = compiler.getContext();
         final var name = Utils.getIdentifier(context);
-        final var udt = compileContext.getAnalyzer().findUDTInScope(name, capturedScopeStack.getScopeName());
+        final var analyzer = compileContext.getAnalyzer();
+        final var scopeName = capturedScopeStack.getScopeName();
+        final var udt = analyzer.findUDTInScope(name, scopeName);
         if (udt == null) {
+            final var aliasedType = analyzer.findAliasedTypeInScope(name, scopeName);
+            if (aliasedType != null) {
+                baseType = aliasedType;
+                return;
+            }
             baseType = Types.incomplete(name);
             return;
         }
@@ -115,8 +102,15 @@ public final class TypeParser extends ParseAdapter {
     public void enterQualifiedIdent(final QualifiedIdentContext context) {
         final var compileContext = compiler.getContext();
         final var name = Utils.getIdentifier(context);
-        final var udt = compileContext.getAnalyzer().findUDTInScope(name, capturedScopeStack.getScopeName());
+        final var analyzer = compileContext.getAnalyzer();
+        final var scopeName = capturedScopeStack.getScopeName();
+        final var udt = analyzer.findUDTInScope(name, scopeName);
         if (udt == null) {
+            final var aliasedType = analyzer.findAliasedTypeInScope(name, scopeName);
+            if (aliasedType != null) {
+                baseType = aliasedType;
+                return;
+            }
             baseType = Types.incomplete(name);
             return;
         }
@@ -146,6 +140,24 @@ public final class TypeParser extends ParseAdapter {
     public void enterFloatType(final FloatTypeContext context) {
         parsePrimitiveType(context, "Unknown floating point type");
         super.enterFloatType(context);
+    }
+
+    private void parsePrimitiveType(final ParserRuleContext context, final String errorMessage) {
+        final var text = context.getText();
+        if (baseType != null) {
+            final var compileContext = compiler.getContext();
+            compileContext.reportError(compileContext.makeError(context.start, errorMessage),
+                                       CompileStatus.TRANSLATION_ERROR);
+            return;
+        }
+        final var opt = Types.builtin(Identifier.parse(text));
+        if (opt.isEmpty()) {
+            final var compileContext = compiler.getContext();
+            compileContext.reportError(compileContext.makeError(context.start, "Invalid builtin type"),
+                                       CompileStatus.TRANSLATION_ERROR);
+            return;
+        }
+        baseType = opt.get();
     }
 
     public Type getType() {

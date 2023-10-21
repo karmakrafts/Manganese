@@ -37,16 +37,16 @@ public final class ScopeUtils {
         var element = map.get(name);
         if (element == null) {
             // Attempt to resolve field types from the inside scope outwards
-            final var partialScopeNames = scopeName.split("\\.");
+            final var partialScopeNames = scopeName.split(Identifier.DELIMITER);
             final var numPartialScopeNames = partialScopeNames.length;
             for (var j = numPartialScopeNames; j > 0; j--) {
                 final var slicedScopeNames = ArrayUtils.slice(partialScopeNames, 0, j, Identifier[]::new);
                 var currentScopeName = new Identifier("");
                 for (final var partialScopeName : slicedScopeNames) {
-                    currentScopeName = currentScopeName.join(partialScopeName, '.');
+                    currentScopeName = currentScopeName.join(partialScopeName);
                 }
                 Logger.INSTANCE.debugln("Attempting to find '%s' in '%s'", name, currentScopeName);
-                element = map.get(currentScopeName.join(name, '.'));
+                element = map.get(currentScopeName.join(name));
                 if (element != null) {
                     break; // Stop if we found it
                 }

@@ -111,7 +111,7 @@ public final class StructureType implements Type {
             for (var i = 0; i < numFields; i++) {
                 fields.put(i, fieldTypes[i].materialize(machine));
             }
-            materializedType = LLVMCore.LLVMStructCreateNamed(LLVMGetGlobalContext(), getInternalName().toString());
+            materializedType = LLVMCore.LLVMStructCreateNamed(LLVMGetGlobalContext(), getQualifiedName().toString());
             LLVMCore.LLVMStructSetBody(materializedType, fields, isPacked);
             return materializedType;
         }
@@ -124,13 +124,13 @@ public final class StructureType implements Type {
 
     @Override
     public int hashCode() {
-        return Objects.hash(getInternalName(), isPacked, Arrays.hashCode(fieldTypes));
+        return Objects.hash(getQualifiedName(), isPacked, Arrays.hashCode(fieldTypes));
     }
 
     @Override
     public boolean equals(Object obj) {
         if(obj instanceof StructureType type) { // @formatter:off
-            return getInternalName().equals(type.getInternalName())
+            return getQualifiedName().equals(type.getQualifiedName())
                 && isPacked == type.isPacked
                 && Arrays.equals(fieldTypes, type.fieldTypes);
         } // @formatter:on
@@ -139,6 +139,6 @@ public final class StructureType implements Type {
 
     @Override
     public String toString() {
-        return String.format("%s:%b:%s", getInternalName(), isPacked, Arrays.toString(fieldTypes));
+        return String.format("%s:%b:%s", getQualifiedName(), isPacked, Arrays.toString(fieldTypes));
     }
 }

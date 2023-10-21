@@ -49,8 +49,11 @@ public final class ScopeStack extends Stack<Scope> {
     public Identifier getScopeName() {
         var result = new Identifier("");
         for (final var scope : this) {
-            final var delimiter = scope.getScopeType() == ScopeType.MODULE ? Identifier.DELIMITER : ".";
-            result = result.join(scope.getScopeName(), delimiter);
+            final var scopeType = scope.getScopeType();
+            if (scopeType == ScopeType.FILE || scopeType == ScopeType.MODULE_FILE) {
+                continue;
+            }
+            result = result.join(scope.getScopeName());
         }
         return result;
     }
