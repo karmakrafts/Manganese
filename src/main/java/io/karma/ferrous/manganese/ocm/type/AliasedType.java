@@ -34,6 +34,11 @@ public final class AliasedType implements Type {
     }
 
     @Override
+    public boolean isAliased() {
+        return true;
+    }
+
+    @Override
     public Identifier getName() {
         return name; // Override the name only
     }

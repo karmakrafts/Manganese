@@ -58,6 +58,10 @@ public interface Type extends Scope {
         return getBaseType().getScopeName();
     }
 
+    default boolean isAliased() {
+        return false;
+    }
+
     default boolean isBuiltin() {
         return getBaseType().isBuiltin();
     }
