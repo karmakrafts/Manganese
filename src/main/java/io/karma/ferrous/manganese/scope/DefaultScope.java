@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.ocm.scope;
+package io.karma.ferrous.manganese.scope;
 
 import io.karma.ferrous.manganese.util.Identifier;
 import org.apiguardian.api.API;

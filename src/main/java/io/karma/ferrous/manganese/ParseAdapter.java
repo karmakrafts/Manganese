@@ -16,9 +16,9 @@
 package io.karma.ferrous.manganese;
 
 import io.karma.ferrous.manganese.compiler.Compiler;
-import io.karma.ferrous.manganese.ocm.scope.DefaultScope;
-import io.karma.ferrous.manganese.ocm.scope.Scope;
-import io.karma.ferrous.manganese.ocm.scope.ScopeType;
+import io.karma.ferrous.manganese.scope.DefaultScope;
+import io.karma.ferrous.manganese.scope.Scope;
+import io.karma.ferrous.manganese.scope.ScopeType;
 import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.ScopeStack;
 import io.karma.ferrous.manganese.util.Utils;

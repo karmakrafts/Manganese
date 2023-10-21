@@ -15,9 +15,9 @@
 
 package io.karma.ferrous.manganese.ocm.type;
 
-import io.karma.ferrous.manganese.ocm.scope.DefaultScope;
-import io.karma.ferrous.manganese.ocm.scope.Scope;
-import io.karma.ferrous.manganese.ocm.scope.ScopeType;
+import io.karma.ferrous.manganese.scope.DefaultScope;
+import io.karma.ferrous.manganese.scope.Scope;
+import io.karma.ferrous.manganese.scope.ScopeType;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Identifier;
 import org.apiguardian.api.API;
