@@ -60,6 +60,10 @@ public interface Scope extends NameProvider {
         return result;
     }
 
+    default String getInternalName() {
+        return getQualifiedName().toString().replace(Identifier.DELIMITER, ".");
+    }
+
     @Override
     default Identifier getName() {
         return getScopeName();

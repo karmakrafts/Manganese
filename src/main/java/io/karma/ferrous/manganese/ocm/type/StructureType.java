@@ -111,7 +111,7 @@ public final class StructureType implements Type {
             for (var i = 0; i < numFields; i++) {
                 fields.put(i, fieldTypes[i].materialize(machine));
             }
-            materializedType = LLVMCore.LLVMStructCreateNamed(LLVMGetGlobalContext(), getQualifiedName().toString());
+            materializedType = LLVMCore.LLVMStructCreateNamed(LLVMGetGlobalContext(), getInternalName());
             LLVMCore.LLVMStructSetBody(materializedType, fields, isPacked);
             return materializedType;
         }

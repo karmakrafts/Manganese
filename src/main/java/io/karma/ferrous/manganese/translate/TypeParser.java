@@ -82,19 +82,12 @@ public final class TypeParser extends ParseAdapter {
     public void enterIdent(final IdentContext context) {
         final var compileContext = compiler.getContext();
         final var name = Utils.getIdentifier(context);
-        final var analyzer = compileContext.getAnalyzer();
-        final var scopeName = capturedScopeStack.getScopeName();
-        final var udt = analyzer.findUDTInScope(name, scopeName);
-        if (udt == null) {
-            final var aliasedType = analyzer.findAliasedTypeInScope(name, scopeName);
-            if (aliasedType != null) {
-                baseType = aliasedType;
-                return;
-            }
+        final var type = compileContext.getAnalyzer().findTypeInScope(name, capturedScopeStack.getScopeName());
+        if (type == null) {
             baseType = Types.incomplete(name);
             return;
         }
-        baseType = udt.structureType();
+        baseType = type;
         super.enterIdent(context);
     }
 
@@ -102,19 +95,12 @@ public final class TypeParser extends ParseAdapter {
     public void enterQualifiedIdent(final QualifiedIdentContext context) {
         final var compileContext = compiler.getContext();
         final var name = Utils.getIdentifier(context);
-        final var analyzer = compileContext.getAnalyzer();
-        final var scopeName = capturedScopeStack.getScopeName();
-        final var udt = analyzer.findUDTInScope(name, scopeName);
-        if (udt == null) {
-            final var aliasedType = analyzer.findAliasedTypeInScope(name, scopeName);
-            if (aliasedType != null) {
-                baseType = aliasedType;
-                return;
-            }
+        final var type = compileContext.getAnalyzer().findTypeInScope(name, capturedScopeStack.getScopeName());
+        if (type == null) {
             baseType = Types.incomplete(name);
             return;
         }
-        baseType = udt.structureType();
+        baseType = type;
         super.enterQualifiedIdent(context);
     }
 

@@ -33,7 +33,6 @@ import io.karma.ferrous.manganese.util.TypeUtils;
 import io.karma.ferrous.manganese.util.Utils;
 import io.karma.ferrous.vanadium.FerrousParser.ClassContext;
 import io.karma.ferrous.vanadium.FerrousParser.EnumClassContext;
-import io.karma.ferrous.vanadium.FerrousParser.IdentContext;
 import io.karma.ferrous.vanadium.FerrousParser.StructContext;
 import io.karma.ferrous.vanadium.FerrousParser.TraitContext;
 import io.karma.ferrous.vanadium.FerrousParser.TypeAliasContext;
@@ -68,6 +67,9 @@ public final class Analyzer extends ParseAdapter {
     @Override
     public void enterTypeAlias(final TypeAliasContext context) {
         final var name = scopeStack.getScopeName().join(Utils.getIdentifier(context.ident()));
+        if (checkIsAlreadyDefined(context, name)) {
+            return;
+        }
         // @formatter:off
         final var type = TypeUtils.getType(compiler, scopeStack, context.type())
             .unwrapOrReport(compiler, context.start, CompileStatus.TRANSLATION_ERROR);
@@ -81,27 +83,52 @@ public final class Analyzer extends ParseAdapter {
 
     @Override
     public void enterStruct(final StructContext context) {
-        final var identifier = context.ident();
-        analyzeFieldLayout(context, identifier, UDTKind.STRUCT);
+        final var name = Utils.getIdentifier(context.ident());
+        if (checkIsAlreadyDefined(context, name)) {
+            return;
+        }
+        analyzeFieldLayout(context, name, UDTKind.STRUCT);
         super.enterStruct(context);
     }
 
     @Override
     public void enterClass(final ClassContext context) {
-        analyzeFieldLayout(context, context.ident(), UDTKind.CLASS);
+        final var name = Utils.getIdentifier(context.ident());
+        if (checkIsAlreadyDefined(context, name)) {
+            return;
+        }
+        analyzeFieldLayout(context, name, UDTKind.CLASS);
         super.enterClass(context);
     }
 
     @Override
     public void enterEnumClass(final EnumClassContext context) {
-        analyzeFieldLayout(context, context.ident(), UDTKind.ENUM_CLASS);
+        final var name = Utils.getIdentifier(context.ident());
+        if (checkIsAlreadyDefined(context, name)) {
+            return;
+        }
+        analyzeFieldLayout(context, name, UDTKind.ENUM_CLASS);
         super.enterEnumClass(context);
     }
 
     @Override
     public void enterTrait(final TraitContext context) {
-        analyzeFieldLayout(context, context.ident(), UDTKind.TRAIT);
+        final var name = Utils.getIdentifier(context.ident());
+        if (checkIsAlreadyDefined(context, name)) {
+            return;
+        }
+        analyzeFieldLayout(context, name, UDTKind.TRAIT);
         super.enterTrait(context);
+    }
+
+    private boolean checkIsAlreadyDefined(final ParserRuleContext context, final Identifier name) {
+        if (udts.containsKey(name) || typeAliases.containsKey(name)) {
+            final var compileContext = compiler.getContext();
+            final var message = Utils.makeCompilerMessage(String.format("Type '%s' is already defined", name));
+            compileContext.reportError(compileContext.makeError(context.start, message), CompileStatus.SEMANTIC_ERROR);
+            return true;
+        }
+        return false;
     }
 
     public @Nullable UDT findUDTInScope(final Identifier name, final Identifier scopeName) {
@@ -110,6 +137,14 @@ public final class Analyzer extends ParseAdapter {
 
     public @Nullable Type findAliasedTypeInScope(final Identifier name, final Identifier scopeName) {
         return ScopeUtils.findInScope(typeAliases, name, scopeName);
+    }
+
+    public @Nullable Type findTypeInScope(final Identifier name, final Identifier scopeName) {
+        final var udt = findUDTInScope(name, scopeName);
+        if (udt == null) {
+            return findAliasedTypeInScope(name, scopeName);
+        }
+        return udt.structureType();
     }
 
     private void resolveFieldTypes(final UDT udt, final Identifier scopeName) {
@@ -123,16 +158,9 @@ public final class Analyzer extends ParseAdapter {
             }
             final var fieldTypeName = fieldType.getQualifiedName();
             Logger.INSTANCE.debugln("Found incomplete field type '%s' in '%s'", fieldTypeName, scopeName);
-            final var completeUdt = findUDTInScope(fieldTypeName, scopeName);
-            if (completeUdt == null) {
-                final var message = String.format("Failed to resolve field type '%s' for '%s'", fieldTypeName,
-                                                  scopeName);
-                compiler.getContext().reportError(new CompileError(Utils.makeCompilerMessage(message)),
-                                                  CompileStatus.ANALYZER_ERROR);
-                continue;
-            }
-            final var completeType = completeUdt.structureType();
+            final var completeType = findTypeInScope(fieldTypeName, scopeName);
             if (completeType == null) {
+                // FIXME: also lookup aliased types
                 final var message = String.format("Failed to resolve field type '%s' for '%s'", fieldTypeName,
                                                   scopeName);
                 compiler.getContext().reportError(new CompileError(Utils.makeCompilerMessage(message)),
@@ -217,10 +245,7 @@ public final class Analyzer extends ParseAdapter {
         udts.putAll(sortedMap);
     }
 
-    private void analyzeFieldLayout(final ParserRuleContext parent, final IdentContext identContext,
-                                    final UDTKind udtKind) {
-        final var name = Utils.getIdentifier(identContext);
-
+    private void analyzeFieldLayout(final ParserRuleContext parent, final Identifier name, final UDTKind udtKind) {
         final var layoutAnalyzer = new FieldLayoutAnalyzer(compiler); // Copy scope stack
         ParseTreeWalker.DEFAULT.walk(layoutAnalyzer, parent);
 

@@ -75,7 +75,7 @@ public final class IncompleteType implements Type {
         if (materializedType != MemoryUtil.NULL) {
             return materializedType;
         }
-        return materializedType = LLVMCore.LLVMStructCreateNamed(LLVMGetGlobalContext(), getQualifiedName().toString());
+        return materializedType = LLVMCore.LLVMStructCreateNamed(LLVMGetGlobalContext(), getInternalName());
     }
 
     @Override
