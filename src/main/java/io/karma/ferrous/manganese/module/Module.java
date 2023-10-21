@@ -15,14 +15,11 @@
 
 package io.karma.ferrous.manganese.module;
 
-import io.karma.ferrous.manganese.target.Target;
-import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.LLVMUtils;
 import io.karma.ferrous.manganese.util.Logger;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 import org.jetbrains.annotations.Nullable;
-import org.lwjgl.llvm.LLVMCore;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 
@@ -142,14 +139,6 @@ public final class Module {
         }
     }
 
-    public void setTargetTriple(final String triple) {
-        LLVMSetTarget(address, triple);
-    }
-
-    public void setDataLayout(final String layout) {
-        LLVMSetDataLayout(address, layout);
-    }
-
     public void linkIn(final Module module) {
         LLVMLinkModules2(address, LLVMCloneModule(module.address));
     }
@@ -178,8 +167,16 @@ public final class Module {
         return LLVMGetDataLayoutStr(address);
     }
 
+    public void setDataLayout(final String layout) {
+        LLVMSetDataLayout(address, layout);
+    }
+
     public String getTargetTriple() {
         return LLVMGetTarget(address);
+    }
+
+    public void setTargetTriple(final String triple) {
+        LLVMSetTarget(address, triple);
     }
 
     public void dispose() {

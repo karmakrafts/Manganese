@@ -15,7 +15,7 @@
 
 package io.karma.ferrous.manganese.ocm.type;
 
-import io.karma.ferrous.manganese.ocm.scope.EnclosingScopeProvider;
+import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Identifier;
 import org.apiguardian.api.API;
@@ -47,7 +47,7 @@ public final class DerivedType implements Type {
     }
 
     @Override
-    public EnclosingScopeProvider getEnclosingScope() {
+    public Scope getEnclosingScope() {
         return baseType.getEnclosingScope();
     }
 

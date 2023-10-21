@@ -16,6 +16,7 @@
 package io.karma.ferrous.manganese;
 
 import io.karma.ferrous.manganese.compiler.Compiler;
+import io.karma.ferrous.manganese.ocm.scope.DefaultScope;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.ocm.scope.ScopeType;
 import io.karma.ferrous.manganese.util.Identifier;
@@ -36,11 +37,12 @@ import org.apiguardian.api.API.Status;
 @API(status = Status.INTERNAL)
 public abstract class ParseAdapter implements FerrousParserListener {
     protected ScopeStack scopeStack = new ScopeStack();
+    protected Scope lastScope;
     protected Compiler compiler;
 
     protected ParseAdapter(final Compiler compiler) {
         this.compiler = compiler;
-        scopeStack.push(Scope.GLOBAL);
+        scopeStack.push(DefaultScope.GLOBAL);
     }
 
     public Compiler getCompiler() {
@@ -90,22 +92,22 @@ public abstract class ParseAdapter implements FerrousParserListener {
 
     @Override
     public void enterFile(FileContext fileContext) {
-        scopeStack.push(new Scope(ScopeType.FILE, Identifier.parse(compiler.getContext().getModuleName())));
+        scopeStack.push(new DefaultScope(ScopeType.FILE, Identifier.parse(compiler.getContext().getModuleName())));
     }
 
     @Override
     public void exitFile(FileContext fileContext) {
-        scopeStack.pop();
+        lastScope = scopeStack.pop();
     }
 
     @Override
     public void enterModuleFile(ModuleFileContext moduleFileContext) {
-        scopeStack.push(new Scope(ScopeType.MODULE_FILE, Identifier.parse(compiler.getContext().getModuleName())));
+        scopeStack.push(new DefaultScope(ScopeType.MODULE_FILE, Identifier.parse(compiler.getContext().getModuleName())));
     }
 
     @Override
     public void exitModuleFile(ModuleFileContext moduleFileContext) {
-        scopeStack.pop();
+        lastScope = scopeStack.pop();
     }
 
     @Override
@@ -115,10 +117,14 @@ public abstract class ParseAdapter implements FerrousParserListener {
     public void exitModule(ModuleContext moduleContext) {}
 
     @Override
-    public void enterModBlock(ModBlockContext modBlockContext) {}
+    public void enterModBlock(ModBlockContext modBlockContext) {
+        scopeStack.push(new DefaultScope(ScopeType.MODULE, Utils.getIdentifier(modBlockContext.ident())));
+    }
 
     @Override
-    public void exitModBlock(ModBlockContext modBlockContext) {}
+    public void exitModBlock(ModBlockContext modBlockContext) {
+        lastScope = scopeStack.pop();
+    }
 
     @Override
     public void enterModUseStatement(ModUseStatementContext modUseStatementContext) {}
@@ -176,22 +182,22 @@ public abstract class ParseAdapter implements FerrousParserListener {
 
     @Override
     public void enterEnumClass(EnumClassContext context) {
-        scopeStack.push(new Scope(ScopeType.ENUM_CLASS, Utils.getIdentifier(context.ident())));
+        scopeStack.push(new DefaultScope(ScopeType.ENUM_CLASS, Utils.getIdentifier(context.ident())));
     }
 
     @Override
     public void exitEnumClass(EnumClassContext context) {
-        scopeStack.pop();
+        lastScope = scopeStack.pop();
     }
 
     @Override
     public void enterClass(ClassContext context) {
-        scopeStack.push(new Scope(ScopeType.CLASS, Utils.getIdentifier(context.ident())));
+        scopeStack.push(new DefaultScope(ScopeType.CLASS, Utils.getIdentifier(context.ident())));
     }
 
     @Override
     public void exitClass(ClassContext context) {
-        scopeStack.pop();
+        lastScope = scopeStack.pop();
     }
 
     @Override
@@ -208,12 +214,12 @@ public abstract class ParseAdapter implements FerrousParserListener {
 
     @Override
     public void enterEnum(EnumContext context) {
-        scopeStack.push(new Scope(ScopeType.ENUM, Utils.getIdentifier(context.ident())));
+        scopeStack.push(new DefaultScope(ScopeType.ENUM, Utils.getIdentifier(context.ident())));
     }
 
     @Override
     public void exitEnum(EnumContext enumContext) {
-        scopeStack.pop();
+        lastScope = scopeStack.pop();
     }
 
     @Override
@@ -230,12 +236,12 @@ public abstract class ParseAdapter implements FerrousParserListener {
 
     @Override
     public void enterStruct(StructContext context) {
-        scopeStack.push(new Scope(ScopeType.STRUCT, Utils.getIdentifier(context.ident())));
+        scopeStack.push(new DefaultScope(ScopeType.STRUCT, Utils.getIdentifier(context.ident())));
     }
 
     @Override
     public void exitStruct(StructContext context) {
-        scopeStack.pop();
+        lastScope = scopeStack.pop();
     }
 
     @Override
@@ -246,12 +252,12 @@ public abstract class ParseAdapter implements FerrousParserListener {
 
     @Override
     public void enterInterface(InterfaceContext context) {
-        scopeStack.push(new Scope(ScopeType.INTERFACE, Utils.getIdentifier(context.ident())));
+        scopeStack.push(new DefaultScope(ScopeType.INTERFACE, Utils.getIdentifier(context.ident())));
     }
 
     @Override
     public void exitInterface(InterfaceContext context) {
-        scopeStack.pop();
+        lastScope = scopeStack.pop();
     }
 
     @Override
@@ -262,22 +268,22 @@ public abstract class ParseAdapter implements FerrousParserListener {
 
     @Override
     public void enterAttrib(AttribContext context) {
-        scopeStack.push(new Scope(ScopeType.ATTRIBUTE, Utils.getIdentifier(context.ident())));
+        scopeStack.push(new DefaultScope(ScopeType.ATTRIBUTE, Utils.getIdentifier(context.ident())));
     }
 
     @Override
     public void exitAttrib(AttribContext context) {
-        scopeStack.pop();
+        lastScope = scopeStack.pop();
     }
 
     @Override
     public void enterTrait(TraitContext context) {
-        scopeStack.push(new Scope(ScopeType.TRAIT, Utils.getIdentifier(context.ident())));
+        scopeStack.push(new DefaultScope(ScopeType.TRAIT, Utils.getIdentifier(context.ident())));
     }
 
     @Override
     public void exitTrait(TraitContext context) {
-        scopeStack.pop();
+        lastScope = scopeStack.pop();
     }
 
     @Override

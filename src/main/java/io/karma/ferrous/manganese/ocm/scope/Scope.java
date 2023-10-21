@@ -15,79 +15,53 @@
 
 package io.karma.ferrous.manganese.ocm.scope;
 
+import io.karma.ferrous.manganese.ocm.NameProvider;
 import io.karma.ferrous.manganese.util.Identifier;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 
-import java.util.Objects;
+import java.util.EnumSet;
 
 /**
  * @author Alexander Hinze
- * @since 15/10/2023
+ * @since 16/10/2023
  */
 @API(status = Status.INTERNAL)
-public final class Scope implements EnclosingScopeProvider {
-    public static final Scope GLOBAL = new Scope(ScopeType.GLOBAL, Identifier.EMPTY);
-    private final ScopeType type;
-    private final Identifier name;
-    private EnclosingScopeProvider enclosingScope;
+public interface Scope extends NameProvider {
+    EnumSet<ScopeType> INVISIBLE_SCOPE_TYPES = EnumSet.of(ScopeType.GLOBAL, ScopeType.FILE, ScopeType.MODULE_FILE);
 
-    public Scope(final ScopeType type, final Identifier name) {
-        this.type = type;
-        this.name = name;
+    Scope getEnclosingScope();
+
+    default void setEnclosingScope(Scope scope) {
     }
 
-    public Scope(final ScopeType type) {
-        this(type, Identifier.EMPTY);
+    default ScopeType getScopeType() {
+        return getEnclosingScope().getScopeType();
     }
 
-    @Override
-    public ScopeType getScopeType() {
-        return type;
+    default Identifier getScopeName() {
+        return getEnclosingScope().getScopeName();
     }
 
-    @Override
-    public Identifier getScopeName() {
-        return name;
-    }
-
-    @Override
-    public EnclosingScopeProvider getEnclosingScope() {
-        return enclosingScope;
-    }
-
-    @Override
-    public void setEnclosingScope(final EnclosingScopeProvider scope) {
-        this.enclosingScope = scope;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(type, name);
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj instanceof Scope scope) {
-            return type == scope.type && (name == null || name.equals(scope.name));
+    default Identifier getInternalName() {
+        var currentParent = getEnclosingScope();
+        var result = getName();
+        if (currentParent == null) {
+            return getName();
         }
-        return false;
-    }
-
-    @Override
-    public String toString() {
-        if (name != null) {
-            return String.format("%s [%s]", type, name);
+        while (currentParent != null) {
+            if (INVISIBLE_SCOPE_TYPES.contains(currentParent.getScopeType())) {
+                currentParent = currentParent.getEnclosingScope();
+                continue;
+            }
+            result = currentParent.getName().join(result, '.');
+            currentParent = currentParent.getEnclosingScope();
         }
-        return type.name();
-    }
-
-    public ScopeType getType() {
-        return type;
+        return result;
     }
 
     @Override
-    public Identifier getName() {
-        return name;
+    default Identifier getName() {
+        return getScopeName();
     }
 }

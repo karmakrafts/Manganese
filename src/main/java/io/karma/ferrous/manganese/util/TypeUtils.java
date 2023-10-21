@@ -16,6 +16,7 @@
 package io.karma.ferrous.manganese.util;
 
 import io.karma.ferrous.manganese.compiler.Compiler;
+import io.karma.ferrous.manganese.ocm.type.BuiltinType;
 import io.karma.ferrous.manganese.ocm.type.FunctionType;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.ocm.type.Types;
@@ -69,7 +70,8 @@ public final class TypeUtils {
                                                                final ProtoFunctionContext context) {
         return Result.tryGet(() -> {
             final var type = context.type();
-            final var returnType = getType(compiler, capturedScopeStack, type).unwrap();
+            final var returnType = type == null ? BuiltinType.VOID : getType(compiler, capturedScopeStack,
+                                                                             type).unwrap();
             final var isVarArg = context.functionParamList().vaFunctionParam() != null;
             final var paramTypes = TypeUtils.getParameterTypes(compiler, capturedScopeStack, context).unwrap();
             return Types.function(returnType, paramTypes, isVarArg);

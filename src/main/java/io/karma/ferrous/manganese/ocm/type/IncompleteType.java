@@ -15,7 +15,7 @@
 
 package io.karma.ferrous.manganese.ocm.type;
 
-import io.karma.ferrous.manganese.ocm.scope.EnclosingScopeProvider;
+import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.ocm.scope.ScopeType;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Identifier;
@@ -34,7 +34,7 @@ import static org.lwjgl.llvm.LLVMCore.LLVMGetGlobalContext;
 public final class IncompleteType implements Type {
     private final Identifier name;
     private long materializedType = MemoryUtil.NULL;
-    private EnclosingScopeProvider enclosingType;
+    private Scope enclosingType;
 
     IncompleteType(final Identifier name) {
         this.name = name;
@@ -46,12 +46,12 @@ public final class IncompleteType implements Type {
     }
 
     @Override
-    public EnclosingScopeProvider getEnclosingScope() {
+    public Scope getEnclosingScope() {
         return enclosingType;
     }
 
     @Override
-    public void setEnclosingScope(final EnclosingScopeProvider scope) {
+    public void setEnclosingScope(final Scope scope) {
         enclosingType = scope;
     }
 

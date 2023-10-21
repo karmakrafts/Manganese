@@ -15,7 +15,7 @@
 
 package io.karma.ferrous.manganese.ocm;
 
-import io.karma.ferrous.manganese.ocm.scope.EnclosingScopeProvider;
+import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.util.Identifier;
 import org.apiguardian.api.API;
@@ -26,10 +26,10 @@ import org.apiguardian.api.API.Status;
  * @since 15/10/2023
  */
 @API(status = Status.INTERNAL)
-public final class Field implements EnclosingScopeProvider {
+public final class Field implements Scope {
     private final Identifier name;
     private final Type type;
-    private EnclosingScopeProvider enclosingScope;
+    private Scope enclosingScope;
 
     public Field(final Identifier name, final Type type) {
         this.name = name;
@@ -46,12 +46,12 @@ public final class Field implements EnclosingScopeProvider {
     }
 
     @Override
-    public EnclosingScopeProvider getEnclosingScope() {
+    public Scope getEnclosingScope() {
         return enclosingScope;
     }
 
     @Override
-    public void setEnclosingScope(final EnclosingScopeProvider scope) {
+    public void setEnclosingScope(final Scope scope) {
         enclosingScope = scope;
     }
 }

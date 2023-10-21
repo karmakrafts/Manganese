@@ -27,7 +27,7 @@ public enum ScopeType {
     GLOBAL,
     FILE,
     MODULE_FILE,
-    NAMESPACE,
+    MODULE,
     STRUCT,
     CLASS,
     ENUM_CLASS,

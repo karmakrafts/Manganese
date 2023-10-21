@@ -15,7 +15,7 @@
 
 package io.karma.ferrous.manganese.util;
 
-import io.karma.ferrous.manganese.ocm.scope.EnclosingScopeProvider;
+import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.ocm.scope.ScopeType;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
@@ -27,7 +27,7 @@ import java.util.Stack;
  * @since 15/10/2023
  */
 @API(status = Status.INTERNAL)
-public final class ScopeStack extends Stack<EnclosingScopeProvider> {
+public final class ScopeStack extends Stack<Scope> {
     public static final ScopeStack EMPTY = new ScopeStack();
 
     public ScopeStack() {
@@ -37,8 +37,8 @@ public final class ScopeStack extends Stack<EnclosingScopeProvider> {
         addAll(other);
     }
 
-    public <S extends EnclosingScopeProvider> S applyEnclosingScopes(final S provider) {
-        EnclosingScopeProvider currentScope = provider;
+    public <S extends Scope> S applyEnclosingScopes(final S provider) {
+        Scope currentScope = provider;
         for (final var scope : reversed()) {
             currentScope.setEnclosingScope(scope);
             currentScope = scope;
@@ -49,7 +49,7 @@ public final class ScopeStack extends Stack<EnclosingScopeProvider> {
     public Identifier getScopeName() {
         var result = new Identifier("");
         for (final var scope : this) {
-            final var delimiter = scope.getScopeType() == ScopeType.NAMESPACE ? Identifier.DELIMITER : ".";
+            final var delimiter = scope.getScopeType() == ScopeType.MODULE ? Identifier.DELIMITER : ".";
             result = result.join(scope.getScopeName(), delimiter);
         }
         return result;

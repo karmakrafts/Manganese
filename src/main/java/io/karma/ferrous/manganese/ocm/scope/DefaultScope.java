@@ -13,9 +13,8 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.ocm.type;
+package io.karma.ferrous.manganese.ocm.scope;
 
-import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.util.Identifier;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
@@ -24,20 +23,31 @@ import java.util.Objects;
 
 /**
  * @author Alexander Hinze
- * @since 16/10/2023
+ * @since 15/10/2023
  */
 @API(status = Status.INTERNAL)
-public final class NamedFunctionType extends FunctionType {
+public final class DefaultScope implements Scope {
+    public static final DefaultScope GLOBAL = new DefaultScope(ScopeType.GLOBAL, Identifier.EMPTY);
+    private final ScopeType type;
     private final Identifier name;
     private Scope enclosingScope;
 
-    NamedFunctionType(final Identifier name, final Type returnType, final boolean isVarArg, final Type... paramTypes) {
-        super(returnType, isVarArg, paramTypes);
+    public DefaultScope(final ScopeType type, final Identifier name) {
+        this.type = type;
         this.name = name;
     }
 
+    public DefaultScope(final ScopeType type) {
+        this(type, Identifier.EMPTY);
+    }
+
     @Override
-    public Identifier getName() {
+    public ScopeType getScopeType() {
+        return type;
+    }
+
+    @Override
+    public Identifier getScopeName() {
         return name;
     }
 
@@ -48,26 +58,36 @@ public final class NamedFunctionType extends FunctionType {
 
     @Override
     public void setEnclosingScope(final Scope scope) {
-        enclosingScope = scope;
+        this.enclosingScope = scope;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), name, enclosingScope);
+        return Objects.hash(type, name);
     }
 
     @Override
     public boolean equals(Object obj) {
-        if(obj instanceof NamedFunctionType type) { // @formatter:off
-            return name.equals(type.name)
-                && (enclosingScope == null || enclosingScope.equals(type.enclosingScope))
-                && super.equals(type);
-        } // @formatter:on
+        if (obj instanceof DefaultScope scope) {
+            return type == scope.type && (name == null || name.equals(scope.name));
+        }
         return false;
     }
 
     @Override
     public String toString() {
-        return toString(name.toString());
+        if (name != null) {
+            return String.format("%s [%s]", type, name);
+        }
+        return type.name();
+    }
+
+    public ScopeType getType() {
+        return type;
+    }
+
+    @Override
+    public Identifier getName() {
+        return name;
     }
 }

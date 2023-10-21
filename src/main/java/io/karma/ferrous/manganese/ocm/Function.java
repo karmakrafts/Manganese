@@ -15,7 +15,7 @@
 
 package io.karma.ferrous.manganese.ocm;
 
-import io.karma.ferrous.manganese.ocm.scope.EnclosingScopeProvider;
+import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.ocm.type.FunctionType;
 import io.karma.ferrous.manganese.ocm.type.NamedFunctionType;
 import io.karma.ferrous.manganese.ocm.type.Type;
@@ -32,14 +32,14 @@ import java.util.Arrays;
  * @since 14/10/2023
  */
 @API(status = Status.INTERNAL)
-public final class Function implements EnclosingScopeProvider {
+public final class Function implements Scope {
     private final Identifier name;
     private final CallingConvention callConv;
     private final boolean isExtern;
     private final boolean isVarArg;
     private final Type returnType;
     private final Parameter[] parameters;
-    private EnclosingScopeProvider enclosingScope;
+    private Scope enclosingScope;
 
     public Function(final Identifier name, final CallingConvention callConv, final boolean isExtern,
                     final boolean isVarArg, final Type returnType, final Parameter... params) {
@@ -74,12 +74,12 @@ public final class Function implements EnclosingScopeProvider {
     }
 
     @Override
-    public EnclosingScopeProvider getEnclosingScope() {
+    public Scope getEnclosingScope() {
         return enclosingScope;
     }
 
     @Override
-    public void setEnclosingScope(final EnclosingScopeProvider scope) {
+    public void setEnclosingScope(final Scope scope) {
         enclosingScope = scope;
     }
 

@@ -15,38 +15,68 @@
 
 package io.karma.ferrous.manganese.ocm.type;
 
-import io.karma.ferrous.manganese.ocm.scope.EnclosingScopeProvider;
+import io.karma.ferrous.manganese.ocm.scope.DefaultScope;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Identifier;
-import io.karma.ferrous.manganese.util.TM2LongFunction;
 import io.karma.ferrous.manganese.util.TokenUtils;
+import io.karma.ferrous.vanadium.FerrousLexer;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
-import org.lwjgl.system.MemoryUtil;
+import org.lwjgl.llvm.LLVMCore;
+
+import java.util.function.ToLongFunction;
 
 /**
  * @author Alexander Hinze
  * @since 13/10/2023
  */
 @API(status = Status.INTERNAL)
-public final class BuiltinType implements Type {
-    private final Identifier name;
-    private final TM2LongFunction typeProvider;
-    private long materializedType = MemoryUtil.NULL;
+public enum BuiltinType implements Type {
+    // @formatter:off
+    VOID    (FerrousLexer.KW_VOID,  target -> LLVMCore.LLVMVoidType()),
+    BOOL    (FerrousLexer.KW_BOOL,  target -> LLVMCore.LLVMInt8Type()),
+    CHAR    (FerrousLexer.KW_CHAR,  target -> LLVMCore.LLVMInt8Type()),
+    // Signed types
+    I8      (FerrousLexer.KW_I8,    target -> LLVMCore.LLVMInt8Type()),
+    I16     (FerrousLexer.KW_I16,   target -> LLVMCore.LLVMInt16Type()),
+    I32     (FerrousLexer.KW_I32,   target -> LLVMCore.LLVMInt32Type()),
+    I64     (FerrousLexer.KW_I64,   target -> LLVMCore.LLVMInt64Type()),
+    ISIZE   (FerrousLexer.KW_ISIZE, BuiltinType::getSizedIntType),
+    // Unsigned types
+    U8      (FerrousLexer.KW_U8,    target -> LLVMCore.LLVMInt8Type()),
+    U16     (FerrousLexer.KW_U16,   target -> LLVMCore.LLVMInt16Type()),
+    U32     (FerrousLexer.KW_U32,   target -> LLVMCore.LLVMInt32Type()),
+    U64     (FerrousLexer.KW_U64,   target -> LLVMCore.LLVMInt64Type()),
+    USIZE   (FerrousLexer.KW_USIZE, BuiltinType::getSizedIntType),
+    // Floating point types
+    F32     (FerrousLexer.KW_F32,   target -> LLVMCore.LLVMFloatType()),
+    F64     (FerrousLexer.KW_F64,   target -> LLVMCore.LLVMDoubleType());
+    // @formatter:on
 
-    BuiltinType(final Identifier name, final TM2LongFunction typeProvider) {
+    public static final BuiltinType[] SIGNED_TYPES = {I8, I16, I32, I64, ISIZE};
+    public static final BuiltinType[] UNSIGNED_TYPES = {U8, U16, U32, U64, USIZE};
+    public static final BuiltinType[] FLOAT_TYPES = {F32, F64};
+
+    private final Identifier name;
+    private final ToLongFunction<TargetMachine> typeProvider;
+
+    BuiltinType(final Identifier name, final ToLongFunction<TargetMachine> typeProvider) {
         this.name = name;
         this.typeProvider = typeProvider;
     }
 
-    BuiltinType(final int token, final TM2LongFunction typeProvider) {
+    BuiltinType(final int token, final ToLongFunction<TargetMachine> typeProvider) {
         this(new Identifier(TokenUtils.getLiteral(token)), typeProvider);
     }
 
+    private static long getSizedIntType(final TargetMachine machine) {
+        return machine.getPointerSize() == 8 ? LLVMCore.LLVMInt64Type() : LLVMCore.LLVMInt32Type();
+    }
+
     @Override
-    public EnclosingScopeProvider getEnclosingScope() {
-        return Scope.GLOBAL;
+    public Scope getEnclosingScope() {
+        return DefaultScope.GLOBAL;
     }
 
     @Override
@@ -71,28 +101,12 @@ public final class BuiltinType implements Type {
 
     @Override
     public long materialize(final TargetMachine machine) {
-        if (materializedType != MemoryUtil.NULL) {
-            return materializedType;
-        }
-        return materializedType = typeProvider.getAddress(machine);
+        return typeProvider.applyAsLong(machine);
     }
 
     @Override
     public TypeAttribute[] getAttributes() {
         return new TypeAttribute[0];
-    }
-
-    @Override
-    public int hashCode() {
-        return name.hashCode();
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj instanceof BuiltinType type) {
-            return name.equals(type.name);
-        }
-        return false;
     }
 
     @Override

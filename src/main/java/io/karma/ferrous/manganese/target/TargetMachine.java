@@ -21,9 +21,6 @@ import io.karma.ferrous.manganese.util.Logger;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 import org.jetbrains.annotations.Nullable;
-import org.lwjgl.llvm.LLVMCore;
-import org.lwjgl.llvm.LLVMTarget;
-import org.lwjgl.llvm.LLVMTargetMachine;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 

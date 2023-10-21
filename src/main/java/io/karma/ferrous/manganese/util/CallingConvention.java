@@ -15,6 +15,7 @@
 
 package io.karma.ferrous.manganese.util;
 
+import io.karma.ferrous.manganese.target.TargetMachine;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 import org.lwjgl.llvm.LLVMCore;
@@ -22,6 +23,7 @@ import org.lwjgl.llvm.LLVMCore;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 
 /**
@@ -31,16 +33,18 @@ import java.util.stream.Collectors;
 @API(status = Status.STABLE)
 public enum CallingConvention {
     // @formatter:off
-    CDECL       ("cdecl",       LLVMCore.LLVMCCallConv),
-    ANYREG      ("anyreg",      LLVMCore.LLVMAnyRegCallConv),
-    REGCALL     ("regcall",     LLVMCore.LLVMX86RegCallCallConv),
-    STDCALL     ("stdcall",     LLVMCore.LLVMX86StdcallCallConv),
-    THISCALL    ("thiscall",    LLVMCore.LLVMX86ThisCallCallConv),
-    FASTCALL    ("fastcall",    LLVMCore.LLVMX86FastcallCallConv),
-    VECTORCALL  ("vectorcall",  LLVMCore.LLVMX86VectorCallCallConv),
-    SWIFTCALL   ("swiftcall",   LLVMCore.LLVMSwiftCallConv),
-    MS          ("ms",          LLVMCore.LLVMWin64CallConv),
-    SYSV        ("sysv",        LLVMCore.LLVMX8664SysVCallConv);
+    CDECL       ("cdecl",       m -> LLVMCore.LLVMCCallConv),
+    ANYREG      ("anyreg",      m -> LLVMCore.LLVMAnyRegCallConv),
+    REGCALL     ("regcall",     m -> LLVMCore.LLVMX86RegCallCallConv),
+    STDCALL     ("stdcall",     m -> LLVMCore.LLVMX86StdcallCallConv),
+    THISCALL    ("thiscall",    m -> LLVMCore.LLVMX86ThisCallCallConv),
+    FASTCALL    ("fastcall",    m -> LLVMCore.LLVMX86FastcallCallConv),
+    VECTORCALL  ("vectorcall",  m -> LLVMCore.LLVMX86VectorCallCallConv),
+    SWIFTCALL   ("swiftcall",   m -> LLVMCore.LLVMSwiftCallConv),
+    MS          ("ms",          m -> LLVMCore.LLVMWin64CallConv),
+    SYSV        ("sysv",        m -> LLVMCore.LLVMX8664SysVCallConv),
+    INTERRUPT   ("interrupt",   CallingConvention::getInterruptCallConv),
+    SIGNAL      ("signal",      CallingConvention::getSignalCallConv);
     // @formatter:on
 
     // @formatter:off
@@ -49,22 +53,37 @@ public enum CallingConvention {
         .collect(Collectors.toList());
     // @formatter:on
     private final String text;
-    private final int llvmType;
+    private final ToIntFunction<TargetMachine> valueProvider;
 
-    CallingConvention(final String text, final int llvmType) {
+    CallingConvention(final String text, final ToIntFunction<TargetMachine> valueProvider) {
         this.text = text;
-        this.llvmType = llvmType;
+        this.valueProvider = valueProvider;
     }
 
     public static Optional<CallingConvention> findByText(final String text) {
         return Arrays.stream(values()).filter(conv -> conv.text.equals(text)).findFirst();
     }
 
+    private static int getInterruptCallConv(final TargetMachine machine) {
+        return switch (machine.getTarget().getArchitecture()) { // @formatter:off
+            case X86, X86_64    -> LLVMCore.LLVMX86INTRCallConv;
+            case ARM, AARCH64   -> LLVMCore.LLVMAVRINTRCallConv;
+            default             -> LLVMCore.LLVMCCallConv;
+        }; // @formatter:on
+    }
+
+    private static int getSignalCallConv(final TargetMachine machine) {
+        return switch(machine.getTarget().getArchitecture()) { // @formatter:off
+            case ARM, AARCH64   -> LLVMCore.LLVMAVRSIGNALCallConv;
+            default             -> LLVMCore.LLVMCCallConv;
+        }; // @formatter:on
+    }
+
     public String getText() {
         return text;
     }
 
-    public int getLlvmType() {
-        return llvmType;
+    public int getLlvmType(final TargetMachine machine) {
+        return valueProvider.applyAsInt(machine);
     }
 }

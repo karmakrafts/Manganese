@@ -16,7 +16,6 @@
 package io.karma.ferrous.manganese.compiler;
 
 import io.karma.ferrous.manganese.analyze.Analyzer;
-import io.karma.ferrous.manganese.module.Module;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.translate.TranslationUnit;
 import io.karma.ferrous.manganese.util.Logger;
@@ -42,7 +41,6 @@ import org.apiguardian.api.API.Status;
 import org.fusesource.jansi.Ansi;
 import org.fusesource.jansi.Ansi.Attribute;
 import org.fusesource.jansi.Ansi.Color;
-import org.lwjgl.llvm.LLVMCore;
 
 import java.io.IOException;
 import java.nio.channels.Channels;
@@ -208,10 +206,12 @@ public final class Compiler implements ANTLRErrorListener {
                 analyze(rawFileName, channel, context);
             }
             catch (IOException error) {
-                context.reportError(new CompileError(error.toString()), CompileStatus.IO_ERROR);
+                context.reportError(new CompileError(Utils.makeCompilerMessage(error.toString())),
+                                    CompileStatus.IO_ERROR);
             }
             catch (Exception error) {
-                context.reportError(new CompileError(error.toString()), CompileStatus.UNKNOWN_ERROR);
+                context.reportError(new CompileError(Utils.makeCompilerMessage(error.toString())),
+                                    CompileStatus.UNKNOWN_ERROR);
             }
         }
 
@@ -244,20 +244,23 @@ public final class Compiler implements ANTLRErrorListener {
                 context.setCurrentPass(CompilePass.NONE);
             }
             catch (IOException error) {
-                context.reportError(new CompileError(error.toString()), CompileStatus.IO_ERROR);
+                context.reportError(new CompileError(Utils.makeCompilerMessage(error.toString())),
+                                    CompileStatus.IO_ERROR);
             }
             catch (Exception error) {
-                context.reportError(new CompileError(error.toString()), CompileStatus.UNKNOWN_ERROR);
+                context.reportError(new CompileError(Utils.makeCompilerMessage(error.toString())),
+                                    CompileStatus.UNKNOWN_ERROR);
             }
         }
 
         final var globalModule = Objects.requireNonNull(
                 Functions.tryGet(() -> targetMachine.loadEmbeddedModule("global", LLVMGetGlobalContext())));
-        Logger.INSTANCE.infoln("Global module:\n%s", globalModule.disassemble());
         module.linkIn(globalModule);
         globalModule.dispose();
-        Logger.INSTANCE.infoln("Linked module:\n%s", module.disassemble());
+
+        Logger.INSTANCE.infoln("\nLinked disassembly:\n\n%s", module.disassemble());
         module.dispose();
+
         return context.makeResult();
     }
 

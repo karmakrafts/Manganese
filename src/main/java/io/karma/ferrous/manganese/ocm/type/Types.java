@@ -15,12 +15,9 @@
 
 package io.karma.ferrous.manganese.ocm.type;
 
-import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Identifier;
-import io.karma.ferrous.vanadium.FerrousLexer;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
-import org.lwjgl.llvm.LLVMCore;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -33,35 +30,6 @@ import java.util.Optional;
  */
 @API(status = Status.INTERNAL)
 public final class Types {
-    public static final BuiltinType VOID = new BuiltinType(FerrousLexer.KW_VOID, target -> LLVMCore.LLVMVoidType());
-    public static final BuiltinType BOOL = new BuiltinType(FerrousLexer.KW_BOOL, target -> LLVMCore.LLVMInt8Type());
-    public static final BuiltinType CHAR = new BuiltinType(FerrousLexer.KW_CHAR, target -> LLVMCore.LLVMInt8Type());
-    // Signed types
-    public static final BuiltinType I8 = new BuiltinType(FerrousLexer.KW_I8, target -> LLVMCore.LLVMInt8Type());
-    public static final BuiltinType I16 = new BuiltinType(FerrousLexer.KW_I16, target -> LLVMCore.LLVMInt16Type());
-    public static final BuiltinType I32 = new BuiltinType(FerrousLexer.KW_I32, target -> LLVMCore.LLVMInt32Type());
-    public static final BuiltinType I64 = new BuiltinType(FerrousLexer.KW_I64, target -> LLVMCore.LLVMInt64Type());
-    public static final BuiltinType ISIZE = new BuiltinType(FerrousLexer.KW_ISIZE, Types::getSizedIntType);
-    public static final BuiltinType[] SIGNED_TYPES = {I8, I16, I32, I64, ISIZE};
-    // Unsigned types
-    public static final BuiltinType U8 = new BuiltinType(FerrousLexer.KW_U8, target -> LLVMCore.LLVMInt8Type());
-    public static final BuiltinType U16 = new BuiltinType(FerrousLexer.KW_U16, target -> LLVMCore.LLVMInt16Type());
-    public static final BuiltinType U32 = new BuiltinType(FerrousLexer.KW_U32, target -> LLVMCore.LLVMInt32Type());
-    public static final BuiltinType U64 = new BuiltinType(FerrousLexer.KW_U64, target -> LLVMCore.LLVMInt64Type());
-    public static final BuiltinType USIZE = new BuiltinType(FerrousLexer.KW_USIZE, Types::getSizedIntType);
-    public static final BuiltinType[] UNSIGNED_TYPES = {U8, U16, U32, U64, USIZE};
-    // Floating point types
-    public static final BuiltinType F32 = new BuiltinType(FerrousLexer.KW_F32, target -> LLVMCore.LLVMFloatType());
-    public static final BuiltinType F64 = new BuiltinType(FerrousLexer.KW_F64, target -> LLVMCore.LLVMDoubleType());
-    public static final BuiltinType[] FLOAT_TYPES = {F32, F64};
-
-    public static final BuiltinType[] BUILTIN_TYPES = { // @formatter:off
-        VOID, BOOL, CHAR,
-        I8, I16, I32, I64, ISIZE,
-        U8, U16, U32, U64, USIZE,
-        F32, F64
-    }; // @formatter:on
-
     private static final HashMap<String, Type> CACHE = new HashMap<>();
 
     // @formatter:off
@@ -70,10 +38,6 @@ public final class Types {
 
     public static void invalidateCache() {
         CACHE.clear();
-    }
-
-    private static long getSizedIntType(final TargetMachine machine) {
-        return machine.getPointerSize() == 8 ? LLVMCore.LLVMInt64Type() : LLVMCore.LLVMInt32Type();
     }
 
     @SuppressWarnings("unchecked")
@@ -88,7 +52,7 @@ public final class Types {
     }
 
     public static Optional<BuiltinType> builtin(final Identifier name) { // @formatter:off
-        return Arrays.stream(BUILTIN_TYPES)
+        return Arrays.stream(BuiltinType.values())
             .filter(type -> type.getName().equals(name))
             .findFirst();
     } // @formatter:on
