@@ -61,7 +61,6 @@ public final class DerivedType implements NamedType {
 
     @Override
     public void setEnclosingScope(final Scope enclosingScope) {
-        throw new UnsupportedOperationException("Settings scope of derived type is not supported");
     }
 
     // Type

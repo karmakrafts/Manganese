@@ -74,7 +74,7 @@ public final class TypeUtils {
             final var returnType = type == null ? BuiltinType.VOID : getType(compiler, scopeStack, type).unwrap();
             final var isVarArg = context.functionParamList().vaFunctionParam() != null;
             final var paramTypes = TypeUtils.getParameterTypes(compiler, scopeStack, context).unwrap();
-            return Types.function(returnType, paramTypes, isVarArg);
+            return Types.function(returnType, paramTypes, isVarArg, scopeStack::applyEnclosingScopes);
         });
     }
 }

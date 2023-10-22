@@ -90,7 +90,6 @@ public enum BuiltinType implements NamedType {
 
     @Override
     public void setEnclosingScope(final Scope scope) {
-        throw new UnsupportedOperationException("Setting scope of enclosed type is not supported");
     }
 
     // Type

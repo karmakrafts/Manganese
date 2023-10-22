@@ -15,10 +15,7 @@
 
 package io.karma.ferrous.manganese.ocm;
 
-import io.karma.ferrous.manganese.ocm.type.FunctionType;
-import io.karma.ferrous.manganese.ocm.type.NamedFunctionType;
 import io.karma.ferrous.manganese.ocm.type.Type;
-import io.karma.ferrous.manganese.ocm.type.Types;
 import io.karma.ferrous.manganese.scope.Scope;
 import io.karma.ferrous.manganese.scope.Scoped;
 import io.karma.ferrous.manganese.util.CallingConvention;
@@ -68,16 +65,6 @@ public final class Function implements NameProvider, Scoped {
 
     public boolean isExtern() {
         return isExtern;
-    }
-
-    public FunctionType makeType() {
-        final var paramTypes = Arrays.stream(parameters).map(Parameter::type).toList();
-        return Types.function(returnType, paramTypes, isVarArg);
-    }
-
-    public NamedFunctionType makeNamedType(final Identifier name) {
-        final var paramTypes = Arrays.stream(parameters).map(Parameter::type).toList();
-        return Types.namedFunction(name, returnType, paramTypes, isVarArg);
     }
 
     // NameProvider

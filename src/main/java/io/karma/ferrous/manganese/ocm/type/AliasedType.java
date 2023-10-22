@@ -27,7 +27,7 @@ import java.util.Objects;
  */
 public final class AliasedType implements NamedType {
     private final Identifier name;
-    private final Type backingType;
+    private Type backingType;
     private Scope enclosingScope;
 
     AliasedType(final Identifier name, final Type backingType) {
@@ -37,6 +37,10 @@ public final class AliasedType implements NamedType {
 
     public Type getBackingType() {
         return backingType;
+    }
+
+    public void setBackingType(final Type type) {
+        backingType = type;
     }
 
     // Name provider
@@ -122,6 +126,6 @@ public final class AliasedType implements NamedType {
 
     @Override
     public String toString() {
-        return String.format("%s (%s)", name, backingType);
+        return String.format("%s (%s)", getQualifiedName(), backingType);
     }
 }

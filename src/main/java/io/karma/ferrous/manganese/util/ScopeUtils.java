@@ -32,22 +32,17 @@ public final class ScopeUtils {
     private ScopeUtils() {}
     // @formatter:on
 
-    public static <T> @Nullable T findInScope(final Map<Identifier, T> map, final Identifier name,
+    public static <T> @Nullable T findInScope(final Map<Identifier, T> map, Identifier name,
                                               final Identifier scopeName) {
-        var element = map.get(name);
+        T element = map.get(name);
         if (element == null) {
-            // Attempt to resolve field types from the inside scope outwards
-            final var partialScopeNames = scopeName.split(Identifier.DELIMITER);
-            final var numPartialScopeNames = partialScopeNames.length;
-            for (var j = numPartialScopeNames; j > 0; j--) {
-                final var slicedScopeNames = ArrayUtils.slice(partialScopeNames, 0, j, Identifier[]::new);
-                var currentScopeName = new Identifier("");
-                for (final var partialScopeName : slicedScopeNames) {
-                    currentScopeName = currentScopeName.join(partialScopeName);
-                }
-                element = map.get(currentScopeName.join(name));
+            final var components = scopeName.components();
+            final var numComponents = components.length;
+            for (var i = numComponents; i > 0; i--) {
+                final var subComponents = ArrayUtils.slice(components, 0, i, String[]::new);
+                element = map.get(new Identifier(subComponents).join(name));
                 if (element != null) {
-                    break; // Stop if we found it
+                    break; // Stop if we have found it
                 }
             }
         }

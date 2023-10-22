@@ -87,7 +87,6 @@ public class FunctionType implements Type {
 
     @Override
     public void setEnclosingScope(final Scope scope) {
-        throw new UnsupportedOperationException("Settings scope on unnamed function type is not supported");
     }
 
     // Type

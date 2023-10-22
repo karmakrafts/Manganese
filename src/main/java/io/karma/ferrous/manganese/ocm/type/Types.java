@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 
 /**
  * @author Alexander Hinze
@@ -58,41 +59,44 @@ public final class Types {
     } // @formatter:on
 
     public static FunctionType function(final Type returnType, final List<? extends Type> paramTypes,
-                                        final boolean isVarArg) {
-        return cached(new FunctionType(returnType, isVarArg, paramTypes.toArray(Type[]::new)));
-    }
-
-    public static FunctionType function(final Type returnType, final boolean isVarArg, final Type... paramTypes) {
-        return cached(new FunctionType(returnType, isVarArg, paramTypes));
+                                        final boolean isVarArg, final Function<FunctionType, FunctionType> callback) {
+        return cached(callback.apply(new FunctionType(returnType, isVarArg, paramTypes.toArray(Type[]::new))));
     }
 
     public static NamedFunctionType namedFunction(final Identifier name, final Type returnType,
-                                                  final List<? extends Type> paramTypes, final boolean isVarArg) {
-        return cached(new NamedFunctionType(name, returnType, isVarArg, paramTypes.toArray(Type[]::new)));
+                                                  final List<? extends Type> paramTypes, final boolean isVarArg,
+                                                  final Function<NamedFunctionType, NamedFunctionType> callback) {
+        final var params = paramTypes.toArray(Type[]::new);
+        return cached(callback.apply(new NamedFunctionType(name, returnType, isVarArg, params)));
     }
 
-    public static NamedFunctionType namedFunction(final Identifier name, final Type returnType, final boolean isVarArg,
-                                                  final Type... paramTypes) {
-        return cached(new NamedFunctionType(name, returnType, isVarArg, paramTypes));
+    public static StructureType structure(final Identifier name, final boolean isPacked,
+                                          final Function<StructureType, StructureType> callback,
+                                          final Type... fieldTypes) {
+        return cached(callback.apply(new StructureType(name, isPacked, fieldTypes)));
     }
 
-    public static StructureType structure(final Identifier name, final boolean isPacked, final Type... fieldTypes) {
-        return cached(new StructureType(name, isPacked, fieldTypes));
+    public static StructureType structure(final Identifier name, final Function<StructureType, StructureType> callback,
+                                          final Type... fieldTypes) {
+        return structure(name, false, callback, fieldTypes);
     }
 
-    public static StructureType structure(final Identifier name, final Type... fieldTypes) {
-        return structure(name, false, fieldTypes);
+    public static AliasedType aliased(final Identifier name, final Type backingType,
+                                      final Function<AliasedType, AliasedType> callback) {
+        return cached(callback.apply(new AliasedType(name, backingType)));
     }
 
-    public static AliasedType aliased(final Identifier name, final Type backingType) {
-        return cached(new AliasedType(name, backingType));
+    public static TupleType tuple(final Function<TupleType, TupleType> callback, final Type... types) {
+        return cached(callback.apply(new TupleType(types)));
     }
 
-    public static TupleType tuple(final Type... types) {
-        return cached(new TupleType(types));
+    public static VectorType vector(final Type type, final int elementCount,
+                                    final Function<VectorType, VectorType> callback) {
+        return cached(callback.apply(new VectorType(type, elementCount)));
     }
 
-    public static VectorType vector(final Type type, final int elementCount) {
-        return cached(new VectorType(type, elementCount));
+    public static IncompleteType incomplete(final Identifier name,
+                                            final Function<IncompleteType, IncompleteType> callback) {
+        return cached(callback.apply(new IncompleteType(name)));
     }
 }

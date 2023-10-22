@@ -35,7 +35,7 @@ public final class IncompleteType implements NamedType {
     private long materializedType = MemoryUtil.NULL;
     private Scope enclosingType;
 
-    public IncompleteType(final Identifier name) {
+    IncompleteType(final Identifier name) {
         this.name = name;
     }
 

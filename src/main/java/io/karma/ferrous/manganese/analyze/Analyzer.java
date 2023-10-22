@@ -45,6 +45,8 @@ import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
+import org.fusesource.jansi.Ansi;
+import org.fusesource.jansi.Ansi.Color;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayDeque;
@@ -69,23 +71,22 @@ public final class Analyzer extends ParseAdapter {
     private String addTypesToGraph(final ArrayDeque<Pair<TopoNode<NamedType>, TopoNode<NamedType>>> typesToResolve,
                                    final Map<Identifier, TopoNode<NamedType>> nodes,
                                    final HashSet<Identifier> resolved) {
-        StringBuilder result = new StringBuilder();
+        final var buffer = Ansi.ansi().fgBright(Color.CYAN);
         final var pair = typesToResolve.pop();
 
         final var parentNode = pair.getLeft();
-        final var parentType = parentNode.getValue();
         final var childNode = pair.getRight();
         final var childType = childNode.getValue();
 
         if (childType instanceof UDT udt && !udt.isComplete()) {
-            result.append('U');
+            buffer.fgBright(Color.MAGENTA).a('U').fgBright(Color.CYAN);
             final var fieldTypes = udt.type().getFieldTypes();
             for (final var fieldType : fieldTypes) {
                 if (fieldType.isBuiltin() || fieldType.isComplete() || !(fieldType instanceof NamedType)) {
                     continue; // Skip all types which are complete to save time
                 }
                 var fieldTypeName = ((NamedType) fieldType).getQualifiedName();
-                final var fieldNode = ScopeUtils.findInScope(nodes, fieldTypeName, parentType.getScopeName());
+                final var fieldNode = ScopeUtils.findInScope(nodes, fieldTypeName, childType.getScopeName());
                 if (fieldNode == null) {
                     final var compileContext = compiler.getContext();
                     final var message = Utils.makeCompilerMessage(
@@ -95,37 +96,36 @@ public final class Analyzer extends ParseAdapter {
                 }
                 fieldTypeName = fieldNode.getValue().getQualifiedName();
                 if (resolved.contains(fieldTypeName)) {
-                    result.append('C');
+                    buffer.fgBright(Color.GREEN).a('C').fgBright(Color.CYAN);
                     continue; // Prevent multiple passes over the same type
                 }
                 typesToResolve.push(Pair.of(childNode, fieldNode));
                 resolved.add(fieldTypeName);
-                result.append('R');
+                buffer.a('R');
             }
         }
 
         if (childType instanceof AliasedType alias && !alias.isComplete()) {
-            result.append('A');
+            buffer.fgBright(Color.MAGENTA).a('A').fgBright(Color.CYAN);
             if (!alias.isBuiltin() && !alias.isComplete()) {
                 var backingTypeName = ((NamedType) alias.getBackingType()).getQualifiedName();
-                final var typeNode = ScopeUtils.findInScope(nodes, backingTypeName, parentType.getScopeName());
+                final var typeNode = ScopeUtils.findInScope(nodes, backingTypeName, childType.getScopeName());
                 if (typeNode != null) {
                     backingTypeName = typeNode.getValue().getQualifiedName();
                     if (!resolved.contains(backingTypeName)) { // Prevent multiple passes over the same type
                         typesToResolve.push(Pair.of(childNode, typeNode));
                         resolved.add(backingTypeName);
-                        result.append('R');
+                        buffer.a('R');
                     }
                     else {
-                        result.append('C');
+                        buffer.fgBright(Color.GREEN).a('C').fgBright(Color.CYAN);
                     }
                 }
             }
         }
 
         parentNode.addDependency(childNode);
-        return result.append("D\n  > ")
-                .append(childType).toString();
+        return buffer.a('D').fg(Color.CYAN).a(" > ").a(childType).toString();
     }
 
     @Override
@@ -141,8 +141,8 @@ public final class Analyzer extends ParseAdapter {
         if (type.isEmpty()) {
             return;
         }
-        final var aliasedType = scopeStack.applyEnclosingScopes(
-                Types.aliased(Utils.getIdentifier(identContext), type.get()));
+        final var aliasedType = Types.aliased(Utils.getIdentifier(identContext), type.get(),
+                                              scopeStack::applyEnclosingScopes);
         udts.put(aliasedType.getQualifiedName(), aliasedType);
         super.enterTypeAlias(context);
     }
@@ -190,7 +190,7 @@ public final class Analyzer extends ParseAdapter {
     private boolean checkIsAlreadyDefined(final IdentContext identContext) {
         final var scopeName = scopeStack.getScopeName();
         final var name = Utils.getIdentifier(identContext);
-        final var type = findTypeInScope(scopeName.join(name), scopeName);
+        final var type = findTypeInScope(name, scopeName);
         if (type != null) {
             final var compileContext = compiler.getContext();
             final var message = Utils.makeCompilerMessage(String.format("Type '%s' is already defined", name));
@@ -225,33 +225,66 @@ public final class Analyzer extends ParseAdapter {
         return ScopeUtils.findInScope(udts, name, scopeName);
     }
 
-    private void resolveFieldTypes() {
+    private boolean resolveAliasedType(final AliasedType alias, final Identifier scopeName) {
+        var currentType = alias.getBackingType();
+        while (!currentType.isComplete()) {
+            if (currentType.isAliased()) {
+                currentType = ((AliasedType) currentType).getBackingType();
+                continue;
+            }
+            if (!(currentType instanceof NamedType)) {
+                return false;
+            }
+            final var currentTypeName = ((NamedType) currentType).getQualifiedName();
+            final var completeType = findCompleteTypeInScope(currentTypeName, scopeName);
+            if (completeType == null) {
+                return false;
+            }
+            currentType = completeType;
+        }
+        alias.setBackingType(currentType);
+        return true;
+    }
+
+    private boolean resolveFieldTypes(final UDT udt, final Identifier scopeName) {
+        final var type = udt.type();
+        final var fieldTypes = type.getFieldTypes();
+        final var numFields = fieldTypes.size();
+        for (var i = 0; i < numFields; i++) {
+            final var fieldType = fieldTypes.get(i);
+            if (fieldType.isBuiltin() || fieldType.isComplete() || !(fieldType instanceof NamedType)) {
+                continue;
+            }
+            final var fieldTypeName = ((NamedType) fieldType).getQualifiedName();
+            Logger.INSTANCE.debugln("Found incomplete field type '%s' in '%s'", fieldTypeName, scopeName);
+            final var completeType = findCompleteTypeInScope(fieldTypeName, scopeName);
+            if (completeType == null) {
+                final var message = String.format("Failed to resolve field type '%s' for '%s'", fieldTypeName,
+                                                  scopeName);
+                compiler.getContext()
+                        .reportError(new CompileError(Utils.makeCompilerMessage(message)), CompileStatus.TYPE_ERROR);
+                return false;
+            }
+            Logger.INSTANCE.debugln("  > Resolved to complete type '%s'", completeType);
+            type.setFieldType(i, completeType.derive(fieldType.getAttributes()));
+        }
+        return true;
+    }
+
+    private void resolveTypes() {
         final var udts = this.udts.values();
         for (final var udt : udts) {
-            if (udt.isAliased() || !(udt instanceof UDT)) {
-                continue; // Don't need to waste time on doing nothing..
-            }
             final var scopeName = udt.getScopeName();
-            final var type = ((UDT) udt).type();
-            final var fieldTypes = type.getFieldTypes();
-            final var numFields = fieldTypes.size();
-            for (var i = 0; i < numFields; i++) {
-                final var fieldType = fieldTypes.get(i);
-                if (fieldType.isBuiltin() || fieldType.isComplete() || !(fieldType instanceof NamedType)) {
-                    continue;
+            if (udt.isAliased() && udt instanceof AliasedType alias) {
+                if (!resolveAliasedType(alias, scopeName)) {
+                    continue; // TODO: raise error
                 }
-                final var fieldTypeName = ((NamedType) fieldType).getQualifiedName();
-                Logger.INSTANCE.debugln("Found incomplete field type '%s' in '%s'", fieldTypeName, scopeName);
-                final var completeType = findCompleteTypeInScope(fieldTypeName, scopeName);
-                if (completeType == null) {
-                    final var message = String.format("Failed to resolve field type '%s' for '%s'", fieldTypeName,
-                                                      scopeName);
-                    compiler.getContext().reportError(new CompileError(Utils.makeCompilerMessage(message)),
-                                                      CompileStatus.TYPE_ERROR);
-                    continue;
-                }
-                Logger.INSTANCE.debugln("  > Resolved to complete type '%s'", completeType);
-                type.setFieldType(i, completeType.derive(fieldType.getAttributes()));
+            }
+            if (!(udt instanceof UDT)) {
+                continue; // Skip everything else apart from UDTs
+            }
+            if (!resolveFieldTypes((UDT) udt, scopeName)) {
+                // TODO: raise error
             }
         }
     }
@@ -318,7 +351,7 @@ public final class Analyzer extends ParseAdapter {
 
         final var fieldTypes = layoutAnalyzer.getFields().stream().map(Field::getType).toArray(Type[]::new);
 
-        final var type = scopeStack.applyEnclosingScopes(Types.structure(name, fieldTypes));
+        final var type = Types.structure(name, scopeStack::applyEnclosingScopes, fieldTypes);
         final var udt = new UDT(kind, type);
         udts.put(type.getQualifiedName(), udt);
         Logger.INSTANCE.debugln("Captured field layout for type '%s'", type.getQualifiedName());
@@ -327,7 +360,7 @@ public final class Analyzer extends ParseAdapter {
     public void preProcessTypes() {
         try {
             sortTypes();
-            resolveFieldTypes();
+            resolveTypes();
             materializeTypes();
         }
         catch (Throwable error) {

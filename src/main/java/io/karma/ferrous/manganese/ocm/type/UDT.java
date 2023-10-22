@@ -72,6 +72,6 @@ public record UDT(UDTKind kind, StructureType type) implements NamedType {
 
     @Override
     public String toString() {
-        return String.format("[%s] %s", kind, type == null ? "null" : type);
+        return type == null ? "null" : type.toString();
     }
 }

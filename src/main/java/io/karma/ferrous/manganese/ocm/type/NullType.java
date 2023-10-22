@@ -38,6 +38,18 @@ public final class NullType implements NamedType {
         return new Identifier(TokenUtils.getLiteral(FerrousLexer.KW_NULL));
     }
 
+    // Scoped
+
+    @Override
+    public @Nullable Scope getEnclosingScope() {
+        return enclosingScope;
+    }
+
+    @Override
+    public void setEnclosingScope(final Scope enclosingScope) {
+        this.enclosingScope = enclosingScope;
+    }
+
     // Type
 
     @Override
@@ -53,16 +65,6 @@ public final class NullType implements NamedType {
     @Override
     public Type getBaseType() {
         return this;
-    }
-
-    @Override
-    public @Nullable Scope getEnclosingScope() {
-        return enclosingScope;
-    }
-
-    @Override
-    public void setEnclosingScope(final Scope enclosingScope) {
-        this.enclosingScope = enclosingScope;
     }
 
     // Object
