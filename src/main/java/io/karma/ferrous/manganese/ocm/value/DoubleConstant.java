@@ -15,6 +15,8 @@
 
 package io.karma.ferrous.manganese.ocm.value;
 
+import io.karma.ferrous.manganese.ocm.type.BuiltinType;
+import io.karma.ferrous.manganese.ocm.type.Type;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 
@@ -23,6 +25,9 @@ import org.apiguardian.api.API.Status;
  * @since 16/10/2023
  */
 @API(status = Status.INTERNAL)
-public final class DoubleConstant implements Constant {
-    public double value;
+public record DoubleConstant(double value) implements Constant {
+    @Override
+    public Type getType() {
+        return BuiltinType.F64;
+    }
 }

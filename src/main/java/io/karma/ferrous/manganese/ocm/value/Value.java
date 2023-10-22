@@ -16,6 +16,7 @@
 package io.karma.ferrous.manganese.ocm.value;
 
 import io.karma.ferrous.manganese.ocm.expr.Expression;
+import io.karma.ferrous.manganese.ocm.type.Type;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 
@@ -25,6 +26,8 @@ import org.apiguardian.api.API.Status;
  */
 @API(status = Status.INTERNAL)
 public interface Value {
+    Type getType();
+
     default boolean isExpression() {
         return false;
     }

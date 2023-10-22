@@ -13,21 +13,11 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.ocm.value;
-
-import io.karma.ferrous.manganese.ocm.type.BuiltinType;
-import io.karma.ferrous.manganese.ocm.type.Type;
-import org.apiguardian.api.API;
-import org.apiguardian.api.API.Status;
+package io.karma.ferrous.manganese.ocm.statement;
 
 /**
  * @author Alexander Hinze
- * @since 16/10/2023
+ * @since 22/10/2023
  */
-@API(status = Status.INTERNAL)
-public record IntConstant(int value, boolean isUnsigned) implements Constant {
-    @Override
-    public Type getType() {
-        return isUnsigned ? BuiltinType.U32 : BuiltinType.I32;
-    }
+public interface Statement {
 }

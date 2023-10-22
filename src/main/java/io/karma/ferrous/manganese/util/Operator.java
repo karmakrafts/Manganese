@@ -30,47 +30,69 @@ import java.util.Optional;
 public enum Operator {
     // @formatter:off
     // Arithmetics
-    PLUS            (FerrousLexer.OP_PLUS,              "fe.plus"),
-    MINUS           (FerrousLexer.OP_MINUS,             "fe.minus"),
-    TIMES           (FerrousLexer.ASTERISK,             "fe.times"),
-    DIV             (FerrousLexer.OP_DIV,               "fe.div"),
-    MOD             (FerrousLexer.OP_MOD,               "fe.mod"),
-    POW             (FerrousLexer.OP_POW,               "fe.pow"),
-    // Saturating arithmetics
-    SAT_PLUS        (FerrousLexer.OP_SAT_PLUS,          "fe.sat_plus"),
-    SAT_MINUS       (FerrousLexer.OP_SAT_MINUS,         "fe.sat_minus"),
-    SAT_TIMES       (FerrousLexer.OP_SAT_TIMES,         "fe.sat_times"),
-    SAT_DIV         (FerrousLexer.OP_SAT_DIV,           "fe.sat_div"),
-    SAT_MOD         (FerrousLexer.OP_SAT_MOD,           "fe.sat_mod"),
-    SAT_POW         (FerrousLexer.OP_SAT_POW,           "fe.sat_pow"),
-    // Assignment arithmetics
-    PLUS_ASSIGN     (FerrousLexer.OP_PLUS_ASSIGN,       "fe.plus_assign"),
-    MINUS_ASSIGN    (FerrousLexer.OP_MINUS_ASSIGN,      "fe.minus_assign"),
-    TIMES_ASSIGN    (FerrousLexer.OP_TIMES_ASSIGN,      "fe.times_assign"),
-    DIV_ASSIGN      (FerrousLexer.OP_DIV_ASSIGN,        "fe.div_assign"),
-    MOD_ASSIGN      (FerrousLexer.OP_MOD_ASSIGN,        "fe.mod_assign"),
-    POW_ASSIGN      (FerrousLexer.OP_POW_ASSIGN,        "fe.pow_assign"),
-    // Saturated assignment arithmetics
-    SAT_PLUS_ASSIGN (FerrousLexer.OP_SAT_PLUS_ASSIGN,   "fe.sat_plus_assign"),
-    SAT_MINUS_ASSIGN(FerrousLexer.OP_SAT_MINUS_ASSIGN,  "fe.sat_minus_assign"),
-    SAT_TIMES_ASSIGN(FerrousLexer.OP_SAT_TIMES_ASSIGN,  "fe.sat_times_assign"),
-    SAT_DIV_ASSIGN  (FerrousLexer.OP_SAT_DIV_ASSIGN,    "fe.sat_div_assign"),
-    SAT_MOD_ASSIGN  (FerrousLexer.OP_SAT_MOD_ASSIGN,    "fe.sat_mod_assign"),
-    SAT_POW_ASSIGN  (FerrousLexer.OP_SAT_POW_ASSIGN,    "fe.sat_pow_assign"),
-    // Pointer call
+    PLUS            (FerrousLexer.OP_PLUS,              "op.plus",              true,   true),
+    MINUS           (FerrousLexer.OP_MINUS,             "op.minus",             true,   true),
+    TIMES           (FerrousLexer.ASTERISK,             "op.times",             false,  true),
+    DIV             (FerrousLexer.OP_DIV,               "op.div",               false,  true),
+    MOD             (FerrousLexer.OP_MOD,               "op.mod",               false,  true),
+    POW             (FerrousLexer.OP_POW,               "op.pow",               false,  true),
+    SAT_PLUS        (FerrousLexer.OP_SAT_PLUS,          "op.sat_plus",          false,  true),
+    SAT_MINUS       (FerrousLexer.OP_SAT_MINUS,         "op.sat_minus",         false,  true),
+    SAT_TIMES       (FerrousLexer.OP_SAT_TIMES,         "op.sat_times",         false,  true),
+    SAT_DIV         (FerrousLexer.OP_SAT_DIV,           "op.sat_div",           false,  true),
+    SAT_MOD         (FerrousLexer.OP_SAT_MOD,           "op.sat_mod",           false,  true),
+    SAT_POW         (FerrousLexer.OP_SAT_POW,           "op.sat_pow",           false,  true),
+    PLUS_ASSIGN     (FerrousLexer.OP_PLUS_ASSIGN,       "op.plus_assign",       false,  true),
+    MINUS_ASSIGN    (FerrousLexer.OP_MINUS_ASSIGN,      "op.minus_assign",      false,  true),
+    TIMES_ASSIGN    (FerrousLexer.OP_TIMES_ASSIGN,      "op.times_assign",      false,  true),
+    DIV_ASSIGN      (FerrousLexer.OP_DIV_ASSIGN,        "op.div_assign",        false,  true),
+    MOD_ASSIGN      (FerrousLexer.OP_MOD_ASSIGN,        "op.mod_assign",        false,  true),
+    POW_ASSIGN      (FerrousLexer.OP_POW_ASSIGN,        "op.pow_assign",        false,  true),
+    SAT_PLUS_ASSIGN (FerrousLexer.OP_SAT_PLUS_ASSIGN,   "op.sat_plus_assign",   false,  true),
+    SAT_MINUS_ASSIGN(FerrousLexer.OP_SAT_MINUS_ASSIGN,  "op.sat_minus_assign",  false,  true),
+    SAT_TIMES_ASSIGN(FerrousLexer.OP_SAT_TIMES_ASSIGN,  "op.sat_times_assign",  false,  true),
+    SAT_DIV_ASSIGN  (FerrousLexer.OP_SAT_DIV_ASSIGN,    "op.sat_div_assign",    false,  true),
+    SAT_MOD_ASSIGN  (FerrousLexer.OP_SAT_MOD_ASSIGN,    "op.sat_mod_assign",    false,  true),
+    SAT_POW_ASSIGN  (FerrousLexer.OP_SAT_POW_ASSIGN,    "op.sat_pow_assign",    false,  true),
+    AND             (FerrousLexer.AMP,                  "op.and",               false,  true),
+    SC_AND          (FerrousLexer.OP_SHORTC_AND,        "op.sc_and",            false,  true),
+    OR              (FerrousLexer.PIPE,                 "op.or",                false,  true),
+    SC_OR           (FerrousLexer.OP_SHORTC_OR,         "op.sc_or",             false,  true),
+    XOR             (FerrousLexer.OP_XOR,               "op.xor",               false,  true),
+    SHL             (FerrousLexer.OP_LSH,               "op.shl",               false,  true),
+    SHR             (FerrousLexer.OP_RSH,               "op.shr",               false,  true),
+    INV             (FerrousLexer.OP_INV,               "op.inv",               true,   false),
+    AND_ASSIGN      (FerrousLexer.OP_AND_ASSIGN,        "op.and_assign",        false,  true),
+    OR_ASSIGN       (FerrousLexer.OP_OR_ASSIGN,         "op.or_assign",         false,  true),
+    XOR_ASSIGN      (FerrousLexer.OP_XOR_ASSIGN,        "op.xor_assign",        false,  true),
+    SHL_ASSIGN      (FerrousLexer.OP_LSH_ASSIGN,        "op.shl_assign",        false,  true),
+    SHR_ASSIGN      (FerrousLexer.OP_RSH_ASSIGN,        "op.shr_assign",        false,  true),
+    INV_ASSIGN      (FerrousLexer.OP_INV_ASSIGN,        "op.inv_assign",        false,  true)
     ;
     // @formatter:on
 
     private final String text;
     private final String functionName;
+    private final boolean isUnary;
+    private final boolean isBinary;
 
-    Operator(final int token, final String functionName) {
+    Operator(final int token, final String functionName, final boolean isUnary, final boolean isBinary) {
         this.text = TokenUtils.getLiteral(token);
         this.functionName = functionName;
+        this.isUnary = isUnary;
+        this.isBinary = isBinary;
     }
 
     public static Optional<Operator> findByText(final String text) {
         return Arrays.stream(values()).filter(op -> op.text.equals(text)).findFirst();
+    }
+
+    public boolean isUnary() {
+        return isUnary;
+    }
+
+    public boolean isBinary() {
+        return isBinary;
     }
 
     public String getText() {
@@ -79,5 +101,10 @@ public enum Operator {
 
     public String getFunctionName() {
         return functionName;
+    }
+
+    @Override
+    public String toString() {
+        return getText();
     }
 }
