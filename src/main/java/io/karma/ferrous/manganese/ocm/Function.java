@@ -20,10 +20,12 @@ import io.karma.ferrous.manganese.ocm.type.NamedFunctionType;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.ocm.type.Types;
 import io.karma.ferrous.manganese.scope.Scope;
+import io.karma.ferrous.manganese.scope.Scoped;
 import io.karma.ferrous.manganese.util.CallingConvention;
 import io.karma.ferrous.manganese.util.Identifier;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 
@@ -32,7 +34,7 @@ import java.util.Arrays;
  * @since 14/10/2023
  */
 @API(status = Status.INTERNAL)
-public final class Function implements Scope {
+public final class Function implements NameProvider, Scoped {
     private final Identifier name;
     private final CallingConvention callConv;
     private final boolean isExtern;
@@ -68,21 +70,6 @@ public final class Function implements Scope {
         return isExtern;
     }
 
-    @Override
-    public Identifier getName() {
-        return name;
-    }
-
-    @Override
-    public Scope getEnclosingScope() {
-        return enclosingScope;
-    }
-
-    @Override
-    public void setEnclosingScope(final Scope scope) {
-        enclosingScope = scope;
-    }
-
     public FunctionType makeType() {
         final var paramTypes = Arrays.stream(parameters).map(Parameter::type).toList();
         return Types.function(returnType, paramTypes, isVarArg);
@@ -91,5 +78,31 @@ public final class Function implements Scope {
     public NamedFunctionType makeNamedType(final Identifier name) {
         final var paramTypes = Arrays.stream(parameters).map(Parameter::type).toList();
         return Types.namedFunction(name, returnType, paramTypes, isVarArg);
+    }
+
+    // NameProvider
+
+    @Override
+    public Identifier getName() {
+        return name;
+    }
+
+    // Scoped
+
+    @Override
+    public @Nullable Scope getEnclosingScope() {
+        return enclosingScope;
+    }
+
+    @Override
+    public void setEnclosingScope(final Scope enclosingScope) {
+        this.enclosingScope = enclosingScope;
+    }
+
+    // Object
+
+    @Override
+    public String toString() {
+        return String.format("%s %s(%s)", returnType, name, Arrays.toString(parameters));
     }
 }

@@ -25,7 +25,7 @@ import java.util.Objects;
  * @author Alexander Hinze
  * @since 21/10/2023
  */
-public final class AliasedType implements Type {
+public final class AliasedType implements NamedType {
     private final Identifier name;
     private final Type backingType;
     private Scope enclosingScope;
@@ -39,14 +39,55 @@ public final class AliasedType implements Type {
         return backingType;
     }
 
+    // Name provider
+
+    @Override
+    public Identifier getName() {
+        return name;
+    }
+
+    // Scoped
+
+    @Override
+    public Scope getEnclosingScope() {
+        return enclosingScope;
+    }
+
+    @Override
+    public void setEnclosingScope(final Scope scope) {
+        enclosingScope = scope;
+    }
+
+    // Type
+
     @Override
     public boolean isAliased() {
         return true;
     }
 
     @Override
-    public Identifier getName() {
-        return name; // Override the name only
+    public boolean isBuiltin() {
+        return backingType.isBuiltin();
+    }
+
+    @Override
+    public boolean isComplete() {
+        return backingType.isComplete();
+    }
+
+    @Override
+    public boolean isReference() {
+        return backingType.isReference();
+    }
+
+    @Override
+    public boolean isPointer() {
+        return backingType.isPointer();
+    }
+
+    @Override
+    public boolean isSlice() {
+        return backingType.isSlice();
     }
 
     @Override
@@ -65,16 +106,6 @@ public final class AliasedType implements Type {
     }
 
     @Override
-    public Scope getEnclosingScope() {
-        return enclosingScope;
-    }
-
-    @Override
-    public void setEnclosingScope(final Scope scope) {
-        enclosingScope = scope;
-    }
-
-    @Override
     public int hashCode() {
         return Objects.hash(name, backingType, enclosingScope);
     }
@@ -84,13 +115,13 @@ public final class AliasedType implements Type {
         if(obj instanceof AliasedType type) { // @formatter:off
             return name.equals(type.name)
                 && backingType.equals(type.backingType)
-                && (enclosingScope == null || enclosingScope.equals(type.enclosingScope));
+                && Objects.equals(enclosingScope, type.enclosingScope);
         } // @formatter:on
         return false;
     }
 
     @Override
     public String toString() {
-        return String.format("%s (%s)", name, backingType.getQualifiedName());
+        return String.format("%s (%s)", name, backingType);
     }
 }

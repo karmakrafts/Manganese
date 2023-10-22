@@ -46,10 +46,19 @@ public final class VectorType implements Type {
         return elementCount;
     }
 
+    // Scoped
+
     @Override
-    public void setEnclosingScope(Scope scope) {
+    public Scope getEnclosingScope() {
+        return enclosingScope;
+    }
+
+    @Override
+    public void setEnclosingScope(final Scope scope) {
         enclosingScope = scope;
     }
+
+    // Type
 
     @Override
     public long materialize(final TargetMachine machine) {
@@ -69,10 +78,7 @@ public final class VectorType implements Type {
         return this;
     }
 
-    @Override
-    public Scope getEnclosingScope() {
-        return enclosingScope;
-    }
+    // Object
 
     @Override
     public int hashCode() {
@@ -81,16 +87,25 @@ public final class VectorType implements Type {
 
     @Override
     public boolean equals(Object obj) {
-        if(obj instanceof VectorType vecType) {
+        if(obj instanceof VectorType vecType) { // @formatter:off
             return type.equals(vecType.type)
                 && elementCount == vecType.elementCount
-                && (enclosingScope == null || enclosingScope.equals(vecType.enclosingScope));
-        }
+                && Objects.equals(enclosingScope, vecType.enclosingScope);
+        } // @formatter:on
         return false;
     }
 
     @Override
     public String toString() {
-        return super.toString();
+        final var buffer = new StringBuilder();
+        buffer.append('(');
+        for (var i = 0; i < elementCount; i++) {
+            buffer.append(type);
+            if (i < elementCount - 1) {
+                buffer.append(", ");
+            }
+        }
+        buffer.append(')');
+        return buffer.toString();
     }
 }

@@ -15,6 +15,7 @@
 
 package io.karma.ferrous.manganese.ocm.type;
 
+import io.karma.ferrous.manganese.ocm.NameProvider;
 import io.karma.ferrous.manganese.scope.Scope;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Identifier;
@@ -31,7 +32,7 @@ import java.util.Objects;
  * @since 14/10/2023
  */
 @API(status = Status.INTERNAL)
-public final class DerivedType implements Type {
+public final class DerivedType implements NamedType {
     private final Type baseType;
     private final TypeAttribute[] attributes;
     private long materializedType = MemoryUtil.NULL;
@@ -41,15 +42,29 @@ public final class DerivedType implements Type {
         this.attributes = attributes;
     }
 
+    // NameProvider
+
     @Override
     public Identifier getName() {
-        return baseType.getName();
+        if (baseType instanceof NameProvider provider) {
+            return provider.getName();
+        }
+        return Identifier.EMPTY;
     }
+
+    // Scoped
 
     @Override
     public Scope getEnclosingScope() {
         return baseType.getEnclosingScope();
     }
+
+    @Override
+    public void setEnclosingScope(final Scope enclosingScope) {
+        throw new UnsupportedOperationException("Settings scope of derived type is not supported");
+    }
+
+    // Type
 
     @Override
     public Type getBaseType() {
@@ -73,6 +88,8 @@ public final class DerivedType implements Type {
         return attributes;
     }
 
+    // Object
+
     @Override
     public int hashCode() {
         return Objects.hash(baseType, Arrays.hashCode(attributes));
@@ -80,9 +97,10 @@ public final class DerivedType implements Type {
 
     @Override
     public boolean equals(Object obj) {
-        if (obj instanceof DerivedType type) {
-            return baseType.equals(type.baseType) && Arrays.equals(attributes, type.attributes);
-        }
+        if (obj instanceof DerivedType type) { // @formatter:off
+            return baseType.equals(type.baseType)
+                && Arrays.equals(attributes, type.attributes);
+        } // @formatter:on
         return false;
     }
 

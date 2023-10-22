@@ -17,9 +17,7 @@ package io.karma.ferrous.manganese.ocm.type;
 
 import io.karma.ferrous.manganese.scope.DefaultScope;
 import io.karma.ferrous.manganese.scope.Scope;
-import io.karma.ferrous.manganese.scope.ScopeType;
 import io.karma.ferrous.manganese.target.TargetMachine;
-import io.karma.ferrous.manganese.util.Identifier;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 import org.jetbrains.annotations.Nullable;
@@ -47,10 +45,40 @@ public class FunctionType implements Type {
         this.isVarArg = isVarArg;
     }
 
-    @Override
-    public ScopeType getScopeType() {
-        return ScopeType.FUNCTION;
+    public Type getReturnType() {
+        return returnType;
     }
+
+    public Type[] getParamTypes() {
+        return paramTypes;
+    }
+
+    public String toString(final @Nullable String name) {
+        final var builder = new StringBuilder();
+        builder.append(returnType);
+
+        if (name != null) {
+            builder.append(' ');
+            builder.append(name);
+        }
+
+        builder.append('(');
+        final var numParams = paramTypes.length;
+        for (var i = 0; i < numParams; i++) {
+            builder.append(paramTypes[i]);
+            if (i < numParams - 1) {
+                builder.append(", ");
+            }
+        }
+
+        if (isVarArg) {
+            builder.append(", ...");
+        }
+        builder.append(')');
+        return builder.toString();
+    }
+
+    // Scoped
 
     @Override
     public Scope getEnclosingScope() {
@@ -59,13 +87,10 @@ public class FunctionType implements Type {
 
     @Override
     public void setEnclosingScope(final Scope scope) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("Settings scope on unnamed function type is not supported");
     }
 
-    @Override
-    public Identifier getName() {
-        return new Identifier(toString()); // TODO: find a better solution for this..
-    }
+    // Type
 
     @Override
     public boolean isBuiltin() {
@@ -100,30 +125,7 @@ public class FunctionType implements Type {
         return new TypeAttribute[0];
     }
 
-    public String toString(final @Nullable String name) {
-        final var builder = new StringBuilder();
-        builder.append(returnType);
-
-        if (name != null) {
-            builder.append(' ');
-            builder.append(name);
-        }
-
-        builder.append('(');
-        final var numParams = paramTypes.length;
-        for (var i = 0; i < numParams; i++) {
-            builder.append(paramTypes[i]);
-            if (i < numParams - 1) {
-                builder.append(", ");
-            }
-        }
-
-        if (isVarArg) {
-            builder.append(", ...");
-        }
-        builder.append(')');
-        return builder.toString();
-    }
+    // Object
 
     @Override
     public int hashCode() {

@@ -15,44 +15,63 @@
 
 package io.karma.ferrous.manganese.ocm.type;
 
-import io.karma.ferrous.manganese.ocm.access.Access;
-import io.karma.ferrous.manganese.ocm.access.AccessProvider;
-import io.karma.ferrous.manganese.ocm.access.DefaultAccess;
 import io.karma.ferrous.manganese.scope.Scope;
 import io.karma.ferrous.manganese.target.TargetMachine;
-import org.apiguardian.api.API;
-import org.apiguardian.api.API.Status;
+import io.karma.ferrous.manganese.util.Identifier;
+
+import java.util.Objects;
 
 /**
  * @author Alexander Hinze
- * @since 14/10/2023
+ * @since 21/10/2023
  */
-@API(status = Status.INTERNAL)
-public record UDT(UDTKind type, StructureType structureType, Access access) implements AccessProvider, Type {
-    public static final UDT NULL = new UDT(UDTKind.STRUCT, null, DefaultAccess.PUBLIC);
+public record UDT(UDTKind kind, StructureType type) implements NamedType {
+    // NameProvider
 
     @Override
-    public Access getAccess() {
-        return access;
+    public Identifier getName() {
+        return type.getName();
     }
+
+    // Type
 
     @Override
     public long materialize(final TargetMachine machine) {
-        return structureType.materialize(machine);
+        return type.materialize(machine);
     }
 
     @Override
     public TypeAttribute[] getAttributes() {
-        return structureType.getAttributes();
+        return new TypeAttribute[0];
     }
 
     @Override
     public Type getBaseType() {
-        return this;
+        return type.getBaseType();
     }
 
     @Override
     public Scope getEnclosingScope() {
-        return structureType.getEnclosingScope();
+        return type.getEnclosingScope();
+    }
+
+    @Override
+    public void setEnclosingScope(final Scope scope) {
+        type.setEnclosingScope(scope);
+    }
+
+    // Object
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof UDT udt) {
+            return kind == udt.kind && Objects.equals(type, udt.type);
+        }
+        return false;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("[%s] %s", kind, type == null ? "null" : type);
     }
 }

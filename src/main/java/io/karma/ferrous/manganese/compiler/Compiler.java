@@ -240,7 +240,7 @@ public final class Compiler implements ANTLRErrorListener {
             try (final var stream = Files.newOutputStream(outFile); final var channel = Channels.newChannel(stream)) {
                 compile(rawFileName, file.getFileName().toString(), channel, context);
                 context.setCurrentPass(CompilePass.LINK);
-                module.linkIn(context.getModule());
+                module.linkIn(context.getTranslationUnit().getModule());
                 context.setCurrentPass(CompilePass.NONE);
             }
             catch (IOException error) {
@@ -258,7 +258,7 @@ public final class Compiler implements ANTLRErrorListener {
         module.linkIn(globalModule);
         globalModule.dispose();
 
-        if(disassemble) {
+        if (disassemble) {
             Logger.INSTANCE.infoln("\nLinked disassembly:\n\n%s", module.disassemble());
         }
         module.dispose();

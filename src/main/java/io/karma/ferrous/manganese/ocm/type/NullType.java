@@ -17,45 +17,32 @@ package io.karma.ferrous.manganese.ocm.type;
 
 import io.karma.ferrous.manganese.scope.Scope;
 import io.karma.ferrous.manganese.target.TargetMachine;
+import io.karma.ferrous.manganese.util.Identifier;
+import io.karma.ferrous.manganese.util.TokenUtils;
+import io.karma.ferrous.vanadium.FerrousLexer;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.Arrays;
 import java.util.Objects;
-
-import static org.lwjgl.system.MemoryUtil.NULL;
 
 /**
  * @author Alexander Hinze
- * @since 21/10/2023
+ * @since 22/10/2023
  */
-public final class TupleType implements Type {
-    private final Type[] types;
+public final class NullType implements NamedType {
     private Scope enclosingScope;
 
-    public TupleType(final Type... types) {
-        this.types = types;
-    }
-
-    public Type[] getTypes() {
-        return types;
-    }
-
-    // Scoped
+    // NameProvider
 
     @Override
-    public Scope getEnclosingScope() {
-        return enclosingScope;
-    }
-
-    @Override
-    public void setEnclosingScope(final Scope scope) {
-        enclosingScope = scope;
+    public Identifier getName() {
+        return new Identifier(TokenUtils.getLiteral(FerrousLexer.KW_NULL));
     }
 
     // Type
 
     @Override
     public long materialize(final TargetMachine machine) {
-        return NULL;
+        return 0;
     }
 
     @Override
@@ -68,34 +55,36 @@ public final class TupleType implements Type {
         return this;
     }
 
+    @Override
+    public @Nullable Scope getEnclosingScope() {
+        return enclosingScope;
+    }
+
+    @Override
+    public void setEnclosingScope(final Scope enclosingScope) {
+        this.enclosingScope = enclosingScope;
+    }
+
     // Object
 
     @Override
     public int hashCode() {
-        return Objects.hash(Arrays.hashCode(types), enclosingScope);
+        return Objects.hash(enclosingScope);
     }
 
     @Override
     public boolean equals(Object obj) {
-        if(obj instanceof TupleType type) { // @formatter:off
-            return Arrays.equals(types, type.types)
-                && Objects.equals(enclosingScope, type.enclosingScope);
-        } // @formatter:on
+        if (obj instanceof NullType type) {
+            return Objects.equals(enclosingScope, type.enclosingScope);
+        }
         return false;
     }
 
     @Override
     public String toString() {
-        final var buffer = new StringBuilder();
-        buffer.append('(');
-        final var numTypes = types.length;
-        for (var i = 0; i < numTypes; i++) {
-            buffer.append(types[i]);
-            if (i < numTypes - 1) {
-                buffer.append(", ");
-            }
+        if (enclosingScope != null) {
+            return enclosingScope.toString();
         }
-        buffer.append(')');
-        return buffer.toString();
+        return super.toString();
     }
 }

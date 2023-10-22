@@ -22,7 +22,6 @@ import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.ocm.type.TypeAttribute;
 import io.karma.ferrous.manganese.ocm.type.Types;
 import io.karma.ferrous.manganese.util.Identifier;
-import io.karma.ferrous.manganese.util.ScopeStack;
 import io.karma.ferrous.manganese.util.Utils;
 import io.karma.ferrous.vanadium.FerrousParser.FloatTypeContext;
 import io.karma.ferrous.vanadium.FerrousParser.IdentContext;
@@ -46,12 +45,12 @@ import java.util.Stack;
 @API(status = Status.INTERNAL)
 public final class TypeParser extends ParseAdapter {
     private final Stack<TypeAttribute> attributes = new Stack<>();
-    private final ScopeStack capturedScopeStack;
+    private final Identifier scopeName;
     private Type baseType;
 
-    public TypeParser(final Compiler compiler, final ScopeStack capturedScopeStack) {
+    public TypeParser(final Compiler compiler, final Identifier scopeName) {
         super(compiler);
-        this.capturedScopeStack = capturedScopeStack;
+        this.scopeName = scopeName;
     }
 
     @Override
@@ -82,9 +81,9 @@ public final class TypeParser extends ParseAdapter {
     public void enterIdent(final IdentContext context) {
         final var compileContext = compiler.getContext();
         final var name = Utils.getIdentifier(context);
-        final var type = compileContext.getAnalyzer().findTypeInScope(name, capturedScopeStack.getScopeName());
+        final var type = compileContext.getAnalyzer().findCompleteTypeInScope(name, scopeName);
         if (type == null) {
-            baseType = Types.incomplete(name);
+            baseType = scopeStack.applyEnclosingScopes(Types.incomplete(name));
             return;
         }
         baseType = type;
@@ -95,9 +94,9 @@ public final class TypeParser extends ParseAdapter {
     public void enterQualifiedIdent(final QualifiedIdentContext context) {
         final var compileContext = compiler.getContext();
         final var name = Utils.getIdentifier(context);
-        final var type = compileContext.getAnalyzer().findTypeInScope(name, capturedScopeStack.getScopeName());
+        final var type = compileContext.getAnalyzer().findCompleteTypeInScope(name, scopeName);
         if (type == null) {
-            baseType = Types.incomplete(name);
+            baseType = scopeStack.applyEnclosingScopes(Types.incomplete(name));
             return;
         }
         baseType = type;

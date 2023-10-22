@@ -17,16 +17,18 @@ package io.karma.ferrous.manganese.ocm;
 
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.scope.Scope;
+import io.karma.ferrous.manganese.scope.Scoped;
 import io.karma.ferrous.manganese.util.Identifier;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * @author Alexander Hinze
  * @since 15/10/2023
  */
 @API(status = Status.INTERNAL)
-public final class Field implements Scope {
+public final class Field implements NameProvider, Scoped {
     private final Identifier name;
     private final Type type;
     private Scope enclosingScope;
@@ -40,18 +42,29 @@ public final class Field implements Scope {
         return type;
     }
 
+    // Scoped
+
+    @Override
+    public @Nullable Scope getEnclosingScope() {
+        return enclosingScope;
+    }
+
+    @Override
+    public void setEnclosingScope(final Scope enclosingScope) {
+        this.enclosingScope = enclosingScope;
+    }
+
+    // NameProvider
+
     @Override
     public Identifier getName() {
         return name;
     }
 
-    @Override
-    public Scope getEnclosingScope() {
-        return enclosingScope;
-    }
+    // Object
 
     @Override
-    public void setEnclosingScope(final Scope scope) {
-        enclosingScope = scope;
+    public String toString() {
+        return String.format("%s:%s", name, type);
     }
 }

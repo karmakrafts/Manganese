@@ -35,7 +35,7 @@ import static org.lwjgl.llvm.LLVMCore.LLVMGetGlobalContext;
  * @since 14/10/2023
  */
 @API(status = Status.INTERNAL)
-public final class StructureType implements Type {
+public final class StructureType implements NamedType {
     private final Identifier name;
     private final boolean isPacked;
     private final Type[] fieldTypes;
@@ -64,6 +64,15 @@ public final class StructureType implements Type {
         return Arrays.asList(fieldTypes);
     }
 
+    // NameProvider
+
+    @Override
+    public Identifier getName() {
+        return name;
+    }
+
+    // Scoped
+
     @Override
     public Scope getEnclosingScope() {
         return enclosingScope;
@@ -74,10 +83,7 @@ public final class StructureType implements Type {
         enclosingScope = scope;
     }
 
-    @Override
-    public Identifier getName() {
-        return name;
-    }
+    // Type
 
     @Override
     public boolean isBuiltin() {
@@ -111,7 +117,8 @@ public final class StructureType implements Type {
             for (var i = 0; i < numFields; i++) {
                 fields.put(i, fieldTypes[i].materialize(machine));
             }
-            materializedType = LLVMCore.LLVMStructCreateNamed(LLVMGetGlobalContext(), getInternalName());
+            final var name = getQualifiedName().toInternalName();
+            materializedType = LLVMCore.LLVMStructCreateNamed(LLVMGetGlobalContext(), name);
             LLVMCore.LLVMStructSetBody(materializedType, fields, isPacked);
             return materializedType;
         }
@@ -121,6 +128,8 @@ public final class StructureType implements Type {
     public TypeAttribute[] getAttributes() {
         return new TypeAttribute[0];
     }
+
+    // Object
 
     @Override
     public int hashCode() {

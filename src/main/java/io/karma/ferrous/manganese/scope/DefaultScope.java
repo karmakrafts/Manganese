@@ -18,8 +18,7 @@ package io.karma.ferrous.manganese.scope;
 import io.karma.ferrous.manganese.util.Identifier;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
-
-import java.util.Objects;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * @author Alexander Hinze
@@ -28,6 +27,7 @@ import java.util.Objects;
 @API(status = Status.INTERNAL)
 public final class DefaultScope implements Scope {
     public static final DefaultScope GLOBAL = new DefaultScope(ScopeType.GLOBAL, Identifier.EMPTY);
+
     private final ScopeType type;
     private final Identifier name;
     private Scope enclosingScope;
@@ -37,41 +37,33 @@ public final class DefaultScope implements Scope {
         this.name = name;
     }
 
-    public DefaultScope(final ScopeType type) {
-        this(type, Identifier.EMPTY);
-    }
-
     @Override
-    public ScopeType getScopeType() {
-        return type;
-    }
-
-    @Override
-    public Identifier getScopeName() {
+    public Identifier getName() {
         return name;
     }
 
     @Override
-    public Scope getEnclosingScope() {
+    public ScopeType getType() {
+        return type;
+    }
+
+    @Override
+    public @Nullable Scope getEnclosingScope() {
         return enclosingScope;
     }
 
     @Override
-    public void setEnclosingScope(final Scope scope) {
-        this.enclosingScope = scope;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(type, name);
+    public void setEnclosingScope(final Scope enclosingScope) {
+        this.enclosingScope = enclosingScope;
     }
 
     @Override
     public boolean equals(Object obj) {
-        if (obj instanceof DefaultScope scope) {
-            return type == scope.type && (name == null || name.equals(scope.name));
-        }
-        return false;
+        return switch(obj) { // @formatter:off
+            case DefaultScope defScope  -> type == defScope.type && name.equals(defScope.name);
+            case Scope scope            -> type == scope.getType() && name.equals(scope.getName());
+            default                     -> false;
+        }; // @formatter:on
     }
 
     @Override
@@ -80,14 +72,5 @@ public final class DefaultScope implements Scope {
             return String.format("%s [%s]", type, name);
         }
         return type.name();
-    }
-
-    public ScopeType getType() {
-        return type;
-    }
-
-    @Override
-    public Identifier getName() {
-        return name;
     }
 }

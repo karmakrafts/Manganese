@@ -27,7 +27,7 @@ import java.util.Objects;
  * @since 16/10/2023
  */
 @API(status = Status.INTERNAL)
-public final class NamedFunctionType extends FunctionType {
+public final class NamedFunctionType extends FunctionType implements NamedType {
     private final Identifier name;
     private Scope enclosingScope;
 
@@ -36,10 +36,14 @@ public final class NamedFunctionType extends FunctionType {
         this.name = name;
     }
 
+    // NameProvider
+
     @Override
     public Identifier getName() {
         return name;
     }
+
+    // Scoped
 
     @Override
     public Scope getEnclosingScope() {
@@ -51,6 +55,8 @@ public final class NamedFunctionType extends FunctionType {
         enclosingScope = scope;
     }
 
+    // Object
+
     @Override
     public int hashCode() {
         return Objects.hash(super.hashCode(), name, enclosingScope);
@@ -60,7 +66,7 @@ public final class NamedFunctionType extends FunctionType {
     public boolean equals(Object obj) {
         if(obj instanceof NamedFunctionType type) { // @formatter:off
             return name.equals(type.name)
-                && (enclosingScope == null || enclosingScope.equals(type.enclosingScope))
+                && Objects.equals(enclosingScope, type.enclosingScope)
                 && super.equals(type);
         } // @formatter:on
         return false;

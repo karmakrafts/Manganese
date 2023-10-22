@@ -32,7 +32,7 @@ import java.util.function.ToLongFunction;
  * @since 13/10/2023
  */
 @API(status = Status.INTERNAL)
-public enum BuiltinType implements Type {
+public enum BuiltinType implements NamedType {
     // @formatter:off
     VOID    (FerrousLexer.KW_VOID,  target -> LLVMCore.LLVMVoidType()),
     BOOL    (FerrousLexer.KW_BOOL,  target -> LLVMCore.LLVMInt8Type()),
@@ -74,15 +74,26 @@ public enum BuiltinType implements Type {
         return machine.getPointerSize() == 8 ? LLVMCore.LLVMInt64Type() : LLVMCore.LLVMInt32Type();
     }
 
+    // NameProvider
+
+    @Override
+    public Identifier getName() {
+        return name;
+    }
+
+    // Scoped
+
     @Override
     public Scope getEnclosingScope() {
         return DefaultScope.GLOBAL;
     }
 
     @Override
-    public Identifier getName() {
-        return name;
+    public void setEnclosingScope(final Scope scope) {
+        throw new UnsupportedOperationException("Setting scope of enclosed type is not supported");
     }
+
+    // Type
 
     @Override
     public boolean isBuiltin() {
@@ -108,6 +119,8 @@ public enum BuiltinType implements Type {
     public TypeAttribute[] getAttributes() {
         return new TypeAttribute[0];
     }
+
+    // Object
 
     @Override
     public String toString() {

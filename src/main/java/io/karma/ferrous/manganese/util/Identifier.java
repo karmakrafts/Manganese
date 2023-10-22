@@ -46,6 +46,13 @@ public record Identifier(String... components) {
         return result.toArray(Identifier[]::new);
     }
 
+    public Identifier copy() {
+        final var numElements = components.length;
+        final var copied = new String[numElements];
+        System.arraycopy(components, 0, copied, 0, numElements);
+        return new Identifier(copied);
+    }
+
     public Identifier join(final Identifier other) {
         if (isBlank()) {
             return other;
@@ -59,6 +66,10 @@ public record Identifier(String... components) {
 
     public boolean isQualified() {
         return components.length > 1;
+    }
+
+    public String toInternalName() {
+        return String.join(".", components);
     }
 
     @Override
@@ -76,9 +87,6 @@ public record Identifier(String... components) {
 
     @Override
     public String toString() {
-        if (!isQualified()) {
-            return components[0];
-        }
         return String.join(DELIMITER, components);
     }
 }

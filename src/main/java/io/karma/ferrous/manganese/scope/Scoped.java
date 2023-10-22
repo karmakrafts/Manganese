@@ -15,15 +15,29 @@
 
 package io.karma.ferrous.manganese.scope;
 
-import io.karma.ferrous.manganese.ocm.NameProvider;
-import org.apiguardian.api.API;
-import org.apiguardian.api.API.Status;
+import io.karma.ferrous.manganese.util.Identifier;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * @author Alexander Hinze
- * @since 16/10/2023
+ * @since 21/10/2023
  */
-@API(status = Status.INTERNAL)
-public interface Scope extends Scoped, NameProvider {
-    ScopeType getType();
+public interface Scoped {
+    @Nullable Scope getEnclosingScope();
+
+    void setEnclosingScope(final Scope enclosingScope);
+
+    default ScopeStack rebuildScopeStack() {
+        final var stack = new ScopeStack();
+        var scope = getEnclosingScope();
+        while (scope != null) {
+            stack.addFirst(scope);
+            scope = scope.getEnclosingScope();
+        }
+        return stack;
+    }
+
+    default Identifier getScopeName() {
+        return rebuildScopeStack().getScopeName();
+    }
 }

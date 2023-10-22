@@ -32,4 +32,14 @@ public record Parameter(Identifier name, Type type, @Nullable Value defaultValue
     public Identifier getName() {
         return name;
     }
+
+    // Object
+
+    @Override
+    public String toString() {
+        if (defaultValue == null) {
+            return String.format("%s:%s", name, type);
+        }
+        return String.format("%s:%s=%s", name, type, defaultValue);
+    }
 }

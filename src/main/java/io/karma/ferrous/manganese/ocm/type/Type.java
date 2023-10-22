@@ -15,12 +15,10 @@
 
 package io.karma.ferrous.manganese.ocm.type;
 
-import io.karma.ferrous.manganese.scope.Scope;
+import io.karma.ferrous.manganese.scope.Scoped;
 import io.karma.ferrous.manganese.target.TargetMachine;
-import io.karma.ferrous.manganese.util.Identifier;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 
@@ -29,34 +27,12 @@ import java.util.Arrays;
  * @since 14/10/2023
  */
 @API(status = Status.INTERNAL)
-public interface Type extends Scope {
+public interface Type extends Scoped {
     long materialize(final TargetMachine machine);
 
     TypeAttribute[] getAttributes();
 
     Type getBaseType();
-
-    default @Nullable Type getEnclosingType() {
-        final var scope = getEnclosingScope();
-        if (scope instanceof Type type) {
-            return type;
-        }
-        return null;
-    }
-
-    default void setEnclosingType(final Type enclosingType) {
-        setEnclosingScope(enclosingType);
-    }
-
-    @Override
-    default Identifier getName() {
-        return getBaseType().getName();
-    }
-
-    @Override
-    default Identifier getScopeName() {
-        return getBaseType().getScopeName();
-    }
 
     default boolean isAliased() {
         return false;
@@ -71,6 +47,9 @@ public interface Type extends Scope {
     }
 
     default Type derive(final TypeAttribute... attributes) {
+        if (attributes.length == 0) {
+            return this;
+        }
         return Types.cached(new DerivedType(this, attributes));
     }
 

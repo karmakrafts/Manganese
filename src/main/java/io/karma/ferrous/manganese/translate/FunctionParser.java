@@ -19,11 +19,11 @@ import io.karma.ferrous.manganese.ParseAdapter;
 import io.karma.ferrous.manganese.compiler.CompileStatus;
 import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.Function;
+import io.karma.ferrous.manganese.ocm.Parameter;
 import io.karma.ferrous.manganese.ocm.type.FunctionType;
 import io.karma.ferrous.manganese.util.CallingConvention;
 import io.karma.ferrous.manganese.util.FunctionUtils;
 import io.karma.ferrous.manganese.util.Identifier;
-import io.karma.ferrous.manganese.util.ScopeStack;
 import io.karma.ferrous.manganese.util.TypeUtils;
 import io.karma.ferrous.vanadium.FerrousParser.ProtoFunctionContext;
 import org.apiguardian.api.API;
@@ -35,14 +35,15 @@ import org.apiguardian.api.API.Status;
  */
 @API(status = Status.INTERNAL)
 public final class FunctionParser extends ParseAdapter {
-    private final ScopeStack capturedScopeStack;
+    private final Identifier scopeName;
     private Identifier identifier;
     private FunctionType type;
     private CallingConvention callConv;
+    private Identifier[] paramNames = new Identifier[0];
 
-    public FunctionParser(final Compiler compiler, final ScopeStack capturedScopeStack) {
+    public FunctionParser(final Compiler compiler, final Identifier scopeName) {
         super(compiler);
-        this.capturedScopeStack = capturedScopeStack;
+        this.scopeName = scopeName;
     }
 
     @Override
@@ -50,17 +51,27 @@ public final class FunctionParser extends ParseAdapter {
         identifier = FunctionUtils.getFunctionName(context.functionIdent());
         callConv = FunctionUtils.getCallingConvention(compiler, context);
         // @formatter:off
-        final var type = TypeUtils.getFunctionType(compiler, capturedScopeStack, context)
+        final var type = TypeUtils.getFunctionType(compiler, scopeName, context)
             .unwrapOrReport(compiler, context.start, CompileStatus.TRANSLATION_ERROR);
         // @formatter:on
         if (type.isEmpty()) {
             return;
         }
         this.type = type.get();
+        paramNames = FunctionUtils.getParameterNames(context);
         super.enterProtoFunction(context);
     }
 
     public Function getFunction() {
-        return new Function(identifier, callConv, type);
+        final var paramTypes = type.getParamTypes();
+        final var numParams = paramTypes.length;
+        if (numParams != paramNames.length) {
+            throw new IllegalStateException("Invalid function parser state");
+        }
+        final var params = new Parameter[numParams];
+        for (var i = 0; i < numParams; i++) {
+            params[i] = new Parameter(paramNames[i], paramTypes[i], null);
+        }
+        return new Function(identifier, callConv, type.getReturnType(), params);
     }
 }

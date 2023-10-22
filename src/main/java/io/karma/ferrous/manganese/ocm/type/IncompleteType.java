@@ -16,7 +16,6 @@
 package io.karma.ferrous.manganese.ocm.type;
 
 import io.karma.ferrous.manganese.scope.Scope;
-import io.karma.ferrous.manganese.scope.ScopeType;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Identifier;
 import org.apiguardian.api.API;
@@ -31,19 +30,23 @@ import static org.lwjgl.llvm.LLVMCore.LLVMGetGlobalContext;
  * @since 15/10/2023
  */
 @API(status = Status.INTERNAL)
-public final class IncompleteType implements Type {
+public final class IncompleteType implements NamedType {
     private final Identifier name;
     private long materializedType = MemoryUtil.NULL;
     private Scope enclosingType;
 
-    IncompleteType(final Identifier name) {
+    public IncompleteType(final Identifier name) {
         this.name = name;
     }
 
+    // NameProvider
+
     @Override
-    public ScopeType getScopeType() {
-        return enclosingType.getScopeType();
+    public Identifier getName() {
+        return name;
     }
+
+    // Scoped
 
     @Override
     public Scope getEnclosingScope() {
@@ -55,10 +58,7 @@ public final class IncompleteType implements Type {
         enclosingType = scope;
     }
 
-    @Override
-    public Identifier getName() {
-        return name;
-    }
+    // Type
 
     @Override
     public boolean isBuiltin() {
@@ -75,7 +75,8 @@ public final class IncompleteType implements Type {
         if (materializedType != MemoryUtil.NULL) {
             return materializedType;
         }
-        return materializedType = LLVMCore.LLVMStructCreateNamed(LLVMGetGlobalContext(), getInternalName());
+        final var name = getQualifiedName().toInternalName();
+        return materializedType = LLVMCore.LLVMStructCreateNamed(LLVMGetGlobalContext(), name);
     }
 
     @Override
@@ -87,6 +88,8 @@ public final class IncompleteType implements Type {
     public Type getBaseType() {
         return this;
     }
+
+    // Object
 
     @Override
     public int hashCode() {

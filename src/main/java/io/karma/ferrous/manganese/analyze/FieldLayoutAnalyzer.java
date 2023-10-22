@@ -19,7 +19,7 @@ import io.karma.ferrous.manganese.ParseAdapter;
 import io.karma.ferrous.manganese.compiler.CompileStatus;
 import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.Field;
-import io.karma.ferrous.manganese.util.ScopeStack;
+import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.TypeUtils;
 import io.karma.ferrous.manganese.util.Utils;
 import io.karma.ferrous.vanadium.FerrousParser.FieldContext;
@@ -36,10 +36,12 @@ import java.util.ArrayList;
 @API(status = Status.INTERNAL)
 public final class FieldLayoutAnalyzer extends ParseAdapter {
     private final ArrayList<Field> fields = new ArrayList<>();
+    private final Identifier scopeName;
     private int nestedScopes = 0;
 
-    public FieldLayoutAnalyzer(final Compiler compiler) {
+    public FieldLayoutAnalyzer(final Compiler compiler, final Identifier scopeName) {
         super(compiler);
+        this.scopeName = scopeName;
     }
 
     public boolean isOutOfScope() {
@@ -63,7 +65,7 @@ public final class FieldLayoutAnalyzer extends ParseAdapter {
         }
         final var name = Utils.getIdentifier(context.ident());
         // @formatter:off
-        final var type = TypeUtils.getType(compiler, ScopeStack.EMPTY, context.type())
+        final var type = TypeUtils.getType(compiler, scopeName, context.type())
             .unwrapOrReport(compiler, context.start, CompileStatus.ANALYZER_ERROR);
         // @formatter:on
         if (type.isEmpty()) {

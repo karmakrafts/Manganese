@@ -22,6 +22,7 @@ import io.karma.ferrous.manganese.module.Module;
 import io.karma.ferrous.manganese.ocm.Function;
 import io.karma.ferrous.manganese.util.FunctionUtils;
 import io.karma.ferrous.manganese.util.Identifier;
+import io.karma.ferrous.manganese.util.Logger;
 import io.karma.ferrous.manganese.util.TypeUtils;
 import io.karma.ferrous.vanadium.FerrousParser.ExternFunctionContext;
 import io.karma.ferrous.vanadium.FerrousParser.FunctionContext;
@@ -54,10 +55,11 @@ public class TranslationUnit extends ParseAdapter {
 
     @Override
     public void enterFunction(final FunctionContext context) {
-        final var parser = new FunctionParser(compiler, scopeStack);
+        final var parser = new FunctionParser(compiler, scopeStack.getScopeName());
         ParseTreeWalker.DEFAULT.walk(parser, context);
-        final var function = parser.getFunction();
+        final var function = scopeStack.applyEnclosingScopes(parser.getFunction());
         functions.put(function.getQualifiedName(), function);
+        Logger.INSTANCE.debugln("Parsed function '%s'", function);
         super.enterFunction(context);
     }
 
@@ -65,15 +67,15 @@ public class TranslationUnit extends ParseAdapter {
     public void enterExternFunction(final ExternFunctionContext context) {
         final var prototype = context.protoFunction();
         // @formatter:off
-        final var type = TypeUtils.getFunctionType(compiler, scopeStack, prototype)
+        final var type = TypeUtils.getFunctionType(compiler, scopeStack.getScopeName(), prototype)
             .unwrapOrReport(compiler, context.start, CompileStatus.TRANSLATION_ERROR);
         // @formatter:on
         if (type.isEmpty()) {
             return;
         }
         final var name = FunctionUtils.getFunctionName(prototype.functionIdent()).toString();
-        final var function = LLVMAddFunction(module.getAddress(), name,
-                                             type.get().materialize(compiler.getTargetMachine()));
+        final var functionType = type.get().materialize(compiler.getTargetMachine());
+        final var function = LLVMAddFunction(module.getAddress(), name, functionType);
         if (function == NULL) {
             final var compileContext = compiler.getContext();
             compileContext.reportError(compileContext.makeError(context.start, "Could not materialize function"),

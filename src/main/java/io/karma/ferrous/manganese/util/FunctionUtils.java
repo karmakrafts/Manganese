@@ -22,6 +22,9 @@ import io.karma.ferrous.vanadium.FerrousParser.ProtoFunctionContext;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 
+import java.util.ArrayList;
+import java.util.stream.Collectors;
+
 /**
  * @author Alexander Hinze
  * @since 14/10/2023
@@ -31,6 +34,24 @@ public final class FunctionUtils {
     // @formatter:off
     private FunctionUtils() {}
     // @formatter:on
+
+    public static Identifier[] getParameterNames(final ProtoFunctionContext context) {
+        final var paramList = context.functionParamList();
+        final var params = paramList.functionParam();
+        if (params.isEmpty()) {
+            return new Identifier[0];
+        }
+        // @formatter:off
+        final var names = params.stream()
+            .map(param -> Utils.getIdentifier(param.ident()))
+            .collect(Collectors.toCollection(ArrayList::new));
+        // @formatter:on
+        final var vaParam = paramList.vaFunctionParam();
+        if (vaParam != null) {
+            names.add(Utils.getIdentifier(vaParam.ident()));
+        }
+        return names.toArray(Identifier[]::new);
+    }
 
     public static CallingConvention getCallingConvention(final Compiler compiler, final ProtoFunctionContext context) {
         final var convContext = context.callConvMod();

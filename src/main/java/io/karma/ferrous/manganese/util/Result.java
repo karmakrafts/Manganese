@@ -105,7 +105,8 @@ public final class Result<T, E> {
     public Optional<T> unwrapOrReport(final Compiler compiler, final Token token, final CompileStatus status) {
         if (isError()) {
             final var context = compiler.getContext();
-            context.reportError(context.makeError(token, Utils.makeCompilerMessage(storage.error().toString())), status);
+            context.reportError(context.makeError(token, Utils.makeCompilerMessage(storage.error().toString())),
+                                status);
             return Optional.empty();
         }
         return Optional.of(storage.value());

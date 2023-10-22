@@ -18,6 +18,8 @@ package io.karma.ferrous.manganese.scope;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 
+import java.util.EnumSet;
+
 /**
  * @author Alexander Hinze
  * @since 15/10/2023
@@ -37,5 +39,11 @@ public enum ScopeType {
     INTERFACE,
     CONSTRUCTOR,
     DESTRUCTOR,
-    FUNCTION
+    FUNCTION;
+
+    private static final EnumSet<ScopeType> INVISIBLE_TYPES = EnumSet.of(GLOBAL, FILE, MODULE_FILE);
+
+    public boolean isVisible() {
+        return !INVISIBLE_TYPES.contains(this);
+    }
 }

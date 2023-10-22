@@ -15,6 +15,7 @@
 
 package io.karma.ferrous.manganese.ocm;
 
+import io.karma.ferrous.manganese.scope.Scoped;
 import io.karma.ferrous.manganese.util.Identifier;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
@@ -26,4 +27,12 @@ import org.apiguardian.api.API.Status;
 @API(status = Status.INTERNAL)
 public interface NameProvider {
     Identifier getName();
+
+    default Identifier getQualifiedName() {
+        final var name = getName();
+        if (this instanceof Scoped scoped) {
+            return scoped.getScopeName().join(name);
+        }
+        return name;
+    }
 }

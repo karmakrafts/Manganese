@@ -13,10 +13,9 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.util;
+package io.karma.ferrous.manganese.scope;
 
-import io.karma.ferrous.manganese.scope.Scope;
-import io.karma.ferrous.manganese.scope.ScopeType;
+import io.karma.ferrous.manganese.util.Identifier;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 
@@ -28,8 +27,6 @@ import java.util.Stack;
  */
 @API(status = Status.INTERNAL)
 public final class ScopeStack extends Stack<Scope> {
-    public static final ScopeStack EMPTY = new ScopeStack();
-
     public ScopeStack() {
     }
 
@@ -37,8 +34,8 @@ public final class ScopeStack extends Stack<Scope> {
         addAll(other);
     }
 
-    public <S extends Scope> S applyEnclosingScopes(final S provider) {
-        Scope currentScope = provider;
+    public <S extends Scoped> S applyEnclosingScopes(final S provider) {
+        Scoped currentScope = provider;
         for (final var scope : reversed()) {
             currentScope.setEnclosingScope(scope);
             currentScope = scope;
@@ -47,13 +44,12 @@ public final class ScopeStack extends Stack<Scope> {
     }
 
     public Identifier getScopeName() {
-        var result = new Identifier("");
+        var result = Identifier.EMPTY.copy();
         for (final var scope : this) {
-            final var scopeType = scope.getScopeType();
-            if (scopeType == ScopeType.FILE || scopeType == ScopeType.MODULE_FILE) {
+            if (!scope.getType().isVisible()) {
                 continue;
             }
-            result = result.join(scope.getScopeName());
+            result = result.join(scope.getName());
         }
         return result;
     }

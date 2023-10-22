@@ -13,17 +13,13 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.scope;
+package io.karma.ferrous.manganese.ocm.type;
 
 import io.karma.ferrous.manganese.ocm.NameProvider;
-import org.apiguardian.api.API;
-import org.apiguardian.api.API.Status;
 
 /**
  * @author Alexander Hinze
- * @since 16/10/2023
+ * @since 22/10/2023
  */
-@API(status = Status.INTERNAL)
-public interface Scope extends Scoped, NameProvider {
-    ScopeType getType();
+public interface NamedType extends Type, NameProvider {
 }

@@ -41,41 +41,38 @@ public final class TypeUtils {
     private TypeUtils() {}
     // @formatter:on
 
-    public static Result<Type, String> getType(final Compiler compiler, final ScopeStack capturedScopeStack,
+    public static Result<Type, String> getType(final Compiler compiler, final Identifier scopeName,
                                                final TypeContext context) {
         try {
-            final TypeParser unit = new TypeParser(compiler, capturedScopeStack);
+            final TypeParser unit = new TypeParser(compiler, scopeName);
             ParseTreeWalker.DEFAULT.walk(unit, context);
             return Result.ok(unit.getType());
         }
-        catch(Exception error) {
+        catch (Exception error) {
             return Result.error(String.format("Could not resolve type: %s", error));
         }
     }
 
-    public static Result<List<Type>, String> getParameterTypes(final Compiler compiler,
-                                                               final ScopeStack capturedScopeStack,
+    public static Result<List<Type>, String> getParameterTypes(final Compiler compiler, final Identifier scopeName,
                                                                final ProtoFunctionContext context) {
         return Result.tryGet(() -> {
             // @formatter:off
             return context.functionParamList().functionParam().stream()
                 .map(FunctionParamContext::type)
                 .filter(type -> type != null && !type.getText().equals(TokenUtils.getLiteral(FerrousLexer.KW_VAARGS)))
-                .map(type -> getType(compiler, capturedScopeStack, type).unwrap())
+                .map(type -> getType(compiler, scopeName, type).unwrap())
                 .toList();
             // @formatter:on
         });
     }
 
-    public static Result<FunctionType, String> getFunctionType(final Compiler compiler,
-                                                               final ScopeStack capturedScopeStack,
+    public static Result<FunctionType, String> getFunctionType(final Compiler compiler, final Identifier scopeName,
                                                                final ProtoFunctionContext context) {
         return Result.tryGet(() -> {
             final var type = context.type();
-            final var returnType = type == null ? BuiltinType.VOID : getType(compiler, capturedScopeStack,
-                                                                             type).unwrap();
+            final var returnType = type == null ? BuiltinType.VOID : getType(compiler, scopeName, type).unwrap();
             final var isVarArg = context.functionParamList().vaFunctionParam() != null;
-            final var paramTypes = TypeUtils.getParameterTypes(compiler, capturedScopeStack, context).unwrap();
+            final var paramTypes = TypeUtils.getParameterTypes(compiler, scopeName, context).unwrap();
             return Types.function(returnType, paramTypes, isVarArg);
         });
     }
