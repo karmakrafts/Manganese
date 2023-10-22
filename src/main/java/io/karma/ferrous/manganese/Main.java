@@ -51,7 +51,7 @@ import static org.lwjgl.llvm.LLVMTargetMachine.LLVMGetHostCPUFeatures;
 final class Main {
     public static void main(final String[] args) {
         Manganese.init();
-        var status = CompileStatus.SKIPPED;
+        var status = CompileStatus.SUCCESS;
 
         try {
             if (args.length == 0) {

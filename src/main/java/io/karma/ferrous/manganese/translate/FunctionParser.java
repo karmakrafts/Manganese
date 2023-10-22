@@ -21,6 +21,7 @@ import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.Function;
 import io.karma.ferrous.manganese.ocm.Parameter;
 import io.karma.ferrous.manganese.ocm.type.FunctionType;
+import io.karma.ferrous.manganese.scope.ScopeStack;
 import io.karma.ferrous.manganese.util.CallingConvention;
 import io.karma.ferrous.manganese.util.FunctionUtils;
 import io.karma.ferrous.manganese.util.Identifier;
@@ -35,15 +36,15 @@ import org.apiguardian.api.API.Status;
  */
 @API(status = Status.INTERNAL)
 public final class FunctionParser extends ParseAdapter {
-    private final Identifier scopeName;
+    private final ScopeStack capturedScopeStack;
     private Identifier identifier;
     private FunctionType type;
     private CallingConvention callConv;
     private Identifier[] paramNames = new Identifier[0];
 
-    public FunctionParser(final Compiler compiler, final Identifier scopeName) {
+    public FunctionParser(final Compiler compiler, final ScopeStack capturedScopeStack) {
         super(compiler);
-        this.scopeName = scopeName;
+        this.capturedScopeStack = capturedScopeStack;
     }
 
     @Override
@@ -51,7 +52,7 @@ public final class FunctionParser extends ParseAdapter {
         identifier = FunctionUtils.getFunctionName(context.functionIdent());
         callConv = FunctionUtils.getCallingConvention(compiler, context);
         // @formatter:off
-        final var type = TypeUtils.getFunctionType(compiler, scopeName, context)
+        final var type = TypeUtils.getFunctionType(compiler, capturedScopeStack, context)
             .unwrapOrReport(compiler, context.start, CompileStatus.TRANSLATION_ERROR);
         // @formatter:on
         if (type.isEmpty()) {

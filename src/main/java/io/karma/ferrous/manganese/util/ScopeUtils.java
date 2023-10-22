@@ -37,7 +37,6 @@ public final class ScopeUtils {
         var element = map.get(name);
         if (element == null) {
             // Attempt to resolve field types from the inside scope outwards
-            Logger.INSTANCE.debugln("Attempting to find '%s'", name);
             final var partialScopeNames = scopeName.split(Identifier.DELIMITER);
             final var numPartialScopeNames = partialScopeNames.length;
             for (var j = numPartialScopeNames; j > 0; j--) {
@@ -48,7 +47,6 @@ public final class ScopeUtils {
                 }
                 element = map.get(currentScopeName.join(name));
                 if (element != null) {
-                    Logger.INSTANCE.debugln("Found '%s' in '%s'", name, currentScopeName);
                     break; // Stop if we found it
                 }
             }

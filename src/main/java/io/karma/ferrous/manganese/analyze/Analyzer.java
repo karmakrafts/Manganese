@@ -66,16 +66,19 @@ public final class Analyzer extends ParseAdapter {
         super(compiler);
     }
 
-    private void addTypesToGraph(final ArrayDeque<Pair<TopoNode<NamedType>, TopoNode<NamedType>>> typesToResolve,
-                                 final Map<Identifier, TopoNode<NamedType>> nodes, final HashSet<Identifier> resolved) {
+    private String addTypesToGraph(final ArrayDeque<Pair<TopoNode<NamedType>, TopoNode<NamedType>>> typesToResolve,
+                                   final Map<Identifier, TopoNode<NamedType>> nodes,
+                                   final HashSet<Identifier> resolved) {
+        StringBuilder result = new StringBuilder();
         final var pair = typesToResolve.pop();
+
         final var parentNode = pair.getLeft();
         final var parentType = parentNode.getValue();
         final var childNode = pair.getRight();
         final var childType = childNode.getValue();
 
         if (childType instanceof UDT udt && !udt.isComplete()) {
-            Logger.INSTANCE.debugln("Unrolling struct chain for '%s'", childType.getQualifiedName());
+            result.append('U');
             final var fieldTypes = udt.type().getFieldTypes();
             for (final var fieldType : fieldTypes) {
                 if (fieldType.isBuiltin() || fieldType.isComplete() || !(fieldType instanceof NamedType)) {
@@ -92,38 +95,37 @@ public final class Analyzer extends ParseAdapter {
                 }
                 fieldTypeName = fieldNode.getValue().getQualifiedName();
                 if (resolved.contains(fieldTypeName)) {
-                    Logger.INSTANCE.debugln("Type sorting cache hit for '%s'", fieldTypeName);
+                    result.append('C');
                     continue; // Prevent multiple passes over the same type
                 }
                 typesToResolve.push(Pair.of(childNode, fieldNode));
                 resolved.add(fieldTypeName);
+                result.append('R');
             }
         }
 
         if (childType instanceof AliasedType alias && !alias.isComplete()) {
-            Logger.INSTANCE.debugln("Unrolling alias chain for '%s'", childType.getQualifiedName());
-            if (alias.isBuiltin() || alias.isComplete()) {
-                return; // Nothing to do here..
-            }
-            var backingTypeName = ((NamedType) alias.getBackingType()).getQualifiedName();
-            final var typeNode = ScopeUtils.findInScope(nodes, backingTypeName, parentType.getScopeName());
-            if (typeNode != null) {
-                backingTypeName = typeNode.getValue().getQualifiedName();
-                if (!resolved.contains(backingTypeName)) { // Prevent multiple passes over the same type
-                    typesToResolve.push(Pair.of(childNode, typeNode));
-                    resolved.add(backingTypeName);
-                }
-                else {
-                    Logger.INSTANCE.debugln("Type sorting cache hit for '%s'", backingTypeName);
+            result.append('A');
+            if (!alias.isBuiltin() && !alias.isComplete()) {
+                var backingTypeName = ((NamedType) alias.getBackingType()).getQualifiedName();
+                final var typeNode = ScopeUtils.findInScope(nodes, backingTypeName, parentType.getScopeName());
+                if (typeNode != null) {
+                    backingTypeName = typeNode.getValue().getQualifiedName();
+                    if (!resolved.contains(backingTypeName)) { // Prevent multiple passes over the same type
+                        typesToResolve.push(Pair.of(childNode, typeNode));
+                        resolved.add(backingTypeName);
+                        result.append('R');
+                    }
+                    else {
+                        result.append('C');
+                    }
                 }
             }
         }
 
         parentNode.addDependency(childNode);
-        if (parentType instanceof NullType) {
-            return; // Omit message for root sorting node
-        }
-        Logger.INSTANCE.debugln("'%s' depends on '%s'", parentType.getQualifiedName(), childType.getQualifiedName());
+        return result.append("D\n  > ")
+                .append(childType).toString();
     }
 
     @Override
@@ -133,7 +135,7 @@ public final class Analyzer extends ParseAdapter {
             return;
         }
         // @formatter:off
-        final var type = TypeUtils.getType(compiler, scopeStack.getScopeName(), context.type())
+        final var type = TypeUtils.getType(compiler, scopeStack, context.type())
             .unwrapOrReport(compiler, context.start, CompileStatus.TRANSLATION_ERROR);
         // @formatter:on
         if (type.isEmpty()) {
@@ -248,7 +250,7 @@ public final class Analyzer extends ParseAdapter {
                                                       CompileStatus.TYPE_ERROR);
                     continue;
                 }
-                Logger.INSTANCE.debugln("   Resolved to complete type '%s'", completeType);
+                Logger.INSTANCE.debugln("  > Resolved to complete type '%s'", completeType);
                 type.setFieldType(i, completeType.derive(fieldType.getAttributes()));
             }
         }
@@ -288,7 +290,7 @@ public final class Analyzer extends ParseAdapter {
             rootNode.getValue().setEnclosingScope(type.getEnclosingScope());
             queue.push(Pair.of(rootNode, node));
             while (!queue.isEmpty()) {
-                addTypesToGraph(queue, nodes, resolved);
+                Logger.INSTANCE.debugln("Resolving type graph: %s", addTypesToGraph(queue, nodes, resolved));
             }
             rootNode.addDependency(node);
         }
@@ -311,7 +313,7 @@ public final class Analyzer extends ParseAdapter {
     }
 
     private void analyzeFieldLayout(final ParserRuleContext parent, final Identifier name, final UDTKind kind) {
-        final var layoutAnalyzer = new FieldLayoutAnalyzer(compiler, scopeStack.getScopeName()); // Copy scope stack
+        final var layoutAnalyzer = new FieldLayoutAnalyzer(compiler, scopeStack); // Copy scope stack
         ParseTreeWalker.DEFAULT.walk(layoutAnalyzer, parent);
 
         final var fieldTypes = layoutAnalyzer.getFields().stream().map(Field::getType).toArray(Type[]::new);

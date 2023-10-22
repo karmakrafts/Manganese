@@ -18,9 +18,11 @@ package io.karma.ferrous.manganese.translate;
 import io.karma.ferrous.manganese.ParseAdapter;
 import io.karma.ferrous.manganese.compiler.CompileStatus;
 import io.karma.ferrous.manganese.compiler.Compiler;
+import io.karma.ferrous.manganese.ocm.type.IncompleteType;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.ocm.type.TypeAttribute;
 import io.karma.ferrous.manganese.ocm.type.Types;
+import io.karma.ferrous.manganese.scope.ScopeStack;
 import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.Utils;
 import io.karma.ferrous.vanadium.FerrousParser.FloatTypeContext;
@@ -45,12 +47,12 @@ import java.util.Stack;
 @API(status = Status.INTERNAL)
 public final class TypeParser extends ParseAdapter {
     private final Stack<TypeAttribute> attributes = new Stack<>();
-    private final Identifier scopeName;
+    private final ScopeStack capturedScopeStack;
     private Type baseType;
 
-    public TypeParser(final Compiler compiler, final Identifier scopeName) {
+    public TypeParser(final Compiler compiler, final ScopeStack capturedScopeStack) {
         super(compiler);
-        this.scopeName = scopeName;
+        this.capturedScopeStack = capturedScopeStack;
     }
 
     @Override
@@ -79,11 +81,14 @@ public final class TypeParser extends ParseAdapter {
 
     @Override
     public void enterIdent(final IdentContext context) {
+        if (baseType != null) {
+            return; // Qualified ident contains these, so if type exists, skip
+        }
         final var compileContext = compiler.getContext();
         final var name = Utils.getIdentifier(context);
-        final var type = compileContext.getAnalyzer().findCompleteTypeInScope(name, scopeName);
+        final var type = compileContext.getAnalyzer().findCompleteTypeInScope(name, capturedScopeStack.getScopeName());
         if (type == null) {
-            baseType = scopeStack.applyEnclosingScopes(Types.incomplete(name));
+            baseType = capturedScopeStack.applyEnclosingScopes(new IncompleteType(name));
             return;
         }
         baseType = type;
@@ -94,9 +99,9 @@ public final class TypeParser extends ParseAdapter {
     public void enterQualifiedIdent(final QualifiedIdentContext context) {
         final var compileContext = compiler.getContext();
         final var name = Utils.getIdentifier(context);
-        final var type = compileContext.getAnalyzer().findCompleteTypeInScope(name, scopeName);
+        final var type = compileContext.getAnalyzer().findCompleteTypeInScope(name, capturedScopeStack.getScopeName());
         if (type == null) {
-            baseType = scopeStack.applyEnclosingScopes(Types.incomplete(name));
+            baseType = capturedScopeStack.applyEnclosingScopes(new IncompleteType(name));
             return;
         }
         baseType = type;

@@ -84,10 +84,6 @@ public final class Types {
         return structure(name, false, fieldTypes);
     }
 
-    public static IncompleteType incomplete(final Identifier name) {
-        return cached(new IncompleteType(name));
-    }
-
     public static AliasedType aliased(final Identifier name, final Type backingType) {
         return cached(new AliasedType(name, backingType));
     }

@@ -20,6 +20,7 @@ import io.karma.ferrous.manganese.compiler.CompileStatus;
 import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.module.Module;
 import io.karma.ferrous.manganese.ocm.Function;
+import io.karma.ferrous.manganese.scope.ScopeStack;
 import io.karma.ferrous.manganese.util.FunctionUtils;
 import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.Logger;
@@ -55,7 +56,7 @@ public class TranslationUnit extends ParseAdapter {
 
     @Override
     public void enterFunction(final FunctionContext context) {
-        final var parser = new FunctionParser(compiler, scopeStack.getScopeName());
+        final var parser = new FunctionParser(compiler, new ScopeStack(scopeStack));
         ParseTreeWalker.DEFAULT.walk(parser, context);
         final var function = scopeStack.applyEnclosingScopes(parser.getFunction());
         functions.put(function.getQualifiedName(), function);
@@ -67,7 +68,7 @@ public class TranslationUnit extends ParseAdapter {
     public void enterExternFunction(final ExternFunctionContext context) {
         final var prototype = context.protoFunction();
         // @formatter:off
-        final var type = TypeUtils.getFunctionType(compiler, scopeStack.getScopeName(), prototype)
+        final var type = TypeUtils.getFunctionType(compiler, scopeStack, prototype)
             .unwrapOrReport(compiler, context.start, CompileStatus.TRANSLATION_ERROR);
         // @formatter:on
         if (type.isEmpty()) {
