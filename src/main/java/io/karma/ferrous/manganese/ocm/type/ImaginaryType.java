@@ -27,7 +27,9 @@ public enum ImaginaryType implements Type {
     TOKEN,
     IDENT,
     EXPR,
-    TYPE;
+    LITERAL,
+    TYPE,
+    STRING;
 
     // Scoped
 

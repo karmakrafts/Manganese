@@ -54,10 +54,6 @@ public enum BuiltinType implements NamedType {
     F64     (FerrousLexer.KW_F64,   target -> LLVMCore.LLVMDoubleType());
     // @formatter:on
 
-    public static final BuiltinType[] SIGNED_TYPES = {I8, I16, I32, I64, ISIZE};
-    public static final BuiltinType[] UNSIGNED_TYPES = {U8, U16, U32, U64, USIZE};
-    public static final BuiltinType[] FLOAT_TYPES = {F32, F64};
-
     private final Identifier name;
     private final ToLongFunction<TargetMachine> typeProvider;
 
