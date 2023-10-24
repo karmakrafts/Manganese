@@ -34,12 +34,12 @@ import java.util.ArrayList;
  * @since 15/10/2023
  */
 @API(status = Status.INTERNAL)
-public final class FieldLayoutAnalyzer extends ParseAdapter {
+public final class FieldAnalyzer extends ParseAdapter {
     private final ArrayList<Field> fields = new ArrayList<>();
     private final ScopeStack capturedScopeStack;
     private int nestedScopes = 0;
 
-    public FieldLayoutAnalyzer(final Compiler compiler, final ScopeStack capturedScopeStack) {
+    public FieldAnalyzer(final Compiler compiler, final ScopeStack capturedScopeStack) {
         super(compiler);
         this.capturedScopeStack = capturedScopeStack;
     }

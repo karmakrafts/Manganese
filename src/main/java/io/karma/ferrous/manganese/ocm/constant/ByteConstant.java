@@ -13,30 +13,21 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.analyze;
+package io.karma.ferrous.manganese.ocm.constant;
 
-import io.karma.ferrous.manganese.ParseAdapter;
-import io.karma.ferrous.manganese.compiler.Compiler;
-import io.karma.ferrous.manganese.ocm.access.Access;
-import io.karma.ferrous.manganese.ocm.access.DefaultAccess;
-import io.karma.ferrous.vanadium.FerrousParser.AccessModContext;
+import io.karma.ferrous.manganese.ocm.type.BuiltinType;
+import io.karma.ferrous.manganese.ocm.type.Type;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 
 /**
  * @author Alexander Hinze
- * @since 17/10/2023
+ * @since 16/10/2023
  */
 @API(status = Status.INTERNAL)
-public final class AccessAnalyzer extends ParseAdapter {
-    private final Access access = DefaultAccess.PRIVATE;
-
-    public AccessAnalyzer(final Compiler compiler) {
-        super(compiler);
-    }
-
+public record ByteConstant(byte value, boolean isUnsigned) implements Constant {
     @Override
-    public void enterAccessMod(final AccessModContext context) {
-
+    public Type getType() {
+        return isUnsigned ? BuiltinType.U8 : BuiltinType.I8;
     }
 }

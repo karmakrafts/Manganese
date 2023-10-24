@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.ocm.value;
+package io.karma.ferrous.manganese.ocm.constant;
 
 import io.karma.ferrous.manganese.ocm.type.BuiltinType;
 import io.karma.ferrous.manganese.ocm.type.Type;
@@ -25,9 +25,9 @@ import org.apiguardian.api.API.Status;
  * @since 16/10/2023
  */
 @API(status = Status.INTERNAL)
-public record FloatConstant(float value) implements Constant {
+public record DoubleConstant(double value) implements Constant {
     @Override
     public Type getType() {
-        return BuiltinType.F32;
+        return BuiltinType.F64;
     }
 }

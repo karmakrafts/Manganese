@@ -15,6 +15,7 @@
 
 package io.karma.ferrous.manganese.module;
 
+import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.LLVMUtils;
 import io.karma.ferrous.manganese.util.Logger;
 import org.apiguardian.api.API;
@@ -27,6 +28,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -53,6 +55,7 @@ import static org.lwjgl.llvm.LLVMCore.nLLVMDisposeMessage;
 import static org.lwjgl.llvm.LLVMCore.nLLVMGetBufferStart;
 import static org.lwjgl.llvm.LLVMIRReader.LLVMParseIRInContext;
 import static org.lwjgl.llvm.LLVMLinker.LLVMLinkModules2;
+import static org.lwjgl.llvm.LLVMTargetMachine.LLVMTargetMachineEmitToMemoryBuffer;
 import static org.lwjgl.system.MemoryUtil.NULL;
 
 /**
@@ -183,8 +186,8 @@ public final class Module {
         if (isDisposed) {
             return;
         }
+        Logger.INSTANCE.debugln("Disposing module '%s' at 0x%08X in context 0x%08X", getName(), address, context);
         LLVMDisposeModule(address);
-        Logger.INSTANCE.debugln("Disposed module '%s' at 0x%08X in context 0x%08X", getName(), address, context);
         isDisposed = true;
     }
 
@@ -194,6 +197,27 @@ public final class Module {
 
     public long getAddress() {
         return address;
+    }
+
+    public @Nullable ByteBuffer generateAssembly(final TargetMachine machine) {
+        try (final var stack = MemoryStack.stackPush()) {
+            final var buffer = stack.callocPointer(1);
+            final var messageBuffer = stack.callocPointer(1);
+            if (LLVMTargetMachineEmitToMemoryBuffer(machine.getAddress(), address, machine.getLevel().getLlvmValue(),
+                                                    messageBuffer, buffer)) {
+                LLVMUtils.checkStatus(messageBuffer);
+            }
+            final var bufferAddr = messageBuffer.get(0);
+            if (bufferAddr == NULL) {
+                return null;
+            }
+            final var size = (int) LLVMGetBufferSize(bufferAddr);
+            final var srcBuffer = MemoryUtil.memByteBuffer(bufferAddr, size);
+            final var dstBuffer = ByteBuffer.allocateDirect(size).order(ByteOrder.nativeOrder());
+            MemoryUtil.memCopy(srcBuffer, dstBuffer);
+            LLVMDisposeMemoryBuffer(bufferAddr);
+            return dstBuffer;
+        }
     }
 
     public @Nullable ByteBuffer getBitcode() {

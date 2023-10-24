@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.ocm.value;
+package io.karma.ferrous.manganese.ocm.constant;
 
 import io.karma.ferrous.manganese.ocm.type.BuiltinType;
 import io.karma.ferrous.manganese.ocm.type.Type;
@@ -22,12 +22,15 @@ import org.apiguardian.api.API.Status;
 
 /**
  * @author Alexander Hinze
- * @since 16/10/2023
+ * @since 24/10/2023
  */
 @API(status = Status.INTERNAL)
-public record LongConstant(long value, boolean isUnsigned) implements Constant {
+public record BoolConstant(boolean value) implements Constant {
+    public static final BoolConstant TRUE = new BoolConstant(true);
+    public static final BoolConstant FALSE = new BoolConstant(false);
+
     @Override
     public Type getType() {
-        return isUnsigned ? BuiltinType.U64 : BuiltinType.I64;
+        return BuiltinType.BOOL;
     }
 }

@@ -17,14 +17,11 @@ package io.karma.ferrous.manganese.analyze;
 
 import io.karma.ferrous.manganese.ParseAdapter;
 import io.karma.ferrous.manganese.compiler.Compiler;
-import org.apiguardian.api.API;
-import org.apiguardian.api.API.Status;
 
 /**
  * @author Alexander Hinze
- * @since 15/10/2023
+ * @since 24/10/2023
  */
-@API(status = Status.INTERNAL)
 public final class AttributeAnalyzer extends ParseAdapter {
     public AttributeAnalyzer(final Compiler compiler) {
         super(compiler);

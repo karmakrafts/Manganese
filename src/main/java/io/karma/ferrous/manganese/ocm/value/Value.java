@@ -15,6 +15,7 @@
 
 package io.karma.ferrous.manganese.ocm.value;
 
+import io.karma.ferrous.manganese.ocm.constant.Constant;
 import io.karma.ferrous.manganese.ocm.expr.Expression;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import org.apiguardian.api.API;

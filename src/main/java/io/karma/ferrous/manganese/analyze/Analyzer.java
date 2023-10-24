@@ -32,6 +32,7 @@ import io.karma.ferrous.manganese.util.Logger;
 import io.karma.ferrous.manganese.util.ScopeUtils;
 import io.karma.ferrous.manganese.util.TypeUtils;
 import io.karma.ferrous.manganese.util.Utils;
+import io.karma.ferrous.vanadium.FerrousParser.AttribContext;
 import io.karma.ferrous.vanadium.FerrousParser.ClassContext;
 import io.karma.ferrous.vanadium.FerrousParser.EnumClassContext;
 import io.karma.ferrous.vanadium.FerrousParser.IdentContext;
@@ -148,6 +149,16 @@ public final class Analyzer extends ParseAdapter {
     }
 
     @Override
+    public void enterAttrib(AttribContext context) {
+        final var identContext = context.ident();
+        if (checkIsAlreadyDefined(identContext)) {
+            return;
+        }
+        analyzeFieldLayout(context, Utils.getIdentifier(identContext), UDTKind.ATTRIBUTE);
+        super.enterAttrib(context);
+    }
+
+    @Override
     public void enterStruct(final StructContext context) {
         final var identContext = context.ident();
         if (checkIsAlreadyDefined(identContext)) {
@@ -188,9 +199,8 @@ public final class Analyzer extends ParseAdapter {
     }
 
     private boolean checkIsAlreadyDefined(final IdentContext identContext) {
-        final var scopeName = scopeStack.getScopeName();
         final var name = Utils.getIdentifier(identContext);
-        final var type = findTypeInScope(name, scopeName);
+        final var type = findTypeInScope(name, scopeStack.getScopeName());
         if (type != null) {
             final var compileContext = compiler.getContext();
             final var message = Utils.makeCompilerMessage(String.format("Type '%s' is already defined", name));
@@ -346,7 +356,7 @@ public final class Analyzer extends ParseAdapter {
     }
 
     private void analyzeFieldLayout(final ParserRuleContext parent, final Identifier name, final UDTKind kind) {
-        final var layoutAnalyzer = new FieldLayoutAnalyzer(compiler, scopeStack); // Copy scope stack
+        final var layoutAnalyzer = new FieldAnalyzer(compiler, scopeStack); // Copy scope stack
         ParseTreeWalker.DEFAULT.walk(layoutAnalyzer, parent);
 
         final var fieldTypes = layoutAnalyzer.getFields().stream().map(Field::getType).toArray(Type[]::new);

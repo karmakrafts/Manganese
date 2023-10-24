@@ -55,6 +55,48 @@ public abstract class ParseAdapter implements FerrousParserListener {
 
     // @formatter:off
     @Override
+    public void enterPropertyGetter(PropertyGetterContext propertyGetterContext) {}
+
+    @Override
+    public void exitPropertyGetter(PropertyGetterContext propertyGetterContext) {}
+
+    @Override
+    public void enterPropertySetter(PropertySetterContext propertySetterContext) {}
+
+    @Override
+    public void exitPropertySetter(PropertySetterContext propertySetterContext) {}
+
+    @Override
+    public void enterProperty(PropertyContext propertyContext) {}
+
+    @Override
+    public void exitProperty(PropertyContext propertyContext) {}
+
+    @Override
+    public void enterInlinePropertyBody(InlinePropertyBodyContext inlinePropertyBodyContext) {}
+
+    @Override
+    public void exitInlinePropertyBody(InlinePropertyBodyContext inlinePropertyBodyContext) {}
+
+    @Override
+    public void enterPropertyBody(PropertyBodyContext propertyBodyContext) {}
+
+    @Override
+    public void exitPropertyBody(PropertyBodyContext propertyBodyContext) {}
+
+    @Override
+    public void enterNamedExpr(NamedExprContext namedExprContext) {}
+
+    @Override
+    public void exitNamedExpr(NamedExprContext namedExprContext) {}
+
+    @Override
+    public void enterNamedExprList(NamedExprListContext namedExprListContext) {}
+
+    @Override
+    public void exitNamedExprList(NamedExprListContext namedExprListContext) {}
+
+    @Override
     public void enterTypeAlias(TypeAliasContext typeAliasContext) {}
 
     @Override

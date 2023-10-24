@@ -34,14 +34,33 @@ public interface Type extends Scoped {
 
     Type getBaseType();
 
+    /**
+     * @return True if this type is imaginary and cannot be materialized
+     *         into a runtime structure.
+     */
+    default boolean isImaginary() {
+        return false;
+    }
+
+    /**
+     * @return True if this type is aliased and refers to another
+     *         type or alias.
+     */
     default boolean isAliased() {
         return false;
     }
 
+    /**
+     * @return True if this is a builtin type.
+     */
     default boolean isBuiltin() {
         return getBaseType().isBuiltin();
     }
 
+    /**
+     * @return True if this is a complete type.
+     *         False if this type is incomplete and missing and associated data layout.
+     */
     default boolean isComplete() {
         return getBaseType().isComplete();
     }

@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.ocm.value;
+package io.karma.ferrous.manganese.ocm.constant;
 
 import io.karma.ferrous.manganese.ocm.type.BuiltinType;
 import io.karma.ferrous.manganese.ocm.type.Type;
@@ -25,9 +25,9 @@ import org.apiguardian.api.API.Status;
  * @since 16/10/2023
  */
 @API(status = Status.INTERNAL)
-public record ShortConstant(short value, boolean isUnsigned) implements Constant {
+public record LongConstant(long value, boolean isUnsigned) implements Constant {
     @Override
     public Type getType() {
-        return isUnsigned ? BuiltinType.U16 : BuiltinType.I16;
+        return isUnsigned ? BuiltinType.U64 : BuiltinType.I64;
     }
 }

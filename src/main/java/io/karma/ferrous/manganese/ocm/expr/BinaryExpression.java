@@ -31,7 +31,7 @@ public final class BinaryExpression implements Expression {
     private final Value rhs;
 
     public BinaryExpression(final Operator op, final Value lhs, final Value rhs) {
-        if(!op.isBinary()) {
+        if (!op.isBinary()) {
             throw new IllegalArgumentException(String.format("%s is not a binary operator", op));
         }
         this.op = op;
@@ -43,11 +43,11 @@ public final class BinaryExpression implements Expression {
         return op;
     }
 
-    public Value getLhs() {
+    public Value getLHS() {
         return lhs;
     }
 
-    public Value getRhs() {
+    public Value getRHS() {
         return rhs;
     }
 

@@ -13,19 +13,27 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.ocm.value;
+package io.karma.ferrous.manganese.ocm.constant;
 
+import io.karma.ferrous.manganese.ocm.type.BuiltinType;
+import io.karma.ferrous.manganese.ocm.type.Type;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 
 /**
  * @author Alexander Hinze
- * @since 16/10/2023
+ * @since 22/10/2023
  */
 @API(status = Status.INTERNAL)
-public interface Constant extends Value {
+public final class VoidConstant implements Constant {
+    public static final VoidConstant INSTANCE = new VoidConstant();
+
+    // @formatter:off
+    private VoidConstant() {}
+    // @formatter:on
+
     @Override
-    default boolean isConstant() {
-        return true;
+    public Type getType() {
+        return BuiltinType.VOID;
     }
 }

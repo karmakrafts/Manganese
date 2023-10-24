@@ -16,21 +16,13 @@
 package io.karma.ferrous.manganese.target;
 
 import io.karma.ferrous.manganese.module.Module;
-import io.karma.ferrous.manganese.util.LLVMUtils;
 import io.karma.ferrous.manganese.util.Logger;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
-import org.jetbrains.annotations.Nullable;
-import org.lwjgl.system.MemoryStack;
-import org.lwjgl.system.MemoryUtil;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.Objects;
 
-import static org.lwjgl.llvm.LLVMCore.LLVMDisposeMemoryBuffer;
-import static org.lwjgl.llvm.LLVMCore.LLVMGetBufferSize;
 import static org.lwjgl.llvm.LLVMTarget.LLVMCopyStringRepOfTargetData;
 import static org.lwjgl.llvm.LLVMTarget.LLVMDisposeTargetData;
 import static org.lwjgl.llvm.LLVMTarget.LLVMPointerSize;
@@ -39,7 +31,6 @@ import static org.lwjgl.llvm.LLVMTarget.LLVMPreferredAlignmentOfType;
 import static org.lwjgl.llvm.LLVMTargetMachine.LLVMCreateTargetDataLayout;
 import static org.lwjgl.llvm.LLVMTargetMachine.LLVMCreateTargetMachine;
 import static org.lwjgl.llvm.LLVMTargetMachine.LLVMDisposeTargetMachine;
-import static org.lwjgl.llvm.LLVMTargetMachine.LLVMTargetMachineEmitToMemoryBuffer;
 import static org.lwjgl.system.MemoryUtil.NULL;
 
 /**
@@ -80,27 +71,6 @@ public final class TargetMachine {
             throw new RuntimeException("Could not allocate target machine data");
         }
         Logger.INSTANCE.debugln("Allocated target machine data at 0x%08X", toString(), dataAddress);
-    }
-
-    public @Nullable ByteBuffer generateAssembly(final Module module) {
-        try (final var stack = MemoryStack.stackPush()) {
-            final var buffer = stack.callocPointer(1);
-            final var messageBuffer = stack.callocPointer(1);
-            if (LLVMTargetMachineEmitToMemoryBuffer(address, module.getAddress(), level.getLlvmValue(), messageBuffer,
-                                                    buffer)) {
-                LLVMUtils.checkStatus(messageBuffer);
-            }
-            final var bufferAddr = messageBuffer.get(0);
-            if (bufferAddr == NULL) {
-                return null;
-            }
-            final var size = (int) LLVMGetBufferSize(bufferAddr);
-            final var srcBuffer = MemoryUtil.memByteBuffer(bufferAddr, size);
-            final var dstBuffer = ByteBuffer.allocateDirect(size).order(ByteOrder.nativeOrder());
-            MemoryUtil.memCopy(srcBuffer, dstBuffer);
-            LLVMDisposeMemoryBuffer(bufferAddr);
-            return dstBuffer;
-        }
     }
 
     public Module loadEmbeddedModule(final String name, final long context) throws IOException {

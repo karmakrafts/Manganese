@@ -15,41 +15,43 @@
 
 package io.karma.ferrous.manganese.ocm.statement;
 
-import io.karma.ferrous.manganese.ocm.expr.Expression;
-import org.jetbrains.annotations.Nullable;
-
-import java.util.Objects;
+import io.karma.ferrous.manganese.ocm.constant.VoidConstant;
+import io.karma.ferrous.manganese.ocm.value.Value;
 
 /**
  * @author Alexander Hinze
  * @since 22/10/2023
  */
 public final class ReturnStatement implements Statement {
-    private final Expression expression;
+    private final Value value;
 
-    public ReturnStatement(final @Nullable Expression expression) {
-        this.expression = expression;
+    public ReturnStatement(final Value value) {
+        this.value = value;
     }
 
-    public Expression getExpression() {
-        return expression;
+    public ReturnStatement() {
+        this(VoidConstant.INSTANCE);
+    }
+
+    public Value getValue() {
+        return value;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(expression);
+        return value.hashCode();
     }
 
     @Override
     public boolean equals(Object obj) {
         if (obj instanceof ReturnStatement statement) {
-            return Objects.equals(expression, statement.expression);
+            return value.equals(statement.value);
         }
         return false;
     }
 
     @Override
     public String toString() {
-        return String.format("return %s", expression == null ? "null" : expression);
+        return String.format("return %s", value);
     }
 }

@@ -73,6 +73,7 @@ public final class FunctionParser extends ParseAdapter {
         for (var i = 0; i < numParams; i++) {
             params[i] = new Parameter(paramNames[i], paramTypes[i], null);
         }
-        return new Function(identifier, callConv, type.getReturnType(), params);
+        return capturedScopeStack.applyEnclosingScopes(
+                new Function(identifier, callConv, type.getReturnType(), params));
     }
 }

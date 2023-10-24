@@ -57,7 +57,7 @@ public class TranslationUnit extends ParseAdapter {
     public void enterFunction(final FunctionContext context) {
         final var parser = new FunctionParser(compiler, scopeStack);
         ParseTreeWalker.DEFAULT.walk(parser, context);
-        final var function = scopeStack.applyEnclosingScopes(parser.getFunction());
+        final var function = parser.getFunction();
         functions.put(function.getQualifiedName(), function);
         Logger.INSTANCE.debugln("Parsed function '%s'", function);
         super.enterFunction(context);
