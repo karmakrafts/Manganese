@@ -16,17 +16,19 @@
 package io.karma.ferrous.manganese.analyze;
 
 import io.karma.ferrous.manganese.ParseAdapter;
-import io.karma.ferrous.manganese.compiler.CompileError;
-import io.karma.ferrous.manganese.compiler.CompileStatus;
+import io.karma.ferrous.manganese.compiler.CompileErrorCode;
 import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.Field;
 import io.karma.ferrous.manganese.ocm.type.AliasedType;
 import io.karma.ferrous.manganese.ocm.type.NamedType;
 import io.karma.ferrous.manganese.ocm.type.NullType;
 import io.karma.ferrous.manganese.ocm.type.Type;
+import io.karma.ferrous.manganese.ocm.type.TypeAttribute;
 import io.karma.ferrous.manganese.ocm.type.Types;
 import io.karma.ferrous.manganese.ocm.type.UDT;
 import io.karma.ferrous.manganese.ocm.type.UDTKind;
+import io.karma.ferrous.manganese.scope.Scope;
+import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.Logger;
 import io.karma.ferrous.manganese.util.ScopeUtils;
@@ -89,10 +91,7 @@ public final class Analyzer extends ParseAdapter {
                 var fieldTypeName = ((NamedType) fieldType).getQualifiedName();
                 final var fieldNode = ScopeUtils.findInScope(nodes, fieldTypeName, childType.getScopeName());
                 if (fieldNode == null) {
-                    final var compileContext = compiler.getContext();
-                    final var message = Utils.makeCompilerMessage(
-                            String.format("Invalid field node '%s'", fieldTypeName));
-                    compileContext.reportError(new CompileError(message), CompileStatus.TYPE_ERROR);
+                    Logger.INSTANCE.errorln("Invalid field node '%s'", fieldTypeName);
                     continue;
                 }
                 fieldTypeName = fieldNode.getValue().getQualifiedName();
@@ -135,14 +134,8 @@ public final class Analyzer extends ParseAdapter {
         if (checkIsAlreadyDefined(identContext)) {
             return;
         }
-        // @formatter:off
-        final var type = TypeUtils.getType(compiler, scopeStack, context.type())
-            .unwrapOrReport(compiler, context.start, CompileStatus.TRANSLATION_ERROR);
-        // @formatter:on
-        if (type.isEmpty()) {
-            return;
-        }
-        final var aliasedType = Types.aliased(Utils.getIdentifier(identContext), type.get(),
+        final var type = TypeUtils.getType(compiler, scopeStack, context.type());
+        final var aliasedType = Types.aliased(Utils.getIdentifier(identContext), type,
                                               scopeStack::applyEnclosingScopes);
         udts.put(aliasedType.getQualifiedName(), aliasedType);
         super.enterTypeAlias(context);
@@ -204,7 +197,7 @@ public final class Analyzer extends ParseAdapter {
         if (type != null) {
             final var compileContext = compiler.getContext();
             final var message = Utils.makeCompilerMessage(String.format("Type '%s' is already defined", name));
-            compileContext.reportError(compileContext.makeError(identContext.start, message), CompileStatus.TYPE_ERROR);
+            compileContext.reportError(compileContext.makeError(identContext.start, message, CompileErrorCode.E3000));
             return true;
         }
         return false;
@@ -220,9 +213,6 @@ public final class Analyzer extends ParseAdapter {
         }
         if (!type.isComplete()) {
             if (!(type instanceof NamedType)) {
-                final var compileContext = compiler.getContext();
-                final var message = Utils.makeCompilerMessage(String.format("'%s' is not a named type", type));
-                compileContext.reportError(new CompileError(message), CompileStatus.TYPE_ERROR);
                 return null;
             }
             final var typeName = ((NamedType) type).getQualifiedName();
@@ -235,7 +225,7 @@ public final class Analyzer extends ParseAdapter {
         return ScopeUtils.findInScope(udts, name, scopeName);
     }
 
-    private boolean resolveAliasedType(final AliasedType alias, final Identifier scopeName) {
+    private void resolveAliasedType(final AliasedType alias, final Identifier scopeName) {
         var currentType = alias.getBackingType();
         while (!currentType.isComplete()) {
             if (currentType.isAliased()) {
@@ -243,20 +233,21 @@ public final class Analyzer extends ParseAdapter {
                 continue;
             }
             if (!(currentType instanceof NamedType)) {
-                return false;
+                Logger.INSTANCE.errorln("Could not resolve aliased type '%s'", alias.getQualifiedName());
+                return;
             }
             final var currentTypeName = ((NamedType) currentType).getQualifiedName();
             final var completeType = findCompleteTypeInScope(currentTypeName, scopeName);
             if (completeType == null) {
-                return false;
+                Logger.INSTANCE.errorln("Could not resolve aliased type '%s'", alias.getQualifiedName());
+                return;
             }
             currentType = completeType;
         }
         alias.setBackingType(currentType);
-        return true;
     }
 
-    private boolean resolveFieldTypes(final UDT udt, final Identifier scopeName) {
+    private void resolveFieldTypes(final UDT udt, final Identifier scopeName) {
         final var type = udt.type();
         final var fieldTypes = type.getFieldTypes();
         final var numFields = fieldTypes.size();
@@ -269,16 +260,12 @@ public final class Analyzer extends ParseAdapter {
             Logger.INSTANCE.debugln("Found incomplete field type '%s' in '%s'", fieldTypeName, scopeName);
             final var completeType = findCompleteTypeInScope(fieldTypeName, scopeName);
             if (completeType == null) {
-                final var message = String.format("Failed to resolve field type '%s' for '%s'", fieldTypeName,
-                                                  scopeName);
-                compiler.getContext()
-                        .reportError(new CompileError(Utils.makeCompilerMessage(message)), CompileStatus.TYPE_ERROR);
-                return false;
+                Logger.INSTANCE.errorln("Failed to resolve field type '%s' for '%s'", fieldTypeName, scopeName);
+                return;
             }
             Logger.INSTANCE.debugln("  > Resolved to complete type '%s'", completeType);
             type.setFieldType(i, completeType.derive(fieldType.getAttributes()));
         }
-        return true;
     }
 
     private void resolveTypes() {
@@ -286,16 +273,12 @@ public final class Analyzer extends ParseAdapter {
         for (final var udt : udts) {
             final var scopeName = udt.getScopeName();
             if (udt.isAliased() && udt instanceof AliasedType alias) {
-                if (!resolveAliasedType(alias, scopeName)) {
-                    continue; // TODO: raise error
-                }
+                resolveAliasedType(alias, scopeName);
             }
             if (!(udt instanceof UDT)) {
                 continue; // Skip everything else apart from UDTs
             }
-            if (!resolveFieldTypes((UDT) udt, scopeName)) {
-                // TODO: raise error
-            }
+            resolveFieldTypes((UDT) udt, scopeName);
         }
     }
 
@@ -305,7 +288,7 @@ public final class Analyzer extends ParseAdapter {
                 continue; // Don't need to waste time on doing nothing..
             }
             if (!udt.isComplete()) {
-                Logger.INSTANCE.warnln("Cannot materialize type '%s' as it is incomplete", udt.getQualifiedName());
+                Logger.INSTANCE.errorln("Cannot materialize type '%s' as it is incomplete", udt.getQualifiedName());
                 continue;
             }
             udt.materialize(compiler.getTargetMachine());
@@ -314,7 +297,7 @@ public final class Analyzer extends ParseAdapter {
     }
 
     private void sortTypes() {
-        final var rootNode = new TopoNode<NamedType>(new NullType());
+        final var rootNode = new TopoNode<NamedType>(DummyType.INSTANCE);
         // @formatter:off
         final var nodes = udts.entrySet()
             .stream()
@@ -344,7 +327,7 @@ public final class Analyzer extends ParseAdapter {
 
         for (final var node : sortedNodes) {
             final var type = node.getValue();
-            if (type == null || type instanceof NullType) {
+            if (type == null || type instanceof NullType || type == DummyType.INSTANCE) {
                 continue;
             }
             final var qualifiedName = type.getQualifiedName();
@@ -356,7 +339,7 @@ public final class Analyzer extends ParseAdapter {
     }
 
     private void analyzeFieldLayout(final ParserRuleContext parent, final Identifier name, final UDTKind kind) {
-        final var layoutAnalyzer = new FieldAnalyzer(compiler, scopeStack); // Copy scope stack
+        final var layoutAnalyzer = new FieldAnalyzer(compiler, scopeStack);
         ParseTreeWalker.DEFAULT.walk(layoutAnalyzer, parent);
 
         final var fieldTypes = layoutAnalyzer.getFields().stream().map(Field::getType).toArray(Type[]::new);
@@ -368,15 +351,47 @@ public final class Analyzer extends ParseAdapter {
     }
 
     public void preProcessTypes() {
-        try {
-            sortTypes();
-            resolveTypes();
-            materializeTypes();
+        sortTypes();
+        resolveTypes();
+        materializeTypes();
+    }
+
+    private static final class DummyType implements NamedType {
+        public static final DummyType INSTANCE = new DummyType();
+        private Scope enclosingScope;
+
+        // @formatter:off
+        private DummyType() {}
+        // @formatter:on
+
+        @Override
+        public Identifier getName() {
+            return Identifier.EMPTY;
         }
-        catch (Throwable error) {
-            final var message = Utils.makeCompilerMessage(
-                    String.format("Could not pre-process types: %s", error.getMessage()));
-            compiler.getContext().reportError(new CompileError(message), CompileStatus.ANALYZER_ERROR);
+
+        @Override
+        public long materialize(final TargetMachine machine) {
+            throw new UnsupportedOperationException("Dummy type cannot be materialized");
+        }
+
+        @Override
+        public TypeAttribute[] getAttributes() {
+            return new TypeAttribute[0];
+        }
+
+        @Override
+        public Type getBaseType() {
+            return this;
+        }
+
+        @Override
+        public @Nullable Scope getEnclosingScope() {
+            return enclosingScope;
+        }
+
+        @Override
+        public void setEnclosingScope(final Scope enclosingScope) {
+            this.enclosingScope = enclosingScope;
         }
     }
 }

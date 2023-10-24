@@ -15,21 +15,23 @@
 
 package io.karma.ferrous.manganese.ocm.type;
 
+import io.karma.ferrous.manganese.scope.DefaultScope;
 import io.karma.ferrous.manganese.scope.Scope;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.TokenUtils;
 import io.karma.ferrous.vanadium.FerrousLexer;
-import org.jetbrains.annotations.Nullable;
-
-import java.util.Objects;
 
 /**
  * @author Alexander Hinze
  * @since 22/10/2023
  */
 public final class NullType implements NamedType {
-    private Scope enclosingScope;
+    public static final NullType INSTANCE = new NullType();
+
+    // @formatter:off
+    private NullType() {}
+    // @formatter:on
 
     // NameProvider
 
@@ -41,20 +43,19 @@ public final class NullType implements NamedType {
     // Scoped
 
     @Override
-    public @Nullable Scope getEnclosingScope() {
-        return enclosingScope;
+    public Scope getEnclosingScope() {
+        return DefaultScope.GLOBAL;
     }
 
     @Override
     public void setEnclosingScope(final Scope enclosingScope) {
-        this.enclosingScope = enclosingScope;
     }
 
     // Type
 
     @Override
     public long materialize(final TargetMachine machine) {
-        return 0;
+        return BuiltinType.VOID.derive(TypeAttribute.POINTER).materialize(machine);
     }
 
     @Override
@@ -65,28 +66,5 @@ public final class NullType implements NamedType {
     @Override
     public Type getBaseType() {
         return this;
-    }
-
-    // Object
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(enclosingScope);
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj instanceof NullType type) {
-            return Objects.equals(enclosingScope, type.enclosingScope);
-        }
-        return false;
-    }
-
-    @Override
-    public String toString() {
-        if (enclosingScope != null) {
-            return enclosingScope.toString();
-        }
-        return super.toString();
     }
 }

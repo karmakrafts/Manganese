@@ -39,8 +39,6 @@ import java.util.Collections;
 import java.util.Objects;
 import java.util.jar.Manifest;
 
-import static org.lwjgl.llvm.LLVMCore.LLVMContextSetOpaquePointers;
-import static org.lwjgl.llvm.LLVMCore.LLVMGetGlobalContext;
 import static org.lwjgl.llvm.LLVMTargetMachine.LLVMGetHostCPUFeatures;
 
 /**
@@ -84,10 +82,6 @@ final class Main {
             final var silentOpt = parser.accepts("s", "Silent mode. This will suppress any warning level log messages during compilation.");
             final var versionOpt = parser.accepts("v", "Prints version information about the compiler and runtime.");
             final var verboseOpt = parser.accepts("V", "Enable verbose errors. This will likely show some garbage.");
-            final var buildDirOpt = parser.accepts("b", "The path to the build directory used for storing compiled IL objects.")
-                .withOptionalArg()
-                .ofType(String.class)
-                .defaultsTo("build");
             final var bitcodeOpt = parser.accepts("B", "Dump bitcode to files while compiling.");
             final var codeModelOpt = parser.accepts("M", "The code model to use when generating assembly code for the target machine.")
                 .withOptionalArg()
@@ -177,6 +171,7 @@ final class Main {
             compiler.setReportParserWarnings(options.has(parseWarningsOpt));
             compiler.setVerbose(options.has(verboseOpt));
             compiler.setSaveBitcode(options.has(bitcodeOpt));
+            compiler.setEnableOpaquePointers(!options.has(opaquePointerOpt));
 
             // Update the log level if we are in verbose mode.
             if (options.has(debugOpt)) {
@@ -187,9 +182,6 @@ final class Main {
                     Logger.INSTANCE.disableLogLevel(level);
                 }
             }
-            if (options.has(opaquePointerOpt)) {
-                LLVMContextSetOpaquePointers(LLVMGetGlobalContext(), false);
-            }
 
             final var in = Path.of(options.valueOf(inOpt));
             // @formatter:off
@@ -197,10 +189,9 @@ final class Main {
                 ? Path.of(options.valueOf(outOpt))
                 : Path.of(String.format("%s.%s", Utils.getRawFileName(in), fileType.get().getExtension()));
             // @formatter:on
-            final var buildDir = Path.of(options.valueOf(buildDirOpt));
 
             final var context = new CompileContext();
-            final var result = compiler.compile(in, out, buildDir, context);
+            final var result = compiler.compile(in, out, context);
             context.dispose();
             status = status.worse(result.status());
 

@@ -16,7 +16,7 @@
 package io.karma.ferrous.manganese.translate;
 
 import io.karma.ferrous.manganese.ParseAdapter;
-import io.karma.ferrous.manganese.compiler.CompileStatus;
+import io.karma.ferrous.manganese.compiler.CompileErrorCode;
 import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.module.Module;
 import io.karma.ferrous.manganese.ocm.Function;
@@ -66,20 +66,13 @@ public class TranslationUnit extends ParseAdapter {
     @Override
     public void enterExternFunction(final ExternFunctionContext context) {
         final var prototype = context.protoFunction();
-        // @formatter:off
-        final var type = TypeUtils.getFunctionType(compiler, scopeStack, prototype)
-            .unwrapOrReport(compiler, context.start, CompileStatus.TRANSLATION_ERROR);
-        // @formatter:on
-        if (type.isEmpty()) {
-            return;
-        }
+        final var type = TypeUtils.getFunctionType(compiler, scopeStack, prototype);
         final var name = FunctionUtils.getFunctionName(prototype.functionIdent()).toString();
-        final var functionType = type.get().materialize(compiler.getTargetMachine());
+        final var functionType = type.materialize(compiler.getTargetMachine());
         final var function = LLVMAddFunction(module.getAddress(), name, functionType);
         if (function == NULL) {
             final var compileContext = compiler.getContext();
-            compileContext.reportError(compileContext.makeError(context.start, "Could not materialize function"),
-                                       CompileStatus.TRANSLATION_ERROR);
+            compileContext.reportError(compileContext.makeError(context.start, CompileErrorCode.E4000));
             return;
         }
         LLVMSetLinkage(function, LLVMExternalLinkage);

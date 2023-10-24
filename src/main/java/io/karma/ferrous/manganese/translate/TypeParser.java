@@ -16,13 +16,14 @@
 package io.karma.ferrous.manganese.translate;
 
 import io.karma.ferrous.manganese.ParseAdapter;
-import io.karma.ferrous.manganese.compiler.CompileStatus;
+import io.karma.ferrous.manganese.compiler.CompileErrorCode;
 import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.ocm.type.TypeAttribute;
 import io.karma.ferrous.manganese.ocm.type.Types;
 import io.karma.ferrous.manganese.scope.ScopeStack;
 import io.karma.ferrous.manganese.util.Identifier;
+import io.karma.ferrous.manganese.util.Logger;
 import io.karma.ferrous.manganese.util.Utils;
 import io.karma.ferrous.vanadium.FerrousParser.FloatTypeContext;
 import io.karma.ferrous.vanadium.FerrousParser.IdentContext;
@@ -65,8 +66,7 @@ public final class TypeParser extends ParseAdapter {
     public void enterRefType(final RefTypeContext context) {
         if (attributes.contains(TypeAttribute.REFERENCE)) {
             final var compileContext = compiler.getContext();
-            compileContext.reportError(compileContext.makeError(context.start, Utils.makeCompilerMessage(
-                    "Type can only have one level of reference")), CompileStatus.SEMANTIC_ERROR);
+            compileContext.reportError(compileContext.makeError(context.start, CompileErrorCode.E3001));
             return;
         }
         attributes.push(TypeAttribute.REFERENCE);
@@ -135,19 +135,15 @@ public final class TypeParser extends ParseAdapter {
     private void parsePrimitiveType(final ParserRuleContext context, final String errorMessage) {
         final var text = context.getText();
         if (baseType != null) {
-            final var compileContext = compiler.getContext();
-            compileContext.reportError(compileContext.makeError(context.start, errorMessage),
-                                       CompileStatus.TRANSLATION_ERROR);
+            Logger.INSTANCE.warnln("Base type was already parsed");
             return;
         }
-        final var opt = Types.builtin(Identifier.parse(text));
-        if (opt.isEmpty()) {
-            final var compileContext = compiler.getContext();
-            compileContext.reportError(compileContext.makeError(context.start, "Invalid builtin type"),
-                                       CompileStatus.TRANSLATION_ERROR);
+        final var type = Types.builtin(Identifier.parse(text));
+        if (type.isEmpty()) {
+            Logger.INSTANCE.errorln("Could not parse primitive type '%s'", text);
             return;
         }
-        baseType = opt.get();
+        baseType = type.get();
     }
 
     public Type getType() {

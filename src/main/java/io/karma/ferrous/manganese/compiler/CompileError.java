@@ -15,10 +15,8 @@
 
 package io.karma.ferrous.manganese.compiler;
 
-import io.karma.ferrous.manganese.util.TokenUtils;
 import io.karma.ferrous.vanadium.FerrousLexer;
 import org.antlr.v4.runtime.Token;
-import org.antlr.v4.runtime.TokenStream;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 import org.fusesource.jansi.Ansi;
@@ -29,47 +27,14 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.PrintStream;
 import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
 
 /**
  * @author Alexander Hinze
  * @since 12/10/2023
  */
 @API(status = Status.STABLE)
-public final class CompileError implements Comparable<CompileError> {
-    private final Token token;
-    private final List<Token> lineTokens;
-    private final int line;
-    private final int column;
-    private final CompileStatus status;
-    private final CompilePass pass;
-    private String additionalText;
-
-    public CompileError(final @Nullable Token token, final @Nullable List<Token> lineTokens, final int line,
-                        final int column, final @Nullable CompileStatus status, final @Nullable CompilePass pass) {
-        this.token = token;
-        this.lineTokens = lineTokens;
-        this.line = line;
-        this.column = column;
-        this.status = status;
-        this.pass = pass;
-    }
-
-    public CompileError(final Token token, final TokenStream tokenStream, final int line, final int column) {
-        this(token, TokenUtils.getLineTokens(tokenStream, token), line, column, null, null);
-    }
-
-    public CompileError(final Token token, final TokenStream tokenStream) {
-        this(token, TokenUtils.getLineTokens(tokenStream, token), token.getLine(), token.getCharPositionInLine(), null,
-             null);
-    }
-
-    public CompileError(final String additionalText) {
-        this(null, null, -1, -1, null, null);
-        this.additionalText = additionalText;
-    }
-
+public record CompileError(@Nullable Token token, @Nullable List<Token> lineTokens, @Nullable CompilePass pass,
+                           @Nullable String text, CompileErrorCode errorCode) implements Comparable<CompileError> {
     private static void handleTokenColor(final Token token, final Ansi buffer) {
         final var tokenType = token.getType();
         // @formatter:off
@@ -92,21 +57,19 @@ public final class CompileError implements Comparable<CompileError> {
         // @formatter:on
     }
 
-    public Optional<String> getAdditionalText() {
-        return Optional.ofNullable(additionalText);
-    }
-
-    public void setAdditionalText(final String additionalText) {
-        this.additionalText = additionalText;
-    }
-
     @Override
     public int compareTo(final @NotNull CompileError other) {
-        final var line = Integer.compare(this.line, other.line);
+        if (token == null) {
+            return -1; // Errors with no lines go to the back
+        }
+        if (other.token == null) {
+            return 1; // If the other token is null and we are not, step over
+        }
+        final var line = Integer.compare(token.getLine(), other.token.getLine());
         if (line != 0) {
             return line;
         }
-        return Integer.compare(this.column, other.column);
+        return Integer.compare(token.getCharPositionInLine(), other.token.getCharPositionInLine());
     }
 
     public String getAnsiText() {
@@ -146,15 +109,15 @@ public final class CompileError implements Comparable<CompileError> {
     }
 
     public int getLine() {
-        return line;
+        return token == null ? -1 : token.getLine();
     }
 
     public int getColumn() {
-        return column;
+        return token == null ? -1 : token.getCharPositionInLine();
     }
 
     public @Nullable CompileStatus getStatus() {
-        return status;
+        return errorCode.getStatus();
     }
 
     public @Nullable CompilePass getPass() {
@@ -169,15 +132,20 @@ public final class CompileError implements Comparable<CompileError> {
         return lineTokens;
     }
 
+    public CompileErrorCode getErrorCode() {
+        return errorCode;
+    }
+
     public void print(final PrintStream stream) {
         stream.print(render());
     }
 
     public String render() {
         final var builder = Ansi.ansi();
-        final var hasToken = token != null;
 
-        if(line != -1 && column != -1 && (hasToken || lineTokens != null)) { // @formatter:off
+        if(token != null) { // @formatter:off
+            final var line = getLine();
+            final var column = getColumn();
             builder.a('\n');
             builder.fg(Color.RED);
             builder.a(String.format("Error during compilation in line %d:%d", line, column));
@@ -185,7 +153,7 @@ public final class CompileError implements Comparable<CompileError> {
             builder.a("\n\n  ");
             builder.a(getAnsiText());
             builder.a("\n  ");
-            final var length = hasToken ? Math.max(1, token.getStopIndex() - token.getStartIndex() + 1) : 1;
+            final var length = Math.max(1, token.getStopIndex() - token.getStartIndex() + 1);
             builder.a(" ".repeat(Math.max(0, column)));
             for (var i = 0; i < length; i++) {
                 builder.fgBright(Color.RED);
@@ -202,27 +170,14 @@ public final class CompileError implements Comparable<CompileError> {
             builder.a("\n\n");
         }// @formatter:on
 
-        if (additionalText != null) {
-            builder.a(String.format("%s\n\n", additionalText));
+        if (text != null) {
+            builder.fgBright(Color.RED).a(errorCode).a("\n").a(Attribute.RESET);
+            builder.a(text).a("\n\n");
+        }
+        else {
+            builder.fgBright(Color.RED).a(errorCode).a("\n\n").a(Attribute.RESET);
         }
         return builder.toString();
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(token, line, column, status, pass);
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if(obj instanceof CompileError error) { // @formatter:off
-            return (token == null || token.equals(error.token))
-                && line == error.line
-                && column == error.column
-                && status == error.status
-                && pass == error.pass;
-        } // @formatter:on
-        return false;
     }
 
     @Override

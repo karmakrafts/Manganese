@@ -19,6 +19,7 @@ import io.karma.ferrous.manganese.analyze.Analyzer;
 import io.karma.ferrous.manganese.module.Module;
 import io.karma.ferrous.manganese.module.ModuleData;
 import io.karma.ferrous.manganese.translate.TranslationUnit;
+import io.karma.ferrous.manganese.util.TokenUtils;
 import io.karma.ferrous.vanadium.FerrousLexer;
 import io.karma.ferrous.vanadium.FerrousParser;
 import io.karma.ferrous.vanadium.FerrousParser.FileContext;
@@ -30,6 +31,7 @@ import org.apiguardian.api.API.Status;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Objects;
+import java.util.function.Function;
 
 /**
  * @author Alexander Hinze
@@ -42,11 +44,11 @@ public final class CompileContext {
     private final HashMap<String, ModuleData> moduleData = new HashMap<>();
 
     private CompilePass currentPass = CompilePass.NONE;
-    private CompileStatus status = CompileStatus.SKIPPED;
-    private String moduleName;
+    private CompileStatus currentStatus = CompileStatus.SKIPPED;
+    private String currentModuleName;
 
     public Module getModule() {
-        return Objects.requireNonNull(modules.get(Objects.requireNonNull(moduleName)));
+        return Objects.requireNonNull(modules.get(Objects.requireNonNull(currentModuleName)));
     }
 
     private ModuleData getOrCreateModuleData(final String name) {
@@ -58,21 +60,35 @@ public final class CompileContext {
         return result;
     }
 
+    private ModuleData getOrCreateModuleData() {
+        return getOrCreateModuleData(Objects.requireNonNull(currentModuleName));
+    }
+
+    private <T> T getModuleComponent(final Function<ModuleData, T> selector) {
+        final var data = moduleData.get(Objects.requireNonNull(currentModuleName));
+        if (data != null) {
+            return selector.apply(data);
+        }
+        throw new IllegalStateException("No such module component");
+    }
+
     public CompileResult makeResult() {
-        return new CompileResult(status, new ArrayList<>(errors));
+        return new CompileResult(currentStatus, new ArrayList<>(errors));
     }
 
-    public CompileError makeError(final Token token) {
-        return new CompileError(token, getTokenStream());
+    public CompileError makeError(final CompileErrorCode errorCode) {
+        return new CompileError(null, null, currentPass, null, errorCode);
     }
 
-    public CompileError makeError(final Token token, final String additionalText) {
-        final var error = new CompileError(token, getTokenStream());
-        error.setAdditionalText(additionalText);
-        return error;
+    public CompileError makeError(final Token token, final CompileErrorCode errorCode) {
+        return new CompileError(token, TokenUtils.getLineTokens(getTokenStream(), token), currentPass, null, errorCode);
     }
 
-    public void reportError(final CompileError error, final CompileStatus status) {
+    public CompileError makeError(final Token token, final String text, final CompileErrorCode errorCode) {
+        return new CompileError(token, TokenUtils.getLineTokens(getTokenStream(), token), currentPass, text, errorCode);
+    }
+
+    public void reportError(final CompileError error) {
         final var tokenStream = getTokenStream();
         if (tokenStream != null && tokenStream.size() == 0) {
             tokenStream.fill();
@@ -81,121 +97,79 @@ public final class CompileContext {
             return; // Don't report duplicates
         }
         errors.add(error);
-        this.status = this.status.worse(status);
+        this.currentStatus = this.currentStatus.worse(error.getStatus());
     }
 
     public CompilePass getCurrentPass() {
         return currentPass;
     }
 
-    public void setCurrentPass(CompilePass currentPass) {
+    public void setCurrentPass(final CompilePass currentPass) {
         this.currentPass = currentPass;
     }
 
-    public CompileStatus getStatus() {
-        return status;
+    public CompileStatus getCurrentStatus() {
+        return currentStatus;
     }
 
-    public void setStatus(CompileStatus status) {
-        this.status = status;
+    public void setCurrentStatus(final CompileStatus status) {
+        this.currentStatus = status;
     }
 
     public FerrousLexer getLexer() {
-        final var moduleData = this.moduleData.get(moduleName);
-        if (moduleData != null) {
-            return moduleData.getLexer();
-        }
-        throw new IllegalStateException("Lexer not provided");
+        return getModuleComponent(ModuleData::getLexer);
     }
 
     void setLexer(final FerrousLexer lexer) {
-        if (moduleName == null) {
-            throw new IllegalStateException("Module name not provided");
-        }
-        getOrCreateModuleData(moduleName).setLexer(lexer);
+        getOrCreateModuleData().setLexer(lexer);
     }
 
     public BufferedTokenStream getTokenStream() {
-        final var moduleData = this.moduleData.get(moduleName);
-        if (moduleData != null) {
-            return moduleData.getTokenStream();
-        }
-        throw new IllegalStateException("Token stream not provided");
+        return getModuleComponent(ModuleData::getTokenStream);
     }
 
     void setTokenStream(final BufferedTokenStream tokenStream) {
-        if (moduleName == null) {
-            throw new IllegalStateException("Module name not provided");
-        }
-        getOrCreateModuleData(moduleName).setTokenStream(tokenStream);
+        getOrCreateModuleData().setTokenStream(tokenStream);
     }
 
     public FerrousParser getParser() {
-        final var moduleData = this.moduleData.get(moduleName);
-        if (moduleData != null) {
-            return moduleData.getParser();
-        }
-        throw new IllegalStateException("Parser not provided");
+        return getModuleComponent(ModuleData::getParser);
     }
 
     void setParser(final FerrousParser parser) {
-        if (moduleName == null) {
-            throw new IllegalStateException("Module name not provided");
-        }
-        getOrCreateModuleData(moduleName).setParser(parser);
+        getOrCreateModuleData().setParser(parser);
     }
 
     public FileContext getFileContext() {
-        final var moduleData = this.moduleData.get(moduleName);
-        if (moduleData != null) {
-            return moduleData.getFileContext();
-        }
-        throw new IllegalStateException("File context not provided");
+        return getModuleComponent(ModuleData::getFileContext);
     }
 
     void setFileContext(final FileContext fileContext) {
-        if (moduleName == null) {
-            throw new IllegalStateException("Module name not provided");
-        }
-        getOrCreateModuleData(moduleName).setFileContext(fileContext);
+        getOrCreateModuleData().setFileContext(fileContext);
     }
 
     public Analyzer getAnalyzer() {
-        final var moduleData = this.moduleData.get(moduleName);
-        if (moduleData != null) {
-            return moduleData.getAnalyzer();
-        }
-        throw new IllegalStateException("Analyzer not provided");
+        return getModuleComponent(ModuleData::getAnalyzer);
     }
 
     void setAnalyzer(final Analyzer analyzer) {
-        if (moduleName == null) {
-            throw new IllegalStateException("Analyzer not provided");
-        }
-        getOrCreateModuleData(moduleName).setAnalyzer(analyzer);
+        getOrCreateModuleData().setAnalyzer(analyzer);
     }
 
     public TranslationUnit getTranslationUnit() {
-        final var moduleData = this.moduleData.get(moduleName);
-        if (moduleData != null) {
-            return moduleData.getTranslationUnit();
-        }
-        throw new IllegalStateException("Translation unit not provided");
+        return getModuleComponent(ModuleData::getTranslationUnit);
     }
 
     void setTranslationUnit(final TranslationUnit translationUnit) {
-        if (moduleName == null) {
-            throw new IllegalStateException("Analyzer not provided");
-        }
-        getOrCreateModuleData(moduleName).setTranslationUnit(translationUnit);
+        getOrCreateModuleData().setTranslationUnit(translationUnit);
     }
 
     public String getModuleName() {
-        return moduleName;
+        return currentModuleName;
     }
 
     void setModuleName(final String currentName) {
-        moduleName = currentName;
+        currentModuleName = currentName;
     }
 
     public ArrayList<CompileError> getErrors() {
@@ -217,6 +191,6 @@ public final class CompileContext {
     }
 
     public void addModule(final Module module) {
-        modules.put(moduleName, module);
+        modules.put(currentModuleName, module);
     }
 }

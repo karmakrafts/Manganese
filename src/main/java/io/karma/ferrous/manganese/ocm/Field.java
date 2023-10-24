@@ -15,6 +15,8 @@
 
 package io.karma.ferrous.manganese.ocm;
 
+import io.karma.ferrous.manganese.ocm.access.Access;
+import io.karma.ferrous.manganese.ocm.access.AccessProvider;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.scope.Scope;
 import io.karma.ferrous.manganese.scope.Scoped;
@@ -28,18 +30,27 @@ import org.jetbrains.annotations.Nullable;
  * @since 15/10/2023
  */
 @API(status = Status.INTERNAL)
-public final class Field implements NameProvider, Scoped {
+public final class Field implements NameProvider, AccessProvider, Scoped {
     private final Identifier name;
     private final Type type;
+    private final Access access;
     private Scope enclosingScope;
 
-    public Field(final Identifier name, final Type type) {
+    public Field(final Identifier name, final Type type, final Access access) {
         this.name = name;
         this.type = type;
+        this.access = access;
     }
 
     public Type getType() {
         return type;
+    }
+
+    // AccessProvider
+
+    @Override
+    public Access getAccess() {
+        return access;
     }
 
     // Scoped

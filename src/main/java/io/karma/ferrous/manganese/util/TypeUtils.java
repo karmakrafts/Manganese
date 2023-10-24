@@ -42,39 +42,29 @@ public final class TypeUtils {
     private TypeUtils() {}
     // @formatter:on
 
-    public static Result<Type, String> getType(final Compiler compiler, final ScopeStack scopeStack,
-                                               final TypeContext context) {
-        try {
-            final TypeParser unit = new TypeParser(compiler, scopeStack);
-            ParseTreeWalker.DEFAULT.walk(unit, context);
-            return Result.ok(unit.getType());
-        }
-        catch (Exception error) {
-            return Result.error(String.format("Could not resolve type: %s", error));
-        }
+    public static Type getType(final Compiler compiler, final ScopeStack scopeStack, final TypeContext context) {
+        final TypeParser unit = new TypeParser(compiler, scopeStack);
+        ParseTreeWalker.DEFAULT.walk(unit, context);
+        return unit.getType();
     }
 
-    public static Result<List<Type>, String> getParameterTypes(final Compiler compiler, final ScopeStack scopeStack,
-                                                               final ProtoFunctionContext context) {
-        return Result.tryGet(() -> {
-            // @formatter:off
-            return context.functionParamList().functionParam().stream()
-                .map(FunctionParamContext::type)
-                .filter(type -> type != null && !type.getText().equals(TokenUtils.getLiteral(FerrousLexer.KW_VAARGS)))
-                .map(type -> getType(compiler, scopeStack, type).unwrap())
-                .toList();
-            // @formatter:on
-        });
+    public static List<Type> getParameterTypes(final Compiler compiler, final ScopeStack scopeStack,
+                                               final ProtoFunctionContext context) {
+        // @formatter:off
+        return context.functionParamList().functionParam().stream()
+            .map(FunctionParamContext::type)
+            .filter(type -> type != null && !type.getText().equals(TokenUtils.getLiteral(FerrousLexer.KW_VAARGS)))
+            .map(type -> getType(compiler, scopeStack, type))
+            .toList();
+        // @formatter:on
     }
 
-    public static Result<FunctionType, String> getFunctionType(final Compiler compiler, final ScopeStack scopeStack,
-                                                               final ProtoFunctionContext context) {
-        return Result.tryGet(() -> {
-            final var type = context.type();
-            final var returnType = type == null ? BuiltinType.VOID : getType(compiler, scopeStack, type).unwrap();
-            final var isVarArg = context.functionParamList().vaFunctionParam() != null;
-            final var paramTypes = TypeUtils.getParameterTypes(compiler, scopeStack, context).unwrap();
-            return Types.function(returnType, paramTypes, isVarArg, scopeStack::applyEnclosingScopes);
-        });
+    public static FunctionType getFunctionType(final Compiler compiler, final ScopeStack scopeStack,
+                                               final ProtoFunctionContext context) {
+        final var type = context.type();
+        final var returnType = type == null ? BuiltinType.VOID : getType(compiler, scopeStack, type);
+        final var isVarArg = context.functionParamList().vaFunctionParam() != null;
+        final var paramTypes = TypeUtils.getParameterTypes(compiler, scopeStack, context);
+        return Types.function(returnType, paramTypes, isVarArg, scopeStack::applyEnclosingScopes);
     }
 }

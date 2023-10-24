@@ -42,6 +42,7 @@ import org.fusesource.jansi.Ansi;
 import org.fusesource.jansi.Ansi.Attribute;
 import org.fusesource.jansi.Ansi.Color;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
@@ -53,6 +54,7 @@ import java.util.BitSet;
 import java.util.List;
 import java.util.Objects;
 
+import static org.lwjgl.llvm.LLVMCore.LLVMContextSetOpaquePointers;
 import static org.lwjgl.llvm.LLVMCore.LLVMGetGlobalContext;
 
 /**
@@ -82,9 +84,7 @@ public final class Compiler implements ANTLRErrorListener {
     @Override
     public void syntaxError(final Recognizer<?, ?> recognizer, final Object offendingSymbol, final int line,
                             final int charPositionInLine, final String msg, final RecognitionException e) {
-        context.reportError(
-                context.makeError((Token) offendingSymbol, Utils.makeCompilerMessage(Utils.capitalize(msg))),
-                CompileStatus.SYNTAX_ERROR);
+        context.reportError(context.makeError((Token) offendingSymbol, Utils.capitalize(msg), CompileErrorCode.E2000));
     }
 
     @Override
@@ -128,59 +128,40 @@ public final class Compiler implements ANTLRErrorListener {
             process(context);
             context.setCurrentPass(CompilePass.NONE);
         }
-        catch (Throwable error) {
+        catch (IOException error) {
             context.setCurrentPass(CompilePass.NONE);
-            context.reportError(new CompileError(Utils.makeCompilerMessage(error.getMessage())),
-                                CompileStatus.UNKNOWN_ERROR);
+            context.reportError(context.makeError(CompileErrorCode.E0002));
         }
     }
 
     public void compile(final String name, final String sourceName, final WritableByteChannel out,
                         final CompileContext context) {
-        try {
-            context.setModuleName(name);
-            this.context = context; // Update context for every compilation
+        context.setModuleName(name);
+        this.context = context; // Update context for every compilation
 
-            if (!compile(context)) {
-                return;
-            }
-
-            final var module = Objects.requireNonNull(context.getTranslationUnit()).getModule();
-            module.setSourceFileName(sourceName);
-            final var verificationStatus = module.verify();
-            if (verificationStatus != null) {
-                context.reportError(new CompileError(verificationStatus), CompileStatus.VERIFY_ERROR);
-                return;
-            }
-
-            if (disassemble) {
-                Logger.INSTANCE.infoln("");
-                Logger.INSTANCE.info("%s", module.disassemble());
-                Logger.INSTANCE.infoln("");
-            }
-
-            context.addModule(module);
-            context.setCurrentPass(CompilePass.NONE);
+        if (!compile(context)) {
+            return;
         }
-        catch (Exception error) {
-            context.setCurrentPass(CompilePass.NONE);
-            context.reportError(new CompileError(Utils.makeCompilerMessage(error.toString())),
-                                CompileStatus.UNKNOWN_ERROR);
+
+        final var module = Objects.requireNonNull(context.getTranslationUnit()).getModule();
+        module.setSourceFileName(sourceName);
+        final var verificationStatus = module.verify();
+        if (verificationStatus != null) {
+            context.reportError(context.makeError(CompileErrorCode.E0002));
+            return;
         }
+
+        if (disassemble) {
+            Logger.INSTANCE.infoln("");
+            Logger.INSTANCE.info("%s", module.disassemble());
+            Logger.INSTANCE.infoln("");
+        }
+
+        context.addModule(module);
+        context.setCurrentPass(CompilePass.NONE);
     }
 
-    public CompileResult compile(final Path in, final Path out, final Path buildDir, final CompileContext context) {
-        if (!Files.exists(buildDir)) {
-            try {
-                Files.createDirectories(buildDir);
-            }
-            catch (Throwable error) {
-                context.reportError(new CompileError(Utils.makeCompilerMessage(error.getMessage())),
-                                    CompileStatus.IO_ERROR);
-                return context.makeResult();
-            }
-        }
-
+    public CompileResult compile(final Path in, final Path out, final CompileContext context) {
         final var inputFiles = Utils.findFilesWithExtensions(in, IN_EXTENSIONS);
         final var numFiles = inputFiles.size();
         final var maxProgress = numFiles << 1;
@@ -206,12 +187,7 @@ public final class Compiler implements ANTLRErrorListener {
                 analyze(rawFileName, channel, context);
             }
             catch (IOException error) {
-                context.reportError(new CompileError(Utils.makeCompilerMessage(error.toString())),
-                                    CompileStatus.IO_ERROR);
-            }
-            catch (Exception error) {
-                context.reportError(new CompileError(Utils.makeCompilerMessage(error.toString())),
-                                    CompileStatus.UNKNOWN_ERROR);
+                context.reportError(context.makeError(CompileErrorCode.E0003));
             }
         }
 
@@ -234,22 +210,15 @@ public final class Compiler implements ANTLRErrorListener {
                 .toString());
             // @formatter:on
             final var rawFileName = Utils.getRawFileName(file);
-            final var outFile = buildDir.resolve(String.format("%s.%s", rawFileName, OBJECT_FILE_EXTENSION));
-            Logger.INSTANCE.debugln("Output: %s", outFile);
 
-            try (final var stream = Files.newOutputStream(outFile); final var channel = Channels.newChannel(stream)) {
+            try (final var stream = new ByteArrayOutputStream(); final var channel = Channels.newChannel(stream)) {
                 compile(rawFileName, file.getFileName().toString(), channel, context);
                 context.setCurrentPass(CompilePass.LINK);
                 module.linkIn(context.getTranslationUnit().getModule());
                 context.setCurrentPass(CompilePass.NONE);
             }
             catch (IOException error) {
-                context.reportError(new CompileError(Utils.makeCompilerMessage(error.toString())),
-                                    CompileStatus.IO_ERROR);
-            }
-            catch (Exception error) {
-                context.reportError(new CompileError(Utils.makeCompilerMessage(error.toString())),
-                                    CompileStatus.UNKNOWN_ERROR);
+                context.reportError(context.makeError(CompileErrorCode.E0004));
             }
         }
 
@@ -264,6 +233,10 @@ public final class Compiler implements ANTLRErrorListener {
         module.dispose();
 
         return context.makeResult();
+    }
+
+    public void setEnableOpaquePointers(boolean enableOpaquePointers) {
+        LLVMContextSetOpaquePointers(LLVMGetGlobalContext(), enableOpaquePointers);
     }
 
     public void setTokenView(final boolean tokenView, final boolean extendedTokenView) {
@@ -317,7 +290,7 @@ public final class Compiler implements ANTLRErrorListener {
     }
 
     private boolean checkStatus() {
-        if (!context.getStatus().isRecoverable()) {
+        if (!context.getCurrentStatus().isRecoverable()) {
             Logger.INSTANCE.errorln("Compilation is irrecoverable, continuing to report syntax errors");
             return false;
         }

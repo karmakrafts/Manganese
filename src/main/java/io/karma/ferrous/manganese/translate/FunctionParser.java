@@ -16,7 +16,6 @@
 package io.karma.ferrous.manganese.translate;
 
 import io.karma.ferrous.manganese.ParseAdapter;
-import io.karma.ferrous.manganese.compiler.CompileStatus;
 import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.Function;
 import io.karma.ferrous.manganese.ocm.Parameter;
@@ -51,14 +50,7 @@ public final class FunctionParser extends ParseAdapter {
     public void enterProtoFunction(ProtoFunctionContext context) {
         identifier = FunctionUtils.getFunctionName(context.functionIdent());
         callConv = FunctionUtils.getCallingConvention(compiler, context);
-        // @formatter:off
-        final var type = TypeUtils.getFunctionType(compiler, capturedScopeStack, context)
-            .unwrapOrReport(compiler, context.start, CompileStatus.TRANSLATION_ERROR);
-        // @formatter:on
-        if (type.isEmpty()) {
-            return;
-        }
-        this.type = type.get();
+        this.type = TypeUtils.getFunctionType(compiler, capturedScopeStack, context);
         paramNames = FunctionUtils.getParameterNames(context);
         super.enterProtoFunction(context);
     }

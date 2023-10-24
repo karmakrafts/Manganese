@@ -15,7 +15,7 @@
 
 package io.karma.ferrous.manganese.util;
 
-import io.karma.ferrous.manganese.compiler.CompileStatus;
+import io.karma.ferrous.manganese.compiler.CompileErrorCode;
 import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.vanadium.FerrousParser.FunctionIdentContext;
 import io.karma.ferrous.vanadium.FerrousParser.ProtoFunctionContext;
@@ -66,8 +66,8 @@ public final class FunctionUtils {
                     "'%s' is not a valid calling convention, expected one of the following values", name);
             final var formattedMessage = Utils.makeCompilerMessage(message, CallingConvention.EXPECTED_VALUES);
             final var compileContext = compiler.getContext();
-            compileContext.reportError(compileContext.makeError(identifier.getSymbol(), formattedMessage),
-                                       CompileStatus.SEMANTIC_ERROR);
+            compileContext.reportError(
+                    compileContext.makeError(identifier.getSymbol(), formattedMessage, CompileErrorCode.E5000));
             return CallingConvention.CDECL;
         }
         return conv.get();
