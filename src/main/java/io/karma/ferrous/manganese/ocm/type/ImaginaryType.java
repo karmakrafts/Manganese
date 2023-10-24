@@ -26,7 +26,8 @@ import io.karma.ferrous.manganese.target.TargetMachine;
 public enum ImaginaryType implements Type {
     TOKEN,
     IDENT,
-    EXPR;
+    EXPR,
+    TYPE;
 
     // Scoped
 
