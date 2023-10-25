@@ -50,7 +50,8 @@ public enum DefaultAccess implements Access {
     }
 
     @Override
-    public <T extends Scoped & NameProvider> boolean hasAccess(final Compiler compiler, final ScopeStack scopeStack, final T target) {
+    public <T extends Scoped & NameProvider> boolean hasAccess(final Compiler compiler, final ScopeStack scopeStack,
+                                                               final T target) {
         final var compileContext = compiler.getContext();
         final var capturedScopeStack = new ScopeStack(scopeStack);
         final var targetScope = target.getEnclosingScope();

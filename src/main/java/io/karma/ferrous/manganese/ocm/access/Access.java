@@ -30,5 +30,6 @@ import org.apiguardian.api.API.Status;
 public interface Access {
     AccessKind getKind();
 
-    <T extends Scoped & NameProvider> boolean hasAccess(final Compiler compiler, final ScopeStack scopeStack, final T target);
+    <T extends Scoped & NameProvider> boolean hasAccess(final Compiler compiler, final ScopeStack scopeStack,
+                                                        final T target);
 }

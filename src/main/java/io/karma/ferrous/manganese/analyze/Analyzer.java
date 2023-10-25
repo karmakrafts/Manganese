@@ -223,6 +223,10 @@ public final class Analyzer extends ParseAdapter {
         return type;
     }
 
+    public @Nullable Type findCompleteType(final NamedType type) {
+        return findCompleteTypeInScope(type.getName(), type.getScopeName());
+    }
+
     public @Nullable Type findTypeInScope(final Identifier name, final Identifier scopeName) {
         return ScopeUtils.findInScope(udts, name, scopeName);
     }
@@ -372,7 +376,7 @@ public final class Analyzer extends ParseAdapter {
                     if (type.isComplete() || !(type instanceof NamedType)) {
                         continue;
                     }
-                    final var completeType = findCompleteTypeInScope(((NamedType) type).getName(), type.getScopeName());
+                    final var completeType = findCompleteType((NamedType) type);
                     if (completeType == null) {
                         final var compileContext = compiler.getContext();
                         compileContext.reportError(compileContext.makeError(CompileErrorCode.E3002));
@@ -386,7 +390,7 @@ public final class Analyzer extends ParseAdapter {
     }
 
     private void checkTypeAccess() {
-
+        // TODO: implement access checks
     }
 
     public void preProcessTypes() {
