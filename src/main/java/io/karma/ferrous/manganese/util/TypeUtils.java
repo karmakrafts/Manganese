@@ -16,16 +16,17 @@
 package io.karma.ferrous.manganese.util;
 
 import io.karma.ferrous.manganese.compiler.Compiler;
+import io.karma.ferrous.manganese.ocm.scope.ScopeStack;
 import io.karma.ferrous.manganese.ocm.type.BuiltinType;
 import io.karma.ferrous.manganese.ocm.type.FunctionType;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.ocm.type.Types;
-import io.karma.ferrous.manganese.scope.ScopeStack;
 import io.karma.ferrous.manganese.translate.TypeParser;
 import io.karma.ferrous.vanadium.FerrousLexer;
 import io.karma.ferrous.vanadium.FerrousParser.FunctionParamContext;
 import io.karma.ferrous.vanadium.FerrousParser.ProtoFunctionContext;
 import io.karma.ferrous.vanadium.FerrousParser.TypeContext;
+import io.karma.ferrous.vanadium.FerrousParser.TypeListContext;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
@@ -41,6 +42,15 @@ public final class TypeUtils {
     // @formatter:off
     private TypeUtils() {}
     // @formatter:on
+
+    public static List<Type> getTypes(final Compiler compiler, final ScopeStack scopeStacka,
+                                      final TypeListContext context) {
+        // @formatter:off
+        return context.type().stream()
+            .map(ctx -> getType(compiler, scopeStacka, ctx))
+            .toList();
+        // @formatter:on
+    }
 
     public static Type getType(final Compiler compiler, final ScopeStack scopeStack, final TypeContext context) {
         final TypeParser unit = new TypeParser(compiler, scopeStack);

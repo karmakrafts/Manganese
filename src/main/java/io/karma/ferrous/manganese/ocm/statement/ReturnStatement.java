@@ -16,16 +16,16 @@
 package io.karma.ferrous.manganese.ocm.statement;
 
 import io.karma.ferrous.manganese.ocm.constant.VoidConstant;
-import io.karma.ferrous.manganese.ocm.value.Value;
+import io.karma.ferrous.manganese.ocm.expr.Expression;
 
 /**
  * @author Alexander Hinze
  * @since 22/10/2023
  */
 public final class ReturnStatement implements Statement {
-    private final Value value;
+    private final Expression value;
 
-    public ReturnStatement(final Value value) {
+    public ReturnStatement(final Expression value) {
         this.value = value;
     }
 
@@ -33,7 +33,7 @@ public final class ReturnStatement implements Statement {
         this(VoidConstant.INSTANCE);
     }
 
-    public Value getValue() {
+    public Expression getValue() {
         return value;
     }
 

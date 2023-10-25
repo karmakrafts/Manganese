@@ -26,7 +26,7 @@ import org.apiguardian.api.API.Status;
 public enum AccessKind {
     PRIVATE,
     PUBLIC,
+    PROTECTED,
     MODULE,
-    THIS,
     SCOPED
 }

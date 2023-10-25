@@ -18,8 +18,7 @@ package io.karma.ferrous.manganese.analyze;
 import io.karma.ferrous.manganese.ParseAdapter;
 import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.Field;
-import io.karma.ferrous.manganese.ocm.access.DefaultAccess;
-import io.karma.ferrous.manganese.scope.ScopeStack;
+import io.karma.ferrous.manganese.ocm.scope.ScopeStack;
 import io.karma.ferrous.manganese.util.TypeUtils;
 import io.karma.ferrous.manganese.util.Utils;
 import io.karma.ferrous.vanadium.FerrousParser.FieldContext;
@@ -65,7 +64,7 @@ public final class FieldAnalyzer extends ParseAdapter {
         }
         final var name = Utils.getIdentifier(context.ident());
         final var type = TypeUtils.getType(compiler, capturedScopeStack, context.type());
-        fields.add(new Field(name, type, DefaultAccess.PRIVATE)); // TODO: implement access
+        fields.add(new Field(name, type, Utils.getAccess(compiler, scopeStack, context.accessMod())));
         super.enterField(context);
     }
 

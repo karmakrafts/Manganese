@@ -36,10 +36,12 @@ public enum CompileErrorCode {
     // Type errors
     E3000("The given type is already defined within the same scope", CompileStatus.TYPE_ERROR),
     E3001("The given type cannot have more than one level of reference", CompileStatus.TYPE_ERROR),
+    E3002("The given type could not be found", CompileStatus.TYPE_ERROR),
     // Translation errors
     E4000("Could not materialize the underlying function type", CompileStatus.TRANSLATION_ERROR),
     // Semantic errors
     E5000("The given calling convention does not exist", CompileStatus.SEMANTIC_ERROR),
+    E5001("The given element cannot be accessed from this scope", CompileStatus.SEMANTIC_ERROR),
     // Unknown error
     E9999("Encountered an unhandled error", CompileStatus.UNKNOWN_ERROR)
     // @formatter:on

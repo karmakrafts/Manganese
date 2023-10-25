@@ -16,7 +16,6 @@
 package io.karma.ferrous.manganese.ocm.expr;
 
 import io.karma.ferrous.manganese.ocm.type.Type;
-import io.karma.ferrous.manganese.ocm.value.Value;
 import io.karma.ferrous.manganese.util.Operator;
 
 import java.util.Objects;
@@ -27,10 +26,10 @@ import java.util.Objects;
  */
 public final class BinaryExpression implements Expression {
     private final Operator op;
-    private final Value lhs;
-    private final Value rhs;
+    private final Expression lhs;
+    private final Expression rhs;
 
-    public BinaryExpression(final Operator op, final Value lhs, final Value rhs) {
+    public BinaryExpression(final Operator op, final Expression lhs, final Expression rhs) {
         if (!op.isBinary()) {
             throw new IllegalArgumentException(String.format("%s is not a binary operator", op));
         }
@@ -43,11 +42,11 @@ public final class BinaryExpression implements Expression {
         return op;
     }
 
-    public Value getLHS() {
+    public Expression getLHS() {
         return lhs;
     }
 
-    public Value getRHS() {
+    public Expression getRHS() {
         return rhs;
     }
 

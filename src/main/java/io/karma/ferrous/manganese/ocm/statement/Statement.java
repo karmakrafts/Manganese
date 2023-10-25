@@ -20,4 +20,5 @@ package io.karma.ferrous.manganese.ocm.statement;
  * @since 22/10/2023
  */
 public interface Statement {
+
 }

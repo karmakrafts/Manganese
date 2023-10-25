@@ -13,11 +13,9 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.ocm.value;
+package io.karma.ferrous.manganese.ocm.scope;
 
-import io.karma.ferrous.manganese.ocm.constant.Constant;
-import io.karma.ferrous.manganese.ocm.expr.Expression;
-import io.karma.ferrous.manganese.ocm.type.Type;
+import io.karma.ferrous.manganese.ocm.NameProvider;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 
@@ -26,28 +24,6 @@ import org.apiguardian.api.API.Status;
  * @since 16/10/2023
  */
 @API(status = Status.INTERNAL)
-public interface Value {
-    Type getType();
-
-    default boolean isExpression() {
-        return false;
-    }
-
-    default boolean isConstant() {
-        return false;
-    }
-
-    default Constant asConstant() {
-        if (!isConstant()) {
-            throw new RuntimeException("Not a constant");
-        }
-        return (Constant) this;
-    }
-
-    default Expression asExpression() {
-        if (!isExpression()) {
-            throw new RuntimeException("Not an expression");
-        }
-        return (Expression) this;
-    }
+public interface Scope extends Scoped, NameProvider {
+    ScopeType getType();
 }

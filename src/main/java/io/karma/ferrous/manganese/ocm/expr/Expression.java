@@ -15,8 +15,9 @@
 
 package io.karma.ferrous.manganese.ocm.expr;
 
+import io.karma.ferrous.manganese.ocm.constant.Constant;
 import io.karma.ferrous.manganese.ocm.statement.Statement;
-import io.karma.ferrous.manganese.ocm.value.Value;
+import io.karma.ferrous.manganese.ocm.type.Type;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 
@@ -25,9 +26,17 @@ import org.apiguardian.api.API.Status;
  * @since 16/10/2023
  */
 @API(status = Status.INTERNAL)
-public interface Expression extends Value, Statement {
-    @Override
-    default boolean isExpression() {
-        return true;
+public interface Expression extends Statement {
+    Type getType();
+
+    default boolean isConstant() {
+        return false;
+    }
+
+    default Constant asConstant() {
+        if (!isConstant()) {
+            throw new RuntimeException("Not a constant");
+        }
+        return (Constant) this;
     }
 }

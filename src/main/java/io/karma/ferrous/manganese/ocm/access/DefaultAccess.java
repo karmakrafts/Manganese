@@ -15,6 +15,13 @@
 
 package io.karma.ferrous.manganese.ocm.access;
 
+import io.karma.ferrous.manganese.compiler.CompileErrorCode;
+import io.karma.ferrous.manganese.compiler.Compiler;
+import io.karma.ferrous.manganese.ocm.NameProvider;
+import io.karma.ferrous.manganese.ocm.scope.Scope;
+import io.karma.ferrous.manganese.ocm.scope.ScopeStack;
+import io.karma.ferrous.manganese.ocm.scope.ScopeType;
+import io.karma.ferrous.manganese.ocm.scope.Scoped;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 
@@ -25,10 +32,10 @@ import org.apiguardian.api.API.Status;
 @API(status = Status.INTERNAL)
 public enum DefaultAccess implements Access {
     // @formatter:off
-    PRIVATE (AccessKind.PRIVATE),
-    PUBLIC  (AccessKind.PUBLIC),
-    MODULE  (AccessKind.MODULE),
-    THIS    (AccessKind.THIS);
+    PRIVATE     (AccessKind.PRIVATE),
+    PUBLIC      (AccessKind.PUBLIC),
+    PROTECTED   (AccessKind.PROTECTED),
+    MODULE      (AccessKind.MODULE);
     // @formatter:on
 
     private final AccessKind kind;
@@ -40,5 +47,37 @@ public enum DefaultAccess implements Access {
     @Override
     public AccessKind getKind() {
         return kind;
+    }
+
+    @Override
+    public <T extends Scoped & NameProvider> boolean hasAccess(final Compiler compiler, final ScopeStack scopeStack, final T target) {
+        final var compileContext = compiler.getContext();
+        final var capturedScopeStack = new ScopeStack(scopeStack);
+        final var targetScope = target.getEnclosingScope();
+        final var currentScope = scopeStack.peek();
+
+        if (targetScope == currentScope || this == DefaultAccess.PUBLIC) {
+            return true;
+        }
+
+        if (this == DefaultAccess.MODULE) {
+            Scope currentModuleScope = capturedScopeStack.pop();
+            while (currentModuleScope.getType() != ScopeType.MODULE) {
+                currentModuleScope = capturedScopeStack.pop();
+            }
+
+            final var targetScopeStack = target.rebuildScopeStack();
+            Scope targetModuleScope = targetScopeStack.pop();
+            while (targetModuleScope.getType() != ScopeType.MODULE) {
+                targetModuleScope = targetScopeStack.pop();
+            }
+
+            return currentModuleScope == targetModuleScope;
+        }
+
+        // TODO: Implement protected
+
+        compileContext.reportError(compileContext.makeError(CompileErrorCode.E5001));
+        return false;
     }
 }

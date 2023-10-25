@@ -15,21 +15,39 @@
 
 package io.karma.ferrous.manganese.ocm.type;
 
-import io.karma.ferrous.manganese.scope.DefaultScope;
-import io.karma.ferrous.manganese.scope.Scope;
+import io.karma.ferrous.manganese.ocm.scope.DefaultScope;
+import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.target.TargetMachine;
+import io.karma.ferrous.manganese.util.Identifier;
+import io.karma.ferrous.manganese.util.TokenUtils;
+import io.karma.ferrous.vanadium.FerrousLexer;
 
 /**
  * @author Alexander Hinze
  * @since 24/10/2023
  */
-public enum ImaginaryType implements Type {
-    TOKEN,
-    IDENT,
-    EXPR,
-    LITERAL,
-    TYPE,
-    STRING;
+public enum ImaginaryType implements NamedType {
+    // @formatter:off
+    TOKEN   (FerrousLexer.KW_TOKEN),
+    IDENT   (FerrousLexer.KW_IDENT),
+    EXPR    (FerrousLexer.KW_EXPR),
+    LITERAL (FerrousLexer.KW_LITERAL),
+    TYPE    (FerrousLexer.KW_TYPE),
+    STRING  (FerrousLexer.KW_STRING);
+    // @formatter:on
+
+    private final Identifier name;
+
+    ImaginaryType(final int token) {
+        name = Identifier.parse(TokenUtils.getLiteral(token));
+    }
+
+    // NameProvider
+
+    @Override
+    public Identifier getName() {
+        return name;
+    }
 
     // Scoped
 

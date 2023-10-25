@@ -15,17 +15,19 @@
 
 package io.karma.ferrous.manganese.ocm.type;
 
-import io.karma.ferrous.manganese.scope.Scope;
+import io.karma.ferrous.manganese.ocm.Field;
+import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Identifier;
 
+import java.util.List;
 import java.util.Objects;
 
 /**
  * @author Alexander Hinze
  * @since 21/10/2023
  */
-public record UDT(UDTKind kind, StructureType type) implements NamedType {
+public record UDT(UDTKind kind, StructureType type, List<Field> fields) implements NamedType {
     // NameProvider
 
     @Override

@@ -19,6 +19,9 @@ import io.karma.ferrous.manganese.ParseAdapter;
 import io.karma.ferrous.manganese.compiler.CompileErrorCode;
 import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.Field;
+import io.karma.ferrous.manganese.ocm.access.AccessKind;
+import io.karma.ferrous.manganese.ocm.access.ScopedAccess;
+import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.ocm.type.AliasedType;
 import io.karma.ferrous.manganese.ocm.type.NamedType;
 import io.karma.ferrous.manganese.ocm.type.NullType;
@@ -27,7 +30,6 @@ import io.karma.ferrous.manganese.ocm.type.TypeAttribute;
 import io.karma.ferrous.manganese.ocm.type.Types;
 import io.karma.ferrous.manganese.ocm.type.UDT;
 import io.karma.ferrous.manganese.ocm.type.UDTKind;
-import io.karma.ferrous.manganese.scope.Scope;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.Logger;
@@ -342,18 +344,57 @@ public final class Analyzer extends ParseAdapter {
         final var layoutAnalyzer = new FieldAnalyzer(compiler, scopeStack);
         ParseTreeWalker.DEFAULT.walk(layoutAnalyzer, parent);
 
-        final var fieldTypes = layoutAnalyzer.getFields().stream().map(Field::getType).toArray(Type[]::new);
-
+        final var fields = layoutAnalyzer.getFields();
+        final var fieldTypes = fields.stream().map(Field::getType).toArray(Type[]::new);
         final var type = Types.structure(name, scopeStack::applyEnclosingScopes, fieldTypes);
-        final var udt = new UDT(kind, type);
+        final var udt = new UDT(kind, type, fields);
         udts.put(type.getQualifiedName(), udt);
+
         Logger.INSTANCE.debugln("Captured field layout for type '%s'", type.getQualifiedName());
+    }
+
+    private void resolveTypeAccess() {
+        final var udts = this.udts.values();
+        for (final var udt : udts) {
+            if (!(udt instanceof UDT)) {
+                continue; // Skip any non-UDTs
+            }
+            final var fields = ((UDT) udt).fields();
+            for (final var field : fields) {
+                final var access = field.getAccess();
+                if (access.getKind() != AccessKind.SCOPED) {
+                    continue;
+                }
+                final var types = ((ScopedAccess) access).types();
+                final var numTypes = types.length;
+                for (var i = 0; i < numTypes; i++) {
+                    var type = types[i];
+                    if (type.isComplete() || !(type instanceof NamedType)) {
+                        continue;
+                    }
+                    final var completeType = findCompleteTypeInScope(((NamedType) type).getName(), type.getScopeName());
+                    if (completeType == null) {
+                        final var compileContext = compiler.getContext();
+                        compileContext.reportError(compileContext.makeError(CompileErrorCode.E3002));
+                        continue;
+                    }
+                    types[i] = completeType;
+                    Logger.INSTANCE.debugln("Resolved scoped access type '%s'", completeType);
+                }
+            }
+        }
+    }
+
+    private void checkTypeAccess() {
+
     }
 
     public void preProcessTypes() {
         sortTypes();
         resolveTypes();
         materializeTypes();
+        resolveTypeAccess();
+        checkTypeAccess();
     }
 
     private static final class DummyType implements NamedType {

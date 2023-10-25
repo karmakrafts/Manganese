@@ -15,6 +15,12 @@
 
 package io.karma.ferrous.manganese.ocm.access;
 
+import io.karma.ferrous.manganese.compiler.CompileErrorCode;
+import io.karma.ferrous.manganese.compiler.Compiler;
+import io.karma.ferrous.manganese.ocm.NameProvider;
+import io.karma.ferrous.manganese.ocm.scope.ScopeStack;
+import io.karma.ferrous.manganese.ocm.scope.Scoped;
+import io.karma.ferrous.manganese.ocm.type.Type;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 
@@ -23,9 +29,25 @@ import org.apiguardian.api.API.Status;
  * @since 17/10/2023
  */
 @API(status = Status.INTERNAL)
-public final class ScopedAccess implements Access {
+public record ScopedAccess(Type... types) implements Access {
     @Override
     public AccessKind getKind() {
         return AccessKind.SCOPED;
+    }
+
+    @Override
+    public <T extends Scoped & NameProvider> boolean hasAccess(final Compiler compiler, final ScopeStack scopeStack,
+                                                               final T target) {
+        var compilerContext = compiler.getContext();
+        var type = compiler.getContext().getAnalyzer()
+                           .findTypeInScope(target.getQualifiedName(), target.getScopeName());
+        for (Type allowedType : types) {
+            if (type == allowedType) {
+                return true;
+            }
+        }
+
+        compilerContext.reportError(compilerContext.makeError(CompileErrorCode.E5001));
+        return false;
     }
 }

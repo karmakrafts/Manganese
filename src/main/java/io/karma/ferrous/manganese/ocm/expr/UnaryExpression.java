@@ -16,7 +16,6 @@
 package io.karma.ferrous.manganese.ocm.expr;
 
 import io.karma.ferrous.manganese.ocm.type.Type;
-import io.karma.ferrous.manganese.ocm.value.Value;
 import io.karma.ferrous.manganese.util.Operator;
 
 import java.util.Objects;
@@ -27,9 +26,9 @@ import java.util.Objects;
  */
 public final class UnaryExpression implements Expression {
     private final Operator op;
-    private final Value value;
+    private final Expression value;
 
-    public UnaryExpression(final Operator op, final Value value) {
+    public UnaryExpression(final Operator op, final Expression value) {
         if (!op.isUnary()) {
             throw new IllegalArgumentException(String.format("%s is not a unary operator", op));
         }
@@ -41,7 +40,7 @@ public final class UnaryExpression implements Expression {
         return op;
     }
 
-    public Value getValue() {
+    public Expression getValue() {
         return value;
     }
 

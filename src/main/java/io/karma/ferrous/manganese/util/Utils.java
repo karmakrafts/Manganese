@@ -15,6 +15,13 @@
 
 package io.karma.ferrous.manganese.util;
 
+import io.karma.ferrous.manganese.compiler.Compiler;
+import io.karma.ferrous.manganese.ocm.access.Access;
+import io.karma.ferrous.manganese.ocm.access.DefaultAccess;
+import io.karma.ferrous.manganese.ocm.access.ScopedAccess;
+import io.karma.ferrous.manganese.ocm.scope.ScopeStack;
+import io.karma.ferrous.manganese.ocm.type.Type;
+import io.karma.ferrous.vanadium.FerrousParser.AccessModContext;
 import io.karma.ferrous.vanadium.FerrousParser.IdentContext;
 import io.karma.ferrous.vanadium.FerrousParser.LerpIdentContext;
 import io.karma.ferrous.vanadium.FerrousParser.QualifiedIdentContext;
@@ -40,6 +47,24 @@ public final class Utils {
     // @formatter:off
     private Utils() {}
     // @formatter:on
+
+    public static Access getAccess(final Compiler compiler, final ScopeStack scopeStack,
+                                   final AccessModContext context) {
+        if (context == null || context.KW_PUB() == null) {
+            return DefaultAccess.PRIVATE;
+        }
+        final var typeContext = context.typeList();
+        if (typeContext != null) {
+            return new ScopedAccess(TypeUtils.getTypes(compiler, scopeStack, typeContext).toArray(Type[]::new));
+        }
+        if (context.KW_MOD() != null) {
+            return DefaultAccess.MODULE;
+        }
+        if (context.COLON() != null) {
+            return DefaultAccess.PROTECTED;
+        }
+        return DefaultAccess.PUBLIC;
+    }
 
     public static List<Path> findFilesWithExtensions(final Path path, final String... extensions) {
         final var files = new ArrayList<Path>();
