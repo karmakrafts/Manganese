@@ -60,12 +60,12 @@ public final class ModuleData {
         this.parser = parser;
     }
 
-    public FileContext getFileContext() {
+    public synchronized FileContext getFileContext() {
         return fileContext;
     }
 
     @API(status = Status.INTERNAL)
-    public void setFileContext(final FileContext fileContext) {
+    public synchronized void setFileContext(final FileContext fileContext) {
         this.fileContext = fileContext;
     }
 

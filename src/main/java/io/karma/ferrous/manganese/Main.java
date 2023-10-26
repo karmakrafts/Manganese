@@ -69,6 +69,10 @@ final class Main {
                 .withOptionalArg()
                 .ofType(String.class)
                 .defaultsTo(OptimizationLevel.DEFAULT.getName());
+            final var threadsOpt = parser.accepts("j", "Number of threads to use when compiling.")
+                .withOptionalArg()
+                .ofType(Integer.class)
+                .defaultsTo(Runtime.getRuntime().availableProcessors());
             final var disassembleOpt = parser.accepts("d", "Disassemble the output and print it into the console.");
             final var debugOpt = parser.accepts("D", "Debug mode. This will print debug information during the compilation.");
             final var parseWarningsOpt = parser.accepts("p", "Display parser warnings during compilation.")
@@ -165,7 +169,7 @@ final class Main {
 
             final var targetMachine = Manganese.createTargetMachine(target, features, optLevel.get(), relocation.get(),
                                                                     codeModel.get(), fileType.get());
-            final var compiler = Manganese.createCompiler(targetMachine);
+            final var compiler = Manganese.createCompiler(targetMachine, options.valueOf(threadsOpt));
             compiler.setDisassemble(options.has(disassembleOpt));
             compiler.setTokenView(options.has(tokenViewOpt), false);
             compiler.setReportParserWarnings(options.has(parseWarningsOpt));

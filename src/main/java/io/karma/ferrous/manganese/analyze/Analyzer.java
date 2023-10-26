@@ -69,13 +69,15 @@ import java.util.stream.Collectors;
 public final class Analyzer extends ParseAdapter {
     private final LinkedHashMap<Identifier, NamedType> udts = new LinkedHashMap<>();
 
-    public Analyzer(Compiler compiler) {
+    public Analyzer(final Compiler compiler) {
         super(compiler);
     }
 
-    private String addTypesToGraph(final ArrayDeque<Pair<TopoNode<NamedType>, TopoNode<NamedType>>> typesToResolve,
-                                   final Map<Identifier, TopoNode<NamedType>> nodes,
-                                   final HashSet<Identifier> resolved) {
+    private boolean addTypesToGraph(final ArrayDeque<Pair<TopoNode<NamedType>, TopoNode<NamedType>>> typesToResolve,
+                                    final Map<Identifier, TopoNode<NamedType>> nodes,
+                                    final HashSet<Identifier> resolved) {
+        final var compileContext = compiler.getContext();
+
         final var buffer = Ansi.ansi().fgBright(Color.CYAN);
         final var pair = typesToResolve.pop();
 
@@ -93,8 +95,9 @@ public final class Analyzer extends ParseAdapter {
                 var fieldTypeName = ((NamedType) fieldType).getQualifiedName();
                 final var fieldNode = ScopeUtils.findInScope(nodes, fieldTypeName, childType.getScopeName());
                 if (fieldNode == null) {
-                    Logger.INSTANCE.errorln("Invalid field node '%s'", fieldTypeName);
-                    continue;
+                    compileContext.reportError(
+                            compileContext.makeError(fieldTypeName.toString(), CompileErrorCode.E3004));
+                    return false;
                 }
                 fieldTypeName = fieldNode.getValue().getQualifiedName();
                 if (resolved.contains(fieldTypeName)) {
@@ -112,22 +115,28 @@ public final class Analyzer extends ParseAdapter {
             if (!alias.isBuiltin() && !alias.isComplete()) {
                 var backingTypeName = ((NamedType) alias.getBackingType()).getQualifiedName();
                 final var typeNode = ScopeUtils.findInScope(nodes, backingTypeName, childType.getScopeName());
-                if (typeNode != null) {
-                    backingTypeName = typeNode.getValue().getQualifiedName();
-                    if (!resolved.contains(backingTypeName)) { // Prevent multiple passes over the same type
-                        typesToResolve.push(Pair.of(childNode, typeNode));
-                        resolved.add(backingTypeName);
-                        buffer.a('R');
-                    }
-                    else {
-                        buffer.fgBright(Color.GREEN).a('C').fgBright(Color.CYAN);
-                    }
+                if (typeNode == null) {
+                    compileContext.reportError(
+                            compileContext.makeError(backingTypeName.toString(), CompileErrorCode.E3004));
+                    return false;
+                }
+                backingTypeName = typeNode.getValue().getQualifiedName();
+                if (!resolved.contains(backingTypeName)) { // Prevent multiple passes over the same type
+                    typesToResolve.push(Pair.of(childNode, typeNode));
+                    resolved.add(backingTypeName);
+                    buffer.a('R');
+                }
+                else {
+                    buffer.fgBright(Color.GREEN).a('C').fgBright(Color.CYAN);
                 }
             }
         }
 
         parentNode.addDependency(childNode);
-        return buffer.a('D').fg(Color.CYAN).a(" > ").a(childType).toString();
+        buffer.a('D').fg(Color.CYAN).a(" > ").a(childType);
+        Logger.INSTANCE.debugln("Resolved type graph: %s", buffer.toString());
+
+        return true;
     }
 
     @Override
@@ -231,7 +240,7 @@ public final class Analyzer extends ParseAdapter {
         return ScopeUtils.findInScope(udts, name, scopeName);
     }
 
-    private void resolveAliasedType(final AliasedType alias, final Identifier scopeName) {
+    private boolean resolveAliasedType(final AliasedType alias, final Identifier scopeName) {
         var currentType = alias.getBackingType();
         while (!currentType.isComplete()) {
             if (currentType.isAliased()) {
@@ -239,21 +248,20 @@ public final class Analyzer extends ParseAdapter {
                 continue;
             }
             if (!(currentType instanceof NamedType)) {
-                Logger.INSTANCE.errorln("Could not resolve aliased type '%s'", alias.getQualifiedName());
-                return;
+                return false;
             }
             final var currentTypeName = ((NamedType) currentType).getQualifiedName();
             final var completeType = findCompleteTypeInScope(currentTypeName, scopeName);
             if (completeType == null) {
-                Logger.INSTANCE.errorln("Could not resolve aliased type '%s'", alias.getQualifiedName());
-                return;
+                return false;
             }
             currentType = completeType;
         }
         alias.setBackingType(currentType);
+        return true;
     }
 
-    private void resolveFieldTypes(final UDT udt, final Identifier scopeName) {
+    private boolean resolveFieldTypes(final UDT udt, final Identifier scopeName) {
         final var type = udt.type();
         final var fieldTypes = type.getFieldTypes();
         final var numFields = fieldTypes.size();
@@ -266,25 +274,30 @@ public final class Analyzer extends ParseAdapter {
             Logger.INSTANCE.debugln("Found incomplete field type '%s' in '%s'", fieldTypeName, scopeName);
             final var completeType = findCompleteTypeInScope(fieldTypeName, scopeName);
             if (completeType == null) {
-                Logger.INSTANCE.errorln("Failed to resolve field type '%s' for '%s'", fieldTypeName, scopeName);
-                return;
+                return false;
             }
             Logger.INSTANCE.debugln("  > Resolved to complete type '%s'", completeType);
             type.setFieldType(i, completeType.derive(fieldType.getAttributes()));
         }
+        return true;
     }
 
     private void resolveTypes() {
         final var udts = this.udts.values();
+        final var compileContext = compiler.getContext();
         for (final var udt : udts) {
             final var scopeName = udt.getScopeName();
             if (udt.isAliased() && udt instanceof AliasedType alias) {
-                resolveAliasedType(alias, scopeName);
+                if (!resolveAliasedType(alias, scopeName)) {
+                    compileContext.reportError(compileContext.makeError(alias.toString(), CompileErrorCode.E3003));
+                }
             }
             if (!(udt instanceof UDT)) {
                 continue; // Skip everything else apart from UDTs
             }
-            resolveFieldTypes((UDT) udt, scopeName);
+            if (!resolveFieldTypes((UDT) udt, scopeName)) {
+                compileContext.reportError(compileContext.makeError(udt.toString(), CompileErrorCode.E3004));
+            }
         }
     }
 
@@ -313,7 +326,8 @@ public final class Analyzer extends ParseAdapter {
 
         final var queue = new ArrayDeque<Pair<TopoNode<NamedType>, TopoNode<NamedType>>>(); // <parent_node, child_node>
         final var resolved = new HashSet<Identifier>();
-        for (final var nodeEntry : nodes.entrySet()) {
+
+        outer: for (final var nodeEntry : nodes.entrySet()) {
             final var node = nodeEntry.getValue();
             final var type = node.getValue();
             if (type == null) {
@@ -322,7 +336,9 @@ public final class Analyzer extends ParseAdapter {
             rootNode.getValue().setEnclosingScope(type.getEnclosingScope());
             queue.push(Pair.of(rootNode, node));
             while (!queue.isEmpty()) {
-                Logger.INSTANCE.debugln("Resolving type graph: %s", addTypesToGraph(queue, nodes, resolved));
+                if (!addTypesToGraph(queue, nodes, resolved)) {
+                    break outer;
+                }
             }
             rootNode.addDependency(node);
         }

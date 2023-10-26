@@ -55,6 +55,18 @@ public abstract class ParseAdapter implements FerrousParserListener {
 
     // @formatter:off
     @Override
+    public void enterDestructureStatement(DestructureStatementContext destructureStatementContext) {}
+
+    @Override
+    public void exitDestructureStatement(DestructureStatementContext destructureStatementContext) {}
+
+    @Override
+    public void enterInferredParamList(InferredParamListContext inferredParamListContext) {}
+
+    @Override
+    public void exitInferredParamList(InferredParamListContext inferredParamListContext) {}
+
+    @Override
     public void enterPropertyGetter(PropertyGetterContext propertyGetterContext) {}
 
     @Override

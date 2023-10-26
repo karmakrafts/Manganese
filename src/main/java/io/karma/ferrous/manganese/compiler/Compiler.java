@@ -25,7 +25,6 @@ import io.karma.ferrous.vanadium.FerrousLexer;
 import io.karma.ferrous.vanadium.FerrousParser;
 import io.karma.kommons.function.Functions;
 import org.antlr.v4.runtime.ANTLRErrorListener;
-import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.ListTokenSource;
@@ -53,6 +52,10 @@ import java.nio.file.Path;
 import java.util.BitSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.lwjgl.llvm.LLVMCore.LLVMContextSetOpaquePointers;
 import static org.lwjgl.llvm.LLVMCore.LLVMGetGlobalContext;
@@ -64,9 +67,10 @@ import static org.lwjgl.llvm.LLVMCore.LLVMGetGlobalContext;
 @API(status = Status.STABLE)
 public final class Compiler implements ANTLRErrorListener {
     private static final String[] IN_EXTENSIONS = {"ferrous", "fe"};
-    private static final String OBJECT_FILE_EXTENSION = "o";
 
     private final TargetMachine targetMachine;
+    private final ExecutorService executorService;
+    private final AtomicInteger runningTasks = new AtomicInteger(0);
 
     private CompileContext context;
     private boolean tokenView = false;
@@ -77,8 +81,16 @@ public final class Compiler implements ANTLRErrorListener {
     private boolean isVerbose = false;
 
     @API(status = Status.INTERNAL)
-    public Compiler(final TargetMachine targetMachine) {
+    public Compiler(final TargetMachine targetMachine, final int numThreads) {
         this.targetMachine = targetMachine;
+        executorService = Executors.newFixedThreadPool(numThreads);
+        // Shutdown executor service and force-run remaining tasks if stuck too long
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> Functions.tryDo(() -> {
+            executorService.shutdown();
+            if (!executorService.awaitTermination(1, TimeUnit.SECONDS)) {
+                executorService.shutdownNow().forEach(Runnable::run);
+            }
+        })));
     }
 
     @Override
@@ -113,19 +125,37 @@ public final class Compiler implements ANTLRErrorListener {
         }
     }
 
-    public void analyze(final String name, final ReadableByteChannel in, final CompileContext context) {
+    public void tokenizeAndParse(final String name, final ReadableByteChannel in, final CompileContext context) {
         try {
             context.setModuleName(name);
-            this.context = context; // Update context for every analysis
+            this.context = context;
 
-            final var charStream = CharStreams.fromChannel(in, StandardCharsets.UTF_8);
-
-            tokenize(context, charStream);
-            parse(context);
-            if (!analyze(context)) {
-                return;
+            // Tokenize
+            var startTime = System.currentTimeMillis();
+            context.setCurrentPass(CompilePass.TOKENIZE);
+            final var lexer = new FerrousLexer(CharStreams.fromChannel(in, StandardCharsets.UTF_8));
+            context.setLexer(lexer);
+            final var tokenStream = new CommonTokenStream(lexer);
+            tokenStream.fill();
+            context.setTokenStream(tokenStream);
+            var time = System.currentTimeMillis() - startTime;
+            Logger.INSTANCE.debugln("Finished pass TOKENIZE in %dms", time);
+            if (tokenView) {
+                System.out.printf("\n%s\n",
+                                  TokenUtils.renderTokenTree(context.getModuleName(), extendedTokenView, lexer,
+                                                             tokenStream.getTokens()));
             }
-            process(context);
+            // Parse
+            context.setCurrentPass(CompilePass.PARSE);
+            final var parser = new FerrousParser(tokenStream);
+            parser.removeErrorListeners(); // Remove default error listener
+            parser.addErrorListener(this);
+            context.setParser(parser);
+            startTime = System.currentTimeMillis();
+            context.setFileContext(parser.file());
+            time = System.currentTimeMillis() - startTime;
+            Logger.INSTANCE.debugln("Finished pass PARSE in %dms", time);
+
             context.setCurrentPass(CompilePass.NONE);
         }
         catch (IOException error) {
@@ -134,10 +164,19 @@ public final class Compiler implements ANTLRErrorListener {
         }
     }
 
+    public void analyzeAndProcess(final String name, final CompileContext context) {
+        context.setModuleName(name);
+        this.context = context;
+        if (!analyze(context)) {
+            return;
+        }
+        process(context);
+    }
+
     public void compile(final String name, final String sourceName, final WritableByteChannel out,
                         final CompileContext context) {
         context.setModuleName(name);
-        this.context = context; // Update context for every compilation
+        this.context = context;
 
         if (!compile(context)) {
             return;
@@ -164,6 +203,23 @@ public final class Compiler implements ANTLRErrorListener {
     public CompileResult compile(final Path in, final Path out, final CompileContext context) {
         final var inputFiles = Utils.findFilesWithExtensions(in, IN_EXTENSIONS);
         final var numFiles = inputFiles.size();
+
+        for (final var file : inputFiles) {
+            final var rawFileName = Utils.getRawFileName(file);
+            Logger.INSTANCE.debugln("Input: %s", file);
+
+            try (final var stream = Files.newInputStream(file); final var channel = Channels.newChannel(stream)) {
+                tokenizeAndParse(rawFileName, channel, context);
+            }
+            catch (IOException error) {
+                context.reportError(context.makeError(CompileErrorCode.E0003));
+            }
+        }
+
+        while (runningTasks.get() > 0) {
+            Thread.yield(); // Yield until tasks are complete
+        }
+
         final var maxProgress = numFiles << 1;
 
         for (var i = 0; i < numFiles; ++i) {
@@ -182,13 +238,7 @@ public final class Compiler implements ANTLRErrorListener {
             // @formatter:on
             final var rawFileName = Utils.getRawFileName(file);
             Logger.INSTANCE.debugln("Input: %s", file);
-
-            try (final var stream = Files.newInputStream(file); final var channel = Channels.newChannel(stream)) {
-                analyze(rawFileName, channel, context);
-            }
-            catch (IOException error) {
-                context.reportError(context.makeError(CompileErrorCode.E0003));
-            }
+            analyzeAndProcess(rawFileName, context);
         }
 
         final var moduleName = Utils.getRawFileName(in);
@@ -299,35 +349,6 @@ public final class Compiler implements ANTLRErrorListener {
 
     private void processTokens(final List<Token> tokens) {
         // TODO: implement here
-    }
-
-    private void tokenize(final CompileContext context, final CharStream stream) {
-        final var startTime = System.currentTimeMillis();
-        context.setCurrentPass(CompilePass.TOKENIZE);
-        final var lexer = new FerrousLexer(stream);
-        context.setLexer(lexer);
-        final var tokenStream = new CommonTokenStream(lexer);
-        tokenStream.fill();
-        context.setTokenStream(tokenStream);
-        final var time = System.currentTimeMillis() - startTime;
-        Logger.INSTANCE.debugln("Finished pass TOKENIZE in %dms", time);
-        if (tokenView) {
-            System.out.printf("\n%s\n", TokenUtils.renderTokenTree(context.getModuleName(), extendedTokenView, lexer,
-                                                                   tokenStream.getTokens()));
-        }
-    }
-
-    private void parse(final CompileContext context) {
-        final var startTime = System.currentTimeMillis();
-        context.setCurrentPass(CompilePass.PARSE);
-        final var tokenStream = Objects.requireNonNull(context.getTokenStream());
-        final var parser = new FerrousParser(tokenStream);
-        parser.removeErrorListeners(); // Remove default error listener
-        parser.addErrorListener(this);
-        context.setParser(parser);
-        context.setFileContext(parser.file());
-        final var time = System.currentTimeMillis() - startTime;
-        Logger.INSTANCE.debugln("Finished pass PARSE in %dms", time);
     }
 
     private boolean analyze(final CompileContext context) {

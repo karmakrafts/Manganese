@@ -18,7 +18,6 @@ package io.karma.ferrous.manganese.ocm.access;
 import io.karma.ferrous.manganese.compiler.CompileErrorCode;
 import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.NameProvider;
-import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.ocm.scope.ScopeStack;
 import io.karma.ferrous.manganese.ocm.scope.ScopeType;
 import io.karma.ferrous.manganese.ocm.scope.Scoped;
@@ -62,13 +61,13 @@ public enum DefaultAccess implements Access {
         }
 
         if (this == DefaultAccess.MODULE) {
-            Scope currentModuleScope = capturedScopeStack.pop();
+            var currentModuleScope = capturedScopeStack.pop();
             while (currentModuleScope.getType() != ScopeType.MODULE) {
                 currentModuleScope = capturedScopeStack.pop();
             }
 
             final var targetScopeStack = target.rebuildScopeStack();
-            Scope targetModuleScope = targetScopeStack.pop();
+            var targetModuleScope = targetScopeStack.pop();
             while (targetModuleScope.getType() != ScopeType.MODULE) {
                 targetModuleScope = targetScopeStack.pop();
             }

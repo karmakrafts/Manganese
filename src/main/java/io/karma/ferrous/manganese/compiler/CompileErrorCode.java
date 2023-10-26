@@ -37,6 +37,8 @@ public enum CompileErrorCode {
     E3000("The given type is already defined within the same scope", CompileStatus.TYPE_ERROR),
     E3001("The given type cannot have more than one level of reference", CompileStatus.TYPE_ERROR),
     E3002("The given type could not be found", CompileStatus.TYPE_ERROR),
+    E3003("The given aliased type cannot be resolved", CompileStatus.TYPE_ERROR),
+    E3004("The given field type cannot be resolved", CompileStatus.TYPE_ERROR),
     // Translation errors
     E4000("Could not materialize the underlying function type", CompileStatus.TRANSLATION_ERROR),
     // Semantic errors

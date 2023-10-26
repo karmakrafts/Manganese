@@ -31,6 +31,7 @@ import org.apiguardian.api.API.Status;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 /**
@@ -80,6 +81,10 @@ public final class CompileContext {
         return new CompileError(null, null, currentPass, null, errorCode);
     }
 
+    public CompileError makeError(final String text, final CompileErrorCode errorCode) {
+        return new CompileError(null, null, currentPass, text, errorCode);
+    }
+
     public CompileError makeError(final Token token, final CompileErrorCode errorCode) {
         return new CompileError(token, TokenUtils.getLineTokens(getTokenStream(), token), currentPass, null, errorCode);
     }
@@ -100,97 +105,85 @@ public final class CompileContext {
         this.currentStatus = this.currentStatus.worse(error.getStatus());
     }
 
-    public CompilePass getCurrentPass() {
+    public synchronized CompilePass getCurrentPass() {
         return currentPass;
     }
 
-    public void setCurrentPass(final CompilePass currentPass) {
+    public synchronized void setCurrentPass(final CompilePass currentPass) {
         this.currentPass = currentPass;
     }
 
-    public CompileStatus getCurrentStatus() {
+    public synchronized CompileStatus getCurrentStatus() {
         return currentStatus;
     }
 
-    public void setCurrentStatus(final CompileStatus status) {
+    public synchronized void setCurrentStatus(final CompileStatus status) {
         this.currentStatus = status;
     }
 
-    public FerrousLexer getLexer() {
+    public synchronized FerrousLexer getLexer() {
         return getModuleComponent(ModuleData::getLexer);
     }
 
-    void setLexer(final FerrousLexer lexer) {
+    synchronized void setLexer(final FerrousLexer lexer) {
         getOrCreateModuleData().setLexer(lexer);
     }
 
-    public BufferedTokenStream getTokenStream() {
+    public synchronized BufferedTokenStream getTokenStream() {
         return getModuleComponent(ModuleData::getTokenStream);
     }
 
-    void setTokenStream(final BufferedTokenStream tokenStream) {
+    synchronized void setTokenStream(final BufferedTokenStream tokenStream) {
         getOrCreateModuleData().setTokenStream(tokenStream);
     }
 
-    public FerrousParser getParser() {
+    public synchronized FerrousParser getParser() {
         return getModuleComponent(ModuleData::getParser);
     }
 
-    void setParser(final FerrousParser parser) {
+    synchronized void setParser(final FerrousParser parser) {
         getOrCreateModuleData().setParser(parser);
     }
 
-    public FileContext getFileContext() {
+    public synchronized FileContext getFileContext() {
         return getModuleComponent(ModuleData::getFileContext);
     }
 
-    void setFileContext(final FileContext fileContext) {
+    synchronized void setFileContext(final FileContext fileContext) {
         getOrCreateModuleData().setFileContext(fileContext);
     }
 
-    public Analyzer getAnalyzer() {
+    public synchronized Analyzer getAnalyzer() {
         return getModuleComponent(ModuleData::getAnalyzer);
     }
 
-    void setAnalyzer(final Analyzer analyzer) {
+    synchronized void setAnalyzer(final Analyzer analyzer) {
         getOrCreateModuleData().setAnalyzer(analyzer);
     }
 
-    public TranslationUnit getTranslationUnit() {
+    public synchronized TranslationUnit getTranslationUnit() {
         return getModuleComponent(ModuleData::getTranslationUnit);
     }
 
-    void setTranslationUnit(final TranslationUnit translationUnit) {
+    synchronized void setTranslationUnit(final TranslationUnit translationUnit) {
         getOrCreateModuleData().setTranslationUnit(translationUnit);
     }
 
-    public String getModuleName() {
+    public synchronized String getModuleName() {
         return currentModuleName;
     }
 
-    void setModuleName(final String currentName) {
+    synchronized void setModuleName(final String currentName) {
         currentModuleName = currentName;
     }
 
-    public ArrayList<CompileError> getErrors() {
-        return errors;
-    }
-
-    public HashMap<String, Module> getModules() {
-        return modules;
-    }
-
-    public HashMap<String, ModuleData> getModuleData() {
-        return moduleData;
-    }
-
-    public void dispose() {
+    public synchronized void dispose() {
         modules.values().forEach(Module::dispose); // Dispose the actual modules
         modules.clear();
         moduleData.clear();
     }
 
-    public void addModule(final Module module) {
+    public synchronized void addModule(final Module module) {
         modules.put(currentModuleName, module);
     }
 }

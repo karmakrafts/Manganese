@@ -129,16 +129,17 @@ public final class Manganese {
         return new TargetMachine(target, features, level, reloc, model, fileType);
     }
 
-    public static Compiler createCompiler(final TargetMachine machine) {
+    public static Compiler createCompiler(final TargetMachine machine, final int numThreads) {
         if (!IS_INITIALIZED.get()) {
             throw new IllegalStateException("Not initialized");
         }
-        return new Compiler(machine);
+        return new Compiler(machine, numThreads);
     }
 
     public static Compiler createCompiler(final FileType fileType) {
+        final int numThreads = Runtime.getRuntime().availableProcessors();
         return createCompiler(
                 new TargetMachine(Target.getHostTarget(), "", OptimizationLevel.DEFAULT, Relocation.DEFAULT,
-                                  CodeModel.DEFAULT, fileType));
+                                  CodeModel.DEFAULT, fileType), numThreads);
     }
 }
