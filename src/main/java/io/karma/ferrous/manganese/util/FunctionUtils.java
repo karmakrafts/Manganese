@@ -15,8 +15,8 @@
 
 package io.karma.ferrous.manganese.util;
 
+import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.CompileErrorCode;
-import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.vanadium.FerrousParser.FunctionIdentContext;
 import io.karma.ferrous.vanadium.FerrousParser.ProtoFunctionContext;
 import org.apiguardian.api.API;
@@ -53,7 +53,7 @@ public final class FunctionUtils {
         return names.toArray(Identifier[]::new);
     }
 
-    public static CallingConvention getCallingConvention(final Compiler compiler, final ProtoFunctionContext context) {
+    public static CallingConvention getCallingConvention(final CompileContext compileContext, final ProtoFunctionContext context) {
         final var convContext = context.callConvMod();
         if (convContext == null) {
             return CallingConvention.CDECL;
@@ -65,7 +65,6 @@ public final class FunctionUtils {
             final var message = String.format(
                     "'%s' is not a valid calling convention, expected one of the following values", name);
             final var formattedMessage = Utils.makeCompilerMessage(message, CallingConvention.EXPECTED_VALUES);
-            final var compileContext = compiler.getContext();
             compileContext.reportError(
                     compileContext.makeError(identifier.getSymbol(), formattedMessage, CompileErrorCode.E5000));
             return CallingConvention.CDECL;

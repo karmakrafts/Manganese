@@ -16,6 +16,7 @@
 package io.karma.ferrous.manganese.analyze;
 
 import io.karma.ferrous.manganese.ParseAdapter;
+import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.Compiler;
 
 /**
@@ -23,7 +24,7 @@ import io.karma.ferrous.manganese.compiler.Compiler;
  * @since 24/10/2023
  */
 public final class AttributeAnalyzer extends ParseAdapter {
-    public AttributeAnalyzer(final Compiler compiler) {
-        super(compiler);
+    public AttributeAnalyzer(final Compiler compiler, final CompileContext compileContext) {
+        super(compiler, compileContext);
     }
 }

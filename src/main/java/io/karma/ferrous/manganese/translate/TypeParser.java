@@ -16,6 +16,7 @@
 package io.karma.ferrous.manganese.translate;
 
 import io.karma.ferrous.manganese.ParseAdapter;
+import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.CompileErrorCode;
 import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.scope.ScopeStack;
@@ -43,8 +44,8 @@ public final class TypeParser extends ParseAdapter {
     private final ScopeStack capturedScopeStack;
     private Type baseType;
 
-    public TypeParser(final Compiler compiler, final ScopeStack capturedScopeStack) {
-        super(compiler);
+    public TypeParser(final Compiler compiler, final CompileContext compileContext, final ScopeStack capturedScopeStack) {
+        super(compiler, compileContext);
         this.capturedScopeStack = capturedScopeStack;
     }
 
@@ -57,7 +58,6 @@ public final class TypeParser extends ParseAdapter {
     @Override
     public void enterRefType(final RefTypeContext context) {
         if (attributes.contains(TypeAttribute.REFERENCE)) {
-            final var compileContext = compiler.getContext();
             compileContext.reportError(compileContext.makeError(context.start, CompileErrorCode.E3001));
             return;
         }
@@ -76,7 +76,6 @@ public final class TypeParser extends ParseAdapter {
         if (baseType != null) {
             return; // Qualified ident contains these, so if type exists, skip
         }
-        final var compileContext = compiler.getContext();
         final var name = Utils.getIdentifier(context);
         final var type = compileContext.getAnalyzer().findCompleteTypeInScope(name, capturedScopeStack.getScopeName());
         if (type == null) {
@@ -89,7 +88,6 @@ public final class TypeParser extends ParseAdapter {
 
     @Override
     public void enterQualifiedIdent(final QualifiedIdentContext context) {
-        final var compileContext = compiler.getContext();
         final var name = Utils.getIdentifier(context);
         final var type = compileContext.getAnalyzer().findCompleteTypeInScope(name, capturedScopeStack.getScopeName());
         if (type == null) {

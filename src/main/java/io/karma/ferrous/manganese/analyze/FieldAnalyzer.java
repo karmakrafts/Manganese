@@ -16,6 +16,7 @@
 package io.karma.ferrous.manganese.analyze;
 
 import io.karma.ferrous.manganese.ParseAdapter;
+import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.Field;
 import io.karma.ferrous.manganese.ocm.scope.ScopeStack;
@@ -38,8 +39,8 @@ public final class FieldAnalyzer extends ParseAdapter {
     private final ScopeStack capturedScopeStack;
     private int nestedScopes = 0;
 
-    public FieldAnalyzer(final Compiler compiler, final ScopeStack capturedScopeStack) {
-        super(compiler);
+    public FieldAnalyzer(final Compiler compiler, final CompileContext compileContext, final ScopeStack capturedScopeStack) {
+        super(compiler, compileContext);
         this.capturedScopeStack = capturedScopeStack;
     }
 
@@ -63,8 +64,8 @@ public final class FieldAnalyzer extends ParseAdapter {
             return;
         }
         final var name = Utils.getIdentifier(context.ident());
-        final var type = TypeUtils.getType(compiler, capturedScopeStack, context.type());
-        fields.add(new Field(name, type, Utils.getAccess(compiler, scopeStack, context.accessMod())));
+        final var type = TypeUtils.getType(compiler, compileContext, capturedScopeStack, context.type());
+        fields.add(new Field(name, type, Utils.getAccess(compiler, compileContext, scopeStack, context.accessMod())));
         super.enterField(context);
     }
 

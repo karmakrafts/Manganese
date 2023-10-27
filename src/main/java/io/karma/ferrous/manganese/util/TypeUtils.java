@@ -15,6 +15,7 @@
 
 package io.karma.ferrous.manganese.util;
 
+import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.scope.ScopeStack;
 import io.karma.ferrous.manganese.ocm.type.BuiltinType;
@@ -43,38 +44,38 @@ public final class TypeUtils {
     private TypeUtils() {}
     // @formatter:on
 
-    public static List<Type> getTypes(final Compiler compiler, final ScopeStack scopeStacka,
+    public static List<Type> getTypes(final Compiler compiler, final CompileContext compileContext, final ScopeStack scopeStack,
                                       final TypeListContext context) {
         // @formatter:off
         return context.type().stream()
-            .map(ctx -> getType(compiler, scopeStacka, ctx))
+            .map(ctx -> getType(compiler, compileContext, scopeStack, ctx))
             .toList();
         // @formatter:on
     }
 
-    public static Type getType(final Compiler compiler, final ScopeStack scopeStack, final TypeContext context) {
-        final TypeParser unit = new TypeParser(compiler, scopeStack);
+    public static Type getType(final Compiler compiler, final CompileContext compileContext, final ScopeStack scopeStack, final TypeContext context) {
+        final TypeParser unit = new TypeParser(compiler, compileContext, scopeStack);
         ParseTreeWalker.DEFAULT.walk(unit, context);
         return unit.getType();
     }
 
-    public static List<Type> getParameterTypes(final Compiler compiler, final ScopeStack scopeStack,
+    public static List<Type> getParameterTypes(final Compiler compiler, final CompileContext compileContext, final ScopeStack scopeStack,
                                                final ProtoFunctionContext context) {
         // @formatter:off
         return context.functionParamList().functionParam().stream()
             .map(FunctionParamContext::type)
             .filter(type -> type != null && !type.getText().equals(TokenUtils.getLiteral(FerrousLexer.KW_VAARGS)))
-            .map(type -> getType(compiler, scopeStack, type))
+            .map(type -> getType(compiler, compileContext, scopeStack, type))
             .toList();
         // @formatter:on
     }
 
-    public static FunctionType getFunctionType(final Compiler compiler, final ScopeStack scopeStack,
+    public static FunctionType getFunctionType(final Compiler compiler, final CompileContext compileContext, final ScopeStack scopeStack,
                                                final ProtoFunctionContext context) {
         final var type = context.type();
-        final var returnType = type == null ? BuiltinType.VOID : getType(compiler, scopeStack, type);
+        final var returnType = type == null ? BuiltinType.VOID : getType(compiler, compileContext, scopeStack, type);
         final var isVarArg = context.functionParamList().vaFunctionParam() != null;
-        final var paramTypes = TypeUtils.getParameterTypes(compiler, scopeStack, context);
+        final var paramTypes = TypeUtils.getParameterTypes(compiler, compileContext, scopeStack, context);
         return Types.function(returnType, paramTypes, isVarArg, scopeStack::applyEnclosingScopes);
     }
 }

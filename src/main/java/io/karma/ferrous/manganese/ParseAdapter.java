@@ -15,6 +15,7 @@
 
 package io.karma.ferrous.manganese;
 
+import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.scope.DefaultScope;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
@@ -30,23 +31,31 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 
+import java.util.Objects;
+
 /**
  * @author Alexander Hinze
  * @since 11/10/2023
  */
 @API(status = Status.INTERNAL)
 public abstract class ParseAdapter implements FerrousParserListener {
+    protected final Compiler compiler;
+    protected final CompileContext compileContext;
     protected ScopeStack scopeStack = new ScopeStack();
     protected Scope lastScope;
-    protected Compiler compiler;
 
-    protected ParseAdapter(final Compiler compiler) {
+    protected ParseAdapter(final Compiler compiler, final CompileContext compileContext) {
         this.compiler = compiler;
+        this.compileContext = compileContext;
         scopeStack.push(DefaultScope.GLOBAL);
     }
 
     public Compiler getCompiler() {
         return compiler;
+    }
+
+    public CompileContext getCompileContext() {
+        return compileContext;
     }
 
     public ScopeStack getScopeStack() {
@@ -146,7 +155,7 @@ public abstract class ParseAdapter implements FerrousParserListener {
 
     @Override
     public void enterFile(FileContext fileContext) {
-        scopeStack.push(new DefaultScope(ScopeType.FILE, Identifier.parse(compiler.getContext().getCurrentModuleName())));
+        scopeStack.push(new DefaultScope(ScopeType.FILE, Identifier.parse(Objects.requireNonNull(compileContext.getCurrentModuleName()))));
     }
 
     @Override
@@ -156,7 +165,7 @@ public abstract class ParseAdapter implements FerrousParserListener {
 
     @Override
     public void enterModuleFile(ModuleFileContext moduleFileContext) {
-        scopeStack.push(new DefaultScope(ScopeType.MODULE_FILE, Identifier.parse(compiler.getContext().getCurrentModuleName())));
+        scopeStack.push(new DefaultScope(ScopeType.MODULE_FILE, Identifier.parse(Objects.requireNonNull(compileContext.getCurrentModuleName()))));
     }
 
     @Override

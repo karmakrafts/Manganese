@@ -15,6 +15,7 @@
 
 package io.karma.ferrous.manganese.ocm.access;
 
+import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.CompileErrorCode;
 import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.NameProvider;
@@ -36,10 +37,9 @@ public record ScopedAccess(Type... types) implements Access {
     }
 
     @Override
-    public <T extends Scoped & NameProvider> boolean hasAccess(final Compiler compiler, final ScopeStack scopeStack,
+    public <T extends Scoped & NameProvider> boolean hasAccess(final Compiler compiler, final CompileContext compileContext, final ScopeStack scopeStack,
                                                                final T target) {
-        var compilerContext = compiler.getContext();
-        var type = compiler.getContext().getAnalyzer()
+        var type = compileContext.getAnalyzer()
                 .findTypeInScope(target.getQualifiedName(), target.getScopeName());
         for (Type allowedType : types) {
             if (type == allowedType) {
@@ -47,7 +47,7 @@ public record ScopedAccess(Type... types) implements Access {
             }
         }
 
-        compilerContext.reportError(compilerContext.makeError(CompileErrorCode.E5001));
+        compileContext.reportError(compileContext.makeError(CompileErrorCode.E5001));
         return false;
     }
 }

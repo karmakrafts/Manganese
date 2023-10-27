@@ -15,6 +15,7 @@
 
 package io.karma.ferrous.manganese.ocm.access;
 
+import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.NameProvider;
 import io.karma.ferrous.manganese.ocm.scope.ScopeStack;
@@ -30,6 +31,6 @@ import org.apiguardian.api.API.Status;
 public interface Access {
     AccessKind getKind();
 
-    <T extends Scoped & NameProvider> boolean hasAccess(final Compiler compiler, final ScopeStack scopeStack,
+    <T extends Scoped & NameProvider> boolean hasAccess(final Compiler compiler, final CompileContext compileContext, final ScopeStack scopeStack,
                                                         final T target);
 }

@@ -15,6 +15,7 @@
 
 package io.karma.ferrous.manganese.util;
 
+import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.access.Access;
 import io.karma.ferrous.manganese.ocm.access.DefaultAccess;
@@ -48,14 +49,14 @@ public final class Utils {
     private Utils() {}
     // @formatter:on
 
-    public static Access getAccess(final Compiler compiler, final ScopeStack scopeStack,
+    public static Access getAccess(final Compiler compiler, final CompileContext compileContext, final ScopeStack scopeStack,
                                    final AccessModContext context) {
         if (context == null || context.KW_PUB() == null) {
             return DefaultAccess.PRIVATE;
         }
         final var typeContext = context.typeList();
         if (typeContext != null) {
-            return new ScopedAccess(TypeUtils.getTypes(compiler, scopeStack, typeContext).toArray(Type[]::new));
+            return new ScopedAccess(TypeUtils.getTypes(compiler, compileContext, scopeStack, typeContext).toArray(Type[]::new));
         }
         if (context.KW_MOD() != null) {
             return DefaultAccess.MODULE;

@@ -30,6 +30,7 @@ import org.apiguardian.api.API.Status;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
 /**
@@ -41,9 +42,9 @@ public final class CompileContext {
     private final List<CompileError> errors = Collections.synchronizedList(new ArrayList<>());
     private final Map<String, Module> modules = Collections.synchronizedMap(new HashMap<>());
     private final Map<String, ModuleData> moduleData = Collections.synchronizedMap(new HashMap<>());
-    private final ThreadLocal<CompileStatus> status = ThreadLocal.withInitial(() -> CompileStatus.SUCCESS);
     private final ThreadLocal<CompilePass> pass = ThreadLocal.withInitial(() -> CompilePass.NONE);
     private final ThreadLocal<String> currentModuleName = ThreadLocal.withInitial(String::new);
+    private final AtomicInteger status = new AtomicInteger(CompileStatus.SUCCESS.ordinal());
 
     public synchronized Module getModule() {
         return Objects.requireNonNull(modules.get(Objects.requireNonNull(getCurrentModuleName())));
@@ -63,7 +64,10 @@ public final class CompileContext {
     }
 
     public CompileResult makeResult() {
-        return new CompileResult(getCurrentStatus(), new ArrayList<>(errors));
+        final var status = getCurrentStatus();
+        synchronized (this) {
+            return new CompileResult(status, new ArrayList<>(errors));
+        }
     }
 
     public CompileError makeError(final CompileErrorCode errorCode) {
@@ -107,11 +111,11 @@ public final class CompileContext {
     }
 
     public CompileStatus getCurrentStatus() {
-        return status.get();
+        return CompileStatus.values()[status.get()];
     }
 
     public void setCurrentStatus(final CompileStatus status) {
-        this.status.set(status);
+        this.status.set(status.ordinal());
     }
 
     public @Nullable String getCurrentModuleName() {
@@ -174,6 +178,7 @@ public final class CompileContext {
         modules.values().forEach(Module::dispose); // Dispose the actual modules
         modules.clear();
         moduleData.clear();
+        errors.clear();
     }
 
     public synchronized void addModule(final Module module) {

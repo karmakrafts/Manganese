@@ -59,14 +59,13 @@ import static org.lwjgl.llvm.LLVMCore.LLVMGetGlobalContext;
  * @since 02/07/2022
  */
 @API(status = Status.STABLE)
-public final class Compiler implements ANTLRErrorListener {
+public final class Compiler {
     private static final String[] IN_EXTENSIONS = {"ferrous", "fe"};
 
     private final TargetMachine targetMachine;
     private final ExecutorService executorService;
     private final AtomicInteger numRunningTasks = new AtomicInteger(0);
 
-    private CompileContext context;
     private boolean tokenView = false;
     private boolean extendedTokenView = false;
     private boolean reportParserWarnings = false;
@@ -84,42 +83,9 @@ public final class Compiler implements ANTLRErrorListener {
         })));
     }
 
-    @Override
-    public void syntaxError(final Recognizer<?, ?> recognizer, final Object offendingSymbol, final int line,
-                            final int charPositionInLine, final String msg, final RecognitionException e) {
-        context.reportError(context.makeError((Token) offendingSymbol, Utils.capitalize(msg), CompileErrorCode.E2000));
-    }
-
-    @Override
-    public void reportAmbiguity(final Parser recognizer, final DFA dfa, final int startIndex, final int stopIndex,
-                                final boolean exact, final BitSet ambigAlts, final ATNConfigSet configs) {
-        if (reportParserWarnings) {
-            Logger.INSTANCE.debugln("Detected ambiguity at %d:%d (%d)", startIndex, stopIndex, dfa.decision);
-        }
-    }
-
-    @Override
-    public void reportAttemptingFullContext(final Parser recognizer, final DFA dfa, final int startIndex,
-                                            final int stopIndex, final BitSet conflictingAlts,
-                                            final ATNConfigSet configs) {
-        if (reportParserWarnings) {
-            Logger.INSTANCE.debugln("Detected full context at %d:%d (%d)", startIndex, stopIndex, dfa.decision);
-        }
-    }
-
-    @Override
-    public void reportContextSensitivity(final Parser recognizer, final DFA dfa, final int startIndex,
-                                         final int stopIndex, final int prediction, final ATNConfigSet configs) {
-        if (reportParserWarnings) {
-            Logger.INSTANCE.debugln("Detected abnormally high context sensitivity at %d:%d (%d)", startIndex, stopIndex,
-                    dfa.decision);
-        }
-    }
-
     public void tokenizeAndParse(final String name, final ReadableByteChannel in, final CompileContext context) {
         try {
             context.setCurrentModuleName(name);
-            this.context = context;
 
             // Tokenize
             var startTime = System.currentTimeMillis();
@@ -140,7 +106,7 @@ public final class Compiler implements ANTLRErrorListener {
             context.setCurrentPass(CompilePass.PARSE);
             final var parser = new FerrousParser(tokenStream);
             parser.removeErrorListeners(); // Remove default error listener
-            parser.addErrorListener(this);
+            parser.addErrorListener(new ErrorListener(context));
             context.setParser(parser);
             startTime = System.currentTimeMillis();
             context.setFileContext(parser.file());
@@ -156,21 +122,14 @@ public final class Compiler implements ANTLRErrorListener {
 
     public void analyzeAndProcess(final String name, final CompileContext context) {
         context.setCurrentModuleName(name);
-        this.context = context;
-        if (!analyze(context)) {
-            return;
-        }
+        analyze(context);
         process(context);
     }
 
     public void compile(final String name, final String sourceName, final WritableByteChannel out,
                         final CompileContext context) {
         context.setCurrentModuleName(name);
-        this.context = context;
-
-        if (!compile(context)) {
-            return;
-        }
+        compile(context);
 
         final var module = Objects.requireNonNull(context.getTranslationUnit()).getModule();
         module.setSourceFileName(sourceName);
@@ -250,6 +209,9 @@ public final class Compiler implements ANTLRErrorListener {
 
             try (final var stream = new ByteArrayOutputStream(); final var channel = Channels.newChannel(stream)) {
                 compile(rawFileName, file.getFileName().toString(), channel, context);
+                context.setCurrentPass(CompilePass.LINK);
+                module.linkIn(context.getModule());
+                context.setCurrentPass(CompilePass.NONE);
             } catch (IOException error) {
                 context.reportError(context.makeError(CompileErrorCode.E0004));
             }
@@ -290,34 +252,20 @@ public final class Compiler implements ANTLRErrorListener {
         return targetMachine;
     }
 
-    @API(status = Status.INTERNAL)
-    public CompileContext getContext() {
-        return context;
-    }
-
-    private boolean checkStatus() {
-        if (!context.getCurrentStatus().isRecoverable()) {
-            Logger.INSTANCE.errorln("Compilation is irrecoverable, continuing to report syntax errors");
-            return false;
-        }
-        return true;
-    }
-
     private void processTokens(final List<Token> tokens) {
         // TODO: implement here
     }
 
-    private boolean analyze(final CompileContext context) {
+    private void analyze(final CompileContext context) {
         final var startTime = System.currentTimeMillis();
         context.setCurrentPass(CompilePass.ANALYZE);
-        final var analyzer = new Analyzer(this);
+        final var analyzer = new Analyzer(this, context);
         context.setAnalyzer(analyzer);
         final var fileContext = Objects.requireNonNull(context.getFileContext());
         ParseTreeWalker.DEFAULT.walk(analyzer, fileContext);
         analyzer.preProcessTypes(); // Pre-materializes all UDTs in the right order
         final var time = System.currentTimeMillis() - startTime;
         Logger.INSTANCE.debugln("Finished pass ANALYZE in %dms", time);
-        return checkStatus();
     }
 
     private void process(final CompileContext context) {
@@ -338,18 +286,56 @@ public final class Compiler implements ANTLRErrorListener {
         parser.setTokenStream(newTokenStream);
         parser.reset();
         parser.removeErrorListeners();
-        parser.addErrorListener(this);
         context.setFileContext(parser.file());
     }
 
-    private boolean compile(final CompileContext context) {
+    private void compile(final CompileContext context) {
         final var startTime = System.currentTimeMillis();
         context.setCurrentPass(CompilePass.COMPILE);
-        final var translationUnit = new TranslationUnit(this, context.getCurrentModuleName());
+        final var translationUnit = new TranslationUnit(this, context);
         ParseTreeWalker.DEFAULT.walk(translationUnit, context.getFileContext()); // Walk the entire AST with the TU
         context.setTranslationUnit(translationUnit);
         final var time = System.currentTimeMillis() - startTime;
         Logger.INSTANCE.debugln("Finished pass COMPILE in %dms", time);
-        return checkStatus();
+    }
+
+    private final class ErrorListener implements ANTLRErrorListener {
+        private final CompileContext context;
+
+        public ErrorListener(final CompileContext context) {
+            this.context = context;
+        }
+
+        @Override
+        public void syntaxError(final Recognizer<?, ?> recognizer, final Object offendingSymbol, final int line,
+                                final int charPositionInLine, final String msg, final RecognitionException e) {
+            context.reportError(context.makeError((Token) offendingSymbol, Utils.capitalize(msg), CompileErrorCode.E2000));
+        }
+
+        @Override
+        public void reportAmbiguity(final Parser recognizer, final DFA dfa, final int startIndex, final int stopIndex,
+                                    final boolean exact, final BitSet ambigAlts, final ATNConfigSet configs) {
+            if (reportParserWarnings) {
+                Logger.INSTANCE.debugln("Detected ambiguity at %d:%d (%d)", startIndex, stopIndex, dfa.decision);
+            }
+        }
+
+        @Override
+        public void reportAttemptingFullContext(final Parser recognizer, final DFA dfa, final int startIndex,
+                                                final int stopIndex, final BitSet conflictingAlts,
+                                                final ATNConfigSet configs) {
+            if (reportParserWarnings) {
+                Logger.INSTANCE.debugln("Detected full context at %d:%d (%d)", startIndex, stopIndex, dfa.decision);
+            }
+        }
+
+        @Override
+        public void reportContextSensitivity(final Parser recognizer, final DFA dfa, final int startIndex,
+                                             final int stopIndex, final int prediction, final ATNConfigSet configs) {
+            if (reportParserWarnings) {
+                Logger.INSTANCE.debugln("Detected abnormally high context sensitivity at %d:%d (%d)", startIndex, stopIndex,
+                        dfa.decision);
+            }
+        }
     }
 }

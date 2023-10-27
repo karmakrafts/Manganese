@@ -16,6 +16,7 @@
 package io.karma.ferrous.manganese.analyze;
 
 import io.karma.ferrous.manganese.ParseAdapter;
+import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.CompileErrorCode;
 import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.Field;
@@ -48,15 +49,13 @@ import java.util.stream.Collectors;
 public final class Analyzer extends ParseAdapter {
     private final LinkedHashMap<Identifier, NamedType> udts = new LinkedHashMap<>();
 
-    public Analyzer(final Compiler compiler) {
-        super(compiler);
+    public Analyzer(final Compiler compiler, final CompileContext compileContext) {
+        super(compiler, compileContext);
     }
 
     private boolean addTypesToGraph(final ArrayDeque<Pair<TopoNode<NamedType>, TopoNode<NamedType>>> typesToResolve,
                                     final Map<Identifier, TopoNode<NamedType>> nodes,
                                     final HashSet<Identifier> resolved) {
-        final var compileContext = compiler.getContext();
-
         final var buffer = Ansi.ansi().fgBright(Color.CYAN);
         final var pair = typesToResolve.pop();
 
@@ -123,7 +122,7 @@ public final class Analyzer extends ParseAdapter {
         if (checkIsAlreadyDefined(identContext)) {
             return;
         }
-        final var type = TypeUtils.getType(compiler, scopeStack, context.type());
+        final var type = TypeUtils.getType(compiler, compileContext, scopeStack, context.type());
         final var aliasedType = Types.aliased(Utils.getIdentifier(identContext), type,
                 scopeStack::applyEnclosingScopes);
         udts.put(aliasedType.getQualifiedName(), aliasedType);
@@ -184,7 +183,6 @@ public final class Analyzer extends ParseAdapter {
         final var name = Utils.getIdentifier(identContext);
         final var type = findTypeInScope(name, scopeStack.getScopeName());
         if (type != null) {
-            final var compileContext = compiler.getContext();
             final var message = Utils.makeCompilerMessage(String.format("Type '%s' is already defined", name));
             compileContext.reportError(compileContext.makeError(identContext.start, message, CompileErrorCode.E3000));
             return true;
@@ -262,7 +260,6 @@ public final class Analyzer extends ParseAdapter {
 
     private void resolveTypes() {
         final var udts = this.udts.values();
-        final var compileContext = compiler.getContext();
         for (final var udt : udts) {
             final var scopeName = udt.getScopeName();
             if (udt.isAliased() && udt instanceof AliasedType alias) {
@@ -340,7 +337,7 @@ public final class Analyzer extends ParseAdapter {
     }
 
     private void analyzeFieldLayout(final ParserRuleContext parent, final Identifier name, final UDTKind kind) {
-        final var layoutAnalyzer = new FieldAnalyzer(compiler, scopeStack);
+        final var layoutAnalyzer = new FieldAnalyzer(compiler, compileContext, scopeStack);
         ParseTreeWalker.DEFAULT.walk(layoutAnalyzer, parent);
 
         final var fields = layoutAnalyzer.getFields();
@@ -373,7 +370,6 @@ public final class Analyzer extends ParseAdapter {
                     }
                     final var completeType = findCompleteType((NamedType) type);
                     if (completeType == null) {
-                        final var compileContext = compiler.getContext();
                         compileContext.reportError(compileContext.makeError(CompileErrorCode.E3002));
                         continue;
                     }

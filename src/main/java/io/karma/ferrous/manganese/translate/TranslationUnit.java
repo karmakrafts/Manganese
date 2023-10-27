@@ -16,6 +16,7 @@
 package io.karma.ferrous.manganese.translate;
 
 import io.karma.ferrous.manganese.ParseAdapter;
+import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.CompileErrorCode;
 import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.module.Module;
@@ -45,14 +46,14 @@ public class TranslationUnit extends ParseAdapter {
     private final Module module;
     private boolean isDisposed;
 
-    public TranslationUnit(final Compiler compiler, final String name) {
-        super(compiler);
-        module = compiler.getTargetMachine().createModule(name);
+    public TranslationUnit(final Compiler compiler, final CompileContext compileContext) {
+        super(compiler, compileContext);
+        module = compiler.getTargetMachine().createModule(compileContext.getCurrentModuleName());
     }
 
     @Override
     public void enterFunction(final FunctionContext context) {
-        final var parser = new FunctionParser(compiler, scopeStack);
+        final var parser = new FunctionParser(compiler, compileContext, scopeStack);
         ParseTreeWalker.DEFAULT.walk(parser, context);
         final var function = parser.getFunction();
         functions.put(function.getQualifiedName(), function);
@@ -63,17 +64,16 @@ public class TranslationUnit extends ParseAdapter {
     @Override
     public void enterExternFunction(final ExternFunctionContext context) {
         final var prototype = context.protoFunction();
-        final var type = TypeUtils.getFunctionType(compiler, scopeStack, prototype);
+        final var type = TypeUtils.getFunctionType(compiler, compileContext, scopeStack, prototype);
         final var name = FunctionUtils.getFunctionName(prototype.functionIdent()).toString();
         final var functionType = type.materialize(compiler.getTargetMachine());
         final var function = LLVMAddFunction(module.getAddress(), name, functionType);
         if (function == NULL) {
-            final var compileContext = compiler.getContext();
             compileContext.reportError(compileContext.makeError(context.start, CompileErrorCode.E4000));
             return;
         }
         LLVMSetLinkage(function, LLVMExternalLinkage);
-        LLVMSetFunctionCallConv(function, FunctionUtils.getCallingConvention(compiler, prototype)
+        LLVMSetFunctionCallConv(function, FunctionUtils.getCallingConvention(compileContext, prototype)
                 .getLLVMValue(compiler.getTargetMachine()));
         super.enterExternFunction(context);
     }
