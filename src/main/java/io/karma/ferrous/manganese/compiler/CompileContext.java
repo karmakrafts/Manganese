@@ -104,85 +104,85 @@ public final class CompileContext {
         this.currentStatus = this.currentStatus.worse(error.getStatus());
     }
 
-    public synchronized CompilePass getCurrentPass() {
+    public CompilePass getCurrentPass() {
         return currentPass;
     }
 
-    public synchronized void setCurrentPass(final CompilePass currentPass) {
+    public void setCurrentPass(final CompilePass currentPass) {
         this.currentPass = currentPass;
     }
 
-    public synchronized CompileStatus getCurrentStatus() {
+    public CompileStatus getCurrentStatus() {
         return currentStatus;
     }
 
-    public synchronized void setCurrentStatus(final CompileStatus status) {
+    public void setCurrentStatus(final CompileStatus status) {
         this.currentStatus = status;
     }
 
-    public synchronized FerrousLexer getLexer() {
+    public FerrousLexer getLexer() {
         return getModuleComponent(ModuleData::getLexer);
     }
 
-    synchronized void setLexer(final FerrousLexer lexer) {
+    void setLexer(final FerrousLexer lexer) {
         getOrCreateModuleData().setLexer(lexer);
     }
 
-    public synchronized BufferedTokenStream getTokenStream() {
+    public BufferedTokenStream getTokenStream() {
         return getModuleComponent(ModuleData::getTokenStream);
     }
 
-    synchronized void setTokenStream(final BufferedTokenStream tokenStream) {
+    void setTokenStream(final BufferedTokenStream tokenStream) {
         getOrCreateModuleData().setTokenStream(tokenStream);
     }
 
-    public synchronized FerrousParser getParser() {
+    public FerrousParser getParser() {
         return getModuleComponent(ModuleData::getParser);
     }
 
-    synchronized void setParser(final FerrousParser parser) {
+    void setParser(final FerrousParser parser) {
         getOrCreateModuleData().setParser(parser);
     }
 
-    public synchronized FileContext getFileContext() {
+    public FileContext getFileContext() {
         return getModuleComponent(ModuleData::getFileContext);
     }
 
-    synchronized void setFileContext(final FileContext fileContext) {
+    void setFileContext(final FileContext fileContext) {
         getOrCreateModuleData().setFileContext(fileContext);
     }
 
-    public synchronized Analyzer getAnalyzer() {
+    public Analyzer getAnalyzer() {
         return getModuleComponent(ModuleData::getAnalyzer);
     }
 
-    synchronized void setAnalyzer(final Analyzer analyzer) {
+    void setAnalyzer(final Analyzer analyzer) {
         getOrCreateModuleData().setAnalyzer(analyzer);
     }
 
-    public synchronized TranslationUnit getTranslationUnit() {
+    public TranslationUnit getTranslationUnit() {
         return getModuleComponent(ModuleData::getTranslationUnit);
     }
 
-    synchronized void setTranslationUnit(final TranslationUnit translationUnit) {
+    void setTranslationUnit(final TranslationUnit translationUnit) {
         getOrCreateModuleData().setTranslationUnit(translationUnit);
     }
 
-    public synchronized String getModuleName() {
+    public String getModuleName() {
         return currentModuleName;
     }
 
-    synchronized void setModuleName(final String currentName) {
+    void setModuleName(final String currentName) {
         currentModuleName = currentName;
     }
 
-    public synchronized void dispose() {
+    public void dispose() {
         modules.values().forEach(Module::dispose); // Dispose the actual modules
         modules.clear();
         moduleData.clear();
     }
 
-    public synchronized void addModule(final Module module) {
+    public void addModule(final Module module) {
         modules.put(currentModuleName, module);
     }
 }
