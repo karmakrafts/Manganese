@@ -49,6 +49,7 @@ import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.lwjgl.llvm.LLVMCore.LLVMContextSetOpaquePointers;
 import static org.lwjgl.llvm.LLVMCore.LLVMGetGlobalContext;
@@ -63,6 +64,7 @@ public final class Compiler implements ANTLRErrorListener {
 
     private final TargetMachine targetMachine;
     private final ExecutorService executorService;
+    private final AtomicInteger numRunningTasks = new AtomicInteger(0);
 
     private CompileContext context;
     private boolean tokenView = false;
@@ -116,7 +118,7 @@ public final class Compiler implements ANTLRErrorListener {
 
     public void tokenizeAndParse(final String name, final ReadableByteChannel in, final CompileContext context) {
         try {
-            context.setModuleName(name);
+            context.setCurrentModuleName(name);
             this.context = context;
 
             // Tokenize
@@ -153,7 +155,7 @@ public final class Compiler implements ANTLRErrorListener {
     }
 
     public void analyzeAndProcess(final String name, final CompileContext context) {
-        context.setModuleName(name);
+        context.setCurrentModuleName(name);
         this.context = context;
         if (!analyze(context)) {
             return;
@@ -163,7 +165,7 @@ public final class Compiler implements ANTLRErrorListener {
 
     public void compile(final String name, final String sourceName, final WritableByteChannel out,
                         final CompileContext context) {
-        context.setModuleName(name);
+        context.setCurrentModuleName(name);
         this.context = context;
 
         if (!compile(context)) {
@@ -208,14 +210,22 @@ public final class Compiler implements ANTLRErrorListener {
                 .toString());
             // @formatter:on
             final var rawFileName = Utils.getRawFileName(file);
-            Logger.INSTANCE.debugln("Input: %s", file);
 
-            try (final var stream = Files.newInputStream(file); final var channel = Channels.newChannel(stream)) {
-                tokenizeAndParse(rawFileName, channel, context);
-                analyzeAndProcess(rawFileName, context);
-            } catch (IOException error) {
-                context.reportError(context.makeError(CompileErrorCode.E0003));
-            }
+            numRunningTasks.incrementAndGet();
+            executorService.submit(() -> {
+                Logger.INSTANCE.debugln("Input: %s", file);
+                try (final var stream = Files.newInputStream(file); final var channel = Channels.newChannel(stream)) {
+                    tokenizeAndParse(rawFileName, channel, context);
+                    analyzeAndProcess(rawFileName, context);
+                } catch (IOException error) {
+                    context.reportError(context.makeError(CompileErrorCode.E0003));
+                }
+                numRunningTasks.decrementAndGet();
+            });
+        }
+
+        while (numRunningTasks.get() > 0) {
+            Thread.yield();
         }
 
         final var moduleName = Utils.getRawFileName(in);

@@ -29,10 +29,7 @@ import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Objects;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.*;
 import java.util.function.Function;
 
 /**
@@ -41,31 +38,20 @@ import java.util.function.Function;
  */
 @API(status = Status.STABLE)
 public final class CompileContext {
-    private final ArrayList<CompileError> errors = new ArrayList<>();
-    private final ReentrantLock errorsMutex = new ReentrantLock();
-    private final HashMap<String, Module> modules = new HashMap<>();
-    private final ReentrantLock modulesMutex = new ReentrantLock();
-    private final HashMap<String, ModuleData> moduleData = new HashMap<>();
-    private final ReentrantLock moduleDataMutex = new ReentrantLock();
-    private final ThreadLocal<ThreadLocals> threadLocals = ThreadLocal.withInitial(ThreadLocals::new);
+    private final List<CompileError> errors = Collections.synchronizedList(new ArrayList<>());
+    private final Map<String, Module> modules = Collections.synchronizedMap(new HashMap<>());
+    private final Map<String, ModuleData> moduleData = Collections.synchronizedMap(new HashMap<>());
+    private final ThreadLocal<CompileStatus> status = ThreadLocal.withInitial(() -> CompileStatus.SUCCESS);
+    private final ThreadLocal<CompilePass> pass = ThreadLocal.withInitial(() -> CompilePass.NONE);
+    private final ThreadLocal<String> currentModuleName = ThreadLocal.withInitial(String::new);
 
-    public Module getModule() {
-        try {
-            modulesMutex.lock();
-            return Objects.requireNonNull(modules.get(Objects.requireNonNull(getCurrentModuleName())));
-        } finally {
-            modulesMutex.unlock();
-        }
+    public synchronized Module getModule() {
+        return Objects.requireNonNull(modules.get(Objects.requireNonNull(getCurrentModuleName())));
     }
     // @formatter:on
 
-    private ModuleData getOrCreateModuleData(final String name) {
-        try {
-            moduleDataMutex.lock();
-            return moduleData.computeIfAbsent(name, ModuleData::new);
-        } finally {
-            moduleDataMutex.unlock();
-        }
+    private synchronized ModuleData getOrCreateModuleData(final String name) {
+        return moduleData.computeIfAbsent(name, ModuleData::new);
     }
 
     private ModuleData getOrCreateModuleData() {
@@ -103,40 +89,37 @@ public final class CompileContext {
         if (tokenStream != null && tokenStream.size() == 0) {
             tokenStream.fill();
         }
-        try {
-            errorsMutex.lock();
+        synchronized (this) {
             if (errors.contains(error)) {
                 return; // Don't report duplicates
             }
             errors.add(error);
-        } finally {
-            errorsMutex.unlock();
         }
         setCurrentStatus(getCurrentStatus().worse(error.getStatus()));
     }
 
     public CompilePass getCurrentPass() {
-        return threadLocals.get().currentPass;
+        return pass.get();
     }
 
     public void setCurrentPass(final CompilePass currentPass) {
-        threadLocals.get().currentPass = currentPass;
+        pass.set(currentPass);
     }
 
     public CompileStatus getCurrentStatus() {
-        return threadLocals.get().currentStatus;
+        return status.get();
     }
 
     public void setCurrentStatus(final CompileStatus status) {
-        threadLocals.get().currentStatus = status;
+        this.status.set(status);
     }
 
     public @Nullable String getCurrentModuleName() {
-        return threadLocals.get().currentModuleName;
+        return currentModuleName.get();
     }
 
-    void setModuleName(final @Nullable String currentName) {
-        threadLocals.get().currentModuleName = currentName;
+    void setCurrentModuleName(final @Nullable String currentName) {
+        currentModuleName.set(currentName);
     }
 
     public FerrousLexer getLexer() {
@@ -187,35 +170,13 @@ public final class CompileContext {
         getOrCreateModuleData().setTranslationUnit(translationUnit);
     }
 
-    public void dispose() {
-        try {
-            modulesMutex.lock();
-            modules.values().forEach(Module::dispose); // Dispose the actual modules
-            modules.clear();
-        } finally {
-            modulesMutex.unlock();
-        }
-        try {
-            moduleDataMutex.lock();
-            moduleData.clear();
-        } finally {
-            moduleDataMutex.unlock();
-        }
+    public synchronized void dispose() {
+        modules.values().forEach(Module::dispose); // Dispose the actual modules
+        modules.clear();
+        moduleData.clear();
     }
 
-    public void addModule(final Module module) {
-        try {
-            modulesMutex.lock();
-            modules.put(module.getName(), module);
-        } finally {
-            modulesMutex.unlock();
-        }
-    }
-
-    // @formatter:off
-    private static final class ThreadLocals {
-        public CompilePass currentPass = CompilePass.NONE;
-        public CompileStatus currentStatus = CompileStatus.SKIPPED;
-        public String currentModuleName;
+    public synchronized void addModule(final Module module) {
+        modules.put(module.getName(), module);
     }
 }

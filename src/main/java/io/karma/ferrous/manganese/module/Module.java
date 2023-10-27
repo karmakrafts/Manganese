@@ -110,7 +110,7 @@ public final class Module {
         }
     }
 
-    public synchronized @Nullable String verify() {
+    public @Nullable String verify() {
         try (final var stack = MemoryStack.stackPush()) {
             final var messageBuffer = stack.callocPointer(1);
             if (LLVMVerifyModule(address, LLVMReturnStatusAction, messageBuffer)) {
@@ -126,47 +126,47 @@ public final class Module {
         }
     }
 
-    public synchronized void linkIn(final Module module) {
+    public void linkIn(final Module module) {
         LLVMLinkModules2(address, LLVMCloneModule(module.address));
     }
 
-    public synchronized String disassemble() {
+    public String disassemble() {
         return LLVMPrintModuleToString(address);
     }
 
-    public synchronized String getName() {
+    public String getName() {
         return LLVMGetModuleIdentifier(address);
     }
 
-    public synchronized void setName(final String name) {
+    public void setName(final String name) {
         LLVMSetModuleIdentifier(address, name);
     }
 
-    public synchronized String getSourceFileName() {
+    public String getSourceFileName() {
         return LLVMGetSourceFileName(address);
     }
 
-    public synchronized void setSourceFileName(final String fileName) {
+    public void setSourceFileName(final String fileName) {
         LLVMSetSourceFileName(address, fileName);
     }
 
-    public synchronized String getDataLayout() {
+    public String getDataLayout() {
         return LLVMGetDataLayoutStr(address);
     }
 
-    public synchronized void setDataLayout(final String layout) {
+    public void setDataLayout(final String layout) {
         LLVMSetDataLayout(address, layout);
     }
 
-    public synchronized String getTargetTriple() {
+    public String getTargetTriple() {
         return LLVMGetTarget(address);
     }
 
-    public synchronized void setTargetTriple(final String triple) {
+    public void setTargetTriple(final String triple) {
         LLVMSetTarget(address, triple);
     }
 
-    public synchronized void dispose() {
+    public void dispose() {
         if (isDisposed) {
             return;
         }
@@ -192,7 +192,7 @@ public final class Module {
         return text.substring(text.indexOf("\t.file"));
     }
 
-    public synchronized @Nullable ByteBuffer generateAssembly(final TargetMachine machine, final FileType fileType) {
+    public @Nullable ByteBuffer generateAssembly(final TargetMachine machine, final FileType fileType) {
         try (final var stack = MemoryStack.stackPush()) {
             final var buffer = stack.callocPointer(1);
             final var messageBuffer = stack.callocPointer(1);
@@ -213,7 +213,7 @@ public final class Module {
         }
     }
 
-    public synchronized @Nullable ByteBuffer getBitcode() {
+    public @Nullable ByteBuffer getBitcode() {
         final var buffer = LLVMWriteBitcodeToMemoryBuffer(address);
         Logger.INSTANCE.debugln("Wrote bitcode to memory at 0x%08X", buffer);
         if (buffer == NULL) {

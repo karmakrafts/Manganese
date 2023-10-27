@@ -24,7 +24,9 @@ import org.fusesource.jansi.AnsiConsole;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.Writer;
+import java.util.Collections;
 import java.util.EnumSet;
+import java.util.Set;
 import java.util.function.Consumer;
 
 /**
@@ -53,7 +55,7 @@ public final class Logger extends Writer {
         Runtime.getRuntime().addShutdownHook(new Thread(AnsiConsole::systemUninstall));
     }
 
-    private final EnumSet<LogLevel> activeLevels = EnumSet.allOf(LogLevel.class);
+    private final Set<LogLevel> activeLevels = Collections.synchronizedSet(EnumSet.allOf(LogLevel.class));
     private LogLevel logLevel = LogLevel.INFO;
     private Consumer<String> logConsumer = System.out::print;
 
