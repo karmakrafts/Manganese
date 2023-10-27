@@ -35,6 +35,12 @@ import static io.karma.ferrous.manganese.llvm.LLVMTargetARM.LLVMInitializeARMDis
 import static io.karma.ferrous.manganese.llvm.LLVMTargetARM.LLVMInitializeARMTarget;
 import static io.karma.ferrous.manganese.llvm.LLVMTargetARM.LLVMInitializeARMTargetInfo;
 import static io.karma.ferrous.manganese.llvm.LLVMTargetARM.LLVMInitializeARMTargetMC;
+import static io.karma.ferrous.manganese.llvm.LLVMTargetAVR.LLVMInitializeAVRAsmParser;
+import static io.karma.ferrous.manganese.llvm.LLVMTargetAVR.LLVMInitializeAVRAsmPrinter;
+import static io.karma.ferrous.manganese.llvm.LLVMTargetAVR.LLVMInitializeAVRDisassembler;
+import static io.karma.ferrous.manganese.llvm.LLVMTargetAVR.LLVMInitializeAVRTarget;
+import static io.karma.ferrous.manganese.llvm.LLVMTargetAVR.LLVMInitializeAVRTargetInfo;
+import static io.karma.ferrous.manganese.llvm.LLVMTargetAVR.LLVMInitializeAVRTargetMC;
 import static io.karma.ferrous.manganese.llvm.LLVMTargetMips.LLVMInitializeMipsAsmParser;
 import static io.karma.ferrous.manganese.llvm.LLVMTargetMips.LLVMInitializeMipsAsmPrinter;
 import static io.karma.ferrous.manganese.llvm.LLVMTargetMips.LLVMInitializeMipsDisassembler;
@@ -53,6 +59,12 @@ import static io.karma.ferrous.manganese.llvm.LLVMTargetRISCV.LLVMInitializeRISC
 import static io.karma.ferrous.manganese.llvm.LLVMTargetRISCV.LLVMInitializeRISCVTarget;
 import static io.karma.ferrous.manganese.llvm.LLVMTargetRISCV.LLVMInitializeRISCVTargetInfo;
 import static io.karma.ferrous.manganese.llvm.LLVMTargetRISCV.LLVMInitializeRISCVTargetMC;
+import static io.karma.ferrous.manganese.llvm.LLVMTargetWebAssembly.LLVMInitializeWebAssemblyAsmParser;
+import static io.karma.ferrous.manganese.llvm.LLVMTargetWebAssembly.LLVMInitializeWebAssemblyAsmPrinter;
+import static io.karma.ferrous.manganese.llvm.LLVMTargetWebAssembly.LLVMInitializeWebAssemblyDisassembler;
+import static io.karma.ferrous.manganese.llvm.LLVMTargetWebAssembly.LLVMInitializeWebAssemblyTarget;
+import static io.karma.ferrous.manganese.llvm.LLVMTargetWebAssembly.LLVMInitializeWebAssemblyTargetInfo;
+import static io.karma.ferrous.manganese.llvm.LLVMTargetWebAssembly.LLVMInitializeWebAssemblyTargetMC;
 import static org.lwjgl.llvm.LLVMCore.nLLVMDisposeMessage;
 import static org.lwjgl.llvm.LLVMTargetX86.LLVMInitializeX86AsmParser;
 import static org.lwjgl.llvm.LLVMTargetX86.LLVMInitializeX86AsmPrinter;
@@ -120,6 +132,15 @@ public final class LLVMUtils {
         LLVMInitializeAArch64Disassembler();
     }
 
+    public static void initAVR() {
+        LLVMInitializeAVRTarget();
+        LLVMInitializeAVRTargetInfo();
+        LLVMInitializeAVRTargetMC();
+        LLVMInitializeAVRAsmParser();
+        LLVMInitializeAVRAsmPrinter();
+        LLVMInitializeAVRDisassembler();
+    }
+
     public static void initX86() {
         LLVMInitializeX86Target();
         LLVMInitializeX86TargetInfo();
@@ -127,6 +148,15 @@ public final class LLVMUtils {
         LLVMInitializeX86AsmParser();
         LLVMInitializeX86AsmPrinter();
         LLVMInitializeX86Disassembler();
+    }
+
+    public static void initWebAssembly() {
+        LLVMInitializeWebAssemblyTarget();
+        LLVMInitializeWebAssemblyTargetInfo();
+        LLVMInitializeWebAssemblyTargetMC();
+        LLVMInitializeWebAssemblyAsmParser();
+        LLVMInitializeWebAssemblyAsmPrinter();
+        LLVMInitializeWebAssemblyDisassembler();
     }
 
     public static void loadLLVM() {

@@ -50,7 +50,6 @@ public enum Architecture {
     PPC64       ("ppc64",       "ppc64"),
     PPC64_LE    ("ppc64le",     "ppc64le"),
     AVR         ("avr",         "atmega48"),
-    M68K        ("m68k",        "M68000"),
     AMDGCN      ("amdgcn",      "generic"),
     R600        ("r600",        "r600");
     // @formatter:on

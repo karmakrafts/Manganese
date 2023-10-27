@@ -79,6 +79,8 @@ public final class Manganese {
         LLVMUtils.initPowerPC();
         LLVMUtils.initARM();
         LLVMUtils.initAArch64();
+        LLVMUtils.initAVR();
+        LLVMUtils.initWebAssembly();
 
         LLVMContextSetDiagnosticHandler(LLVMGetGlobalContext(), LLVMDiagnosticHandler.create((info, ctx) -> {
             final var severityValue = LLVMGetDiagInfoSeverity(info);

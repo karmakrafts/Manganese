@@ -18,7 +18,6 @@ package io.karma.ferrous.manganese;
 import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.CompileStatus;
 import io.karma.ferrous.manganese.compiler.Compiler;
-import io.karma.ferrous.manganese.target.Architecture;
 import io.karma.ferrous.manganese.target.CodeModel;
 import io.karma.ferrous.manganese.target.FileType;
 import io.karma.ferrous.manganese.target.OptimizationLevel;
