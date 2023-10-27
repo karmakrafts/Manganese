@@ -327,7 +327,8 @@ public final class Analyzer extends ParseAdapter {
         final var queue = new ArrayDeque<Pair<TopoNode<NamedType>, TopoNode<NamedType>>>(); // <parent_node, child_node>
         final var resolved = new HashSet<Identifier>();
 
-        outer: for (final var nodeEntry : nodes.entrySet()) {
+        outer:
+        for (final var nodeEntry : nodes.entrySet()) {
             final var node = nodeEntry.getValue();
             final var type = node.getValue();
             if (type == null) {

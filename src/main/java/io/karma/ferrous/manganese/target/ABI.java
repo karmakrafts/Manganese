@@ -29,9 +29,11 @@ import java.util.Optional;
 @API(status = Status.STABLE)
 public enum ABI {
     // @formatter:off
-    GNU     ("gnu"),
-    GNU_EABI("gnueabi"),
-    MSVC    ("msvc");
+    GNU         ("gnu"),
+    GNU_EABI    ("gnueabi"),
+    MSVC        ("msvc"),
+    ANDROID     ("android"),
+    ANDROID_EABI("androideabi");
     // @formatter:on
 
     private final String name;

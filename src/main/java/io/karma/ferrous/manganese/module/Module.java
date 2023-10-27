@@ -15,8 +15,8 @@
 
 package io.karma.ferrous.manganese.module;
 
+import io.karma.ferrous.manganese.llvm.LLVMUtils;
 import io.karma.ferrous.manganese.target.TargetMachine;
-import io.karma.ferrous.manganese.util.LLVMUtils;
 import io.karma.ferrous.manganese.util.Logger;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;

@@ -16,6 +16,7 @@
 package io.karma.ferrous.manganese;
 
 import io.karma.ferrous.manganese.compiler.Compiler;
+import io.karma.ferrous.manganese.llvm.LLVMUtils;
 import io.karma.ferrous.manganese.target.ABI;
 import io.karma.ferrous.manganese.target.Architecture;
 import io.karma.ferrous.manganese.target.CodeModel;
@@ -26,7 +27,6 @@ import io.karma.ferrous.manganese.target.Relocation;
 import io.karma.ferrous.manganese.target.Target;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.DiagnosticSeverity;
-import io.karma.ferrous.manganese.util.LLVMUtils;
 import io.karma.ferrous.manganese.util.Logger;
 import org.lwjgl.llvm.LLVMCore;
 import org.lwjgl.llvm.LLVMDiagnosticHandler;
@@ -43,12 +43,6 @@ import static org.lwjgl.llvm.LLVMInitialization.LLVMInitializeCodeGen;
 import static org.lwjgl.llvm.LLVMInitialization.LLVMInitializeCore;
 import static org.lwjgl.llvm.LLVMInitialization.LLVMInitializeTarget;
 import static org.lwjgl.llvm.LLVMInitialization.LLVMInitializeVectorization;
-import static org.lwjgl.llvm.LLVMTargetX86.LLVMInitializeX86AsmParser;
-import static org.lwjgl.llvm.LLVMTargetX86.LLVMInitializeX86AsmPrinter;
-import static org.lwjgl.llvm.LLVMTargetX86.LLVMInitializeX86Disassembler;
-import static org.lwjgl.llvm.LLVMTargetX86.LLVMInitializeX86Target;
-import static org.lwjgl.llvm.LLVMTargetX86.LLVMInitializeX86TargetInfo;
-import static org.lwjgl.llvm.LLVMTargetX86.LLVMInitializeX86TargetMC;
 import static org.lwjgl.system.MemoryUtil.NULL;
 
 /**
@@ -80,12 +74,12 @@ public final class Manganese {
         LLVMInitializeCodeGen(registry);
         LLVMInitializeVectorization(registry);
 
-        LLVMInitializeX86Target();
-        LLVMInitializeX86TargetInfo();
-        LLVMInitializeX86TargetMC();
-        LLVMInitializeX86AsmParser();
-        LLVMInitializeX86AsmPrinter();
-        LLVMInitializeX86Disassembler();
+        LLVMUtils.initX86();
+        LLVMUtils.initMips();
+        LLVMUtils.initRISCV();
+        LLVMUtils.initPowerPC();
+        LLVMUtils.initARM();
+        LLVMUtils.initAArch64();
 
         LLVMContextSetDiagnosticHandler(LLVMGetGlobalContext(), LLVMDiagnosticHandler.create((info, ctx) -> {
             final var severityValue = LLVMGetDiagInfoSeverity(info);
