@@ -27,10 +27,7 @@ import java.util.Optional;
 public enum FileType {
     // @formatter:off
     ASSEMBLY("S", LLVMTargetMachine.LLVMAssemblyFile),
-    SO      ("so", LLVMTargetMachine.LLVMObjectFile),
-    DLL     ("dll", LLVMTargetMachine.LLVMObjectFile),
-    ELF     ("elf", LLVMTargetMachine.LLVMObjectFile),
-    EXE     ("exe", LLVMTargetMachine.LLVMObjectFile);
+    OBJECT  ("o", LLVMTargetMachine.LLVMObjectFile);
     // @formatter:on
 
     private final String extension;
@@ -49,7 +46,7 @@ public enum FileType {
         return extension;
     }
 
-    public int getLlvmValue() {
+    public int getLLVMValue() {
         return llvmValue;
     }
 }

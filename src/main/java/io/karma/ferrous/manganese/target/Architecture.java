@@ -29,20 +29,38 @@ import java.util.Optional;
 @API(status = Status.STABLE)
 public enum Architecture {
     // @formatter:off
-    ARM     ("arm"),
-    AARCH64 ("aarch64"),
-    X86     ("x86"),
-    X86_64  ("x86_64"),
-    RISCV_32("riscv32"),
-    RISCV_64("riscv64"),
-    WASM_32 ("wasm32"),
-    WASM_64 ("wasm64");
+    ARM         ("arm",         "arm9e"),
+    THUMB       ("thumb",       "arm9e"),
+    THUMB_EB    ("thumbeb",     "arm9e"),
+    AARCH64     ("aarch64",     "cortex-a72"),
+    AARCH64_32  ("aarch64_32",  "cortex-a72"),
+    AARCH64_BE  ("aarch64_be",  "cortex-a72"),
+    X86         ("i386",        "i386"),
+    X86_64      ("x86_64",      "x86-64-v3"),
+    RISCV32     ("riscv32",     "sifive-7-rv32"),
+    RISCV64     ("riscv64",     "sifive-7-rv64"),
+    WASM32      ("wasm32",      "generic"),
+    WASM64      ("wasm64",      "generic"),
+    MIPS        ("mips",        "mips32r6"),
+    MIPS_EL     ("mipsel",      "mips32r6"),
+    MIPS64      ("mips64",      "mips32r6"),
+    MIPS64_EL   ("mips64el",    "mips32r6"),
+    PPC32       ("ppc32",       "ppc32"),
+    PPC32_LE    ("ppc32le",     "ppc32"),
+    PPC64       ("ppc64",       "ppc64"),
+    PPC64_LE    ("ppc64le",     "ppc64le"),
+    AVR         ("avr",         "atmega48"),
+    M68K        ("m68k",        "M68000"),
+    AMDGCN      ("amdgcn",      "generic"),
+    R600        ("r600",        "r600");
     // @formatter:on
 
     private final String name;
+    private final String defaultCPU;
 
-    Architecture(final String name) {
+    Architecture(final String name, final String defaultCPU) {
         this.name = name;
+        this.defaultCPU = defaultCPU;
     }
 
     public static Architecture getHostArchitecture() {
@@ -59,10 +77,10 @@ public enum Architecture {
             return Architecture.AARCH64;
         }
         if (SystemInfo.isRiscV64()) {
-            return Architecture.RISCV_64;
+            return Architecture.RISCV64;
         }
         if (SystemInfo.isRiscV32()) {
-            return Architecture.RISCV_32;
+            return Architecture.RISCV32;
         }
         throw new UnsupportedOperationException("Unknown host architecture");
     }
@@ -73,5 +91,9 @@ public enum Architecture {
 
     public String getName() {
         return name;
+    }
+
+    public String getDefaultCPU() {
+        return defaultCPU;
     }
 }

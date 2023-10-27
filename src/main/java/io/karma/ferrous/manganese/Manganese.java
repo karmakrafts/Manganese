@@ -20,7 +20,6 @@ import io.karma.ferrous.manganese.llvm.LLVMUtils;
 import io.karma.ferrous.manganese.target.ABI;
 import io.karma.ferrous.manganese.target.Architecture;
 import io.karma.ferrous.manganese.target.CodeModel;
-import io.karma.ferrous.manganese.target.FileType;
 import io.karma.ferrous.manganese.target.OptimizationLevel;
 import io.karma.ferrous.manganese.target.Platform;
 import io.karma.ferrous.manganese.target.Relocation;
@@ -116,11 +115,11 @@ public final class Manganese {
 
     public static TargetMachine createTargetMachine(final Target target, final String features,
                                                     final OptimizationLevel level, final Relocation reloc,
-                                                    final CodeModel model, final FileType fileType) {
+                                                    final CodeModel model, final String cpu) {
         if (!IS_INITIALIZED.get()) {
             throw new IllegalStateException("Not initialized");
         }
-        return new TargetMachine(target, features, level, reloc, model, fileType);
+        return new TargetMachine(target, features, level, reloc, model, cpu);
     }
 
     public static Compiler createCompiler(final TargetMachine machine, final int numThreads) {
@@ -130,10 +129,10 @@ public final class Manganese {
         return new Compiler(machine, numThreads);
     }
 
-    public static Compiler createCompiler(final FileType fileType) {
+    public static Compiler createCompiler() {
         final int numThreads = Runtime.getRuntime().availableProcessors();
         return createCompiler(
                 new TargetMachine(Target.getHostTarget(), "", OptimizationLevel.DEFAULT, Relocation.DEFAULT,
-                                  CodeModel.DEFAULT, fileType), numThreads);
+                                  CodeModel.DEFAULT, Architecture.getHostArchitecture().getDefaultCPU()), numThreads);
     }
 }

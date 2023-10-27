@@ -18,6 +18,7 @@ package io.karma.ferrous.manganese;
 import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.CompileStatus;
 import io.karma.ferrous.manganese.compiler.Compiler;
+import io.karma.ferrous.manganese.target.Architecture;
 import io.karma.ferrous.manganese.target.CodeModel;
 import io.karma.ferrous.manganese.target.FileType;
 import io.karma.ferrous.manganese.target.OptimizationLevel;
@@ -85,8 +86,6 @@ final class Main {
             final var tokenViewOpt = parser.accepts("T", "Token view. This will print a tree structure containing all tokens during compilation.");
             final var silentOpt = parser.accepts("s", "Silent mode. This will suppress any warning level log messages during compilation.");
             final var versionOpt = parser.accepts("v", "Prints version information about the compiler and runtime.");
-            final var verboseOpt = parser.accepts("V", "Enable verbose errors. This will likely show some garbage.");
-            final var bitcodeOpt = parser.accepts("B", "Dump bitcode to files while compiling.");
             final var codeModelOpt = parser.accepts("M", "The code model to use when generating assembly code for the target machine.")
                 .withOptionalArg()
                 .ofType(String.class)
@@ -98,11 +97,15 @@ final class Main {
             final var fileTypeOpt = parser.accepts("F", "The type of the output file.")
                 .withOptionalArg()
                 .ofType(String.class)
-                .defaultsTo(FileType.ELF.getExtension());
+                .defaultsTo(FileType.OBJECT.getExtension());
             final var relocOpt = parser.accepts("r", "The type of relocation used when linking the final object.")
                 .withOptionalArg()
                 .ofType(String.class)
                 .defaultsTo(Relocation.DEFAULT.getName());
+            final var cpuOpt = parser.accepts("c", "The type of processor to compile for. Depends on the given target architecture.")
+                .withOptionalArg()
+                .ofType(String.class)
+                .defaultsTo("");
             // @formatter:on
             final var options = parser.parse(args);
 
@@ -168,13 +171,11 @@ final class Main {
             }
 
             final var targetMachine = Manganese.createTargetMachine(target, features, optLevel.get(), relocation.get(),
-                                                                    codeModel.get(), fileType.get());
+                                                                    codeModel.get(), options.valueOf(cpuOpt));
             final var compiler = Manganese.createCompiler(targetMachine, options.valueOf(threadsOpt));
             compiler.setDisassemble(options.has(disassembleOpt));
             compiler.setTokenView(options.has(tokenViewOpt), false);
             compiler.setReportParserWarnings(options.has(parseWarningsOpt));
-            compiler.setVerbose(options.has(verboseOpt));
-            compiler.setSaveBitcode(options.has(bitcodeOpt));
             compiler.setEnableOpaquePointers(!options.has(opaquePointerOpt));
 
             // Update the log level if we are in verbose mode.
@@ -195,8 +196,9 @@ final class Main {
             // @formatter:on
 
             final var context = new CompileContext();
-            final var result = compiler.compile(in, out, context);
+            final var result = compiler.compile(in, out, fileType.get(), context);
             context.dispose();
+            targetMachine.dispose();
             status = status.worse(result.status());
 
             final var errors = result.errors();
@@ -209,11 +211,11 @@ final class Main {
             System.exit(0);
         }
         catch (IOException error) {
-            Logger.INSTANCE.errorln(error.toString());
+            Logger.INSTANCE.errorln("%s", error.toString());
             status = status.worse(CompileStatus.IO_ERROR);
         }
         catch (Throwable error) {
-            Logger.INSTANCE.errorln(error.toString());
+            Logger.INSTANCE.errorln("%s", error.toString());
             status = status.worse(CompileStatus.UNKNOWN_ERROR);
         }
 

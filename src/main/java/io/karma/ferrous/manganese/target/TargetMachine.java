@@ -44,22 +44,20 @@ public final class TargetMachine {
     private final OptimizationLevel level;
     private final Relocation relocation;
     private final CodeModel codeModel;
-    private final FileType fileType;
     private final long address;
     private final long dataAddress;
     private boolean isDisposed = false;
 
     @API(status = Status.INTERNAL)
     public TargetMachine(final Target target, final String features, final OptimizationLevel level,
-                         final Relocation reloc, final CodeModel model, final FileType fileType) {
+                         final Relocation reloc, final CodeModel model, final String cpu) {
         this.target = target;
         this.features = features;
         this.level = level;
         this.relocation = reloc;
         this.codeModel = model;
-        this.fileType = fileType;
 
-        address = LLVMCreateTargetMachine(target.getAddress(), target.toString(), "", features, level.getLlvmValue(),
+        address = LLVMCreateTargetMachine(target.getAddress(), target.toString(), cpu, features, level.getLLVMValue(),
                                           reloc.getLlvmValue(), model.getLlvmValue());
         if (address == NULL) {
             throw new RuntimeException("Could not create target machine");
@@ -114,10 +112,6 @@ public final class TargetMachine {
         return dataAddress;
     }
 
-    public FileType getFileType() {
-        return fileType;
-    }
-
     public Target getTarget() {
         return target;
     }
@@ -155,7 +149,7 @@ public final class TargetMachine {
 
     @Override
     public int hashCode() {
-        return Objects.hash(target, features, level, relocation, codeModel, fileType);
+        return Objects.hash(target, features, level, relocation, codeModel);
     }
 
     @Override
@@ -165,14 +159,13 @@ public final class TargetMachine {
                 && features.equals(machine.features)
                 && level == machine.level
                 && relocation == machine.relocation
-                && codeModel == machine.codeModel
-                && fileType == machine.fileType;
+                && codeModel == machine.codeModel;
         } // @formatter:on
         return false;
     }
 
     @Override
     public String toString() {
-        return String.format("%s (%s/%s/%s/%s/%s)", target, features, level, relocation, codeModel, fileType);
+        return String.format("%s (%s/%s/%s/%s)", target, features, level, relocation, codeModel);
     }
 }

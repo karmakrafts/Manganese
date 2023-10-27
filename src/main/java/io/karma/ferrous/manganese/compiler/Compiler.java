@@ -16,6 +16,7 @@
 package io.karma.ferrous.manganese.compiler;
 
 import io.karma.ferrous.manganese.analyze.Analyzer;
+import io.karma.ferrous.manganese.target.FileType;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.translate.TranslationUnit;
 import io.karma.ferrous.manganese.util.Logger;
@@ -77,8 +78,6 @@ public final class Compiler implements ANTLRErrorListener {
     private boolean extendedTokenView = false;
     private boolean reportParserWarnings = false;
     private boolean disassemble = false;
-    private boolean saveBitcode = false;
-    private boolean isVerbose = false;
 
     @API(status = Status.INTERNAL)
     public Compiler(final TargetMachine targetMachine, final int numThreads) {
@@ -200,26 +199,9 @@ public final class Compiler implements ANTLRErrorListener {
         context.setCurrentPass(CompilePass.NONE);
     }
 
-    public CompileResult compile(final Path in, final Path out, final CompileContext context) {
+    public CompileResult compile(final Path in, final Path out, final FileType fileType, final CompileContext context) {
         final var inputFiles = Utils.findFilesWithExtensions(in, IN_EXTENSIONS);
         final var numFiles = inputFiles.size();
-
-        for (final var file : inputFiles) {
-            final var rawFileName = Utils.getRawFileName(file);
-            Logger.INSTANCE.debugln("Input: %s", file);
-
-            try (final var stream = Files.newInputStream(file); final var channel = Channels.newChannel(stream)) {
-                tokenizeAndParse(rawFileName, channel, context);
-            }
-            catch (IOException error) {
-                context.reportError(context.makeError(CompileErrorCode.E0003));
-            }
-        }
-
-        while (runningTasks.get() > 0) {
-            Thread.yield(); // Yield until tasks are complete
-        }
-
         final var maxProgress = numFiles << 1;
 
         for (var i = 0; i < numFiles; ++i) {
@@ -238,12 +220,19 @@ public final class Compiler implements ANTLRErrorListener {
             // @formatter:on
             final var rawFileName = Utils.getRawFileName(file);
             Logger.INSTANCE.debugln("Input: %s", file);
-            analyzeAndProcess(rawFileName, context);
+
+            try (final var stream = Files.newInputStream(file); final var channel = Channels.newChannel(stream)) {
+                tokenizeAndParse(rawFileName, channel, context);
+                analyzeAndProcess(rawFileName, context);
+            }
+            catch (IOException error) {
+                context.reportError(context.makeError(CompileErrorCode.E0003));
+            }
         }
 
         final var moduleName = Utils.getRawFileName(in);
         final var module = targetMachine.createModule(moduleName);
-        module.setSourceFileName(String.format("%s.%s", moduleName, targetMachine.getFileType().getExtension()));
+        module.setSourceFileName(String.format("%s.%s", moduleName, fileType.getExtension()));
 
         for (var i = 0; i < numFiles; ++i) {
             final var file = inputFiles.get(i);
@@ -279,6 +268,7 @@ public final class Compiler implements ANTLRErrorListener {
 
         if (disassemble) {
             Logger.INSTANCE.infoln("\nLinked disassembly:\n\n%s", module.disassemble());
+            Logger.INSTANCE.infoln("Native disassembly:\n\n%s\n", module.disassembleASM(targetMachine));
         }
         module.dispose();
 
@@ -294,40 +284,12 @@ public final class Compiler implements ANTLRErrorListener {
         this.extendedTokenView = extendedTokenView;
     }
 
-    public void setSaveBitcode(boolean saveBitcode) {
-        this.saveBitcode = saveBitcode;
-    }
-
     public void setDisassemble(final boolean disassemble) {
         this.disassemble = disassemble;
     }
 
     public void setReportParserWarnings(final boolean reportParserWarnings) {
         this.reportParserWarnings = reportParserWarnings;
-    }
-
-    public boolean shouldDisassemble() {
-        return disassemble;
-    }
-
-    public boolean isTokenViewEnabled() {
-        return tokenView;
-    }
-
-    public boolean reportsParserWarnings() {
-        return reportParserWarnings;
-    }
-
-    public boolean shouldSaveBitcode() {
-        return saveBitcode;
-    }
-
-    public boolean isVerbose() {
-        return isVerbose;
-    }
-
-    public void setVerbose(boolean verbose) {
-        isVerbose = verbose;
     }
 
     public TargetMachine getTargetMachine() {

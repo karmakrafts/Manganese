@@ -16,6 +16,7 @@
 package io.karma.ferrous.manganese.module;
 
 import io.karma.ferrous.manganese.llvm.LLVMUtils;
+import io.karma.ferrous.manganese.target.FileType;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Logger;
 import org.apiguardian.api.API;
@@ -199,15 +200,24 @@ public final class Module {
         return address;
     }
 
-    public @Nullable ByteBuffer generateAssembly(final TargetMachine machine) {
+    public @Nullable String disassembleASM(final TargetMachine machine) {
+        final var buffer = generateAssembly(machine, FileType.ASSEMBLY);
+        if (buffer == null) {
+            return null;
+        }
+        var text = MemoryUtil.memUTF8(buffer);
+        return text.substring(text.indexOf("\t.file"));
+    }
+
+    public @Nullable ByteBuffer generateAssembly(final TargetMachine machine, final FileType fileType) {
         try (final var stack = MemoryStack.stackPush()) {
             final var buffer = stack.callocPointer(1);
             final var messageBuffer = stack.callocPointer(1);
-            if (LLVMTargetMachineEmitToMemoryBuffer(machine.getAddress(), address, machine.getLevel().getLlvmValue(),
+            if (LLVMTargetMachineEmitToMemoryBuffer(machine.getAddress(), address, fileType.getLLVMValue(),
                                                     messageBuffer, buffer)) {
                 LLVMUtils.checkStatus(messageBuffer);
             }
-            final var bufferAddr = messageBuffer.get(0);
+            final var bufferAddr = buffer.get(0);
             if (bufferAddr == NULL) {
                 return null;
             }

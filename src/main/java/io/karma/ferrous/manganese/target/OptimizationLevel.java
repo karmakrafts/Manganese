@@ -51,7 +51,7 @@ public enum OptimizationLevel {
         return name;
     }
 
-    public int getLlvmValue() {
+    public int getLLVMValue() {
         return llvmValue;
     }
 }
