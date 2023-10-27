@@ -173,8 +173,7 @@ public record CompileError(@Nullable Token token, @Nullable List<Token> lineToke
         if (text != null) {
             builder.fgBright(Color.RED).a(errorCode).a("\n").a(Attribute.RESET);
             builder.a(text).a("\n\n");
-        }
-        else {
+        } else {
             builder.fgBright(Color.RED).a(errorCode).a("\n\n").a(Attribute.RESET);
         }
         return builder.toString();

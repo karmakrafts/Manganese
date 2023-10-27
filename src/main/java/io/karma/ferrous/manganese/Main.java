@@ -18,11 +18,7 @@ package io.karma.ferrous.manganese;
 import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.CompileStatus;
 import io.karma.ferrous.manganese.compiler.Compiler;
-import io.karma.ferrous.manganese.target.CodeModel;
-import io.karma.ferrous.manganese.target.FileType;
-import io.karma.ferrous.manganese.target.OptimizationLevel;
-import io.karma.ferrous.manganese.target.Relocation;
-import io.karma.ferrous.manganese.target.Target;
+import io.karma.ferrous.manganese.target.*;
 import io.karma.ferrous.manganese.util.Logger;
 import io.karma.ferrous.manganese.util.Logger.LogLevel;
 import io.karma.ferrous.manganese.util.Utils;
@@ -170,7 +166,7 @@ final class Main {
             }
 
             final var targetMachine = Manganese.createTargetMachine(target, features, optLevel.get(), relocation.get(),
-                                                                    codeModel.get(), options.valueOf(cpuOpt));
+                    codeModel.get(), options.valueOf(cpuOpt));
             final var compiler = Manganese.createCompiler(targetMachine, options.valueOf(threadsOpt));
             compiler.setDisassemble(options.has(disassembleOpt));
             compiler.setTokenView(options.has(tokenViewOpt), false);
@@ -203,17 +199,14 @@ final class Main {
             final var errors = result.errors();
             Collections.sort(errors);
             errors.forEach(error -> error.print(System.out));
-        }
-        catch (OptionException | NoArgsException error) {
+        } catch (OptionException | NoArgsException error) {
             // Special case; display help instead of logging the exception.
             Logger.INSTANCE.infoln("Try running with -? to get some help!");
             System.exit(0);
-        }
-        catch (IOException error) {
+        } catch (IOException error) {
             Logger.INSTANCE.errorln("%s", error.toString());
             status = status.worse(CompileStatus.IO_ERROR);
-        }
-        catch (Throwable error) {
+        } catch (Throwable error) {
             Logger.INSTANCE.errorln("%s", error.toString());
             status = status.worse(CompileStatus.UNKNOWN_ERROR);
         }

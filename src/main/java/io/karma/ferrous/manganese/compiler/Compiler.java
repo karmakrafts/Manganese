@@ -25,14 +25,7 @@ import io.karma.ferrous.manganese.util.Utils;
 import io.karma.ferrous.vanadium.FerrousLexer;
 import io.karma.ferrous.vanadium.FerrousParser;
 import io.karma.kommons.function.Functions;
-import org.antlr.v4.runtime.ANTLRErrorListener;
-import org.antlr.v4.runtime.CharStreams;
-import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.ListTokenSource;
-import org.antlr.v4.runtime.Parser;
-import org.antlr.v4.runtime.RecognitionException;
-import org.antlr.v4.runtime.Recognizer;
-import org.antlr.v4.runtime.Token;
+import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.atn.ATNConfigSet;
 import org.antlr.v4.runtime.dfa.DFA;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
@@ -106,7 +99,7 @@ public final class Compiler implements ANTLRErrorListener {
                                          final int stopIndex, final int prediction, final ATNConfigSet configs) {
         if (reportParserWarnings) {
             Logger.INSTANCE.debugln("Detected abnormally high context sensitivity at %d:%d (%d)", startIndex, stopIndex,
-                                    dfa.decision);
+                    dfa.decision);
         }
     }
 
@@ -127,8 +120,8 @@ public final class Compiler implements ANTLRErrorListener {
             Logger.INSTANCE.debugln("Finished pass TOKENIZE in %dms", time);
             if (tokenView) {
                 System.out.printf("\n%s\n",
-                                  TokenUtils.renderTokenTree(context.getModuleName(), extendedTokenView, lexer,
-                                                             tokenStream.getTokens()));
+                        TokenUtils.renderTokenTree(context.getCurrentModuleName(), extendedTokenView, lexer,
+                                tokenStream.getTokens()));
             }
             // Parse
             context.setCurrentPass(CompilePass.PARSE);
@@ -142,8 +135,7 @@ public final class Compiler implements ANTLRErrorListener {
             Logger.INSTANCE.debugln("Finished pass PARSE in %dms", time);
 
             context.setCurrentPass(CompilePass.NONE);
-        }
-        catch (IOException error) {
+        } catch (IOException error) {
             context.setCurrentPass(CompilePass.NONE);
             context.reportError(context.makeError(CompileErrorCode.E0002));
         }
@@ -210,8 +202,7 @@ public final class Compiler implements ANTLRErrorListener {
             try (final var stream = Files.newInputStream(file); final var channel = Channels.newChannel(stream)) {
                 tokenizeAndParse(rawFileName, channel, context);
                 analyzeAndProcess(rawFileName, context);
-            }
-            catch (IOException error) {
+            } catch (IOException error) {
                 context.reportError(context.makeError(CompileErrorCode.E0003));
             }
         }
@@ -238,11 +229,7 @@ public final class Compiler implements ANTLRErrorListener {
 
             try (final var stream = new ByteArrayOutputStream(); final var channel = Channels.newChannel(stream)) {
                 compile(rawFileName, file.getFileName().toString(), channel, context);
-                context.setCurrentPass(CompilePass.LINK);
-                module.linkIn(context.getTranslationUnit().getModule());
-                context.setCurrentPass(CompilePass.NONE);
-            }
-            catch (IOException error) {
+            } catch (IOException error) {
                 context.reportError(context.makeError(CompileErrorCode.E0004));
             }
         }
@@ -337,7 +324,7 @@ public final class Compiler implements ANTLRErrorListener {
     private boolean compile(final CompileContext context) {
         final var startTime = System.currentTimeMillis();
         context.setCurrentPass(CompilePass.COMPILE);
-        final var translationUnit = new TranslationUnit(this, context.getModuleName());
+        final var translationUnit = new TranslationUnit(this, context.getCurrentModuleName());
         ParseTreeWalker.DEFAULT.walk(translationUnit, context.getFileContext()); // Walk the entire AST with the TU
         context.setTranslationUnit(translationUnit);
         final var time = System.currentTimeMillis() - startTime;

@@ -22,27 +22,10 @@ import io.karma.ferrous.manganese.ocm.Field;
 import io.karma.ferrous.manganese.ocm.access.AccessKind;
 import io.karma.ferrous.manganese.ocm.access.ScopedAccess;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
-import io.karma.ferrous.manganese.ocm.type.AliasedType;
-import io.karma.ferrous.manganese.ocm.type.NamedType;
-import io.karma.ferrous.manganese.ocm.type.NullType;
-import io.karma.ferrous.manganese.ocm.type.Type;
-import io.karma.ferrous.manganese.ocm.type.TypeAttribute;
-import io.karma.ferrous.manganese.ocm.type.Types;
-import io.karma.ferrous.manganese.ocm.type.UDT;
-import io.karma.ferrous.manganese.ocm.type.UDTKind;
+import io.karma.ferrous.manganese.ocm.type.*;
 import io.karma.ferrous.manganese.target.TargetMachine;
-import io.karma.ferrous.manganese.util.Identifier;
-import io.karma.ferrous.manganese.util.Logger;
-import io.karma.ferrous.manganese.util.ScopeUtils;
-import io.karma.ferrous.manganese.util.TypeUtils;
-import io.karma.ferrous.manganese.util.Utils;
-import io.karma.ferrous.vanadium.FerrousParser.AttribContext;
-import io.karma.ferrous.vanadium.FerrousParser.ClassContext;
-import io.karma.ferrous.vanadium.FerrousParser.EnumClassContext;
-import io.karma.ferrous.vanadium.FerrousParser.IdentContext;
-import io.karma.ferrous.vanadium.FerrousParser.StructContext;
-import io.karma.ferrous.vanadium.FerrousParser.TraitContext;
-import io.karma.ferrous.vanadium.FerrousParser.TypeAliasContext;
+import io.karma.ferrous.manganese.util.*;
+import io.karma.ferrous.vanadium.FerrousParser.*;
 import io.karma.kommons.topo.TopoNode;
 import io.karma.kommons.topo.TopoSorter;
 import io.karma.kommons.tuple.Pair;
@@ -54,11 +37,7 @@ import org.fusesource.jansi.Ansi;
 import org.fusesource.jansi.Ansi.Color;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -125,8 +104,7 @@ public final class Analyzer extends ParseAdapter {
                     typesToResolve.push(Pair.of(childNode, typeNode));
                     resolved.add(backingTypeName);
                     buffer.a('R');
-                }
-                else {
+                } else {
                     buffer.fgBright(Color.GREEN).a('C').fgBright(Color.CYAN);
                 }
             }
@@ -147,7 +125,7 @@ public final class Analyzer extends ParseAdapter {
         }
         final var type = TypeUtils.getType(compiler, scopeStack, context.type());
         final var aliasedType = Types.aliased(Utils.getIdentifier(identContext), type,
-                                              scopeStack::applyEnclosingScopes);
+                scopeStack::applyEnclosingScopes);
         udts.put(aliasedType.getQualifiedName(), aliasedType);
         super.enterTypeAlias(context);
     }

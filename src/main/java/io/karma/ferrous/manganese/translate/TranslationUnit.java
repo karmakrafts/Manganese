@@ -32,10 +32,7 @@ import org.apiguardian.api.API.Status;
 
 import java.util.HashMap;
 
-import static org.lwjgl.llvm.LLVMCore.LLVMAddFunction;
-import static org.lwjgl.llvm.LLVMCore.LLVMExternalLinkage;
-import static org.lwjgl.llvm.LLVMCore.LLVMSetFunctionCallConv;
-import static org.lwjgl.llvm.LLVMCore.LLVMSetLinkage;
+import static org.lwjgl.llvm.LLVMCore.*;
 import static org.lwjgl.system.MemoryUtil.NULL;
 
 /**
@@ -77,7 +74,7 @@ public class TranslationUnit extends ParseAdapter {
         }
         LLVMSetLinkage(function, LLVMExternalLinkage);
         LLVMSetFunctionCallConv(function, FunctionUtils.getCallingConvention(compiler, prototype)
-                                                       .getLLVMValue(compiler.getTargetMachine()));
+                .getLLVMValue(compiler.getTargetMachine()));
         super.enterExternFunction(context);
     }
 

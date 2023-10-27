@@ -40,7 +40,7 @@ public record ScopedAccess(Type... types) implements Access {
                                                                final T target) {
         var compilerContext = compiler.getContext();
         var type = compiler.getContext().getAnalyzer()
-                           .findTypeInScope(target.getQualifiedName(), target.getScopeName());
+                .findTypeInScope(target.getQualifiedName(), target.getScopeName());
         for (Type allowedType : types) {
             if (type == allowedType) {
                 return true;

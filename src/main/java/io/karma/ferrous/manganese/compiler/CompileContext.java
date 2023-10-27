@@ -27,10 +27,12 @@ import org.antlr.v4.runtime.BufferedTokenStream;
 import org.antlr.v4.runtime.Token;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Objects;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 
 /**
@@ -40,56 +42,60 @@ import java.util.function.Function;
 @API(status = Status.STABLE)
 public final class CompileContext {
     private final ArrayList<CompileError> errors = new ArrayList<>();
+    private final ReentrantLock errorsMutex = new ReentrantLock();
     private final HashMap<String, Module> modules = new HashMap<>();
+    private final ReentrantLock modulesMutex = new ReentrantLock();
     private final HashMap<String, ModuleData> moduleData = new HashMap<>();
-
-    private CompilePass currentPass = CompilePass.NONE;
-    private CompileStatus currentStatus = CompileStatus.SKIPPED;
-    private String currentModuleName;
+    private final ReentrantLock moduleDataMutex = new ReentrantLock();
+    private final ThreadLocal<ThreadLocals> threadLocals = ThreadLocal.withInitial(ThreadLocals::new);
 
     public Module getModule() {
-        return Objects.requireNonNull(modules.get(Objects.requireNonNull(currentModuleName)));
+        try {
+            modulesMutex.lock();
+            return Objects.requireNonNull(modules.get(Objects.requireNonNull(getCurrentModuleName())));
+        } finally {
+            modulesMutex.unlock();
+        }
     }
+    // @formatter:on
 
     private ModuleData getOrCreateModuleData(final String name) {
-        var result = moduleData.get(name);
-        if (result == null) {
-            result = new ModuleData(name);
-            moduleData.put(name, result);
+        try {
+            moduleDataMutex.lock();
+            return moduleData.computeIfAbsent(name, ModuleData::new);
+        } finally {
+            moduleDataMutex.unlock();
         }
-        return result;
     }
 
     private ModuleData getOrCreateModuleData() {
-        return getOrCreateModuleData(Objects.requireNonNull(currentModuleName));
+        return getOrCreateModuleData(Objects.requireNonNull(getCurrentModuleName()));
     }
 
     private <T> T getModuleComponent(final Function<ModuleData, T> selector) {
-        final var data = moduleData.get(Objects.requireNonNull(currentModuleName));
-        if (data != null) {
-            return selector.apply(data);
-        }
-        throw new IllegalStateException("No such module component");
+        return selector.apply(getOrCreateModuleData());
     }
 
     public CompileResult makeResult() {
-        return new CompileResult(currentStatus, new ArrayList<>(errors));
+        return new CompileResult(getCurrentStatus(), new ArrayList<>(errors));
     }
 
     public CompileError makeError(final CompileErrorCode errorCode) {
-        return new CompileError(null, null, currentPass, null, errorCode);
+        return new CompileError(null, null, getCurrentPass(), null, errorCode);
     }
 
     public CompileError makeError(final String text, final CompileErrorCode errorCode) {
-        return new CompileError(null, null, currentPass, text, errorCode);
+        return new CompileError(null, null, getCurrentPass(), text, errorCode);
     }
 
     public CompileError makeError(final Token token, final CompileErrorCode errorCode) {
-        return new CompileError(token, TokenUtils.getLineTokens(getTokenStream(), token), currentPass, null, errorCode);
+        return new CompileError(token, TokenUtils.getLineTokens(getTokenStream(), token), getCurrentPass(), null,
+                errorCode);
     }
 
     public CompileError makeError(final Token token, final String text, final CompileErrorCode errorCode) {
-        return new CompileError(token, TokenUtils.getLineTokens(getTokenStream(), token), currentPass, text, errorCode);
+        return new CompileError(token, TokenUtils.getLineTokens(getTokenStream(), token), getCurrentPass(), text,
+                errorCode);
     }
 
     public void reportError(final CompileError error) {
@@ -97,27 +103,40 @@ public final class CompileContext {
         if (tokenStream != null && tokenStream.size() == 0) {
             tokenStream.fill();
         }
-        if (errors.contains(error)) {
-            return; // Don't report duplicates
+        try {
+            errorsMutex.lock();
+            if (errors.contains(error)) {
+                return; // Don't report duplicates
+            }
+            errors.add(error);
+        } finally {
+            errorsMutex.unlock();
         }
-        errors.add(error);
-        this.currentStatus = this.currentStatus.worse(error.getStatus());
+        setCurrentStatus(getCurrentStatus().worse(error.getStatus()));
     }
 
     public CompilePass getCurrentPass() {
-        return currentPass;
+        return threadLocals.get().currentPass;
     }
 
     public void setCurrentPass(final CompilePass currentPass) {
-        this.currentPass = currentPass;
+        threadLocals.get().currentPass = currentPass;
     }
 
     public CompileStatus getCurrentStatus() {
-        return currentStatus;
+        return threadLocals.get().currentStatus;
     }
 
     public void setCurrentStatus(final CompileStatus status) {
-        this.currentStatus = status;
+        threadLocals.get().currentStatus = status;
+    }
+
+    public @Nullable String getCurrentModuleName() {
+        return threadLocals.get().currentModuleName;
+    }
+
+    void setModuleName(final @Nullable String currentName) {
+        threadLocals.get().currentModuleName = currentName;
     }
 
     public FerrousLexer getLexer() {
@@ -168,21 +187,35 @@ public final class CompileContext {
         getOrCreateModuleData().setTranslationUnit(translationUnit);
     }
 
-    public String getModuleName() {
-        return currentModuleName;
-    }
-
-    void setModuleName(final String currentName) {
-        currentModuleName = currentName;
-    }
-
     public void dispose() {
-        modules.values().forEach(Module::dispose); // Dispose the actual modules
-        modules.clear();
-        moduleData.clear();
+        try {
+            modulesMutex.lock();
+            modules.values().forEach(Module::dispose); // Dispose the actual modules
+            modules.clear();
+        } finally {
+            modulesMutex.unlock();
+        }
+        try {
+            moduleDataMutex.lock();
+            moduleData.clear();
+        } finally {
+            moduleDataMutex.unlock();
+        }
     }
 
     public void addModule(final Module module) {
-        modules.put(currentModuleName, module);
+        try {
+            modulesMutex.lock();
+            modules.put(module.getName(), module);
+        } finally {
+            modulesMutex.unlock();
+        }
+    }
+
+    // @formatter:off
+    private static final class ThreadLocals {
+        public CompilePass currentPass = CompilePass.NONE;
+        public CompileStatus currentStatus = CompileStatus.SKIPPED;
+        public String currentModuleName;
     }
 }

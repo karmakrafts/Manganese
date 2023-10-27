@@ -84,8 +84,7 @@ public final class Utils {
                 }
                 return FileVisitResult.CONTINUE;
             }));
-        }
-        catch (Exception error) { /* swallow exception */ }
+        } catch (Exception error) { /* swallow exception */ }
         return files;
     }
 

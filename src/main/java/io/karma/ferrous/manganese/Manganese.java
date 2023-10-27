@@ -17,14 +17,7 @@ package io.karma.ferrous.manganese;
 
 import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.llvm.LLVMUtils;
-import io.karma.ferrous.manganese.target.ABI;
-import io.karma.ferrous.manganese.target.Architecture;
-import io.karma.ferrous.manganese.target.CodeModel;
-import io.karma.ferrous.manganese.target.OptimizationLevel;
-import io.karma.ferrous.manganese.target.Platform;
-import io.karma.ferrous.manganese.target.Relocation;
-import io.karma.ferrous.manganese.target.Target;
-import io.karma.ferrous.manganese.target.TargetMachine;
+import io.karma.ferrous.manganese.target.*;
 import io.karma.ferrous.manganese.util.DiagnosticSeverity;
 import io.karma.ferrous.manganese.util.Logger;
 import org.lwjgl.llvm.LLVMCore;
@@ -33,15 +26,9 @@ import org.lwjgl.system.MemoryUtil;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.lwjgl.llvm.LLVMCore.LLVMContextSetDiagnosticHandler;
-import static org.lwjgl.llvm.LLVMCore.LLVMGetDiagInfoDescription;
-import static org.lwjgl.llvm.LLVMCore.LLVMGetDiagInfoSeverity;
-import static org.lwjgl.llvm.LLVMCore.LLVMGetGlobalContext;
-import static org.lwjgl.llvm.LLVMInitialization.LLVMInitializeAnalysis;
-import static org.lwjgl.llvm.LLVMInitialization.LLVMInitializeCodeGen;
+import static org.lwjgl.llvm.LLVMCore.*;
 import static org.lwjgl.llvm.LLVMInitialization.LLVMInitializeCore;
-import static org.lwjgl.llvm.LLVMInitialization.LLVMInitializeTarget;
-import static org.lwjgl.llvm.LLVMInitialization.LLVMInitializeVectorization;
+import static org.lwjgl.llvm.LLVMInitialization.*;
 import static org.lwjgl.system.MemoryUtil.NULL;
 
 /**
@@ -135,6 +122,6 @@ public final class Manganese {
         final int numThreads = Runtime.getRuntime().availableProcessors();
         return createCompiler(
                 new TargetMachine(Target.getHostTarget(), "", OptimizationLevel.DEFAULT, Relocation.DEFAULT,
-                                  CodeModel.DEFAULT, Architecture.getHostArchitecture().getDefaultCPU()), numThreads);
+                        CodeModel.DEFAULT, Architecture.getHostArchitecture().getDefaultCPU()), numThreads);
     }
 }

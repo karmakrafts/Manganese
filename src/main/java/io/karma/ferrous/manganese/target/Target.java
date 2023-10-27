@@ -66,7 +66,7 @@ public final class Target {
 
     public static String getHostTargetTriple() {
         return String.format("%s-%s-%s", Architecture.getHostArchitecture().getName(),
-                             Platform.getHostPlatform().getName(), ABI.getHostABI().getName());
+                Platform.getHostPlatform().getName(), ABI.getHostABI().getName());
     }
 
     public static Optional<Target> parse(final String value) {

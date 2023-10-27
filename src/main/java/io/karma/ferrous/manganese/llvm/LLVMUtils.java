@@ -23,55 +23,15 @@ import org.lwjgl.llvm.LLVMCore;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import static io.karma.ferrous.manganese.llvm.LLVMTargetAArch64.LLVMInitializeAArch64AsmParser;
-import static io.karma.ferrous.manganese.llvm.LLVMTargetAArch64.LLVMInitializeAArch64AsmPrinter;
-import static io.karma.ferrous.manganese.llvm.LLVMTargetAArch64.LLVMInitializeAArch64Disassembler;
-import static io.karma.ferrous.manganese.llvm.LLVMTargetAArch64.LLVMInitializeAArch64Target;
-import static io.karma.ferrous.manganese.llvm.LLVMTargetAArch64.LLVMInitializeAArch64TargetInfo;
-import static io.karma.ferrous.manganese.llvm.LLVMTargetAArch64.LLVMInitializeAArch64TargetMC;
-import static io.karma.ferrous.manganese.llvm.LLVMTargetARM.LLVMInitializeARMAsmParser;
-import static io.karma.ferrous.manganese.llvm.LLVMTargetARM.LLVMInitializeARMAsmPrinter;
-import static io.karma.ferrous.manganese.llvm.LLVMTargetARM.LLVMInitializeARMDisassembler;
-import static io.karma.ferrous.manganese.llvm.LLVMTargetARM.LLVMInitializeARMTarget;
-import static io.karma.ferrous.manganese.llvm.LLVMTargetARM.LLVMInitializeARMTargetInfo;
-import static io.karma.ferrous.manganese.llvm.LLVMTargetARM.LLVMInitializeARMTargetMC;
-import static io.karma.ferrous.manganese.llvm.LLVMTargetAVR.LLVMInitializeAVRAsmParser;
-import static io.karma.ferrous.manganese.llvm.LLVMTargetAVR.LLVMInitializeAVRAsmPrinter;
-import static io.karma.ferrous.manganese.llvm.LLVMTargetAVR.LLVMInitializeAVRDisassembler;
-import static io.karma.ferrous.manganese.llvm.LLVMTargetAVR.LLVMInitializeAVRTarget;
-import static io.karma.ferrous.manganese.llvm.LLVMTargetAVR.LLVMInitializeAVRTargetInfo;
-import static io.karma.ferrous.manganese.llvm.LLVMTargetAVR.LLVMInitializeAVRTargetMC;
-import static io.karma.ferrous.manganese.llvm.LLVMTargetMips.LLVMInitializeMipsAsmParser;
-import static io.karma.ferrous.manganese.llvm.LLVMTargetMips.LLVMInitializeMipsAsmPrinter;
-import static io.karma.ferrous.manganese.llvm.LLVMTargetMips.LLVMInitializeMipsDisassembler;
-import static io.karma.ferrous.manganese.llvm.LLVMTargetMips.LLVMInitializeMipsTarget;
-import static io.karma.ferrous.manganese.llvm.LLVMTargetMips.LLVMInitializeMipsTargetInfo;
-import static io.karma.ferrous.manganese.llvm.LLVMTargetMips.LLVMInitializeMipsTargetMC;
-import static io.karma.ferrous.manganese.llvm.LLVMTargetPowerPC.LLVMInitializePowerPCAsmParser;
-import static io.karma.ferrous.manganese.llvm.LLVMTargetPowerPC.LLVMInitializePowerPCAsmPrinter;
-import static io.karma.ferrous.manganese.llvm.LLVMTargetPowerPC.LLVMInitializePowerPCDisassembler;
-import static io.karma.ferrous.manganese.llvm.LLVMTargetPowerPC.LLVMInitializePowerPCTarget;
-import static io.karma.ferrous.manganese.llvm.LLVMTargetPowerPC.LLVMInitializePowerPCTargetInfo;
-import static io.karma.ferrous.manganese.llvm.LLVMTargetPowerPC.LLVMInitializePowerPCTargetMC;
-import static io.karma.ferrous.manganese.llvm.LLVMTargetRISCV.LLVMInitializeRISCVAsmParser;
-import static io.karma.ferrous.manganese.llvm.LLVMTargetRISCV.LLVMInitializeRISCVAsmPrinter;
-import static io.karma.ferrous.manganese.llvm.LLVMTargetRISCV.LLVMInitializeRISCVDisassembler;
-import static io.karma.ferrous.manganese.llvm.LLVMTargetRISCV.LLVMInitializeRISCVTarget;
-import static io.karma.ferrous.manganese.llvm.LLVMTargetRISCV.LLVMInitializeRISCVTargetInfo;
-import static io.karma.ferrous.manganese.llvm.LLVMTargetRISCV.LLVMInitializeRISCVTargetMC;
-import static io.karma.ferrous.manganese.llvm.LLVMTargetWebAssembly.LLVMInitializeWebAssemblyAsmParser;
-import static io.karma.ferrous.manganese.llvm.LLVMTargetWebAssembly.LLVMInitializeWebAssemblyAsmPrinter;
-import static io.karma.ferrous.manganese.llvm.LLVMTargetWebAssembly.LLVMInitializeWebAssemblyDisassembler;
-import static io.karma.ferrous.manganese.llvm.LLVMTargetWebAssembly.LLVMInitializeWebAssemblyTarget;
-import static io.karma.ferrous.manganese.llvm.LLVMTargetWebAssembly.LLVMInitializeWebAssemblyTargetInfo;
-import static io.karma.ferrous.manganese.llvm.LLVMTargetWebAssembly.LLVMInitializeWebAssemblyTargetMC;
+import static io.karma.ferrous.manganese.llvm.LLVMTargetAArch64.*;
+import static io.karma.ferrous.manganese.llvm.LLVMTargetARM.*;
+import static io.karma.ferrous.manganese.llvm.LLVMTargetAVR.*;
+import static io.karma.ferrous.manganese.llvm.LLVMTargetMips.*;
+import static io.karma.ferrous.manganese.llvm.LLVMTargetPowerPC.*;
+import static io.karma.ferrous.manganese.llvm.LLVMTargetRISCV.*;
+import static io.karma.ferrous.manganese.llvm.LLVMTargetWebAssembly.*;
 import static org.lwjgl.llvm.LLVMCore.nLLVMDisposeMessage;
-import static org.lwjgl.llvm.LLVMTargetX86.LLVMInitializeX86AsmParser;
-import static org.lwjgl.llvm.LLVMTargetX86.LLVMInitializeX86AsmPrinter;
-import static org.lwjgl.llvm.LLVMTargetX86.LLVMInitializeX86Disassembler;
-import static org.lwjgl.llvm.LLVMTargetX86.LLVMInitializeX86Target;
-import static org.lwjgl.llvm.LLVMTargetX86.LLVMInitializeX86TargetInfo;
-import static org.lwjgl.llvm.LLVMTargetX86.LLVMInitializeX86TargetMC;
+import static org.lwjgl.llvm.LLVMTargetX86.*;
 import static org.lwjgl.system.MemoryUtil.NULL;
 
 /**
@@ -181,8 +141,7 @@ public final class LLVMUtils {
     public static void checkNatives() {
         try {
             LLVMCore.getLibrary();
-        }
-        catch (UnsatisfiedLinkError e) { // @formatter:off
+        } catch (UnsatisfiedLinkError e) { // @formatter:off
             throw new IllegalStateException("""
                 Please configure the LLVM (13, 14 or 15) shared libraries path with:
                 \t-Dorg.lwjgl.llvm.libname=<LLVM shared library path> or

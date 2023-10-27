@@ -36,7 +36,7 @@ public interface Type extends Scoped {
 
     /**
      * @return True if this type is imaginary and cannot be materialized
-     *         into a runtime structure.
+     * into a runtime structure.
      */
     default boolean isImaginary() {
         return false;
@@ -44,7 +44,7 @@ public interface Type extends Scoped {
 
     /**
      * @return True if this type is aliased and refers to another
-     *         type or alias.
+     * type or alias.
      */
     default boolean isAliased() {
         return false;
@@ -59,7 +59,7 @@ public interface Type extends Scoped {
 
     /**
      * @return True if this is a complete type.
-     *         False if this type is incomplete and missing and associated data layout.
+     * False if this type is incomplete and missing and associated data layout.
      */
     default boolean isComplete() {
         return getBaseType().isComplete();

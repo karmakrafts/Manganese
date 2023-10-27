@@ -114,7 +114,7 @@ public class FunctionType implements Type {
         try (final var stack = MemoryStack.stackPush()) {
             final var returnType = this.returnType.materialize(machine);
             final var paramTypes = Arrays.stream(this.paramTypes).mapToLong(type -> type.materialize(machine))
-                                         .toArray();
+                    .toArray();
             return materializedType = LLVMCore.LLVMFunctionType(returnType, stack.pointers(paramTypes), isVarArg);
         }
     }

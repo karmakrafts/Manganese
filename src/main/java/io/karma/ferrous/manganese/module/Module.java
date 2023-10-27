@@ -15,6 +15,7 @@
 
 package io.karma.ferrous.manganese.module;
 
+import io.karma.ferrous.manganese.compiler.CompileError;
 import io.karma.ferrous.manganese.llvm.LLVMUtils;
 import io.karma.ferrous.manganese.target.FileType;
 import io.karma.ferrous.manganese.target.TargetMachine;
@@ -30,30 +31,14 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.ArrayList;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static org.lwjgl.llvm.LLVMAnalysis.LLVMReturnStatusAction;
 import static org.lwjgl.llvm.LLVMAnalysis.LLVMVerifyModule;
 import static org.lwjgl.llvm.LLVMBitWriter.LLVMWriteBitcodeToMemoryBuffer;
-import static org.lwjgl.llvm.LLVMCore.LLVMCloneModule;
-import static org.lwjgl.llvm.LLVMCore.LLVMCreateMemoryBufferWithMemoryRangeCopy;
-import static org.lwjgl.llvm.LLVMCore.LLVMDisposeMemoryBuffer;
-import static org.lwjgl.llvm.LLVMCore.LLVMDisposeModule;
-import static org.lwjgl.llvm.LLVMCore.LLVMGetBufferSize;
-import static org.lwjgl.llvm.LLVMCore.LLVMGetDataLayoutStr;
-import static org.lwjgl.llvm.LLVMCore.LLVMGetGlobalContext;
-import static org.lwjgl.llvm.LLVMCore.LLVMGetModuleIdentifier;
-import static org.lwjgl.llvm.LLVMCore.LLVMGetSourceFileName;
-import static org.lwjgl.llvm.LLVMCore.LLVMGetTarget;
-import static org.lwjgl.llvm.LLVMCore.LLVMModuleCreateWithNameInContext;
-import static org.lwjgl.llvm.LLVMCore.LLVMPrintModuleToString;
-import static org.lwjgl.llvm.LLVMCore.LLVMSetDataLayout;
-import static org.lwjgl.llvm.LLVMCore.LLVMSetModuleIdentifier;
-import static org.lwjgl.llvm.LLVMCore.LLVMSetSourceFileName;
-import static org.lwjgl.llvm.LLVMCore.LLVMSetTarget;
-import static org.lwjgl.llvm.LLVMCore.nLLVMDisposeMessage;
-import static org.lwjgl.llvm.LLVMCore.nLLVMGetBufferStart;
+import static org.lwjgl.llvm.LLVMCore.*;
 import static org.lwjgl.llvm.LLVMIRReader.LLVMParseIRInContext;
 import static org.lwjgl.llvm.LLVMLinker.LLVMLinkModules2;
 import static org.lwjgl.llvm.LLVMTargetMachine.LLVMTargetMachineEmitToMemoryBuffer;
@@ -67,6 +52,8 @@ import static org.lwjgl.system.MemoryUtil.NULL;
 public final class Module {
     private final long context;
     private final long address;
+    private final ModuleData data;
+    private final ArrayList<CompileError> errors = new ArrayList<>();
     private boolean isDisposed = false;
 
     public Module(final String name, final long context) {
@@ -76,15 +63,17 @@ public final class Module {
             throw new RuntimeException("Could not allocate module");
         }
         Logger.INSTANCE.debugln("Allocated module '%s' at 0x%08X in context 0x%08X", name, address, context);
+        data = new ModuleData(name);
     }
 
     public Module(final String name) {
         this(name, LLVMGetGlobalContext());
     }
 
-    private Module(final long context, final long address) {
+    private Module(final String name, final long context, final long address) {
         this.context = context;
         this.address = address;
+        data = new ModuleData(name);
         Logger.INSTANCE.debugln("Created external module at 0x%08X in context 0x%08X", address, context);
     }
 
@@ -107,7 +96,7 @@ public final class Module {
                 throw new RuntimeException("Could not retrieve module address");
             }
 
-            final var module = new Module(context, moduleAddr);
+            final var module = new Module(name, context, moduleAddr);
             module.setName(name);
             final var verifyStatus = module.verify();
             if (verifyStatus != null) {
@@ -183,6 +172,10 @@ public final class Module {
         LLVMSetTarget(address, triple);
     }
 
+    public ModuleData getData() {
+        return data;
+    }
+
     public void dispose() {
         if (isDisposed) {
             return;
@@ -214,7 +207,7 @@ public final class Module {
             final var buffer = stack.callocPointer(1);
             final var messageBuffer = stack.callocPointer(1);
             if (LLVMTargetMachineEmitToMemoryBuffer(machine.getAddress(), address, fileType.getLLVMValue(),
-                                                    messageBuffer, buffer)) {
+                    messageBuffer, buffer)) {
                 LLVMUtils.checkStatus(messageBuffer);
             }
             final var bufferAddr = buffer.get(0);

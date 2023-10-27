@@ -23,14 +23,8 @@ import org.apiguardian.api.API.Status;
 import java.io.IOException;
 import java.util.Objects;
 
-import static org.lwjgl.llvm.LLVMTarget.LLVMCopyStringRepOfTargetData;
-import static org.lwjgl.llvm.LLVMTarget.LLVMDisposeTargetData;
-import static org.lwjgl.llvm.LLVMTarget.LLVMPointerSize;
-import static org.lwjgl.llvm.LLVMTarget.LLVMPreferredAlignmentOfGlobal;
-import static org.lwjgl.llvm.LLVMTarget.LLVMPreferredAlignmentOfType;
-import static org.lwjgl.llvm.LLVMTargetMachine.LLVMCreateTargetDataLayout;
-import static org.lwjgl.llvm.LLVMTargetMachine.LLVMCreateTargetMachine;
-import static org.lwjgl.llvm.LLVMTargetMachine.LLVMDisposeTargetMachine;
+import static org.lwjgl.llvm.LLVMTarget.*;
+import static org.lwjgl.llvm.LLVMTargetMachine.*;
 import static org.lwjgl.system.MemoryUtil.NULL;
 
 /**
@@ -58,7 +52,7 @@ public final class TargetMachine {
         this.codeModel = model;
 
         address = LLVMCreateTargetMachine(target.getAddress(), target.toString(), cpu, features, level.getLLVMValue(),
-                                          reloc.getLlvmValue(), model.getLlvmValue());
+                reloc.getLlvmValue(), model.getLlvmValue());
         if (address == NULL) {
             throw new RuntimeException("Could not create target machine");
         }

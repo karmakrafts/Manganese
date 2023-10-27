@@ -146,7 +146,7 @@ public abstract class ParseAdapter implements FerrousParserListener {
 
     @Override
     public void enterFile(FileContext fileContext) {
-        scopeStack.push(new DefaultScope(ScopeType.FILE, Identifier.parse(compiler.getContext().getModuleName())));
+        scopeStack.push(new DefaultScope(ScopeType.FILE, Identifier.parse(compiler.getContext().getCurrentModuleName())));
     }
 
     @Override
@@ -156,7 +156,7 @@ public abstract class ParseAdapter implements FerrousParserListener {
 
     @Override
     public void enterModuleFile(ModuleFileContext moduleFileContext) {
-        scopeStack.push(new DefaultScope(ScopeType.MODULE_FILE, Identifier.parse(compiler.getContext().getModuleName())));
+        scopeStack.push(new DefaultScope(ScopeType.MODULE_FILE, Identifier.parse(compiler.getContext().getCurrentModuleName())));
     }
 
     @Override
