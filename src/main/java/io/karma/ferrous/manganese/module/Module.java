@@ -15,7 +15,6 @@
 
 package io.karma.ferrous.manganese.module;
 
-import io.karma.ferrous.manganese.compiler.CompileError;
 import io.karma.ferrous.manganese.llvm.LLVMUtils;
 import io.karma.ferrous.manganese.target.FileType;
 import io.karma.ferrous.manganese.target.TargetMachine;
@@ -31,7 +30,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.ArrayList;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -52,8 +50,6 @@ import static org.lwjgl.system.MemoryUtil.NULL;
 public final class Module {
     private final long context;
     private final long address;
-    private final ModuleData data;
-    private final ArrayList<CompileError> errors = new ArrayList<>();
     private boolean isDisposed = false;
 
     public Module(final String name, final long context) {
@@ -63,7 +59,6 @@ public final class Module {
             throw new RuntimeException("Could not allocate module");
         }
         Logger.INSTANCE.debugln("Allocated module '%s' at 0x%08X in context 0x%08X", name, address, context);
-        data = new ModuleData(name);
     }
 
     public Module(final String name) {
@@ -73,7 +68,6 @@ public final class Module {
     private Module(final String name, final long context, final long address) {
         this.context = context;
         this.address = address;
-        data = new ModuleData(name);
         Logger.INSTANCE.debugln("Created external module at 0x%08X in context 0x%08X", address, context);
     }
 
@@ -116,7 +110,7 @@ public final class Module {
         }
     }
 
-    public @Nullable String verify() {
+    public synchronized @Nullable String verify() {
         try (final var stack = MemoryStack.stackPush()) {
             final var messageBuffer = stack.callocPointer(1);
             if (LLVMVerifyModule(address, LLVMReturnStatusAction, messageBuffer)) {
@@ -132,51 +126,47 @@ public final class Module {
         }
     }
 
-    public void linkIn(final Module module) {
+    public synchronized void linkIn(final Module module) {
         LLVMLinkModules2(address, LLVMCloneModule(module.address));
     }
 
-    public String disassemble() {
+    public synchronized String disassemble() {
         return LLVMPrintModuleToString(address);
     }
 
-    public String getName() {
+    public synchronized String getName() {
         return LLVMGetModuleIdentifier(address);
     }
 
-    public void setName(final String name) {
+    public synchronized void setName(final String name) {
         LLVMSetModuleIdentifier(address, name);
     }
 
-    public String getSourceFileName() {
+    public synchronized String getSourceFileName() {
         return LLVMGetSourceFileName(address);
     }
 
-    public void setSourceFileName(final String fileName) {
+    public synchronized void setSourceFileName(final String fileName) {
         LLVMSetSourceFileName(address, fileName);
     }
 
-    public String getDataLayout() {
+    public synchronized String getDataLayout() {
         return LLVMGetDataLayoutStr(address);
     }
 
-    public void setDataLayout(final String layout) {
+    public synchronized void setDataLayout(final String layout) {
         LLVMSetDataLayout(address, layout);
     }
 
-    public String getTargetTriple() {
+    public synchronized String getTargetTriple() {
         return LLVMGetTarget(address);
     }
 
-    public void setTargetTriple(final String triple) {
+    public synchronized void setTargetTriple(final String triple) {
         LLVMSetTarget(address, triple);
     }
 
-    public ModuleData getData() {
-        return data;
-    }
-
-    public void dispose() {
+    public synchronized void dispose() {
         if (isDisposed) {
             return;
         }
@@ -202,7 +192,7 @@ public final class Module {
         return text.substring(text.indexOf("\t.file"));
     }
 
-    public @Nullable ByteBuffer generateAssembly(final TargetMachine machine, final FileType fileType) {
+    public synchronized @Nullable ByteBuffer generateAssembly(final TargetMachine machine, final FileType fileType) {
         try (final var stack = MemoryStack.stackPush()) {
             final var buffer = stack.callocPointer(1);
             final var messageBuffer = stack.callocPointer(1);
@@ -223,7 +213,7 @@ public final class Module {
         }
     }
 
-    public @Nullable ByteBuffer getBitcode() {
+    public synchronized @Nullable ByteBuffer getBitcode() {
         final var buffer = LLVMWriteBitcodeToMemoryBuffer(address);
         Logger.INSTANCE.debugln("Wrote bitcode to memory at 0x%08X", buffer);
         if (buffer == NULL) {

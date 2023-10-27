@@ -46,6 +46,9 @@ import java.nio.file.Path;
 import java.util.BitSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import static org.lwjgl.llvm.LLVMCore.LLVMContextSetOpaquePointers;
 import static org.lwjgl.llvm.LLVMCore.LLVMGetGlobalContext;
@@ -59,6 +62,7 @@ public final class Compiler implements ANTLRErrorListener {
     private static final String[] IN_EXTENSIONS = {"ferrous", "fe"};
 
     private final TargetMachine targetMachine;
+    private final ExecutorService executorService;
 
     private CompileContext context;
     private boolean tokenView = false;
@@ -69,6 +73,13 @@ public final class Compiler implements ANTLRErrorListener {
     @API(status = Status.INTERNAL)
     public Compiler(final TargetMachine targetMachine, final int numThreads) {
         this.targetMachine = targetMachine;
+        executorService = Executors.newFixedThreadPool(numThreads);
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> Functions.tryDo(() -> {
+            executorService.shutdown();
+            if (!executorService.awaitTermination(1, TimeUnit.SECONDS)) {
+                executorService.shutdownNow().forEach(Runnable::run);
+            }
+        })));
     }
 
     @Override

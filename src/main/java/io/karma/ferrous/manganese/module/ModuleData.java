@@ -46,39 +46,39 @@ public final class ModuleData {
         this.name = name;
     }
 
-    public CompilePass getCurrentPass() {
+    public synchronized CompilePass getCurrentPass() {
         return currentPass;
     }
 
     @API(status = Status.INTERNAL)
-    public void setCurrentPass(final CompilePass currentPass) {
+    public synchronized void setCurrentPass(final CompilePass currentPass) {
         this.currentPass = currentPass;
     }
 
-    public CompileStatus getCurrentStatus() {
+    public synchronized CompileStatus getCurrentStatus() {
         return currentStatus;
     }
 
     @API(status = Status.INTERNAL)
-    public void setCurrentStatus(final CompileStatus currentStatus) {
+    public synchronized void setCurrentStatus(final CompileStatus currentStatus) {
         this.currentStatus = currentStatus;
     }
 
-    public FerrousLexer getLexer() {
+    public synchronized FerrousLexer getLexer() {
         return lexer;
     }
 
     @API(status = Status.INTERNAL)
-    public void setLexer(final FerrousLexer lexer) {
+    public synchronized void setLexer(final FerrousLexer lexer) {
         this.lexer = lexer;
     }
 
-    public FerrousParser getParser() {
+    public synchronized FerrousParser getParser() {
         return parser;
     }
 
     @API(status = Status.INTERNAL)
-    public void setParser(final FerrousParser parser) {
+    public synchronized void setParser(final FerrousParser parser) {
         this.parser = parser;
     }
 
@@ -91,30 +91,30 @@ public final class ModuleData {
         this.fileContext = fileContext;
     }
 
-    public BufferedTokenStream getTokenStream() {
+    public synchronized BufferedTokenStream getTokenStream() {
         return tokenStream;
     }
 
     @API(status = Status.INTERNAL)
-    public void setTokenStream(final BufferedTokenStream tokenStream) {
+    public synchronized void setTokenStream(final BufferedTokenStream tokenStream) {
         this.tokenStream = tokenStream;
     }
 
-    public Analyzer getAnalyzer() {
+    public synchronized Analyzer getAnalyzer() {
         return analyzer;
     }
 
     @API(status = Status.INTERNAL)
-    public void setAnalyzer(final Analyzer analyzer) {
+    public synchronized void setAnalyzer(final Analyzer analyzer) {
         this.analyzer = analyzer;
     }
 
-    public TranslationUnit getTranslationUnit() {
+    public synchronized TranslationUnit getTranslationUnit() {
         return translationUnit;
     }
 
     @API(status = Status.INTERNAL)
-    public void setTranslationUnit(final TranslationUnit translationUnit) {
+    public synchronized void setTranslationUnit(final TranslationUnit translationUnit) {
         this.translationUnit = translationUnit;
     }
 
