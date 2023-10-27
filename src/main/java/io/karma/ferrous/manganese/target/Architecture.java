@@ -49,9 +49,7 @@ public enum Architecture {
     PPC32_LE    ("ppc32le",     "ppc32"),
     PPC64       ("ppc64",       "ppc64"),
     PPC64_LE    ("ppc64le",     "ppc64le"),
-    AVR         ("avr",         "atmega48"),
-    AMDGCN      ("amdgcn",      "generic"),
-    R600        ("r600",        "r600");
+    AVR         ("avr",         "atmega48");
     // @formatter:on
 
     private final String name;
