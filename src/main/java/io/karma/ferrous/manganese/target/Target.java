@@ -71,12 +71,18 @@ public final class Target {
 
     public static Optional<Target> parse(final String value) {
         final var parts = value.split("-");
-        if (parts.length != 3) {
+        if (parts.length == 0) {
             return Optional.empty();
         }
         final var arch = Architecture.byName(parts[0]);
-        final var platform = Platform.byName(parts[1]);
-        final var abi = ABI.byName(parts[2]);
+        // @formatter:off
+        final var platform = parts.length >= 2
+            ? Platform.byName(parts[1])
+            : Optional.of(Platform.getHostPlatform());
+        final var abi = parts.length >= 3
+            ? ABI.byName(parts[2])
+            : Optional.of(ABI.getHostABI());
+        // @formatter:on
         if (arch.isEmpty() || platform.isEmpty() || abi.isEmpty()) {
             return Optional.empty();
         }

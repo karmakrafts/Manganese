@@ -83,7 +83,7 @@ public enum CallingConvention {
         return text;
     }
 
-    public int getLlvmType(final TargetMachine machine) {
+    public int getLLVMValue(final TargetMachine machine) {
         return valueProvider.applyAsInt(machine);
     }
 }
