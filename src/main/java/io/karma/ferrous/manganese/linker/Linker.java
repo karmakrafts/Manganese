@@ -15,6 +15,7 @@
 
 package io.karma.ferrous.manganese.linker;
 
+import io.karma.ferrous.manganese.compiler.CompileContext;
 import org.apiguardian.api.API;
 
 /**
@@ -23,7 +24,11 @@ import org.apiguardian.api.API;
  */
 @API(status = API.Status.STABLE)
 public interface Linker {
+    void link(final CompileContext compileContext);
+
     void addOption(final String option);
+
+    void clearOptions();
 
     LinkerType getType();
 

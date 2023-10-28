@@ -15,26 +15,29 @@
 
 package io.karma.ferrous.manganese.linker;
 
-import io.karma.ferrous.manganese.compiler.CompileContext;
-import org.apiguardian.api.API;
+import java.util.ArrayList;
 
 /**
  * @author Alexander Hinze
  * @since 28/10/2023
  */
-@API(status = API.Status.INTERNAL)
-public final class ELFLinker extends AbstractLinker {
+public abstract class AbstractLinker implements Linker {
+    protected final ArrayList<String> options = new ArrayList<>();
+
     // @formatter:off
-    ELFLinker() {}
+    protected AbstractLinker() {}
     // @formatter:on
 
     @Override
-    public void link(final CompileContext compileContext) {
-
+    public void addOption(final String option) {
+        if (options.contains(option)) {
+            return;
+        }
+        options.add(option);
     }
 
     @Override
-    public LinkerType getType() {
-        return LinkerType.ELF;
+    public void clearOptions() {
+        options.clear();
     }
 }

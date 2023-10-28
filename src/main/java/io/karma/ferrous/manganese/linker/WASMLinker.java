@@ -15,6 +15,7 @@
 
 package io.karma.ferrous.manganese.linker;
 
+import io.karma.ferrous.manganese.compiler.CompileContext;
 import org.apiguardian.api.API;
 
 /**
@@ -22,13 +23,13 @@ import org.apiguardian.api.API;
  * @since 28/10/2023
  */
 @API(status = API.Status.INTERNAL)
-public final class WASMLinker implements Linker {
+public final class WASMLinker extends AbstractLinker {
     // @formatter:off
     WASMLinker() {}
     // @formatter:on
 
     @Override
-    public void addOption(final String option) {
+    public void link(final CompileContext compileContext) {
 
     }
 

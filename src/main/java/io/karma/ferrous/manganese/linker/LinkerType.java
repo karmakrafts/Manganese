@@ -15,7 +15,10 @@
 
 package io.karma.ferrous.manganese.linker;
 
+import io.karma.ferrous.manganese.llvm.LLVMUtils;
+import io.karma.ferrous.manganese.util.Utils;
 import org.apiguardian.api.API;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import java.util.Optional;
@@ -46,6 +49,17 @@ public enum LinkerType {
 
     public static Optional<LinkerType> byName(final String name) {
         return Arrays.stream(values()).filter(type -> type.name.equals(name)).findFirst();
+    }
+
+    public @Nullable String findCommand() {
+        if (Utils.hasCommand(alias)) {
+            return alias;
+        }
+        final var command = String.format("%s-%s", alias, LLVMUtils.getLLVMVersion());
+        if (Utils.hasCommand(command)) {
+            return command;
+        }
+        return null;
     }
 
     public String getName() {
