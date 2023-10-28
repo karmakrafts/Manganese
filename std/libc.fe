@@ -2,6 +2,9 @@ use Platform
 
 //@CompileIf(Platform::has_libc())
 mod libc {
+    extern fun abort()
+    extern fun exit()
+
     extern fun memchr(mem: *void, value: i32, num: usize): *void
     extern fun memcmp(mem1: *void, mem2: *void, num: usize): i32
     extern fun memcpy(dst: mut *void, src: *void, size: usize): mut *void
