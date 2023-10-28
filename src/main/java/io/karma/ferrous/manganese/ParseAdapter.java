@@ -369,10 +369,15 @@ public abstract class ParseAdapter implements FerrousParserListener {
     public void exitField(FieldContext fieldContext) {}
 
     @Override
-    public void enterConstructor(ConstructorContext constructorContext) {}
+    public void enterConstructor(final ConstructorContext context) {
+        final var name = Utils.getIdentifier(context.ident());
+        scopeStack.push(new DefaultScope(ScopeType.CONSTRUCTOR, name));
+    }
 
     @Override
-    public void exitConstructor(ConstructorContext constructorContext) {}
+    public void exitConstructor(final ConstructorContext context) {
+        scopeStack.pop();
+    }
 
     @Override
     public void enterThisCall(ThisCallContext thisCallContext) {}
@@ -387,10 +392,15 @@ public abstract class ParseAdapter implements FerrousParserListener {
     public void exitSuperCall(SuperCallContext superCallContext) {}
 
     @Override
-    public void enterDestructor(DestructorContext destructorContext) {}
+    public void enterDestructor(final DestructorContext context) {
+        final var name = Utils.getIdentifier(context.ident());
+        scopeStack.push(new DefaultScope(ScopeType.DESTRUCTOR, name));
+    }
 
     @Override
-    public void exitDestructor(DestructorContext destructorContext) {}
+    public void exitDestructor(final DestructorContext context) {
+        scopeStack.pop();
+    }
 
     @Override
     public void enterStatement(StatementContext statementContext) {}
@@ -519,10 +529,15 @@ public abstract class ParseAdapter implements FerrousParserListener {
     public void exitIfBody(IfBodyContext ifBodyContext) {}
 
     @Override
-    public void enterFunction(FunctionContext functionContext) {}
+    public void enterFunction(final FunctionContext context) {
+        final var name = FunctionUtils.getFunctionName(context.protoFunction().functionIdent());
+        scopeStack.push(new DefaultScope(ScopeType.FUNCTION, name));
+    }
 
     @Override
-    public void exitFunction(FunctionContext functionContext) {}
+    public void exitFunction(final FunctionContext context) {
+        scopeStack.pop();
+    }
 
     @Override
     public void enterFunctionIdent(FunctionIdentContext functionIdentContext) {}
