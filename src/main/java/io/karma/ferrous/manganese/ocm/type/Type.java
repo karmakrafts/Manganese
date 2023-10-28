@@ -15,12 +15,15 @@
 
 package io.karma.ferrous.manganese.ocm.type;
 
+import io.karma.ferrous.manganese.ocm.GenericParameter;
+import io.karma.ferrous.manganese.ocm.expr.Expression;
 import io.karma.ferrous.manganese.ocm.scope.Scoped;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 
 import java.util.Arrays;
+import java.util.Map;
 
 /**
  * @author Alexander Hinze
@@ -33,6 +36,16 @@ public interface Type extends Scoped {
     TypeAttribute[] getAttributes();
 
     Type getBaseType();
+
+    Map<GenericParameter, Expression> getGenericParams();
+
+    default void setGenericParamValue(final GenericParameter parameter, final Expression value) {
+        getGenericParams().put(parameter, value);
+    }
+
+    default Expression getGenericParamValue(final GenericParameter parameter) {
+        return getGenericParams().get(parameter);
+    }
 
     /**
      * @return True if this type is imaginary and cannot be materialized

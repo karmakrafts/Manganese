@@ -15,7 +15,9 @@
 
 package io.karma.ferrous.manganese.ocm.type;
 
+import io.karma.ferrous.manganese.ocm.GenericParameter;
 import io.karma.ferrous.manganese.ocm.NameProvider;
+import io.karma.ferrous.manganese.ocm.expr.Expression;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Identifier;
@@ -25,6 +27,8 @@ import org.lwjgl.llvm.LLVMCore;
 import org.lwjgl.system.MemoryUtil;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -35,11 +39,13 @@ import java.util.Objects;
 public final class DerivedType implements NamedType {
     private final Type baseType;
     private final TypeAttribute[] attributes;
+    private final HashMap<GenericParameter, Expression> genericParams;
     private long materializedType = MemoryUtil.NULL;
 
     DerivedType(Type baseType, TypeAttribute... attributes) {
         this.baseType = baseType;
         this.attributes = attributes;
+        genericParams = new HashMap<>(baseType.getGenericParams());
     }
 
     // NameProvider
@@ -64,6 +70,11 @@ public final class DerivedType implements NamedType {
     }
 
     // Type
+
+    @Override
+    public Map<GenericParameter, Expression> getGenericParams() {
+        return genericParams;
+    }
 
     @Override
     public Type getBaseType() {

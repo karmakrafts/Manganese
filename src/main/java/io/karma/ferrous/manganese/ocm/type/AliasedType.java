@@ -15,10 +15,14 @@
 
 package io.karma.ferrous.manganese.ocm.type;
 
+import io.karma.ferrous.manganese.ocm.GenericParameter;
+import io.karma.ferrous.manganese.ocm.expr.Expression;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Identifier;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -27,6 +31,7 @@ import java.util.Objects;
  */
 public final class AliasedType implements NamedType {
     private final Identifier name;
+    private final HashMap<GenericParameter, Expression> genericParams = new HashMap<>();
     private Type backingType;
     private Scope enclosingScope;
 
@@ -63,6 +68,11 @@ public final class AliasedType implements NamedType {
     }
 
     // Type
+
+    @Override
+    public Map<GenericParameter, Expression> getGenericParams() {
+        return genericParams;
+    }
 
     @Override
     public boolean isAliased() {

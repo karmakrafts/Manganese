@@ -21,8 +21,10 @@ import io.karma.ferrous.manganese.compiler.CompileErrorCode;
 import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.Field;
 import io.karma.ferrous.manganese.ocm.Function;
+import io.karma.ferrous.manganese.ocm.GenericParameter;
 import io.karma.ferrous.manganese.ocm.access.AccessKind;
 import io.karma.ferrous.manganese.ocm.access.ScopedAccess;
+import io.karma.ferrous.manganese.ocm.expr.Expression;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.ocm.type.*;
 import io.karma.ferrous.manganese.target.TargetMachine;
@@ -116,6 +118,19 @@ public final class Analyzer extends ParseAdapter {
         Logger.INSTANCE.debugln("Resolved type graph: %s", buffer.toString());
 
         return true;
+    }
+
+    @Override
+    public void enterModUseStatement(final ModUseStatementContext context) {
+        super.enterModUseStatement(context);
+    }
+
+    @Override
+    public void enterFunction(final FunctionContext context) {
+        final var analyzer = new FunctionAnalyzer(compiler, compileContext, scopeStack);
+        ParseTreeWalker.DEFAULT.walk(analyzer, context);
+        final var function = analyzer.getFunction();
+        super.enterFunction(context);
     }
 
     @Override
@@ -401,6 +416,11 @@ public final class Analyzer extends ParseAdapter {
         // @formatter:off
         private DummyType() {}
         // @formatter:on
+        
+        @Override
+        public Map<GenericParameter, Expression> getGenericParams() {
+            return Collections.emptyMap();
+        }
 
         @Override
         public Identifier getName() {

@@ -49,6 +49,14 @@ public final class Utils {
     private Utils() {}
     // @formatter:on
 
+    public static boolean hasCommand(final String name) {
+        try {
+            return new ProcessBuilder().command(name).start().exitValue() == 0;
+        } catch (Exception error) {
+            return false;
+        }
+    }
+
     public static Access getAccess(final Compiler compiler, final CompileContext compileContext, final ScopeStack scopeStack,
                                    final AccessModContext context) {
         if (context == null || context.KW_PUB() == null) {

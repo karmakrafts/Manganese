@@ -15,6 +15,8 @@
 
 package io.karma.ferrous.manganese.ocm.type;
 
+import io.karma.ferrous.manganese.ocm.GenericParameter;
+import io.karma.ferrous.manganese.ocm.expr.Expression;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Identifier;
@@ -24,9 +26,7 @@ import org.lwjgl.llvm.LLVMCore;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 import static org.lwjgl.llvm.LLVMCore.LLVMGetGlobalContext;
 
@@ -39,6 +39,7 @@ public final class StructureType implements NamedType {
     private final Identifier name;
     private final boolean isPacked;
     private final Type[] fieldTypes;
+    private final HashMap<GenericParameter, Expression> genericParams = new HashMap<>();
     private long materializedType = MemoryUtil.NULL;
     private Scope enclosingScope;
 
@@ -84,6 +85,11 @@ public final class StructureType implements NamedType {
     }
 
     // Type
+
+    @Override
+    public Map<GenericParameter, Expression> getGenericParams() {
+        return genericParams;
+    }
 
     @Override
     public boolean isBuiltin() {

@@ -120,6 +120,23 @@ public final class LLVMUtils {
         LLVMInitializeWebAssemblyDisassembler();
     }
 
+    public static @Nullable String getLLVMVersion() {
+        for (final var searchPath : PATHS_TO_SEARCH) {
+            for (final var directory : NAMES_TO_SEARCH) {
+                final var path = Path.of(searchPath).resolve(directory);
+                if (!Files.exists(path) || !Files.isDirectory(path)) {
+                    continue;
+                }
+                final var libFolder = path.resolve("lib");
+                if (!Files.exists(libFolder) || !Files.isDirectory(libFolder)) {
+                    continue;
+                }
+                return libFolder.toAbsolutePath().normalize().toString();
+            }
+        }
+        return null;
+    }
+
     public static void loadLLVM() {
         for (final var searchPath : PATHS_TO_SEARCH) {
             for (final var directory : NAMES_TO_SEARCH) {
