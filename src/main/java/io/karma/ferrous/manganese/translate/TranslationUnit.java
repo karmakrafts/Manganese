@@ -20,18 +20,11 @@ import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.CompileErrorCode;
 import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.module.Module;
-import io.karma.ferrous.manganese.ocm.Function;
 import io.karma.ferrous.manganese.util.FunctionUtils;
-import io.karma.ferrous.manganese.util.Identifier;
-import io.karma.ferrous.manganese.util.Logger;
 import io.karma.ferrous.manganese.util.TypeUtils;
 import io.karma.ferrous.vanadium.FerrousParser.ExternFunctionContext;
-import io.karma.ferrous.vanadium.FerrousParser.FunctionContext;
-import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
-
-import java.util.HashMap;
 
 import static org.lwjgl.llvm.LLVMCore.*;
 import static org.lwjgl.system.MemoryUtil.NULL;
@@ -42,23 +35,12 @@ import static org.lwjgl.system.MemoryUtil.NULL;
  */
 @API(status = Status.INTERNAL)
 public class TranslationUnit extends ParseAdapter {
-    private final HashMap<Identifier, Function> functions = new HashMap<>();
     private final Module module;
     private boolean isDisposed;
 
     public TranslationUnit(final Compiler compiler, final CompileContext compileContext) {
         super(compiler, compileContext);
         module = compiler.getTargetMachine().createModule(compileContext.getCurrentModuleName());
-    }
-
-    @Override
-    public void enterFunction(final FunctionContext context) {
-        final var parser = new FunctionParser(compiler, compileContext, scopeStack);
-        ParseTreeWalker.DEFAULT.walk(parser, context);
-        final var function = parser.getFunction();
-        functions.put(function.getQualifiedName(), function);
-        Logger.INSTANCE.debugln("Parsed function '%s'", function);
-        super.enterFunction(context);
     }
 
     @Override

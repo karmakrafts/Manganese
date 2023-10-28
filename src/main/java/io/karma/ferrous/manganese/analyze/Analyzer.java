@@ -20,6 +20,7 @@ import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.CompileErrorCode;
 import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.Field;
+import io.karma.ferrous.manganese.ocm.Function;
 import io.karma.ferrous.manganese.ocm.access.AccessKind;
 import io.karma.ferrous.manganese.ocm.access.ScopedAccess;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
@@ -48,6 +49,7 @@ import java.util.stream.Collectors;
 @API(status = Status.INTERNAL)
 public final class Analyzer extends ParseAdapter {
     private final LinkedHashMap<Identifier, NamedType> udts = new LinkedHashMap<>();
+    private final HashMap<Identifier, Function> functions = new HashMap<>();
 
     public Analyzer(final Compiler compiler, final CompileContext compileContext) {
         super(compiler, compileContext);
@@ -325,7 +327,7 @@ public final class Analyzer extends ParseAdapter {
 
         for (final var node : sortedNodes) {
             final var type = node.getValue();
-            if (type == null || type instanceof NullType || type == DummyType.INSTANCE) {
+            if (type == null || type == NullType.INSTANCE || type == DummyType.INSTANCE) {
                 continue;
             }
             final var qualifiedName = type.getQualifiedName();

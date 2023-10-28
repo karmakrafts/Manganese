@@ -15,6 +15,7 @@
 
 package io.karma.ferrous.manganese.target;
 
+import io.karma.ferrous.manganese.linker.LinkerType;
 import io.karma.kommons.util.SystemInfo;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
@@ -29,16 +30,18 @@ import java.util.Optional;
 @API(status = Status.STABLE)
 public enum Platform {
     // @formatter:off
-    UNKNOWN ("unknown"),
-    LINUX   ("linux"),
-    WINDOWS ("windows"),
-    MACOS   ("macos");
+    UNKNOWN ("unknown", LinkerType.ELF),
+    LINUX   ("linux",   LinkerType.ELF),
+    WINDOWS ("windows", LinkerType.COFF),
+    MACOS   ("macos",   LinkerType.MACHO);
     // @formatter:on
 
     private final String name;
+    private final LinkerType defaultLinkerType;
 
-    Platform(final String name) {
+    Platform(final String name, final LinkerType defaultLinkerType) {
         this.name = name;
+        this.defaultLinkerType = defaultLinkerType;
     }
 
     public static Platform getHostPlatform() {
@@ -61,5 +64,9 @@ public enum Platform {
 
     public String getName() {
         return name;
+    }
+
+    public LinkerType getDefaultLinkerType() {
+        return defaultLinkerType;
     }
 }

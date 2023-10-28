@@ -18,6 +18,7 @@ package io.karma.ferrous.manganese;
 import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.CompileStatus;
 import io.karma.ferrous.manganese.compiler.Compiler;
+import io.karma.ferrous.manganese.linker.LinkerType;
 import io.karma.ferrous.manganese.target.*;
 import io.karma.ferrous.manganese.util.Logger;
 import io.karma.ferrous.manganese.util.Logger.LogLevel;
@@ -31,6 +32,7 @@ import org.apiguardian.api.API.Status;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.jar.Manifest;
@@ -101,10 +103,35 @@ final class Main {
                 .withOptionalArg()
                 .ofType(String.class)
                 .defaultsTo("");
+            final var linkerTypeOpt = parser.accepts("l", "The linker to use when linking the module.")
+                .withOptionalArg()
+                .ofType(String.class)
+                .defaultsTo(Platform.getHostPlatform().getDefaultLinkerType().getName());
+            final var linkerOptionsOpt = parser.accepts("L", "Options passed directly to the linker.")
+                .withOptionalArg()
+                .ofType(String.class)
+                .defaultsTo("");
             // @formatter:on
             final var options = parser.parse(args);
 
             if (options.has(helpOpt)) {
+                if (options.has(featuresOpt)) {
+                    Logger.INSTANCE.infoln("Available CPU features:");
+                    // @formatter:off
+                    Arrays.stream(Objects.requireNonNull(LLVMGetHostCPUFeatures()).split(","))
+                        .filter(feat -> feat.startsWith("+"))
+                        .map(feat -> feat.substring(1))
+                        .forEach(feat -> Logger.INSTANCE.infoln("  - %s", feat));
+                    // @formatter:on
+                    return;
+                }
+                if (options.has(linkerTypeOpt)) {
+                    Logger.INSTANCE.infoln("Available linker types:");
+                    for (final var type : LinkerType.values()) {
+                        Logger.INSTANCE.infoln("  - %s", type.getName());
+                    }
+                    return;
+                }
                 if (options.has(optimizationOpt)) {
                     Logger.INSTANCE.infoln("Available optimization levels:");
                     for (final var level : OptimizationLevel.values()) {
@@ -136,7 +163,7 @@ final class Main {
                 parser.formatHelpWith(new BuiltinHelpFormatter(120, 8));
                 parser.printHelpOn(Logger.INSTANCE); // Print help
                 Logger.INSTANCE.infoln("You can also combine the following options with -?:");
-                Logger.INSTANCE.infoln("  -O, -F, -M, -r");
+                Logger.INSTANCE.infoln("  -O, -F, -M, -r, -f, -l");
                 return;
             }
             if (options.has(versionOpt)) {
@@ -161,13 +188,22 @@ final class Main {
             final var codeModel = CodeModel.byName(options.valueOf(codeModelOpt));
             final var fileType = FileType.byExtension(options.valueOf(fileTypeOpt));
             if (optLevel.isEmpty() || relocation.isEmpty() || codeModel.isEmpty() || fileType.isEmpty()) {
-                Logger.INSTANCE.error("Malformed parameter");
+                Logger.INSTANCE.errorln("Malformed parameter");
                 return;
             }
 
             final var targetMachine = Manganese.createTargetMachine(target, features, optLevel.get(), relocation.get(),
                     codeModel.get(), options.valueOf(cpuOpt));
-            final var compiler = Manganese.createCompiler(targetMachine, options.valueOf(threadsOpt));
+            final var linkerType = LinkerType.byName(options.valueOf(linkerTypeOpt));
+            if (linkerType.isEmpty()) {
+                Logger.INSTANCE.errorln("Malformed parameter");
+                return;
+            }
+
+            final var linker = linkerType.get().create();
+            linker.addRawOptions(options.valueOf(linkerOptionsOpt));
+
+            final var compiler = Manganese.createCompiler(targetMachine, linker, options.valueOf(threadsOpt));
             compiler.setDisassemble(options.has(disassembleOpt));
             compiler.setTokenView(options.has(tokenViewOpt), false);
             compiler.setReportParserWarnings(options.has(parseWarningsOpt));

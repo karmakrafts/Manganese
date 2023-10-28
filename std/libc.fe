@@ -1,6 +1,6 @@
 use Platform
 
-@CompileIf(Platform::has_libc())
+//@CompileIf(Platform::has_libc())
 mod libc {
     extern fun memchr(mem: *void, value: i32, num: usize): *void
     extern fun memcmp(mem1: *void, mem2: *void, num: usize): i32

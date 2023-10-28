@@ -49,7 +49,6 @@ public final class CompileContext {
     public synchronized Module getModule() {
         return Objects.requireNonNull(modules.get(Objects.requireNonNull(getCurrentModuleName())));
     }
-    // @formatter:on
 
     private synchronized ModuleData getOrCreateModuleData(final String name) {
         return moduleData.computeIfAbsent(name, ModuleData::new);

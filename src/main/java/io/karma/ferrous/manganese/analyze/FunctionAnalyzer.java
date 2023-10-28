@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.translate;
+package io.karma.ferrous.manganese.analyze;
 
 import io.karma.ferrous.manganese.ParseAdapter;
 import io.karma.ferrous.manganese.compiler.CompileContext;
@@ -35,14 +35,14 @@ import org.apiguardian.api.API.Status;
  * @since 14/10/2023
  */
 @API(status = Status.INTERNAL)
-public final class FunctionParser extends ParseAdapter {
+public final class FunctionAnalyzer extends ParseAdapter {
     private final ScopeStack capturedScopeStack;
     private Identifier identifier;
     private FunctionType type;
     private CallingConvention callConv;
     private Identifier[] paramNames = new Identifier[0];
 
-    public FunctionParser(final Compiler compiler, final CompileContext compileContext, final ScopeStack capturedScopeStack) {
+    public FunctionAnalyzer(final Compiler compiler, final CompileContext compileContext, final ScopeStack capturedScopeStack) {
         super(compiler, compileContext);
         this.capturedScopeStack = capturedScopeStack;
     }

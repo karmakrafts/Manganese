@@ -17,6 +17,7 @@ package io.karma.ferrous.manganese.llvm;
 
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
+import org.jetbrains.annotations.Nullable;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.llvm.LLVMCore;
 

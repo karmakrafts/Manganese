@@ -16,6 +16,7 @@
 package io.karma.ferrous.manganese.compiler;
 
 import io.karma.ferrous.manganese.analyze.Analyzer;
+import io.karma.ferrous.manganese.linker.Linker;
 import io.karma.ferrous.manganese.target.FileType;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.translate.TranslationUnit;
@@ -63,6 +64,7 @@ public final class Compiler {
     private static final String[] IN_EXTENSIONS = {"ferrous", "fe"};
 
     private final TargetMachine targetMachine;
+    private final Linker linker;
     private final ExecutorService executorService;
     private final AtomicInteger numRunningTasks = new AtomicInteger(0);
 
@@ -72,8 +74,9 @@ public final class Compiler {
     private boolean disassemble = false;
 
     @API(status = Status.INTERNAL)
-    public Compiler(final TargetMachine targetMachine, final int numThreads) {
+    public Compiler(final TargetMachine targetMachine, final Linker linker, final int numThreads) {
         this.targetMachine = targetMachine;
+        this.linker = linker;
         executorService = Executors.newFixedThreadPool(numThreads);
         Runtime.getRuntime().addShutdownHook(new Thread(() -> Functions.tryDo(() -> {
             executorService.shutdown();
@@ -250,6 +253,10 @@ public final class Compiler {
 
     public TargetMachine getTargetMachine() {
         return targetMachine;
+    }
+
+    public Linker getLinker() {
+        return linker;
     }
 
     private void processTokens(final List<Token> tokens) {
