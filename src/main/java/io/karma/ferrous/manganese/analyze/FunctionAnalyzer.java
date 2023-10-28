@@ -42,7 +42,8 @@ public final class FunctionAnalyzer extends ParseAdapter {
     private CallingConvention callConv;
     private Identifier[] paramNames = new Identifier[0];
 
-    public FunctionAnalyzer(final Compiler compiler, final CompileContext compileContext, final ScopeStack capturedScopeStack) {
+    public FunctionAnalyzer(final Compiler compiler, final CompileContext compileContext,
+                            final ScopeStack capturedScopeStack) {
         super(compiler, compileContext);
         this.capturedScopeStack = capturedScopeStack;
     }
@@ -66,7 +67,9 @@ public final class FunctionAnalyzer extends ParseAdapter {
         for (var i = 0; i < numParams; i++) {
             params[i] = new Parameter(paramNames[i], paramTypes[i], null);
         }
-        return capturedScopeStack.applyEnclosingScopes(
-                new Function(identifier, callConv, type.getReturnType(), params));
+        return capturedScopeStack.applyEnclosingScopes(new Function(identifier,
+            callConv,
+            type.getReturnType(),
+            params));
     }
 }

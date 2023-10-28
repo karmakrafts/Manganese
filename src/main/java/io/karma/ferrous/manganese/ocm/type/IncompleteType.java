@@ -15,8 +15,7 @@
 
 package io.karma.ferrous.manganese.ocm.type;
 
-import io.karma.ferrous.manganese.ocm.GenericParameter;
-import io.karma.ferrous.manganese.ocm.expr.Expression;
+import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Identifier;
@@ -24,9 +23,6 @@ import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 import org.lwjgl.llvm.LLVMCore;
 import org.lwjgl.system.MemoryUtil;
-
-import java.util.HashMap;
-import java.util.Map;
 
 import static org.lwjgl.llvm.LLVMCore.LLVMGetGlobalContext;
 
@@ -37,12 +33,13 @@ import static org.lwjgl.llvm.LLVMCore.LLVMGetGlobalContext;
 @API(status = Status.INTERNAL)
 public final class IncompleteType implements NamedType {
     private final Identifier name;
-    private final HashMap<GenericParameter, Expression> genericParams = new HashMap<>();
+    private final GenericParameter[] genericParams;
     private long materializedType = MemoryUtil.NULL;
     private Scope enclosingType;
 
-    IncompleteType(final Identifier name) {
+    IncompleteType(final Identifier name, final GenericParameter... genericParams) {
         this.name = name;
+        this.genericParams = genericParams;
     }
 
     // NameProvider
@@ -67,7 +64,7 @@ public final class IncompleteType implements NamedType {
     // Type
 
     @Override
-    public Map<GenericParameter, Expression> getGenericParams() {
+    public GenericParameter[] getGenericParams() {
         return genericParams;
     }
 

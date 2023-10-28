@@ -41,7 +41,7 @@ public enum CallingConvention {
     FASTCALL    ("fastcall",    m -> LLVMCore.LLVMX86FastcallCallConv),
     VECTORCALL  ("vectorcall",  m -> LLVMCore.LLVMX86VectorCallCallConv),
     SWIFTCALL   ("swiftcall",   m -> LLVMCore.LLVMSwiftCallConv),
-    MS          ("ms",          m -> LLVMCore.LLVMWin64CallConv),
+    WIN64       ("win64",       m -> LLVMCore.LLVMWin64CallConv),
     SYSV        ("sysv",        m -> LLVMCore.LLVMX8664SysVCallConv),
     INTERRUPT   ("interrupt",   CallingConvention::getInterruptCallConv),
     SIGNAL      ("signal",      CallingConvention::getSignalCallConv);

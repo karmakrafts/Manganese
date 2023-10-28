@@ -102,8 +102,10 @@ public final class Compiler {
             Logger.INSTANCE.debugln("Finished pass TOKENIZE in %dms", time);
             if (tokenView) {
                 System.out.printf("\n%s\n",
-                        TokenUtils.renderTokenTree(context.getCurrentModuleName(), extendedTokenView, lexer,
-                                tokenStream.getTokens()));
+                    TokenUtils.renderTokenTree(context.getCurrentModuleName(),
+                        extendedTokenView,
+                        lexer,
+                        tokenStream.getTokens()));
             }
             // Parse
             context.setCurrentPass(CompilePass.PARSE);
@@ -117,7 +119,8 @@ public final class Compiler {
             Logger.INSTANCE.debugln("Finished pass PARSE in %dms", time);
 
             context.setCurrentPass(CompilePass.NONE);
-        } catch (IOException error) {
+        }
+        catch (IOException error) {
             context.setCurrentPass(CompilePass.NONE);
             context.reportError(context.makeError(CompileErrorCode.E0002));
         }
@@ -179,7 +182,8 @@ public final class Compiler {
                 try (final var stream = Files.newInputStream(file); final var channel = Channels.newChannel(stream)) {
                     tokenizeAndParse(rawFileName, channel, context);
                     analyzeAndProcess(rawFileName, context);
-                } catch (IOException error) {
+                }
+                catch (IOException error) {
                     context.reportError(context.makeError(CompileErrorCode.E0003));
                 }
                 numRunningTasks.decrementAndGet();
@@ -215,13 +219,14 @@ public final class Compiler {
                 context.setCurrentPass(CompilePass.LINK);
                 module.linkIn(context.getModule());
                 context.setCurrentPass(CompilePass.NONE);
-            } catch (IOException error) {
+            }
+            catch (IOException error) {
                 context.reportError(context.makeError(CompileErrorCode.E0004));
             }
         }
 
-        final var globalModule = Objects.requireNonNull(
-                Functions.tryGet(() -> targetMachine.loadEmbeddedModule("global", LLVMGetGlobalContext())));
+        final var globalModule = Objects.requireNonNull(Functions.tryGet(() -> targetMachine.loadEmbeddedModule("global",
+            LLVMGetGlobalContext())));
         module.linkIn(globalModule);
         globalModule.dispose();
 
@@ -316,7 +321,9 @@ public final class Compiler {
         @Override
         public void syntaxError(final Recognizer<?, ?> recognizer, final Object offendingSymbol, final int line,
                                 final int charPositionInLine, final String msg, final RecognitionException e) {
-            context.reportError(context.makeError((Token) offendingSymbol, Utils.capitalize(msg), CompileErrorCode.E2000));
+            context.reportError(context.makeError((Token) offendingSymbol,
+                Utils.capitalize(msg),
+                CompileErrorCode.E2000));
         }
 
         @Override
@@ -340,8 +347,10 @@ public final class Compiler {
         public void reportContextSensitivity(final Parser recognizer, final DFA dfa, final int startIndex,
                                              final int stopIndex, final int prediction, final ATNConfigSet configs) {
             if (reportParserWarnings) {
-                Logger.INSTANCE.debugln("Detected abnormally high context sensitivity at %d:%d (%d)", startIndex, stopIndex,
-                        dfa.decision);
+                Logger.INSTANCE.debugln("Detected abnormally high context sensitivity at %d:%d (%d)",
+                    startIndex,
+                    stopIndex,
+                    dfa.decision);
             }
         }
     }

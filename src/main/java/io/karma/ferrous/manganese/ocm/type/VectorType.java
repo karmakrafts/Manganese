@@ -15,14 +15,11 @@
 
 package io.karma.ferrous.manganese.ocm.type;
 
-import io.karma.ferrous.manganese.ocm.GenericParameter;
-import io.karma.ferrous.manganese.ocm.expr.Expression;
+import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import org.lwjgl.llvm.LLVMCore;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Objects;
 
 import static org.lwjgl.system.MemoryUtil.NULL;
@@ -34,13 +31,14 @@ import static org.lwjgl.system.MemoryUtil.NULL;
 public final class VectorType implements Type {
     private final Type type;
     private final int elementCount;
-    private final HashMap<GenericParameter, Expression> genericParams = new HashMap<>();
+    private final GenericParameter[] genericParams;
     private long materializedType = NULL;
     private Scope enclosingScope;
 
-    public VectorType(final Type type, final int elementCount) {
+    public VectorType(final Type type, final int elementCount, final GenericParameter... genericParams) {
         this.type = type;
         this.elementCount = elementCount;
+        this.genericParams = genericParams;
     }
 
     public Type getType() {
@@ -66,7 +64,7 @@ public final class VectorType implements Type {
     // Type
 
     @Override
-    public Map<GenericParameter, Expression> getGenericParams() {
+    public GenericParameter[] getGenericParams() {
         return genericParams;
     }
 

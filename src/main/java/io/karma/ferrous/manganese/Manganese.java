@@ -124,8 +124,11 @@ public final class Manganese {
         final var cpu = Architecture.getHostArchitecture().getDefaultCPU();
         final var target = Target.getHostTarget();
         final var linker = target.getPlatform().getDefaultLinkerType().create();
-        return createCompiler(
-                new TargetMachine(target, "", OptimizationLevel.DEFAULT, Relocation.DEFAULT,
-                        CodeModel.DEFAULT, cpu), linker, numThreads);
+        return createCompiler(new TargetMachine(target,
+            "",
+            OptimizationLevel.DEFAULT,
+            Relocation.DEFAULT,
+            CodeModel.DEFAULT,
+            cpu), linker, numThreads);
     }
 }

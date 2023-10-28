@@ -29,7 +29,11 @@ import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
@@ -40,17 +44,17 @@ import java.util.function.Function;
 @API(status = Status.STABLE)
 public final class CompileContext {
     private final List<CompileError> errors = Collections.synchronizedList(new ArrayList<>());
-    private final Map<String, Module> modules = Collections.synchronizedMap(new HashMap<>());
-    private final Map<String, ModuleData> moduleData = Collections.synchronizedMap(new HashMap<>());
+    private final ConcurrentHashMap<String, Module> modules = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, ModuleData> moduleData = new ConcurrentHashMap<>();
     private final ThreadLocal<CompilePass> pass = ThreadLocal.withInitial(() -> CompilePass.NONE);
     private final ThreadLocal<String> currentModuleName = ThreadLocal.withInitial(String::new);
     private final AtomicInteger status = new AtomicInteger(CompileStatus.SUCCESS.ordinal());
 
-    public synchronized Module getModule() {
+    public Module getModule() {
         return Objects.requireNonNull(modules.get(Objects.requireNonNull(getCurrentModuleName())));
     }
 
-    private synchronized ModuleData getOrCreateModuleData(final String name) {
+    private ModuleData getOrCreateModuleData(final String name) {
         return moduleData.computeIfAbsent(name, ModuleData::new);
     }
 
@@ -78,13 +82,19 @@ public final class CompileContext {
     }
 
     public CompileError makeError(final Token token, final CompileErrorCode errorCode) {
-        return new CompileError(token, TokenUtils.getLineTokens(getTokenStream(), token), getCurrentPass(), null,
-                errorCode);
+        return new CompileError(token,
+            TokenUtils.getLineTokens(getTokenStream(), token),
+            getCurrentPass(),
+            null,
+            errorCode);
     }
 
     public CompileError makeError(final Token token, final String text, final CompileErrorCode errorCode) {
-        return new CompileError(token, TokenUtils.getLineTokens(getTokenStream(), token), getCurrentPass(), text,
-                errorCode);
+        return new CompileError(token,
+            TokenUtils.getLineTokens(getTokenStream(), token),
+            getCurrentPass(),
+            text,
+            errorCode);
     }
 
     public void reportError(final CompileError error) {
@@ -173,14 +183,16 @@ public final class CompileContext {
         getOrCreateModuleData().setTranslationUnit(translationUnit);
     }
 
-    public synchronized void dispose() {
+    public void dispose() {
         modules.values().forEach(Module::dispose); // Dispose the actual modules
         modules.clear();
         moduleData.clear();
-        errors.clear();
+        synchronized (this) {
+            errors.clear();
+        }
     }
 
-    public synchronized void addModule(final Module module) {
+    public void addModule(final Module module) {
         modules.put(module.getName(), module);
     }
 }

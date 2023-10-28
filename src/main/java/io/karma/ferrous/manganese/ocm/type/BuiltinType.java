@@ -15,8 +15,7 @@
 
 package io.karma.ferrous.manganese.ocm.type;
 
-import io.karma.ferrous.manganese.ocm.GenericParameter;
-import io.karma.ferrous.manganese.ocm.expr.Expression;
+import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
 import io.karma.ferrous.manganese.ocm.scope.DefaultScope;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.target.TargetMachine;
@@ -27,8 +26,6 @@ import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 import org.lwjgl.llvm.LLVMCore;
 
-import java.util.Collections;
-import java.util.Map;
 import java.util.function.ToLongFunction;
 
 /**
@@ -95,8 +92,8 @@ public enum BuiltinType implements NamedType {
     // Type
 
     @Override
-    public Map<GenericParameter, Expression> getGenericParams() {
-        return Collections.emptyMap();
+    public GenericParameter[] getGenericParams() {
+        return new GenericParameter[0];
     }
 
     @Override

@@ -55,8 +55,8 @@ public class TranslationUnit extends ParseAdapter {
             return;
         }
         LLVMSetLinkage(function, LLVMExternalLinkage);
-        LLVMSetFunctionCallConv(function, FunctionUtils.getCallingConvention(compileContext, prototype)
-                .getLLVMValue(compiler.getTargetMachine()));
+        LLVMSetFunctionCallConv(function,
+            FunctionUtils.getCallingConvention(compileContext, prototype).getLLVMValue(compiler.getTargetMachine()));
         super.enterExternFunction(context);
     }
 

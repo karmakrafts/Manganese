@@ -167,8 +167,8 @@ final class Main {
                 return;
             }
             if (options.has(versionOpt)) {
-                final var location = Objects.requireNonNull(
-                        Compiler.class.getClassLoader().getResource("META-INF/MANIFEST.MF"));
+                final var location = Objects.requireNonNull(Compiler.class.getClassLoader().getResource(
+                    "META-INF/MANIFEST.MF"));
                 try (final var stream = location.openStream()) {
                     final var manifest = new Manifest(stream);
                     final var attribs = manifest.getMainAttributes();
@@ -192,8 +192,12 @@ final class Main {
                 return;
             }
 
-            final var targetMachine = Manganese.createTargetMachine(target, features, optLevel.get(), relocation.get(),
-                    codeModel.get(), options.valueOf(cpuOpt));
+            final var targetMachine = Manganese.createTargetMachine(target,
+                features,
+                optLevel.get(),
+                relocation.get(),
+                codeModel.get(),
+                options.valueOf(cpuOpt));
             final var linkerType = LinkerType.byName(options.valueOf(linkerTypeOpt));
             if (linkerType.isEmpty()) {
                 Logger.INSTANCE.errorln("Malformed parameter");
@@ -235,14 +239,17 @@ final class Main {
             final var errors = result.errors();
             Collections.sort(errors);
             errors.forEach(error -> error.print(System.out));
-        } catch (OptionException | NoArgsException error) {
+        }
+        catch (OptionException | NoArgsException error) {
             // Special case; display help instead of logging the exception.
             Logger.INSTANCE.infoln("Try running with -? to get some help!");
             System.exit(0);
-        } catch (IOException error) {
+        }
+        catch (IOException error) {
             Logger.INSTANCE.errorln("%s", error.toString());
             status = status.worse(CompileStatus.IO_ERROR);
-        } catch (Throwable error) {
+        }
+        catch (Throwable error) {
             Logger.INSTANCE.errorln("%s", error.toString());
             status = status.worse(CompileStatus.UNKNOWN_ERROR);
         }

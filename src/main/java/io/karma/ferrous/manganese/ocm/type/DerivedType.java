@@ -15,9 +15,8 @@
 
 package io.karma.ferrous.manganese.ocm.type;
 
-import io.karma.ferrous.manganese.ocm.GenericParameter;
 import io.karma.ferrous.manganese.ocm.NameProvider;
-import io.karma.ferrous.manganese.ocm.expr.Expression;
+import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Identifier;
@@ -27,8 +26,6 @@ import org.lwjgl.llvm.LLVMCore;
 import org.lwjgl.system.MemoryUtil;
 
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -39,13 +36,23 @@ import java.util.Objects;
 public final class DerivedType implements NamedType {
     private final Type baseType;
     private final TypeAttribute[] attributes;
-    private final HashMap<GenericParameter, Expression> genericParams;
+    private final GenericParameter[] genericParams;
     private long materializedType = MemoryUtil.NULL;
 
-    DerivedType(Type baseType, TypeAttribute... attributes) {
+    DerivedType(final Type baseType, final TypeAttribute... attributes) {
         this.baseType = baseType;
         this.attributes = attributes;
-        genericParams = new HashMap<>(baseType.getGenericParams());
+
+        // Deep-copy generic parameters
+        final var params = baseType.getGenericParams();
+        final var numParams = params.length;
+        genericParams = new GenericParameter[numParams];
+        for (var i = 0; i < numParams; i++) {
+            final var param = params[i];
+            genericParams[i] = new GenericParameter(param.getName(),
+                type -> param.getConstraints().test(type),
+                param.getValue());
+        }
     }
 
     // NameProvider
@@ -72,7 +79,7 @@ public final class DerivedType implements NamedType {
     // Type
 
     @Override
-    public Map<GenericParameter, Expression> getGenericParams() {
+    public GenericParameter[] getGenericParams() {
         return genericParams;
     }
 
@@ -106,7 +113,7 @@ public final class DerivedType implements NamedType {
     }
 
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
         if (obj instanceof DerivedType type) { // @formatter:off
             return baseType.equals(type.baseType)
                 && Arrays.equals(attributes, type.attributes);

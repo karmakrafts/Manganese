@@ -28,18 +28,20 @@ import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 
 import java.util.ArrayList;
+import java.util.Objects;
 
 /**
  * @author Alexander Hinze
  * @since 15/10/2023
  */
 @API(status = Status.INTERNAL)
-public final class FieldAnalyzer extends ParseAdapter {
+public final class FieldLayoutAnalyzer extends ParseAdapter {
     private final ArrayList<Field> fields = new ArrayList<>();
     private final ScopeStack capturedScopeStack;
     private int nestedScopes = 0;
 
-    public FieldAnalyzer(final Compiler compiler, final CompileContext compileContext, final ScopeStack capturedScopeStack) {
+    public FieldLayoutAnalyzer(final Compiler compiler, final CompileContext compileContext,
+                               final ScopeStack capturedScopeStack) {
         super(compiler, compileContext);
         this.capturedScopeStack = capturedScopeStack;
     }
@@ -64,7 +66,10 @@ public final class FieldAnalyzer extends ParseAdapter {
             return;
         }
         final var name = Utils.getIdentifier(context.ident());
-        final var type = TypeUtils.getType(compiler, compileContext, capturedScopeStack, context.type());
+        final var type = Objects.requireNonNull(TypeUtils.getType(compiler,
+            compileContext,
+            capturedScopeStack,
+            context.type()));
         fields.add(new Field(name, type, Utils.getAccess(compiler, compileContext, scopeStack, context.accessMod())));
         super.enterField(context);
     }

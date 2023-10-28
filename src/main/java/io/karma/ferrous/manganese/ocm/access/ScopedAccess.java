@@ -27,6 +27,7 @@ import org.apiguardian.api.API.Status;
 
 /**
  * @author Alexander Hinze
+ * @author Cedric Hammes
  * @since 17/10/2023
  */
 @API(status = Status.INTERNAL)
@@ -37,10 +38,10 @@ public record ScopedAccess(Type... types) implements Access {
     }
 
     @Override
-    public <T extends Scoped & NameProvider> boolean hasAccess(final Compiler compiler, final CompileContext compileContext, final ScopeStack scopeStack,
-                                                               final T target) {
-        var type = compileContext.getAnalyzer()
-                .findTypeInScope(target.getQualifiedName(), target.getScopeName());
+    public <T extends Scoped & NameProvider> boolean hasAccess(final Compiler compiler,
+                                                               final CompileContext compileContext,
+                                                               final ScopeStack scopeStack, final T target) {
+        var type = compileContext.getAnalyzer().findTypeInScope(target.getQualifiedName(), target.getScopeName());
         for (Type allowedType : types) {
             if (type == allowedType) {
                 return true;

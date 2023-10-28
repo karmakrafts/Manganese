@@ -24,11 +24,5 @@ import org.apiguardian.api.API.Status;
  */
 @API(status = Status.STABLE)
 public enum CompilePass {
-    NONE,
-    TOKENIZE,
-    PARSE,
-    ANALYZE,
-    PROCESS,
-    COMPILE,
-    LINK
+    NONE, TOKENIZE, PARSE, ANALYZE, PROCESS, COMPILE, LINK
 }

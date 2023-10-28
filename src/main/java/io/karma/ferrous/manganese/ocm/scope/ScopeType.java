@@ -26,20 +26,7 @@ import java.util.EnumSet;
  */
 @API(status = Status.INTERNAL)
 public enum ScopeType {
-    GLOBAL,
-    FILE,
-    MODULE_FILE,
-    MODULE,
-    STRUCT,
-    CLASS,
-    ENUM_CLASS,
-    ENUM,
-    TRAIT,
-    ATTRIBUTE,
-    INTERFACE,
-    CONSTRUCTOR,
-    DESTRUCTOR,
-    FUNCTION;
+    GLOBAL, FILE, MODULE_FILE, MODULE, STRUCT, CLASS, ENUM_CLASS, ENUM, TRAIT, ATTRIBUTE, INTERFACE, CONSTRUCTOR, DESTRUCTOR, FUNCTION;
 
     private static final EnumSet<ScopeType> INVISIBLE_TYPES = EnumSet.of(GLOBAL, FILE, MODULE_FILE);
 

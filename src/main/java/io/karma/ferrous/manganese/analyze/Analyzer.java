@@ -21,10 +21,9 @@ import io.karma.ferrous.manganese.compiler.CompileErrorCode;
 import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.Field;
 import io.karma.ferrous.manganese.ocm.Function;
-import io.karma.ferrous.manganese.ocm.GenericParameter;
 import io.karma.ferrous.manganese.ocm.access.AccessKind;
 import io.karma.ferrous.manganese.ocm.access.ScopedAccess;
-import io.karma.ferrous.manganese.ocm.expr.Expression;
+import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.ocm.type.*;
 import io.karma.ferrous.manganese.target.TargetMachine;
@@ -77,8 +76,8 @@ public final class Analyzer extends ParseAdapter {
                 var fieldTypeName = ((NamedType) fieldType).getQualifiedName();
                 final var fieldNode = ScopeUtils.findInScope(nodes, fieldTypeName, childType.getScopeName());
                 if (fieldNode == null) {
-                    compileContext.reportError(
-                            compileContext.makeError(fieldTypeName.toString(), CompileErrorCode.E3004));
+                    compileContext.reportError(compileContext.makeError(fieldTypeName.toString(),
+                        CompileErrorCode.E3004));
                     return false;
                 }
                 fieldTypeName = fieldNode.getValue().getQualifiedName();
@@ -98,8 +97,8 @@ public final class Analyzer extends ParseAdapter {
                 var backingTypeName = ((NamedType) alias.getBackingType()).getQualifiedName();
                 final var typeNode = ScopeUtils.findInScope(nodes, backingTypeName, childType.getScopeName());
                 if (typeNode == null) {
-                    compileContext.reportError(
-                            compileContext.makeError(backingTypeName.toString(), CompileErrorCode.E3004));
+                    compileContext.reportError(compileContext.makeError(backingTypeName.toString(),
+                        CompileErrorCode.E3004));
                     return false;
                 }
                 backingTypeName = typeNode.getValue().getQualifiedName();
@@ -107,7 +106,8 @@ public final class Analyzer extends ParseAdapter {
                     typesToResolve.push(Pair.of(childNode, typeNode));
                     resolved.add(backingTypeName);
                     buffer.a('R');
-                } else {
+                }
+                else {
                     buffer.fgBright(Color.GREEN).a('C').fgBright(Color.CYAN);
                 }
             }
@@ -118,11 +118,6 @@ public final class Analyzer extends ParseAdapter {
         Logger.INSTANCE.debugln("Resolved type graph: %s", buffer.toString());
 
         return true;
-    }
-
-    @Override
-    public void enterModUseStatement(final ModUseStatementContext context) {
-        super.enterModUseStatement(context);
     }
 
     @Override
@@ -139,9 +134,18 @@ public final class Analyzer extends ParseAdapter {
         if (checkIsAlreadyDefined(identContext)) {
             return;
         }
-        final var type = TypeUtils.getType(compiler, compileContext, scopeStack, context.type());
-        final var aliasedType = Types.aliased(Utils.getIdentifier(identContext), type,
-                scopeStack::applyEnclosingScopes);
+        final var type = Objects.requireNonNull(TypeUtils.getType(compiler,
+            compileContext,
+            scopeStack,
+            context.type()));
+        final var genericParams = TypeUtils.getGenericParams(compiler,
+            compileContext,
+            scopeStack,
+            context.genericParamList()).toArray(GenericParameter[]::new);
+        final var aliasedType = Types.aliased(Utils.getIdentifier(identContext),
+            type,
+            scopeStack::applyEnclosingScopes,
+            genericParams);
         udts.put(aliasedType.getQualifiedName(), aliasedType);
         super.enterTypeAlias(context);
     }
@@ -152,7 +156,11 @@ public final class Analyzer extends ParseAdapter {
         if (checkIsAlreadyDefined(identContext)) {
             return;
         }
-        analyzeFieldLayout(context, Utils.getIdentifier(identContext), UDTKind.ATTRIBUTE);
+        final var genericParams = TypeUtils.getGenericParams(compiler,
+            compileContext,
+            scopeStack,
+            context.genericParamList()).toArray(GenericParameter[]::new);
+        analyzeFieldLayout(context, Utils.getIdentifier(identContext), genericParams, UDTKind.ATTRIBUTE);
         super.enterAttrib(context);
     }
 
@@ -162,7 +170,11 @@ public final class Analyzer extends ParseAdapter {
         if (checkIsAlreadyDefined(identContext)) {
             return;
         }
-        analyzeFieldLayout(context, Utils.getIdentifier(identContext), UDTKind.STRUCT);
+        final var genericParams = TypeUtils.getGenericParams(compiler,
+            compileContext,
+            scopeStack,
+            context.genericParamList()).toArray(GenericParameter[]::new);
+        analyzeFieldLayout(context, Utils.getIdentifier(identContext), genericParams, UDTKind.STRUCT);
         super.enterStruct(context);
     }
 
@@ -172,7 +184,11 @@ public final class Analyzer extends ParseAdapter {
         if (checkIsAlreadyDefined(identContext)) {
             return;
         }
-        analyzeFieldLayout(context, Utils.getIdentifier(identContext), UDTKind.CLASS);
+        final var genericParams = TypeUtils.getGenericParams(compiler,
+            compileContext,
+            scopeStack,
+            context.genericParamList()).toArray(GenericParameter[]::new);
+        analyzeFieldLayout(context, Utils.getIdentifier(identContext), genericParams, UDTKind.CLASS);
         super.enterClass(context);
     }
 
@@ -182,7 +198,7 @@ public final class Analyzer extends ParseAdapter {
         if (checkIsAlreadyDefined(identContext)) {
             return;
         }
-        analyzeFieldLayout(context, Utils.getIdentifier(identContext), UDTKind.ENUM_CLASS);
+        analyzeFieldLayout(context, Utils.getIdentifier(identContext), new GenericParameter[0], UDTKind.ENUM_CLASS);
         super.enterEnumClass(context);
     }
 
@@ -192,7 +208,11 @@ public final class Analyzer extends ParseAdapter {
         if (checkIsAlreadyDefined(identContext)) {
             return;
         }
-        analyzeFieldLayout(context, Utils.getIdentifier(identContext), UDTKind.TRAIT);
+        final var genericParams = TypeUtils.getGenericParams(compiler,
+            compileContext,
+            scopeStack,
+            context.genericParamList()).toArray(GenericParameter[]::new);
+        analyzeFieldLayout(context, Utils.getIdentifier(identContext), genericParams, UDTKind.TRAIT);
         super.enterTrait(context);
     }
 
@@ -353,13 +373,14 @@ public final class Analyzer extends ParseAdapter {
         udts.putAll(sortedMap);
     }
 
-    private void analyzeFieldLayout(final ParserRuleContext parent, final Identifier name, final UDTKind kind) {
-        final var layoutAnalyzer = new FieldAnalyzer(compiler, compileContext, scopeStack);
+    private void analyzeFieldLayout(final ParserRuleContext parent, final Identifier name,
+                                    final GenericParameter[] genericParams, final UDTKind kind) {
+        final var layoutAnalyzer = new FieldLayoutAnalyzer(compiler, compileContext, scopeStack);
         ParseTreeWalker.DEFAULT.walk(layoutAnalyzer, parent);
 
         final var fields = layoutAnalyzer.getFields();
         final var fieldTypes = fields.stream().map(Field::getType).toArray(Type[]::new);
-        final var type = Types.structure(name, scopeStack::applyEnclosingScopes, fieldTypes);
+        final var type = Types.structure(name, scopeStack::applyEnclosingScopes, genericParams, fieldTypes);
         final var udt = new UDT(kind, type, fields);
         udts.put(type.getQualifiedName(), udt);
 
@@ -416,10 +437,10 @@ public final class Analyzer extends ParseAdapter {
         // @formatter:off
         private DummyType() {}
         // @formatter:on
-        
+
         @Override
-        public Map<GenericParameter, Expression> getGenericParams() {
-            return Collections.emptyMap();
+        public GenericParameter[] getGenericParams() {
+            return new GenericParameter[0];
         }
 
         @Override

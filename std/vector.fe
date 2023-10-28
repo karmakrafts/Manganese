@@ -1,0 +1,15 @@
+pub mod std {
+    pub struct Vector<T> {
+        data: mut *T
+        capacity: usize
+        size: usize
+
+        pub fun ensure_capacity(capacity: usize): bool {
+            if(capacity <= this.capacity) return false
+        }
+
+        pub inl fun data(): mut *T -> data
+        pub inl fun size(): usize -> size
+        pub inl fun capacity(): usize -> capacity
+    }
+}

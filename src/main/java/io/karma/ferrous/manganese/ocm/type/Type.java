@@ -15,15 +15,16 @@
 
 package io.karma.ferrous.manganese.ocm.type;
 
-import io.karma.ferrous.manganese.ocm.GenericParameter;
 import io.karma.ferrous.manganese.ocm.expr.Expression;
+import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
 import io.karma.ferrous.manganese.ocm.scope.Scoped;
 import io.karma.ferrous.manganese.target.TargetMachine;
+import io.karma.ferrous.manganese.util.Identifier;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
-import java.util.Map;
 
 /**
  * @author Alexander Hinze
@@ -37,14 +38,17 @@ public interface Type extends Scoped {
 
     Type getBaseType();
 
-    Map<GenericParameter, Expression> getGenericParams();
+    GenericParameter[] getGenericParams();
 
-    default void setGenericParamValue(final GenericParameter parameter, final Expression value) {
-        getGenericParams().put(parameter, value);
-    }
-
-    default Expression getGenericParamValue(final GenericParameter parameter) {
-        return getGenericParams().get(parameter);
+    default @Nullable GenericParameter getGenericParam(final Identifier name) {
+        final var params = getGenericParams();
+        for (final GenericParameter param : params) {
+            if (!param.getName().equals(name)) {
+                continue;
+            }
+            return param;
+        }
+        return null;
     }
 
     /**
@@ -76,6 +80,19 @@ public interface Type extends Scoped {
      */
     default boolean isComplete() {
         return getBaseType().isComplete();
+    }
+
+    default Type deriveGeneric(final Expression... values) {
+        final var type = new DerivedType(this);
+        final var params = type.getGenericParams();
+        final var numParams = params.length;
+        if (values.length > numParams) {
+            throw new IllegalArgumentException("Invalid number of values");
+        }
+        for (var i = 0; i < numParams; i++) {
+            params[i].setValue(values[i]);
+        }
+        return Types.cached(type);
     }
 
     default Type derive(final TypeAttribute... attributes) {

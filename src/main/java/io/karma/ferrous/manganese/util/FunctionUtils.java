@@ -53,7 +53,8 @@ public final class FunctionUtils {
         return names.toArray(Identifier[]::new);
     }
 
-    public static CallingConvention getCallingConvention(final CompileContext compileContext, final ProtoFunctionContext context) {
+    public static CallingConvention getCallingConvention(final CompileContext compileContext,
+                                                         final ProtoFunctionContext context) {
         final var convContext = context.callConvMod();
         if (convContext == null) {
             return CallingConvention.CDECL;
@@ -63,10 +64,12 @@ public final class FunctionUtils {
         final var conv = CallingConvention.findByText(name);
         if (conv.isEmpty()) {
             final var message = String.format(
-                    "'%s' is not a valid calling convention, expected one of the following values", name);
+                "'%s' is not a valid calling convention, expected one of the following values",
+                name);
             final var formattedMessage = Utils.makeCompilerMessage(message, CallingConvention.EXPECTED_VALUES);
-            compileContext.reportError(
-                    compileContext.makeError(identifier.getSymbol(), formattedMessage, CompileErrorCode.E5000));
+            compileContext.reportError(compileContext.makeError(identifier.getSymbol(),
+                formattedMessage,
+                CompileErrorCode.E5000));
             return CallingConvention.CDECL;
         }
         return conv.get();

@@ -13,20 +13,18 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.ocm;
+package io.karma.ferrous.manganese.ocm.generic;
 
 import io.karma.ferrous.manganese.ocm.type.Type;
-import io.karma.ferrous.manganese.util.Identifier;
-import io.karma.kommons.function.Functions;
 
 import java.util.function.Predicate;
 
 /**
  * @author Alexander Hinze
- * @since 28/10/2023
+ * @since 29/10/2023
  */
-public record GenericParameter(Identifier name, Predicate<Type> predicate) {
-    public GenericParameter(final Identifier name) {
-        this(name, Functions.alwaysTrue());
-    }
+@FunctionalInterface
+public interface GenericConstraint extends Predicate<Type> {
+    GenericConstraint TRUE = type -> true;
+    GenericConstraint FALSE = type -> false;
 }

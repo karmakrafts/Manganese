@@ -16,14 +16,12 @@
 package io.karma.ferrous.manganese.ocm.type;
 
 import io.karma.ferrous.manganese.ocm.Field;
-import io.karma.ferrous.manganese.ocm.GenericParameter;
-import io.karma.ferrous.manganese.ocm.expr.Expression;
+import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Identifier;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -41,7 +39,7 @@ public record UDT(UDTKind kind, StructureType type, List<Field> fields) implemen
     // Type
 
     @Override
-    public Map<GenericParameter, Expression> getGenericParams() {
+    public GenericParameter[] getGenericParams() {
         return type.getGenericParams();
     }
 

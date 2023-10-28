@@ -15,6 +15,7 @@
 
 package io.karma.ferrous.manganese.ocm.type;
 
+import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
 import io.karma.ferrous.manganese.util.Identifier;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
@@ -72,18 +73,19 @@ public final class Types {
 
     public static StructureType structure(final Identifier name, final boolean isPacked,
                                           final Function<StructureType, StructureType> callback,
-                                          final Type... fieldTypes) {
-        return cached(callback.apply(new StructureType(name, isPacked, fieldTypes)));
+                                          final GenericParameter[] genericParams, final Type... fieldTypes) {
+        return cached(callback.apply(new StructureType(name, isPacked, genericParams, fieldTypes)));
     }
 
     public static StructureType structure(final Identifier name, final Function<StructureType, StructureType> callback,
-                                          final Type... fieldTypes) {
-        return structure(name, false, callback, fieldTypes);
+                                          final GenericParameter[] genericParams, final Type... fieldTypes) {
+        return structure(name, false, callback, genericParams, fieldTypes);
     }
 
     public static AliasedType aliased(final Identifier name, final Type backingType,
-                                      final Function<AliasedType, AliasedType> callback) {
-        return cached(callback.apply(new AliasedType(name, backingType)));
+                                      final Function<AliasedType, AliasedType> callback,
+                                      final GenericParameter... genericParams) {
+        return cached(callback.apply(new AliasedType(name, backingType, genericParams)));
     }
 
     public static TupleType tuple(final Function<TupleType, TupleType> callback, final Type... types) {

@@ -13,16 +13,17 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.ocm.access;
+package io.karma.ferrous.manganese.ocm.generic;
 
-import org.apiguardian.api.API;
-import org.apiguardian.api.API.Status;
+import io.karma.ferrous.manganese.ocm.type.Type;
 
 /**
  * @author Alexander Hinze
- * @since 17/10/2023
+ * @since 29/10/2023
  */
-@API(status = Status.INTERNAL)
-public enum AccessKind {
-    PRIVATE, PUBLIC, PROTECTED, MODULE, SCOPED
+public record TypeConstraint(Type value) implements GenericConstraint {
+    @Override
+    public boolean test(final Type type) {
+        return type.equals(value);
+    }
 }

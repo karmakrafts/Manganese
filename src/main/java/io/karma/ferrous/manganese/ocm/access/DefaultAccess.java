@@ -27,6 +27,7 @@ import org.apiguardian.api.API.Status;
 
 /**
  * @author Alexander Hinze
+ * @author Cedric Hammes
  * @since 17/10/2023
  */
 @API(status = Status.INTERNAL)
@@ -50,8 +51,9 @@ public enum DefaultAccess implements Access {
     }
 
     @Override
-    public <T extends Scoped & NameProvider> boolean hasAccess(final Compiler compiler, final CompileContext compileContext, final ScopeStack scopeStack,
-                                                               final T target) {
+    public <T extends Scoped & NameProvider> boolean hasAccess(final Compiler compiler,
+                                                               final CompileContext compileContext,
+                                                               final ScopeStack scopeStack, final T target) {
         final var capturedScopeStack = new ScopeStack(scopeStack);
         final var targetScope = target.getEnclosingScope();
         final var currentScope = scopeStack.peek();

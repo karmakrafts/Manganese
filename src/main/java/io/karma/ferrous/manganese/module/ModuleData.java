@@ -16,8 +16,6 @@
 package io.karma.ferrous.manganese.module;
 
 import io.karma.ferrous.manganese.analyze.Analyzer;
-import io.karma.ferrous.manganese.compiler.CompilePass;
-import io.karma.ferrous.manganese.compiler.CompileStatus;
 import io.karma.ferrous.manganese.translate.TranslationUnit;
 import io.karma.ferrous.vanadium.FerrousLexer;
 import io.karma.ferrous.vanadium.FerrousParser;
@@ -39,29 +37,9 @@ public final class ModuleData {
     private FileContext fileContext;
     private FerrousLexer lexer;
     private FerrousParser parser;
-    private CompilePass currentPass = CompilePass.NONE;
-    private CompileStatus currentStatus = CompileStatus.SKIPPED;
 
     public ModuleData(final String name) {
         this.name = name;
-    }
-
-    public synchronized CompilePass getCurrentPass() {
-        return currentPass;
-    }
-
-    @API(status = Status.INTERNAL)
-    public synchronized void setCurrentPass(final CompilePass currentPass) {
-        this.currentPass = currentPass;
-    }
-
-    public synchronized CompileStatus getCurrentStatus() {
-        return currentStatus;
-    }
-
-    @API(status = Status.INTERNAL)
-    public synchronized void setCurrentStatus(final CompileStatus currentStatus) {
-        this.currentStatus = currentStatus;
     }
 
     public synchronized FerrousLexer getLexer() {

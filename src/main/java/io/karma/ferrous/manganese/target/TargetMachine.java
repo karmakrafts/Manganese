@@ -51,8 +51,13 @@ public final class TargetMachine {
         this.relocation = reloc;
         this.codeModel = model;
 
-        address = LLVMCreateTargetMachine(target.getAddress(), target.toString(), cpu, features, level.getLLVMValue(),
-                reloc.getLlvmValue(), model.getLlvmValue());
+        address = LLVMCreateTargetMachine(target.getAddress(),
+            target.toString(),
+            cpu,
+            features,
+            level.getLLVMValue(),
+            reloc.getLlvmValue(),
+            model.getLlvmValue());
         if (address == NULL) {
             throw new RuntimeException("Could not create target machine");
         }

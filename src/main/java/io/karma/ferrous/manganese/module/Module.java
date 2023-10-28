@@ -196,8 +196,11 @@ public final class Module {
         try (final var stack = MemoryStack.stackPush()) {
             final var buffer = stack.callocPointer(1);
             final var messageBuffer = stack.callocPointer(1);
-            if (LLVMTargetMachineEmitToMemoryBuffer(machine.getAddress(), address, fileType.getLLVMValue(),
-                    messageBuffer, buffer)) {
+            if (LLVMTargetMachineEmitToMemoryBuffer(machine.getAddress(),
+                address,
+                fileType.getLLVMValue(),
+                messageBuffer,
+                buffer)) {
                 LLVMUtils.checkStatus(messageBuffer);
             }
             final var bufferAddr = buffer.get(0);

@@ -52,19 +52,23 @@ public final class Utils {
     public static boolean hasCommand(final String name) {
         try {
             return new ProcessBuilder().command(name).start().exitValue() == 0;
-        } catch (Exception error) {
+        }
+        catch (Exception error) {
             return false;
         }
     }
 
-    public static Access getAccess(final Compiler compiler, final CompileContext compileContext, final ScopeStack scopeStack,
-                                   final AccessModContext context) {
+    public static Access getAccess(final Compiler compiler, final CompileContext compileContext,
+                                   final ScopeStack scopeStack, final AccessModContext context) {
         if (context == null || context.KW_PUB() == null) {
             return DefaultAccess.PRIVATE;
         }
         final var typeContext = context.typeList();
         if (typeContext != null) {
-            return new ScopedAccess(TypeUtils.getTypes(compiler, compileContext, scopeStack, typeContext).toArray(Type[]::new));
+            return new ScopedAccess(TypeUtils.getTypes(compiler,
+                compileContext,
+                scopeStack,
+                typeContext).toArray(Type[]::new));
         }
         if (context.KW_MOD() != null) {
             return DefaultAccess.MODULE;
@@ -93,7 +97,8 @@ public final class Utils {
                 }
                 return FileVisitResult.CONTINUE;
             }));
-        } catch (Exception error) { /* swallow exception */ }
+        }
+        catch (Exception error) { /* swallow exception */ }
         return files;
     }
 

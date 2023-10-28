@@ -15,14 +15,11 @@
 
 package io.karma.ferrous.manganese.ocm.type;
 
-import io.karma.ferrous.manganese.ocm.GenericParameter;
-import io.karma.ferrous.manganese.ocm.expr.Expression;
+import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.target.TargetMachine;
 
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.Map;
 import java.util.Objects;
 
 import static org.lwjgl.system.MemoryUtil.NULL;
@@ -58,8 +55,8 @@ public final class TupleType implements Type {
     // Type
 
     @Override
-    public Map<GenericParameter, Expression> getGenericParams() {
-        return Collections.emptyMap();
+    public GenericParameter[] getGenericParams() {
+        return new GenericParameter[0];
     }
 
     @Override

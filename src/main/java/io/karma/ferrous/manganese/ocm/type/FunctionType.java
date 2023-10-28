@@ -15,8 +15,7 @@
 
 package io.karma.ferrous.manganese.ocm.type;
 
-import io.karma.ferrous.manganese.ocm.GenericParameter;
-import io.karma.ferrous.manganese.ocm.expr.Expression;
+import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
 import io.karma.ferrous.manganese.ocm.scope.DefaultScope;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.target.TargetMachine;
@@ -28,8 +27,6 @@ import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -41,7 +38,6 @@ public class FunctionType implements Type {
     private final Type returnType;
     private final Type[] paramTypes;
     private final boolean isVarArg;
-    private final HashMap<GenericParameter, Expression> genericParams = new HashMap<>();
     private long materializedType = MemoryUtil.NULL;
 
     FunctionType(final Type returnType, final boolean isVarArg, final Type... paramTypes) {
@@ -97,8 +93,8 @@ public class FunctionType implements Type {
     // Type
 
     @Override
-    public Map<GenericParameter, Expression> getGenericParams() {
-        return genericParams;
+    public GenericParameter[] getGenericParams() {
+        return new GenericParameter[0];
     }
 
     @Override
@@ -123,8 +119,7 @@ public class FunctionType implements Type {
         }
         try (final var stack = MemoryStack.stackPush()) {
             final var returnType = this.returnType.materialize(machine);
-            final var paramTypes = Arrays.stream(this.paramTypes).mapToLong(type -> type.materialize(machine))
-                    .toArray();
+            final var paramTypes = Arrays.stream(this.paramTypes).mapToLong(type -> type.materialize(machine)).toArray();
             return materializedType = LLVMCore.LLVMFunctionType(returnType, stack.pointers(paramTypes), isVarArg);
         }
     }
