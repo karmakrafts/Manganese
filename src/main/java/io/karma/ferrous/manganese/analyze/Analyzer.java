@@ -68,16 +68,17 @@ public final class Analyzer extends ParseAdapter {
 
         if (childType instanceof UDT udt && !udt.isComplete()) {
             buffer.fgBright(Color.MAGENTA).a('U').fgBright(Color.CYAN);
-            final var fieldTypes = udt.type().getFieldTypes();
-            for (final var fieldType : fieldTypes) {
-                if (fieldType.isBuiltin() || fieldType.isComplete() || !(fieldType instanceof NamedType)) {
+            final var fields = udt.fields();
+            for (final var field : fields) {
+                final var fieldType = field.getType();
+                if (fieldType.isBuiltin() || fieldType.isComplete() || !fieldType.isNamed()) {
                     continue; // Skip all types which are complete to save time
                 }
                 var fieldTypeName = ((NamedType) fieldType).getQualifiedName();
                 final var fieldNode = ScopeUtils.findInScope(nodes, fieldTypeName, childType.getScopeName());
                 if (fieldNode == null) {
-                    compileContext.reportError(compileContext.makeError(fieldTypeName.toString(),
-                        CompileErrorCode.E3004));
+                    final var token = field.getTokenSlice().findTokenOrFirst(fieldTypeName.toString());
+                    compileContext.reportError(compileContext.makeError(token, CompileErrorCode.E3004));
                     return false;
                 }
                 fieldTypeName = fieldNode.getValue().getQualifiedName();
@@ -145,6 +146,7 @@ public final class Analyzer extends ParseAdapter {
         final var aliasedType = Types.aliased(Utils.getIdentifier(identContext),
             type,
             scopeStack::applyEnclosingScopes,
+            TokenSlice.from(compileContext, context),
             genericParams);
         udts.put(aliasedType.getQualifiedName(), aliasedType);
         super.enterTypeAlias(context);
@@ -236,7 +238,7 @@ public final class Analyzer extends ParseAdapter {
             type = ((AliasedType) type).getBackingType();
         }
         if (!type.isComplete()) {
-            if (!(type instanceof NamedType)) {
+            if (!type.isNamed()) {
                 return null;
             }
             final var typeName = ((NamedType) type).getQualifiedName();
@@ -260,7 +262,7 @@ public final class Analyzer extends ParseAdapter {
                 currentType = ((AliasedType) currentType).getBackingType();
                 continue;
             }
-            if (!(currentType instanceof NamedType)) {
+            if (!currentType.isNamed()) {
                 return false;
             }
             final var currentTypeName = ((NamedType) currentType).getQualifiedName();
@@ -280,7 +282,7 @@ public final class Analyzer extends ParseAdapter {
         final var numFields = fieldTypes.size();
         for (var i = 0; i < numFields; i++) {
             final var fieldType = fieldTypes.get(i);
-            if (fieldType.isBuiltin() || fieldType.isComplete() || !(fieldType instanceof NamedType)) {
+            if (fieldType.isBuiltin() || fieldType.isComplete() || !fieldType.isNamed()) {
                 continue;
             }
             final var fieldTypeName = ((NamedType) fieldType).getQualifiedName();
@@ -301,14 +303,16 @@ public final class Analyzer extends ParseAdapter {
             final var scopeName = udt.getScopeName();
             if (udt.isAliased() && udt instanceof AliasedType alias) {
                 if (!resolveAliasedType(alias, scopeName)) {
-                    compileContext.reportError(compileContext.makeError(alias.toString(), CompileErrorCode.E3003));
+                    compileContext.reportError(compileContext.makeError(alias.getTokenSlice().getFirstToken(),
+                        CompileErrorCode.E3003));
                 }
             }
-            if (!(udt instanceof UDT)) {
+            if (!(udt instanceof UDT actualUdt)) {
                 continue; // Skip everything else apart from UDTs
             }
-            if (!resolveFieldTypes((UDT) udt, scopeName)) {
-                compileContext.reportError(compileContext.makeError(udt.toString(), CompileErrorCode.E3004));
+            if (!resolveFieldTypes(actualUdt, scopeName)) {
+                compileContext.reportError(compileContext.makeError(actualUdt.tokenSlice().getFirstToken(),
+                    CompileErrorCode.E3004));
             }
         }
     }
@@ -381,7 +385,7 @@ public final class Analyzer extends ParseAdapter {
         final var fields = layoutAnalyzer.getFields();
         final var fieldTypes = fields.stream().map(Field::getType).toArray(Type[]::new);
         final var type = Types.structure(name, scopeStack::applyEnclosingScopes, genericParams, fieldTypes);
-        final var udt = new UDT(kind, type, fields);
+        final var udt = new UDT(kind, type, fields, TokenSlice.from(compileContext, parent));
         udts.put(type.getQualifiedName(), udt);
 
         Logger.INSTANCE.debugln("Captured field layout for type '%s'", type.getQualifiedName());
@@ -399,16 +403,19 @@ public final class Analyzer extends ParseAdapter {
                 if (access.getKind() != AccessKind.SCOPED) {
                     continue;
                 }
-                final var types = ((ScopedAccess) access).types();
+                final var scopedAccess = (ScopedAccess) access;
+                final var types = scopedAccess.types();
                 final var numTypes = types.length;
                 for (var i = 0; i < numTypes; i++) {
                     var type = types[i];
-                    if (type.isComplete() || !(type instanceof NamedType)) {
+                    if (type.isComplete() || !type.isNamed()) {
                         continue;
                     }
-                    final var completeType = findCompleteType((NamedType) type);
+                    final var namedType = (NamedType) type;
+                    final var completeType = findCompleteType(namedType);
                     if (completeType == null) {
-                        compileContext.reportError(compileContext.makeError(CompileErrorCode.E3002));
+                        final var token = scopedAccess.tokenSlice().findTokenOrFirst(namedType.getQualifiedName().toString());
+                        compileContext.reportError(compileContext.makeError(token, CompileErrorCode.E3002));
                         continue;
                     }
                     types[i] = completeType;

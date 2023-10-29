@@ -22,6 +22,7 @@ import io.karma.ferrous.manganese.ocm.NameProvider;
 import io.karma.ferrous.manganese.ocm.scope.ScopeStack;
 import io.karma.ferrous.manganese.ocm.scope.Scoped;
 import io.karma.ferrous.manganese.ocm.type.Type;
+import io.karma.ferrous.manganese.util.TokenSlice;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 
@@ -31,7 +32,7 @@ import org.apiguardian.api.API.Status;
  * @since 17/10/2023
  */
 @API(status = Status.INTERNAL)
-public record ScopedAccess(Type... types) implements Access {
+public record ScopedAccess(TokenSlice tokenSlice, Type... types) implements Access {
     @Override
     public AccessKind getKind() {
         return AccessKind.SCOPED;

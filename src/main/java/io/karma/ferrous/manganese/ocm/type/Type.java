@@ -51,6 +51,10 @@ public interface Type extends Scoped {
         return null;
     }
 
+    default boolean isNamed() {
+        return false;
+    }
+
     /**
      * @return True if this type is imaginary and cannot be materialized
      * into a runtime structure.

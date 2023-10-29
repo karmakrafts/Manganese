@@ -20,6 +20,7 @@ import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Identifier;
+import io.karma.ferrous.manganese.util.TokenSlice;
 
 import java.util.List;
 import java.util.Objects;
@@ -28,7 +29,7 @@ import java.util.Objects;
  * @author Alexander Hinze
  * @since 21/10/2023
  */
-public record UDT(UDTKind kind, StructureType type, List<Field> fields) implements NamedType {
+public record UDT(UDTKind kind, StructureType type, List<Field> fields, TokenSlice tokenSlice) implements NamedType {
     // NameProvider
 
     @Override

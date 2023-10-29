@@ -17,6 +17,7 @@ package io.karma.ferrous.manganese.ocm.type;
 
 import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
 import io.karma.ferrous.manganese.util.Identifier;
+import io.karma.ferrous.manganese.util.TokenSlice;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 
@@ -83,9 +84,9 @@ public final class Types {
     }
 
     public static AliasedType aliased(final Identifier name, final Type backingType,
-                                      final Function<AliasedType, AliasedType> callback,
+                                      final Function<AliasedType, AliasedType> callback, final TokenSlice tokenSlice,
                                       final GenericParameter... genericParams) {
-        return cached(callback.apply(new AliasedType(name, backingType, genericParams)));
+        return cached(callback.apply(new AliasedType(name, backingType, tokenSlice, genericParams)));
     }
 
     public static TupleType tuple(final Function<TupleType, TupleType> callback, final Type... types) {

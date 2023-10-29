@@ -20,6 +20,7 @@ import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.Field;
 import io.karma.ferrous.manganese.ocm.scope.ScopeStack;
+import io.karma.ferrous.manganese.util.TokenSlice;
 import io.karma.ferrous.manganese.util.TypeUtils;
 import io.karma.ferrous.manganese.util.Utils;
 import io.karma.ferrous.vanadium.FerrousParser.FieldContext;
@@ -70,7 +71,10 @@ public final class FieldLayoutAnalyzer extends ParseAdapter {
             compileContext,
             capturedScopeStack,
             context.type()));
-        fields.add(new Field(name, type, Utils.getAccess(compiler, compileContext, scopeStack, context.accessMod())));
+        fields.add(new Field(name,
+            type,
+            Utils.getAccess(compiler, compileContext, scopeStack, context.accessMod()),
+            TokenSlice.from(compileContext, context)));
         super.enterField(context);
     }
 

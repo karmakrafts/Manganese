@@ -65,10 +65,8 @@ public final class Utils {
         }
         final var typeContext = context.typeList();
         if (typeContext != null) {
-            return new ScopedAccess(TypeUtils.getTypes(compiler,
-                compileContext,
-                scopeStack,
-                typeContext).toArray(Type[]::new));
+            return new ScopedAccess(TokenSlice.from(compileContext, context),
+                TypeUtils.getTypes(compiler, compileContext, scopeStack, typeContext).toArray(Type[]::new));
         }
         if (context.KW_MOD() != null) {
             return DefaultAccess.MODULE;

@@ -22,4 +22,8 @@ import io.karma.ferrous.manganese.ocm.NameProvider;
  * @since 22/10/2023
  */
 public interface NamedType extends Type, NameProvider {
+    @Override
+    default boolean isNamed() {
+        return true;
+    }
 }

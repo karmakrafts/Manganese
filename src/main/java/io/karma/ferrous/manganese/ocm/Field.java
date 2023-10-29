@@ -21,6 +21,7 @@ import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.ocm.scope.Scoped;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.util.Identifier;
+import io.karma.ferrous.manganese.util.TokenSlice;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 import org.jetbrains.annotations.Nullable;
@@ -34,16 +35,22 @@ public final class Field implements NameProvider, AccessProvider, Scoped {
     private final Identifier name;
     private final Type type;
     private final Access access;
+    private final TokenSlice tokenSlice;
     private Scope enclosingScope;
 
-    public Field(final Identifier name, final Type type, final Access access) {
+    public Field(final Identifier name, final Type type, final Access access, final TokenSlice tokenSlice) {
         this.name = name;
         this.type = type;
         this.access = access;
+        this.tokenSlice = tokenSlice;
     }
 
     public Type getType() {
         return type;
+    }
+
+    public TokenSlice getTokenSlice() {
+        return tokenSlice;
     }
 
     // AccessProvider

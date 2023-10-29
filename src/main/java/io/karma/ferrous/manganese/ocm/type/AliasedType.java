@@ -19,6 +19,7 @@ import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Identifier;
+import io.karma.ferrous.manganese.util.TokenSlice;
 
 import java.util.Objects;
 
@@ -29,12 +30,15 @@ import java.util.Objects;
 public final class AliasedType implements NamedType {
     private final Identifier name;
     private final GenericParameter[] genericParams;
+    private final TokenSlice tokenSlice;
     private Type backingType;
     private Scope enclosingScope;
 
-    AliasedType(final Identifier name, final Type backingType, final GenericParameter... genericParams) {
+    AliasedType(final Identifier name, final Type backingType, final TokenSlice tokenSlice,
+                final GenericParameter... genericParams) {
         this.name = name;
         this.genericParams = genericParams;
+        this.tokenSlice = tokenSlice;
         this.backingType = backingType;
     }
 
@@ -44,6 +48,10 @@ public final class AliasedType implements NamedType {
 
     public void setBackingType(final Type type) {
         backingType = type;
+    }
+
+    public TokenSlice getTokenSlice() {
+        return tokenSlice;
     }
 
     // Name provider
