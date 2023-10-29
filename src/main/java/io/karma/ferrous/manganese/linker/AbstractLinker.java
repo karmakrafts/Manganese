@@ -15,6 +15,9 @@
 
 package io.karma.ferrous.manganese.linker;
 
+import io.karma.ferrous.manganese.compiler.CompileContext;
+import io.karma.ferrous.manganese.compiler.CompileErrorCode;
+
 import java.util.ArrayList;
 
 /**
@@ -27,6 +30,18 @@ public abstract class AbstractLinker implements Linker {
     // @formatter:off
     protected AbstractLinker() {}
     // @formatter:on
+
+    protected abstract void link(final CompileContext compileContext, final String command);
+
+    @Override
+    public void link(final CompileContext compileContext) {
+        final var command = getType().findCommand();
+        if (command == null) {
+            compileContext.reportError(compileContext.makeError(CompileErrorCode.E6000));
+            return;
+        }
+        link(compileContext, command);
+    }
 
     @Override
     public void addOption(final String option) {

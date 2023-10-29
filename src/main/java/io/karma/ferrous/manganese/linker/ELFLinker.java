@@ -16,6 +16,7 @@
 package io.karma.ferrous.manganese.linker;
 
 import io.karma.ferrous.manganese.compiler.CompileContext;
+import io.karma.ferrous.manganese.compiler.CompileErrorCode;
 import org.apiguardian.api.API;
 
 /**
@@ -29,7 +30,7 @@ public final class ELFLinker extends AbstractLinker {
     // @formatter:on
 
     @Override
-    public void link(final CompileContext compileContext) {
+    protected void link(final CompileContext compileContext, final String command) {
 
     }
 

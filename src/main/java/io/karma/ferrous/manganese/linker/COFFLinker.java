@@ -29,7 +29,7 @@ public final class COFFLinker extends AbstractLinker {
     // @formatter:on
 
     @Override
-    public void link(final CompileContext compileContext) {
+    public void link(final CompileContext compileContext, final String command) {
 
     }
 

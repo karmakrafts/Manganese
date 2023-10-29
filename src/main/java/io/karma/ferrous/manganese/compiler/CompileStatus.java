@@ -41,6 +41,7 @@ public enum CompileStatus {
     TYPE_ERROR           (1, false, Color.RED,    "Compilation Failed (type error)"),
     TRANSLATION_ERROR    (1, false, Color.RED,    "Compilation Failed (translation error)"),
     VERIFY_ERROR         (1, false, Color.RED,    "Compilation Failed (verify error)"),
+    LINK_ERROR           (1, false, Color.RED,    "Compilation Failed (link error)"),
     UNKNOWN_ERROR        (1, false, Color.RED,    "Compilation Failed (unknown error)");
     // @formatter:on
 

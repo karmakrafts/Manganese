@@ -45,6 +45,8 @@ public enum CompileErrorCode {
     E5000("The given calling convention does not exist", CompileStatus.SEMANTIC_ERROR),
     E5001("The given element cannot be accessed from this scope", CompileStatus.SEMANTIC_ERROR),
     E5002("A parameter cannot have the type void", CompileStatus.SEMANTIC_ERROR),
+    // Link errors
+    E6000("Could not find linker command", CompileStatus.LINK_ERROR),
     // Unknown error
     E9999("Encountered an unhandled error", CompileStatus.UNKNOWN_ERROR)
     // @formatter:on

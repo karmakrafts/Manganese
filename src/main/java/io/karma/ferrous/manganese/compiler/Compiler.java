@@ -146,9 +146,7 @@ public final class Compiler {
         }
 
         if (disassemble) {
-            Logger.INSTANCE.infoln("");
-            Logger.INSTANCE.info("%s", module.disassemble());
-            Logger.INSTANCE.infoln("");
+            Logger.INSTANCE.infoln("\n%s", module.disassemble());
         }
 
         context.addModule(module);
@@ -206,7 +204,7 @@ public final class Compiler {
             // @formatter:off
             Logger.INSTANCE.infoln(Ansi.ansi()
                 .fg(Color.GREEN)
-                .a(Utils.getProgressIndicator(maxProgress, numFiles + i))
+                .a(Utils.getProgressIndicator(maxProgress, numFiles + 1 + i))
                 .a(Attribute.RESET)
                 .a(" Compiling file ")
                 .fg(Color.BLUE)
@@ -235,9 +233,10 @@ public final class Compiler {
         globalModule.dispose();
 
         if (disassemble) {
-            Logger.INSTANCE.infoln("\nLinked disassembly:\n\n%s", module.disassemble());
-            Logger.INSTANCE.infoln("Native disassembly:\n\n%s\n", module.disassembleASM(targetMachine));
+            Logger.INSTANCE.infoln("Linked disassembly:\n\n%s", module.disassemble());
+            Logger.INSTANCE.infoln("Native disassembly:\n\n%s", module.disassembleASM(targetMachine));
         }
+        Logger.INSTANCE.infoln("");
         module.dispose();
 
         return context.makeResult();
