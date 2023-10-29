@@ -20,6 +20,7 @@ import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
 import io.karma.ferrous.manganese.ocm.scope.Scoped;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Identifier;
+import io.karma.ferrous.manganese.util.TokenSlice;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 import org.jetbrains.annotations.Nullable;
@@ -37,6 +38,8 @@ public interface Type extends Scoped {
     TypeAttribute[] getAttributes();
 
     Type getBaseType();
+
+    TokenSlice getTokenSlice();
 
     GenericParameter[] getGenericParams();
 

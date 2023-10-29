@@ -20,6 +20,7 @@ import io.karma.ferrous.manganese.ocm.scope.DefaultScope;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Identifier;
+import io.karma.ferrous.manganese.util.TokenSlice;
 import io.karma.ferrous.manganese.util.TokenUtils;
 import io.karma.ferrous.vanadium.FerrousLexer;
 import org.apiguardian.api.API;
@@ -90,6 +91,11 @@ public enum BuiltinType implements NamedType {
     }
 
     // Type
+
+    @Override
+    public TokenSlice getTokenSlice() {
+        return null;
+    }
 
     @Override
     public GenericParameter[] getGenericParams() {

@@ -18,6 +18,7 @@ package io.karma.ferrous.manganese.ocm.type;
 import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.target.TargetMachine;
+import io.karma.ferrous.manganese.util.TokenSlice;
 
 import java.util.Arrays;
 import java.util.Objects;
@@ -29,10 +30,12 @@ import static org.lwjgl.system.MemoryUtil.NULL;
  * @since 21/10/2023
  */
 public final class TupleType implements Type {
+    private final TokenSlice tokenSlice;
     private final Type[] types;
     private Scope enclosingScope;
 
-    public TupleType(final Type... types) {
+    public TupleType(final TokenSlice tokenSlice, final Type... types) {
+        this.tokenSlice = tokenSlice;
         this.types = types;
     }
 
@@ -53,6 +56,11 @@ public final class TupleType implements Type {
     }
 
     // Type
+
+    @Override
+    public TokenSlice getTokenSlice() {
+        return tokenSlice;
+    }
 
     @Override
     public GenericParameter[] getGenericParams() {

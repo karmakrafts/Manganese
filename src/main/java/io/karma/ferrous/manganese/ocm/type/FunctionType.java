@@ -19,6 +19,7 @@ import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
 import io.karma.ferrous.manganese.ocm.scope.DefaultScope;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.target.TargetMachine;
+import io.karma.ferrous.manganese.util.TokenSlice;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 import org.jetbrains.annotations.Nullable;
@@ -38,12 +39,14 @@ public class FunctionType implements Type {
     private final Type returnType;
     private final Type[] paramTypes;
     private final boolean isVarArg;
+    private final TokenSlice tokenSlice;
     private long materializedType = MemoryUtil.NULL;
 
-    FunctionType(final Type returnType, final boolean isVarArg, final Type... paramTypes) {
+    FunctionType(final Type returnType, final boolean isVarArg, final TokenSlice tokenSlice, final Type... paramTypes) {
         this.returnType = returnType;
         this.paramTypes = paramTypes;
         this.isVarArg = isVarArg;
+        this.tokenSlice = tokenSlice;
     }
 
     public Type getReturnType() {
@@ -91,6 +94,11 @@ public class FunctionType implements Type {
     }
 
     // Type
+
+    @Override
+    public TokenSlice getTokenSlice() {
+        return tokenSlice;
+    }
 
     @Override
     public GenericParameter[] getGenericParams() {

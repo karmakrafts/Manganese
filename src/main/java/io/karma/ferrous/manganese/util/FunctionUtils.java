@@ -17,12 +17,24 @@ package io.karma.ferrous.manganese.util;
 
 import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.CompileErrorCode;
+import io.karma.ferrous.manganese.compiler.Compiler;
+import io.karma.ferrous.manganese.ocm.scope.ScopeStack;
+import io.karma.ferrous.manganese.ocm.type.BuiltinType;
+import io.karma.ferrous.manganese.ocm.type.FunctionType;
+import io.karma.ferrous.manganese.ocm.type.Type;
+import io.karma.ferrous.manganese.ocm.type.Types;
+import io.karma.ferrous.vanadium.FerrousLexer;
+import io.karma.ferrous.vanadium.FerrousParser;
 import io.karma.ferrous.vanadium.FerrousParser.FunctionIdentContext;
 import io.karma.ferrous.vanadium.FerrousParser.ProtoFunctionContext;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -85,5 +97,42 @@ public final class FunctionUtils {
             }
         }
         return Utils.getIdentifier(context.ident());
+    }
+
+    public static List<Type> getParameterTypes(final Compiler compiler, final CompileContext compileContext,
+                                               final ScopeStack scopeStack,
+                                               final @Nullable ProtoFunctionContext context) {
+        if (context == null) {
+            return Collections.emptyList();
+        }
+        // @formatter:off
+        return context.functionParamList().functionParam().stream()
+            .map(FerrousParser.FunctionParamContext::type)
+            .filter(type -> type != null && !type.getText().equals(TokenUtils.getLiteral(FerrousLexer.KW_VAARGS)))
+            .map(type -> Objects.requireNonNull(TypeUtils.getType(compiler, compileContext, scopeStack, type)))
+            .peek(type -> {
+                //if(type == BuiltinType.VOID) {
+                //    compileContext.reportError(compileContext.makeError());
+                //} TODO: ...
+            })
+            .toList();
+        // @formatter:on
+    }
+
+    public static FunctionType getFunctionType(final Compiler compiler, final CompileContext compileContext,
+                                               final ScopeStack scopeStack, final ProtoFunctionContext context) {
+        final var type = context.type();
+        // @formatter:off
+        final var returnType = type == null
+            ? BuiltinType.VOID
+            : Objects.requireNonNull(TypeUtils.getType(compiler, compileContext, scopeStack, type));
+        // @formatter:on
+        final var isVarArg = context.functionParamList().vaFunctionParam() != null;
+        final var paramTypes = getParameterTypes(compiler, compileContext, scopeStack, context);
+        return Types.function(returnType,
+            paramTypes,
+            isVarArg,
+            scopeStack::applyEnclosingScopes,
+            TokenSlice.from(compileContext, context));
     }
 }

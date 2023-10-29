@@ -16,17 +16,25 @@
 package io.karma.ferrous.manganese.util;
 
 import io.karma.ferrous.manganese.compiler.CompileContext;
+import io.karma.ferrous.vanadium.FerrousLexer;
+import org.antlr.v4.runtime.CommonToken;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.TokenStream;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * @author Alexander Hinze
  * @since 29/10/2023
  */
-public record TokenSlice(TokenStream tokenStream, int begin, int end) {
+public record TokenSlice(@Nullable TokenStream tokenStream, int begin, int end) {
+    public static final TokenSlice EMPTY = new TokenSlice(null, 0, 0);
+    private static final CommonToken EMPTY_TOKEN = new CommonToken(FerrousLexer.WS, "");
+
     public static TokenSlice from(final CompileContext compileContext, final ParserRuleContext context) {
         return new TokenSlice(compileContext.getTokenStream(),
             context.start.getTokenIndex(),
@@ -34,6 +42,9 @@ public record TokenSlice(TokenStream tokenStream, int begin, int end) {
     }
 
     public Token findTokenOrFirst(final String text) {
+        if (tokenStream == null) {
+            return EMPTY_TOKEN;
+        }
         for (var i = begin; i <= end; i++) {
             final var token = tokenStream.get(i);
             if (!token.getText().contains(text)) {
@@ -45,10 +56,16 @@ public record TokenSlice(TokenStream tokenStream, int begin, int end) {
     }
 
     public Token getFirstToken() {
+        if (tokenStream == null) {
+            return EMPTY_TOKEN;
+        }
         return tokenStream.get(begin);
     }
 
-    public ArrayList<Token> getTokens() {
+    public List<Token> getTokens() {
+        if (tokenStream == null) {
+            return Collections.emptyList();
+        }
         final ArrayList<Token> tokens = new ArrayList<>(end - begin);
         for (var i = begin; i <= end; i++) {
             tokens.add(tokenStream.get(i));

@@ -19,6 +19,7 @@ import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Identifier;
+import io.karma.ferrous.manganese.util.TokenSlice;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 import org.lwjgl.llvm.LLVMCore;
@@ -41,14 +42,16 @@ public final class StructureType implements NamedType {
     private final boolean isPacked;
     private final Type[] fieldTypes;
     private final GenericParameter[] genericParams;
+    private final TokenSlice tokenSlice;
     private long materializedType = MemoryUtil.NULL;
     private Scope enclosingScope;
 
     StructureType(final Identifier name, final boolean isPacked, final GenericParameter[] genericParams,
-                  final Type... fieldTypes) {
+                  final TokenSlice tokenSlice, final Type... fieldTypes) {
         this.name = name;
         this.isPacked = isPacked;
         this.genericParams = genericParams;
+        this.tokenSlice = tokenSlice;
         this.fieldTypes = fieldTypes;
     }
 
@@ -88,6 +91,11 @@ public final class StructureType implements NamedType {
     }
 
     // Type
+
+    @Override
+    public TokenSlice getTokenSlice() {
+        return tokenSlice;
+    }
 
     @Override
     public GenericParameter[] getGenericParams() {

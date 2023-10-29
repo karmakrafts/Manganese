@@ -20,6 +20,7 @@ import io.karma.ferrous.manganese.ocm.scope.DefaultScope;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Identifier;
+import io.karma.ferrous.manganese.util.TokenSlice;
 import io.karma.ferrous.manganese.util.TokenUtils;
 import io.karma.ferrous.vanadium.FerrousLexer;
 
@@ -53,6 +54,11 @@ public final class NullType implements NamedType {
     }
 
     // Type
+
+    @Override
+    public TokenSlice getTokenSlice() {
+        return TokenSlice.EMPTY;
+    }
 
     @Override
     public GenericParameter[] getGenericParams() {

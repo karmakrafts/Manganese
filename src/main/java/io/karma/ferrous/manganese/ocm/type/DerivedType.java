@@ -20,6 +20,7 @@ import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Identifier;
+import io.karma.ferrous.manganese.util.TokenSlice;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 import org.lwjgl.llvm.LLVMCore;
@@ -77,6 +78,11 @@ public final class DerivedType implements NamedType {
     }
 
     // Type
+
+    @Override
+    public TokenSlice getTokenSlice() {
+        return baseType.getTokenSlice(); // TODO: improve this
+    }
 
     @Override
     public GenericParameter[] getGenericParams() {

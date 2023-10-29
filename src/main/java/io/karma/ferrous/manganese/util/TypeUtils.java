@@ -23,12 +23,10 @@ import io.karma.ferrous.manganese.ocm.constant.TypeConstant;
 import io.karma.ferrous.manganese.ocm.generic.GenericConstraint;
 import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
 import io.karma.ferrous.manganese.ocm.scope.ScopeStack;
-import io.karma.ferrous.manganese.ocm.type.BuiltinType;
-import io.karma.ferrous.manganese.ocm.type.FunctionType;
 import io.karma.ferrous.manganese.ocm.type.Type;
-import io.karma.ferrous.manganese.ocm.type.Types;
-import io.karma.ferrous.vanadium.FerrousLexer;
-import io.karma.ferrous.vanadium.FerrousParser.*;
+import io.karma.ferrous.vanadium.FerrousParser.GenericParamListContext;
+import io.karma.ferrous.vanadium.FerrousParser.TypeContext;
+import io.karma.ferrous.vanadium.FerrousParser.TypeListContext;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
@@ -95,33 +93,5 @@ public final class TypeUtils {
         final TypeAnalyzer unit = new TypeAnalyzer(compiler, compileContext, scopeStack);
         ParseTreeWalker.DEFAULT.walk(unit, context);
         return unit.getType();
-    }
-
-    public static List<Type> getParameterTypes(final Compiler compiler, final CompileContext compileContext,
-                                               final ScopeStack scopeStack,
-                                               final @Nullable ProtoFunctionContext context) {
-        if (context == null) {
-            return Collections.emptyList();
-        }
-        // @formatter:off
-        return context.functionParamList().functionParam().stream()
-            .map(FunctionParamContext::type)
-            .filter(type -> type != null && !type.getText().equals(TokenUtils.getLiteral(FerrousLexer.KW_VAARGS)))
-            .map(type -> Objects.requireNonNull(getType(compiler, compileContext, scopeStack, type)))
-            .toList();
-        // @formatter:on
-    }
-
-    public static FunctionType getFunctionType(final Compiler compiler, final CompileContext compileContext,
-                                               final ScopeStack scopeStack, final ProtoFunctionContext context) {
-        final var type = context.type();
-        // @formatter:off
-        final var returnType = type == null
-            ? BuiltinType.VOID
-            : Objects.requireNonNull(getType(compiler, compileContext, scopeStack, type));
-        // @formatter:on
-        final var isVarArg = context.functionParamList().vaFunctionParam() != null;
-        final var paramTypes = TypeUtils.getParameterTypes(compiler, compileContext, scopeStack, context);
-        return Types.function(returnType, paramTypes, isVarArg, scopeStack::applyEnclosingScopes);
     }
 }

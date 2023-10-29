@@ -19,6 +19,7 @@ import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Identifier;
+import io.karma.ferrous.manganese.util.TokenSlice;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 import org.lwjgl.llvm.LLVMCore;
@@ -33,12 +34,14 @@ import static org.lwjgl.llvm.LLVMCore.LLVMGetGlobalContext;
 @API(status = Status.INTERNAL)
 public final class IncompleteType implements NamedType {
     private final Identifier name;
+    private final TokenSlice tokenSlice;
     private final GenericParameter[] genericParams;
     private long materializedType = MemoryUtil.NULL;
     private Scope enclosingType;
 
-    IncompleteType(final Identifier name, final GenericParameter... genericParams) {
+    IncompleteType(final Identifier name, final TokenSlice tokenSlice, final GenericParameter... genericParams) {
         this.name = name;
+        this.tokenSlice = tokenSlice;
         this.genericParams = genericParams;
     }
 
@@ -62,6 +65,11 @@ public final class IncompleteType implements NamedType {
     }
 
     // Type
+
+    @Override
+    public TokenSlice getTokenSlice() {
+        return tokenSlice;
+    }
 
     @Override
     public GenericParameter[] getGenericParams() {

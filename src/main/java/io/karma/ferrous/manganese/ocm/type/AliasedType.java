@@ -50,10 +50,6 @@ public final class AliasedType implements NamedType {
         backingType = type;
     }
 
-    public TokenSlice getTokenSlice() {
-        return tokenSlice;
-    }
-
     // Name provider
 
     @Override
@@ -74,6 +70,11 @@ public final class AliasedType implements NamedType {
     }
 
     // Type
+
+    @Override
+    public TokenSlice getTokenSlice() {
+        return tokenSlice;
+    }
 
     @Override
     public GenericParameter[] getGenericParams() {

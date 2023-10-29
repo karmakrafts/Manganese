@@ -18,6 +18,7 @@ package io.karma.ferrous.manganese.ocm.type;
 import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.target.TargetMachine;
+import io.karma.ferrous.manganese.util.TokenSlice;
 import org.lwjgl.llvm.LLVMCore;
 
 import java.util.Objects;
@@ -31,13 +32,16 @@ import static org.lwjgl.system.MemoryUtil.NULL;
 public final class VectorType implements Type {
     private final Type type;
     private final int elementCount;
+    private final TokenSlice tokenSlice;
     private final GenericParameter[] genericParams;
     private long materializedType = NULL;
     private Scope enclosingScope;
 
-    public VectorType(final Type type, final int elementCount, final GenericParameter... genericParams) {
+    public VectorType(final Type type, final int elementCount, final TokenSlice tokenSlice,
+                      final GenericParameter... genericParams) {
         this.type = type;
         this.elementCount = elementCount;
+        this.tokenSlice = tokenSlice;
         this.genericParams = genericParams;
     }
 
@@ -62,6 +66,11 @@ public final class VectorType implements Type {
     }
 
     // Type
+
+    @Override
+    public TokenSlice getTokenSlice() {
+        return tokenSlice;
+    }
 
     @Override
     public GenericParameter[] getGenericParams() {

@@ -17,6 +17,7 @@ package io.karma.ferrous.manganese.ocm.type;
 
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.util.Identifier;
+import io.karma.ferrous.manganese.util.TokenSlice;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 
@@ -31,8 +32,9 @@ public final class NamedFunctionType extends FunctionType implements NamedType {
     private final Identifier name;
     private Scope enclosingScope;
 
-    NamedFunctionType(final Identifier name, final Type returnType, final boolean isVarArg, final Type... paramTypes) {
-        super(returnType, isVarArg, paramTypes);
+    NamedFunctionType(final Identifier name, final Type returnType, final boolean isVarArg, final TokenSlice tokenSlice,
+                      final Type... paramTypes) {
+        super(returnType, isVarArg, tokenSlice, paramTypes);
         this.name = name;
     }
 

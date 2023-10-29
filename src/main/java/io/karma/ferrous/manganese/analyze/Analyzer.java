@@ -384,8 +384,9 @@ public final class Analyzer extends ParseAdapter {
 
         final var fields = layoutAnalyzer.getFields();
         final var fieldTypes = fields.stream().map(Field::getType).toArray(Type[]::new);
-        final var type = Types.structure(name, scopeStack::applyEnclosingScopes, genericParams, fieldTypes);
-        final var udt = new UDT(kind, type, fields, TokenSlice.from(compileContext, parent));
+        final var tokenSlice = TokenSlice.from(compileContext, parent);
+        final var type = Types.structure(name, scopeStack::applyEnclosingScopes, genericParams, tokenSlice, fieldTypes);
+        final var udt = new UDT(kind, type, fields, tokenSlice);
         udts.put(type.getQualifiedName(), udt);
 
         Logger.INSTANCE.debugln("Captured field layout for type '%s'", type.getQualifiedName());
@@ -444,6 +445,11 @@ public final class Analyzer extends ParseAdapter {
         // @formatter:off
         private DummyType() {}
         // @formatter:on
+
+        @Override
+        public TokenSlice getTokenSlice() {
+            return TokenSlice.EMPTY;
+        }
 
         @Override
         public GenericParameter[] getGenericParams() {

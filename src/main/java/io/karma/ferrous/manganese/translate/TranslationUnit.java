@@ -21,7 +21,6 @@ import io.karma.ferrous.manganese.compiler.CompileErrorCode;
 import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.module.Module;
 import io.karma.ferrous.manganese.util.FunctionUtils;
-import io.karma.ferrous.manganese.util.TypeUtils;
 import io.karma.ferrous.vanadium.FerrousParser.ExternFunctionContext;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
@@ -46,7 +45,7 @@ public class TranslationUnit extends ParseAdapter {
     @Override
     public void enterExternFunction(final ExternFunctionContext context) {
         final var prototype = context.protoFunction();
-        final var type = TypeUtils.getFunctionType(compiler, compileContext, scopeStack, prototype);
+        final var type = FunctionUtils.getFunctionType(compiler, compileContext, scopeStack, prototype);
         final var name = FunctionUtils.getFunctionName(prototype.functionIdent()).toString();
         final var functionType = type.materialize(compiler.getTargetMachine());
         final var function = LLVMAddFunction(module.getAddress(), name, functionType);

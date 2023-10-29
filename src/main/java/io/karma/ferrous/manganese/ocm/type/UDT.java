@@ -40,6 +40,11 @@ public record UDT(UDTKind kind, StructureType type, List<Field> fields, TokenSli
     // Type
 
     @Override
+    public TokenSlice getTokenSlice() {
+        return tokenSlice;
+    }
+
+    @Override
     public GenericParameter[] getGenericParams() {
         return type.getGenericParams();
     }

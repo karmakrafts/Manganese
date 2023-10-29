@@ -25,7 +25,6 @@ import io.karma.ferrous.manganese.ocm.type.FunctionType;
 import io.karma.ferrous.manganese.util.CallingConvention;
 import io.karma.ferrous.manganese.util.FunctionUtils;
 import io.karma.ferrous.manganese.util.Identifier;
-import io.karma.ferrous.manganese.util.TypeUtils;
 import io.karma.ferrous.vanadium.FerrousParser.ProtoFunctionContext;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
@@ -52,7 +51,7 @@ public final class FunctionAnalyzer extends ParseAdapter {
     public void enterProtoFunction(ProtoFunctionContext context) {
         identifier = FunctionUtils.getFunctionName(context.functionIdent());
         callConv = FunctionUtils.getCallingConvention(compileContext, context);
-        this.type = TypeUtils.getFunctionType(compiler, compileContext, capturedScopeStack, context);
+        this.type = FunctionUtils.getFunctionType(compiler, compileContext, capturedScopeStack, context);
         paramNames = FunctionUtils.getParameterNames(context);
         super.enterProtoFunction(context);
     }

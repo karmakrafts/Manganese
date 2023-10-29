@@ -25,6 +25,7 @@ import io.karma.ferrous.manganese.ocm.type.TypeAttribute;
 import io.karma.ferrous.manganese.ocm.type.Types;
 import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.Logger;
+import io.karma.ferrous.manganese.util.TokenSlice;
 import io.karma.ferrous.manganese.util.Utils;
 import io.karma.ferrous.vanadium.FerrousParser.*;
 import io.karma.kommons.function.Functions;
@@ -80,7 +81,7 @@ public final class TypeAnalyzer extends ParseAdapter {
         final var name = Utils.getIdentifier(context);
         final var type = compileContext.getAnalyzer().findCompleteTypeInScope(name, capturedScopeStack.getScopeName());
         if (type == null) {
-            baseType = Types.incomplete(name, Functions.castingIdentity());
+            baseType = Types.incomplete(name, Functions.castingIdentity(), TokenSlice.from(compileContext, context));
             return;
         }
         baseType = type;
@@ -92,7 +93,7 @@ public final class TypeAnalyzer extends ParseAdapter {
         final var name = Utils.getIdentifier(context);
         final var type = compileContext.getAnalyzer().findCompleteTypeInScope(name, capturedScopeStack.getScopeName());
         if (type == null) {
-            baseType = Types.incomplete(name, Functions.castingIdentity());
+            baseType = Types.incomplete(name, Functions.castingIdentity(), TokenSlice.from(compileContext, context));
             return;
         }
         baseType = type;

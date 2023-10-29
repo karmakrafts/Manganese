@@ -151,10 +151,10 @@ public record CompileError(@Nullable Token token, @Nullable List<Token> lineToke
             builder.a('\n');
             builder.fg(Color.RED);
             if(sourceFile != null) {
-                builder.a(String.format("Error during compilation in %s:%d:%d", sourceFile.toAbsolutePath().normalize(), line, column));
+                builder.a(String.format("Error during compilation in %s:%d:%d", sourceFile.toAbsolutePath().normalize(), line, column + 1));
             }
             else {
-                builder.a(String.format("Error during compilation in %d:%d", line, column));
+                builder.a(String.format("Error during compilation in %d:%d", line, column + 1));
             }
             builder.a(Attribute.RESET);
             builder.a("\n\n  ");
