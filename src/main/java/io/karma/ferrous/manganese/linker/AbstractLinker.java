@@ -18,8 +18,10 @@ package io.karma.ferrous.manganese.linker;
 import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.CompileErrorCode;
 import io.karma.ferrous.manganese.util.Logger;
+import io.karma.ferrous.manganese.util.Utils;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.stream.Collectors;
 
@@ -37,16 +39,17 @@ public abstract class AbstractLinker implements Linker {
     protected abstract void buildCommand(final ArrayList<String> buffer, final String command);
 
     @Override
-    public void link(final CompileContext compileContext) {
+    public void link(final CompileContext compileContext, final Path objectFile) {
         final var command = getType().findCommand();
         if (command == null) {
             compileContext.reportError(compileContext.makeError(CompileErrorCode.E6000));
             return;
         }
         try {
+            Logger.INSTANCE.infoln("Starting linker process..");
             final var commandBuffer = new ArrayList<String>();
             buildCommand(commandBuffer, command);
-            final var process = new ProcessBuilder().command(commandBuffer.toArray(String[]::new)).start();
+            final var process = Utils.createProcess(commandBuffer.toArray(String[]::new)).start();
             try (final var reader = process.inputReader()) {
                 while (process.isAlive()) {
                     String line;
@@ -55,7 +58,7 @@ public abstract class AbstractLinker implements Linker {
                     }
                 }
             }
-            if (process.exitValue() != 0) {
+            if (process.waitFor() != 0) {
                 try (final var reader = process.errorReader()) {
                     final var error = reader.lines().collect(Collectors.joining("\n"));
                     compileContext.reportError(compileContext.makeError(error, CompileErrorCode.E6002));
@@ -64,6 +67,9 @@ public abstract class AbstractLinker implements Linker {
         }
         catch (IOException error) {
             compileContext.reportError(compileContext.makeError(error.getMessage(), CompileErrorCode.E6001));
+        }
+        catch (InterruptedException error) {
+            compileContext.reportError(compileContext.makeError(error.getMessage(), CompileErrorCode.E6003));
         }
     }
 

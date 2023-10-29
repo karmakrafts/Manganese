@@ -52,12 +52,12 @@ public enum LinkerType {
     }
 
     public @Nullable String findCommand() {
-        if (Utils.hasCommand(alias)) {
-            return alias;
-        }
         final var command = String.format("%s-%s", alias, LLVMUtils.getLLVMVersion());
-        if (Utils.hasCommand(command)) {
+        if (Utils.hasCommand(command, "-help")) {
             return command;
+        }
+        if (Utils.hasCommand(alias, "-help")) {
+            return alias;
         }
         return null;
     }

@@ -32,7 +32,6 @@ public final class COFFLinker extends AbstractLinker {
     @Override
     protected void buildCommand(final ArrayList<String> buffer, final String command) {
         buffer.add(command);
-        buffer.addAll(options);
     }
 
     @Override

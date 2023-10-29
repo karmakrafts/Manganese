@@ -36,11 +36,9 @@ import org.fusesource.jansi.Ansi;
 import org.fusesource.jansi.Ansi.Attribute;
 import org.fusesource.jansi.Ansi.Color;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
-import java.nio.channels.WritableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -128,14 +126,47 @@ public final class Compiler {
 
     public void analyzeAndProcess(final String name, final CompileContext context) {
         context.setCurrentModuleName(name);
-        analyze(context);
-        process(context);
+
+        var startTime = System.currentTimeMillis();
+        context.setCurrentPass(CompilePass.ANALYZE);
+        final var analyzer = new Analyzer(this, context);
+        context.setAnalyzer(analyzer);
+        final var fileContext = Objects.requireNonNull(context.getFileContext());
+        ParseTreeWalker.DEFAULT.walk(analyzer, fileContext);
+        analyzer.preProcessTypes(); // Pre-materializes all UDTs in the right order
+        var time = System.currentTimeMillis() - startTime;
+        Logger.INSTANCE.debugln("Finished pass ANALYZE in %dms", time);
+
+        final var tokenStream = Objects.requireNonNull(context.getTokenStream());
+        final var tokens = tokenStream.getTokens();
+
+        startTime = System.currentTimeMillis();
+        context.setCurrentPass(CompilePass.PROCESS);
+        processTokens(tokens);
+        time = System.currentTimeMillis() - startTime;
+        Logger.INSTANCE.debugln("Finished pass PROCESS in %dms", time);
+
+        final var newTokenStream = new CommonTokenStream(new ListTokenSource(tokens));
+        newTokenStream.fill();
+        context.setTokenStream(newTokenStream);
+
+        final var parser = Objects.requireNonNull(context.getParser());
+        parser.setTokenStream(newTokenStream);
+        parser.reset();
+        parser.removeErrorListeners();
+        context.setFileContext(parser.file());
     }
 
-    public void compile(final String name, final String sourceName, final WritableByteChannel out,
-                        final CompileContext context) {
+    public void compile(final String name, final String sourceName, final CompileContext context) {
         context.setCurrentModuleName(name);
-        compile(context);
+
+        var startTime = System.currentTimeMillis();
+        context.setCurrentPass(CompilePass.COMPILE);
+        final var translationUnit = new TranslationUnit(this, context);
+        ParseTreeWalker.DEFAULT.walk(translationUnit, context.getFileContext()); // Walk the entire AST with the TU
+        context.setTranslationUnit(translationUnit);
+        var time = System.currentTimeMillis() - startTime;
+        Logger.INSTANCE.debugln("Finished pass COMPILE in %dms", time);
 
         final var module = Objects.requireNonNull(context.getTranslationUnit()).getModule();
         module.setSourceFileName(sourceName);
@@ -160,6 +191,8 @@ public final class Compiler {
 
         for (var i = 0; i < numFiles; ++i) {
             final var file = inputFiles.get(i);
+            final var rawFileName = Utils.getRawFileName(file);
+
             // @formatter:off
             Logger.INSTANCE.infoln(Ansi.ansi()
                 .fg(Color.GREEN)
@@ -172,7 +205,6 @@ public final class Compiler {
                 .a(Attribute.RESET)
                 .toString());
             // @formatter:on
-            final var rawFileName = Utils.getRawFileName(file);
 
             numRunningTasks.incrementAndGet();
             executorService.submit(() -> {
@@ -185,8 +217,8 @@ public final class Compiler {
                 catch (IOException error) {
                     context.reportError(context.makeError(CompileErrorCode.E0003));
                 }
-                numRunningTasks.decrementAndGet();
                 context.setCurrentSourceFile(null);
+                numRunningTasks.decrementAndGet();
             });
         }
 
@@ -215,15 +247,11 @@ public final class Compiler {
             // @formatter:on
             final var rawFileName = Utils.getRawFileName(file);
 
-            try (final var stream = new ByteArrayOutputStream(); final var channel = Channels.newChannel(stream)) {
-                compile(rawFileName, file.getFileName().toString(), channel, context);
-                context.setCurrentPass(CompilePass.LINK);
-                module.linkIn(context.getModule());
-                context.setCurrentPass(CompilePass.NONE);
-            }
-            catch (IOException error) {
-                context.reportError(context.makeError(CompileErrorCode.E0004));
-            }
+            compile(rawFileName, file.getFileName().toString(), context);
+            context.setCurrentPass(CompilePass.LINK);
+            module.linkIn(context.getModule());
+            context.setCurrentPass(CompilePass.NONE);
+
             context.setCurrentSourceFile(null);
         }
 
@@ -237,7 +265,18 @@ public final class Compiler {
             Logger.INSTANCE.infoln("Native disassembly:\n\n%s", module.disassembleASM(targetMachine));
         }
         Logger.INSTANCE.infoln("");
+
+        try (final var stream = Files.newOutputStream(out); final var channel = Channels.newChannel(stream)) {
+            channel.write(module.generateAssembly(targetMachine, fileType));
+        }
+        catch (IOException error) {
+            context.reportError(context.makeError(error.getMessage(), CompileErrorCode.E0004));
+        }
         module.dispose();
+
+        if (fileType == FileType.OBJECT) {
+            linker.link(context, out);
+        }
 
         return context.makeResult();
     }
@@ -269,49 +308,6 @@ public final class Compiler {
 
     private void processTokens(final List<Token> tokens) {
         // TODO: implement here
-    }
-
-    private void analyze(final CompileContext context) {
-        final var startTime = System.currentTimeMillis();
-        context.setCurrentPass(CompilePass.ANALYZE);
-        final var analyzer = new Analyzer(this, context);
-        context.setAnalyzer(analyzer);
-        final var fileContext = Objects.requireNonNull(context.getFileContext());
-        ParseTreeWalker.DEFAULT.walk(analyzer, fileContext);
-        analyzer.preProcessTypes(); // Pre-materializes all UDTs in the right order
-        final var time = System.currentTimeMillis() - startTime;
-        Logger.INSTANCE.debugln("Finished pass ANALYZE in %dms", time);
-    }
-
-    private void process(final CompileContext context) {
-        final var tokenStream = Objects.requireNonNull(context.getTokenStream());
-        final var tokens = tokenStream.getTokens();
-
-        final var startTime = System.currentTimeMillis();
-        context.setCurrentPass(CompilePass.PROCESS);
-        processTokens(tokens);
-        final var time = System.currentTimeMillis() - startTime;
-
-        Logger.INSTANCE.debugln("Finished pass PROCESS in %dms", time);
-        final var newTokenStream = new CommonTokenStream(new ListTokenSource(tokens));
-        newTokenStream.fill();
-        context.setTokenStream(newTokenStream);
-
-        final var parser = Objects.requireNonNull(context.getParser());
-        parser.setTokenStream(newTokenStream);
-        parser.reset();
-        parser.removeErrorListeners();
-        context.setFileContext(parser.file());
-    }
-
-    private void compile(final CompileContext context) {
-        final var startTime = System.currentTimeMillis();
-        context.setCurrentPass(CompilePass.COMPILE);
-        final var translationUnit = new TranslationUnit(this, context);
-        ParseTreeWalker.DEFAULT.walk(translationUnit, context.getFileContext()); // Walk the entire AST with the TU
-        context.setTranslationUnit(translationUnit);
-        final var time = System.currentTimeMillis() - startTime;
-        Logger.INSTANCE.debugln("Finished pass COMPILE in %dms", time);
     }
 
     private final class ErrorListener implements ANTLRErrorListener {

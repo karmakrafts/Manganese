@@ -23,6 +23,7 @@ import org.lwjgl.llvm.LLVMCore;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.regex.Pattern;
 
 import static io.karma.ferrous.manganese.llvm.LLVMTargetAArch64.*;
 import static io.karma.ferrous.manganese.llvm.LLVMTargetARM.*;
@@ -41,6 +42,7 @@ import static org.lwjgl.system.MemoryUtil.NULL;
  */
 @API(status = Status.INTERNAL)
 public final class LLVMUtils {
+    private static final Pattern VERSION_PATTERN = Pattern.compile(".+(11|12|13|14|15)");
     private static final String[] PATHS_TO_SEARCH = {"/usr/share/lib", "/usr/lib", "/Library", "/"};
     private static final String[] NAMES_TO_SEARCH = {"llvm-15/build/Release", "llvm-14/build/Release", "llvm-13/build/Release", "llvm-12/build/Release", "llvm-11/build/Release", "llvm/build/Release", "LLVM/build/Release", "llvm-15", "llvm-14", "llvm-13", "llvm-12", "llvm-11", "llvm", "LLVM"};
 
@@ -131,7 +133,12 @@ public final class LLVMUtils {
                 if (!Files.exists(libFolder) || !Files.isDirectory(libFolder)) {
                     continue;
                 }
-                return libFolder.toAbsolutePath().normalize().toString();
+                final var libFolderPath = libFolder.toAbsolutePath().normalize().toString();
+                final var matcher = VERSION_PATTERN.matcher(libFolderPath);
+                if (!matcher.find()) {
+                    continue;
+                }
+                return matcher.group(1);
             }
         }
         return null;

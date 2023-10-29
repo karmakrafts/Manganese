@@ -26,6 +26,7 @@ import io.karma.ferrous.vanadium.FerrousParser.AccessModContext;
 import io.karma.ferrous.vanadium.FerrousParser.IdentContext;
 import io.karma.ferrous.vanadium.FerrousParser.LerpIdentContext;
 import io.karma.ferrous.vanadium.FerrousParser.QualifiedIdentContext;
+import io.karma.kommons.util.SystemInfo;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 import org.fusesource.jansi.Ansi;
@@ -49,9 +50,23 @@ public final class Utils {
     private Utils() {}
     // @formatter:on
 
-    public static boolean hasCommand(final String name) {
+    private static String getSystemShell() {
+        return switch(SystemInfo.Platform.getCurrent()) { // @formatter:off
+            case WINDOWS -> "cmd.exe /C";
+            case MAC     -> "/bin/zsh -c";
+            default      -> "/bin/bash -c";
+        }; // @formatter:on
+    }
+
+    public static ProcessBuilder createProcess(final String... command) {
+        final var builder = new ProcessBuilder(getSystemShell()).command(command);
+        builder.environment().putAll(System.getenv());
+        return builder;
+    }
+
+    public static boolean hasCommand(final String... command) {
         try {
-            return new ProcessBuilder().command(name).start().exitValue() == 0;
+            return createProcess(command).start().waitFor() == 0;
         }
         catch (Exception error) {
             return false;

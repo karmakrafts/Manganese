@@ -18,13 +18,15 @@ package io.karma.ferrous.manganese.linker;
 import io.karma.ferrous.manganese.compiler.CompileContext;
 import org.apiguardian.api.API;
 
+import java.nio.file.Path;
+
 /**
  * @author Alexander Hinze
  * @since 28/10/2023
  */
 @API(status = API.Status.STABLE)
 public interface Linker {
-    void link(final CompileContext compileContext);
+    void link(final CompileContext compileContext, final Path objectFile);
 
     void addOption(final String option);
 
