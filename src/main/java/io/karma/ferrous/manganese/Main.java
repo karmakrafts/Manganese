@@ -91,10 +91,10 @@ final class Main {
                 .withOptionalArg()
                 .ofType(String.class)
                 .defaultsTo(Objects.requireNonNull(LLVMGetHostCPUFeatures()));
-            final var fileTypeOpt = parser.accepts("F", "The type of the output file.")
+            final var fileTypeOpt = parser.accepts("F", "The type of the linked output file.")
                 .withOptionalArg()
                 .ofType(String.class)
-                .defaultsTo(FileType.OBJECT.getExtension());
+                .defaultsTo("");
             final var relocOpt = parser.accepts("r", "The type of relocation used when linking the final object.")
                 .withOptionalArg()
                 .ofType(String.class)
@@ -139,13 +139,6 @@ final class Main {
                     }
                     return;
                 }
-                if (options.has(fileTypeOpt)) {
-                    Logger.INSTANCE.infoln("Available file types:");
-                    for (final var type : FileType.values()) {
-                        Logger.INSTANCE.infoln("  - %s", type.getExtension());
-                    }
-                    return;
-                }
                 if (options.has(codeModelOpt)) {
                     Logger.INSTANCE.infoln("Available code models:");
                     for (final var model : CodeModel.values()) {
@@ -186,8 +179,7 @@ final class Main {
             final var optLevel = OptimizationLevel.byName(options.valueOf(optimizationOpt));
             final var relocation = Relocation.byName(options.valueOf(relocOpt));
             final var codeModel = CodeModel.byName(options.valueOf(codeModelOpt));
-            final var fileType = FileType.byExtension(options.valueOf(fileTypeOpt));
-            if (optLevel.isEmpty() || relocation.isEmpty() || codeModel.isEmpty() || fileType.isEmpty()) {
+            if (optLevel.isEmpty() || relocation.isEmpty() || codeModel.isEmpty()) {
                 Logger.INSTANCE.errorln("Malformed parameter");
                 return;
             }
@@ -227,11 +219,11 @@ final class Main {
             // @formatter:off
             final var out = options.has(outOpt)
                 ? Path.of(options.valueOf(outOpt))
-                : Path.of(String.format("%s.%s", Utils.getRawFileName(in), fileType.get().getExtension()));
+                : Path.of(Utils.getRawFileName(in));
             // @formatter:on
 
             final var context = new CompileContext();
-            final var result = compiler.compile(in, out, fileType.get(), context);
+            final var result = compiler.compile(in, out, context);
             context.dispose();
             targetMachine.dispose();
             status = status.worse(result.status());

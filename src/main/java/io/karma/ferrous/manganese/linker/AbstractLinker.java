@@ -32,23 +32,19 @@ import java.util.stream.Collectors;
 public abstract class AbstractLinker implements Linker {
     protected final ArrayList<String> options = new ArrayList<>();
 
-    // @formatter:off
-    protected AbstractLinker() {}
-    // @formatter:on
-
-    protected abstract void buildCommand(final ArrayList<String> buffer, final String command);
+    protected abstract void buildCommand(final ArrayList<String> buffer, final String command, final Path outFile,
+                                         final Path objectFile);
 
     @Override
-    public void link(final CompileContext compileContext, final Path objectFile) {
+    public void link(final CompileContext compileContext, final Path outFile, final Path objectFile) {
         final var command = getType().findCommand();
         if (command == null) {
             compileContext.reportError(compileContext.makeError(CompileErrorCode.E6000));
             return;
         }
         try {
-            Logger.INSTANCE.infoln("Starting linker process..");
             final var commandBuffer = new ArrayList<String>();
-            buildCommand(commandBuffer, command);
+            buildCommand(commandBuffer, command, outFile, objectFile);
             final var process = Utils.createProcess(commandBuffer.toArray(String[]::new)).start();
             try (final var reader = process.inputReader()) {
                 while (process.isAlive()) {

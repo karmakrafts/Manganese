@@ -29,7 +29,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
+import java.nio.file.Path;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -39,6 +39,7 @@ import static org.lwjgl.llvm.LLVMBitWriter.LLVMWriteBitcodeToMemoryBuffer;
 import static org.lwjgl.llvm.LLVMCore.*;
 import static org.lwjgl.llvm.LLVMIRReader.LLVMParseIRInContext;
 import static org.lwjgl.llvm.LLVMLinker.LLVMLinkModules2;
+import static org.lwjgl.llvm.LLVMTargetMachine.LLVMTargetMachineEmitToFile;
 import static org.lwjgl.llvm.LLVMTargetMachine.LLVMTargetMachineEmitToMemoryBuffer;
 import static org.lwjgl.system.MemoryUtil.NULL;
 
@@ -130,7 +131,7 @@ public final class Module {
         LLVMLinkModules2(address, LLVMCloneModule(module.address));
     }
 
-    public String disassemble() {
+    public String disassembleBitcode() {
         return LLVMPrintModuleToString(address);
     }
 
@@ -183,22 +184,13 @@ public final class Module {
         return address;
     }
 
-    public @Nullable String disassembleASM(final TargetMachine machine) {
-        final var buffer = generateAssembly(machine, FileType.ASSEMBLY);
-        if (buffer == null) {
-            return null;
-        }
-        var text = MemoryUtil.memUTF8(buffer);
-        return text.substring(text.indexOf("\t.file"));
-    }
-
-    public @Nullable ByteBuffer generateAssembly(final TargetMachine machine, final FileType fileType) {
+    public @Nullable String disassembleAssembly(final TargetMachine machine) {
         try (final var stack = MemoryStack.stackPush()) {
             final var buffer = stack.callocPointer(1);
             final var messageBuffer = stack.callocPointer(1);
             if (LLVMTargetMachineEmitToMemoryBuffer(machine.getAddress(),
                 address,
-                fileType.getLLVMValue(),
+                FileType.ASSEMBLY.getLLVMValue(),
                 messageBuffer,
                 buffer)) {
                 LLVMUtils.checkStatus(messageBuffer);
@@ -208,11 +200,23 @@ public final class Module {
                 return null;
             }
             final var size = (int) LLVMGetBufferSize(bufferAddr);
-            final var srcBuffer = MemoryUtil.memByteBuffer(bufferAddr, size);
-            final var dstBuffer = ByteBuffer.allocateDirect(size).order(ByteOrder.nativeOrder());
-            MemoryUtil.memCopy(srcBuffer, dstBuffer);
+            final var sourceBuffer = MemoryUtil.memByteBuffer(bufferAddr, size);
+            final var result = MemoryUtil.memUTF8(sourceBuffer);
             LLVMDisposeMemoryBuffer(bufferAddr);
-            return dstBuffer;
+            return result;
+        }
+    }
+
+    public void generateAssembly(final TargetMachine machine, final FileType fileType, final Path path) {
+        try (final var stack = MemoryStack.stackPush()) {
+            final var messageBuffer = stack.callocPointer(1);
+            if (LLVMTargetMachineEmitToFile(machine.getAddress(),
+                address,
+                path.toAbsolutePath().normalize().toString(),
+                fileType.getLLVMValue(),
+                messageBuffer)) {
+                LLVMUtils.checkStatus(messageBuffer);
+            }
         }
     }
 

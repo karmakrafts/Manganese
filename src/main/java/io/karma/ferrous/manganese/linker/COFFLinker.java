@@ -17,6 +17,7 @@ package io.karma.ferrous.manganese.linker;
 
 import org.apiguardian.api.API;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 
 /**
@@ -25,13 +26,14 @@ import java.util.ArrayList;
  */
 @API(status = API.Status.INTERNAL)
 public final class COFFLinker extends AbstractLinker {
-    // @formatter:off
-    COFFLinker() {}
-    // @formatter:on
-
     @Override
-    protected void buildCommand(final ArrayList<String> buffer, final String command) {
+    protected void buildCommand(final ArrayList<String> buffer, final String command, final Path outFile,
+                                final Path objectFile) {
         buffer.add(command);
+        buffer.addAll(options);
+        buffer.add("/o");
+        buffer.add(outFile.toAbsolutePath().normalize().toString());
+        buffer.add(objectFile.toAbsolutePath().normalize().toString());
     }
 
     @Override

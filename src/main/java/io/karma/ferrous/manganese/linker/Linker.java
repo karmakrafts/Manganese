@@ -26,7 +26,7 @@ import java.nio.file.Path;
  */
 @API(status = API.Status.STABLE)
 public interface Linker {
-    void link(final CompileContext compileContext, final Path objectFile);
+    void link(final CompileContext compileContext, final Path outFile, final Path objectFile);
 
     void addOption(final String option);
 

@@ -177,17 +177,17 @@ public final class Compiler {
         }
 
         if (disassemble) {
-            Logger.INSTANCE.infoln("\n%s", module.disassemble());
+            Logger.INSTANCE.infoln("\n%s", module.disassembleBitcode());
         }
 
         context.addModule(module);
         context.setCurrentPass(CompilePass.NONE);
     }
 
-    public CompileResult compile(final Path in, final Path out, final FileType fileType, final CompileContext context) {
+    public CompileResult compile(final Path in, final Path out, final CompileContext context) {
         final var inputFiles = Utils.findFilesWithExtensions(in, IN_EXTENSIONS);
         final var numFiles = inputFiles.size();
-        final var maxProgress = numFiles << 1;
+        final var maxProgress = (numFiles << 1) + 1;
 
         for (var i = 0; i < numFiles; ++i) {
             final var file = inputFiles.get(i);
@@ -209,7 +209,7 @@ public final class Compiler {
             numRunningTasks.incrementAndGet();
             executorService.submit(() -> {
                 context.setCurrentSourceFile(file);
-                Logger.INSTANCE.debugln("Input: %s", file);
+                Logger.INSTANCE.debugln("Input: %s (Thread %d)", file, Thread.currentThread().threadId());
                 try (final var stream = Files.newInputStream(file); final var channel = Channels.newChannel(stream)) {
                     tokenizeAndParse(rawFileName, channel, context);
                     analyzeAndProcess(rawFileName, context);
@@ -228,7 +228,7 @@ public final class Compiler {
 
         final var moduleName = Utils.getRawFileName(in);
         final var module = targetMachine.createModule(moduleName);
-        module.setSourceFileName(String.format("%s.%s", moduleName, fileType.getExtension()));
+        module.setSourceFileName(String.format("%s.o", moduleName));
 
         for (var i = 0; i < numFiles; ++i) {
             final var file = inputFiles.get(i);
@@ -261,22 +261,28 @@ public final class Compiler {
         globalModule.dispose();
 
         if (disassemble) {
-            Logger.INSTANCE.infoln("Linked disassembly:\n\n%s", module.disassemble());
-            Logger.INSTANCE.infoln("Native disassembly:\n\n%s", module.disassembleASM(targetMachine));
+            Logger.INSTANCE.infoln("Linked disassembly:\n\n%s", module.disassembleBitcode());
+            Logger.INSTANCE.infoln("Native disassembly:\n\n%s", module.disassembleAssembly(targetMachine));
         }
         Logger.INSTANCE.infoln("");
 
-        try (final var stream = Files.newOutputStream(out); final var channel = Channels.newChannel(stream)) {
-            channel.write(module.generateAssembly(targetMachine, fileType));
-        }
-        catch (IOException error) {
-            context.reportError(context.makeError(error.getMessage(), CompileErrorCode.E0004));
-        }
+        final var objectFile = out.getParent().resolve(String.format("%s.o", Utils.getRawFileName(out)));
+        module.generateAssembly(targetMachine, FileType.OBJECT, objectFile);
         module.dispose();
 
-        if (fileType == FileType.OBJECT) {
-            linker.link(context, out);
-        }
+        // @formatter:off
+        Logger.INSTANCE.infoln(Ansi.ansi()
+            .fg(Color.GREEN)
+            .a(Utils.getProgressIndicator(maxProgress, maxProgress))
+            .a(Attribute.RESET)
+            .a(" Linking module ")
+            .fg(Color.BLUE)
+            .a(Attribute.INTENSITY_BOLD)
+            .a(out)
+            .a(Attribute.RESET)
+            .toString());
+        // @formatter:on
+        linker.link(context, out, objectFile);
 
         return context.makeResult();
     }
