@@ -29,6 +29,7 @@ import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 import org.jetbrains.annotations.Nullable;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -48,6 +49,7 @@ public final class CompileContext {
     private final ConcurrentHashMap<String, ModuleData> moduleData = new ConcurrentHashMap<>();
     private final ThreadLocal<CompilePass> pass = ThreadLocal.withInitial(() -> CompilePass.NONE);
     private final ThreadLocal<String> currentModuleName = ThreadLocal.withInitial(String::new);
+    private final ThreadLocal<Path> currentSourceFile = ThreadLocal.withInitial(() -> null);
     private final AtomicInteger status = new AtomicInteger(CompileStatus.SUCCESS.ordinal());
 
     public Module getModule() {
@@ -74,11 +76,11 @@ public final class CompileContext {
     }
 
     public CompileError makeError(final CompileErrorCode errorCode) {
-        return new CompileError(null, null, getCurrentPass(), null, errorCode);
+        return new CompileError(null, null, getCurrentPass(), null, getCurrentSourceFile(), errorCode);
     }
 
     public CompileError makeError(final String text, final CompileErrorCode errorCode) {
-        return new CompileError(null, null, getCurrentPass(), text, errorCode);
+        return new CompileError(null, null, getCurrentPass(), text, getCurrentSourceFile(), errorCode);
     }
 
     public CompileError makeError(final Token token, final CompileErrorCode errorCode) {
@@ -86,6 +88,7 @@ public final class CompileContext {
             TokenUtils.getLineTokens(getTokenStream(), token),
             getCurrentPass(),
             null,
+            getCurrentSourceFile(),
             errorCode);
     }
 
@@ -94,6 +97,7 @@ public final class CompileContext {
             TokenUtils.getLineTokens(getTokenStream(), token),
             getCurrentPass(),
             text,
+            getCurrentSourceFile(),
             errorCode);
     }
 
@@ -133,6 +137,14 @@ public final class CompileContext {
 
     void setCurrentModuleName(final @Nullable String currentName) {
         currentModuleName.set(currentName);
+    }
+
+    public @Nullable Path getCurrentSourceFile() {
+        return currentSourceFile.get();
+    }
+
+    void setCurrentSourceFile(final @Nullable Path currentSourceFile) {
+        this.currentSourceFile.set(currentSourceFile);
     }
 
     public FerrousLexer getLexer() {

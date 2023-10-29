@@ -26,6 +26,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.PrintStream;
+import java.nio.file.Path;
 import java.util.List;
 
 /**
@@ -34,7 +35,8 @@ import java.util.List;
  */
 @API(status = Status.STABLE)
 public record CompileError(@Nullable Token token, @Nullable List<Token> lineTokens, @Nullable CompilePass pass,
-                           @Nullable String text, CompileErrorCode errorCode) implements Comparable<CompileError> {
+                           @Nullable String text, @Nullable Path sourceFile, CompileErrorCode errorCode)
+    implements Comparable<CompileError> {
     private static void handleTokenColor(final Token token, final Ansi buffer) {
         final var tokenType = token.getType();
         // @formatter:off
@@ -148,7 +150,12 @@ public record CompileError(@Nullable Token token, @Nullable List<Token> lineToke
             final var column = getColumn();
             builder.a('\n');
             builder.fg(Color.RED);
-            builder.a(String.format("Error during compilation in line %d:%d", line, column));
+            if(sourceFile != null) {
+                builder.a(String.format("Error during compilation in %s:%d:%d", sourceFile.toAbsolutePath().normalize(), line, column));
+            }
+            else {
+                builder.a(String.format("Error during compilation in %d:%d", line, column));
+            }
             builder.a(Attribute.RESET);
             builder.a("\n\n  ");
             builder.a(getAnsiText());

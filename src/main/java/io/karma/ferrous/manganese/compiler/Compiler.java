@@ -178,6 +178,7 @@ public final class Compiler {
 
             numRunningTasks.incrementAndGet();
             executorService.submit(() -> {
+                context.setCurrentSourceFile(file);
                 Logger.INSTANCE.debugln("Input: %s", file);
                 try (final var stream = Files.newInputStream(file); final var channel = Channels.newChannel(stream)) {
                     tokenizeAndParse(rawFileName, channel, context);
@@ -187,6 +188,7 @@ public final class Compiler {
                     context.reportError(context.makeError(CompileErrorCode.E0003));
                 }
                 numRunningTasks.decrementAndGet();
+                context.setCurrentSourceFile(null);
             });
         }
 
@@ -200,6 +202,7 @@ public final class Compiler {
 
         for (var i = 0; i < numFiles; ++i) {
             final var file = inputFiles.get(i);
+            context.setCurrentSourceFile(file);
             // @formatter:off
             Logger.INSTANCE.infoln(Ansi.ansi()
                 .fg(Color.GREEN)
@@ -223,6 +226,7 @@ public final class Compiler {
             catch (IOException error) {
                 context.reportError(context.makeError(CompileErrorCode.E0004));
             }
+            context.setCurrentSourceFile(null);
         }
 
         final var globalModule = Objects.requireNonNull(Functions.tryGet(() -> targetMachine.loadEmbeddedModule("global",
