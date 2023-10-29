@@ -15,8 +15,9 @@
 
 package io.karma.ferrous.manganese.linker;
 
-import io.karma.ferrous.manganese.compiler.CompileContext;
 import org.apiguardian.api.API;
+
+import java.util.ArrayList;
 
 /**
  * @author Alexander Hinze
@@ -29,8 +30,9 @@ public final class WASMLinker extends AbstractLinker {
     // @formatter:on
 
     @Override
-    public void link(final CompileContext compileContext, final String command) {
-
+    protected void buildCommand(final ArrayList<String> buffer, final String command) {
+        buffer.add(command);
+        buffer.addAll(options);
     }
 
     @Override

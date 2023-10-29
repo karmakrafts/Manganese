@@ -33,6 +33,9 @@ public interface Linker {
     LinkerType getType();
 
     default void addRawOptions(final String options) {
-
+        final var chunks = options.split(",");
+        for (final var chunk : chunks) {
+            addOption(chunk.trim());
+        }
     }
 }

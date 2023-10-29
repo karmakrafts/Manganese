@@ -150,11 +150,12 @@ public record CompileError(@Nullable Token token, @Nullable List<Token> lineToke
             final var column = getColumn();
             builder.a('\n');
             builder.fg(Color.RED);
+            final var endColumn = column + 1 + token.getText().length();
             if(sourceFile != null) {
-                builder.a(String.format("Error during compilation in %s:%d:%d", sourceFile.toAbsolutePath().normalize(), line, column + 1));
+                builder.a(String.format("Error during compilation in %s:%d:%d", sourceFile.toAbsolutePath().normalize(), line, endColumn));
             }
             else {
-                builder.a(String.format("Error during compilation in %d:%d", line, column + 1));
+                builder.a(String.format("Error during compilation in %d:%d", line, endColumn));
             }
             builder.a(Attribute.RESET);
             builder.a("\n\n  ");

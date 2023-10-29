@@ -17,8 +17,11 @@ package io.karma.ferrous.manganese.linker;
 
 import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.CompileErrorCode;
+import io.karma.ferrous.manganese.util.Logger;
 
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.stream.Collectors;
 
 /**
  * @author Alexander Hinze
@@ -31,7 +34,7 @@ public abstract class AbstractLinker implements Linker {
     protected AbstractLinker() {}
     // @formatter:on
 
-    protected abstract void link(final CompileContext compileContext, final String command);
+    protected abstract void buildCommand(final ArrayList<String> buffer, final String command);
 
     @Override
     public void link(final CompileContext compileContext) {
@@ -40,7 +43,28 @@ public abstract class AbstractLinker implements Linker {
             compileContext.reportError(compileContext.makeError(CompileErrorCode.E6000));
             return;
         }
-        link(compileContext, command);
+        try {
+            final var commandBuffer = new ArrayList<String>();
+            buildCommand(commandBuffer, command);
+            final var process = new ProcessBuilder().command(commandBuffer.toArray(String[]::new)).start();
+            try (final var reader = process.inputReader()) {
+                while (process.isAlive()) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        Logger.INSTANCE.infoln(line);
+                    }
+                }
+            }
+            if (process.exitValue() != 0) {
+                try (final var reader = process.errorReader()) {
+                    final var error = reader.lines().collect(Collectors.joining("\n"));
+                    compileContext.reportError(compileContext.makeError(error, CompileErrorCode.E6002));
+                }
+            }
+        }
+        catch (IOException error) {
+            compileContext.reportError(compileContext.makeError(error.getMessage(), CompileErrorCode.E6001));
+        }
     }
 
     @Override

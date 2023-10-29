@@ -47,6 +47,8 @@ public enum CompileErrorCode {
     E5002("A parameter cannot have the type void", CompileStatus.SEMANTIC_ERROR),
     // Link errors
     E6000("Could not find linker command", CompileStatus.LINK_ERROR),
+    E6001("Could not spawn linker process", CompileStatus.LINK_ERROR),
+    E6002("Linker exited with abnormal exit code", CompileStatus.LINK_ERROR),
     // Unknown error
     E9999("Encountered an unhandled error", CompileStatus.UNKNOWN_ERROR)
     // @formatter:on
