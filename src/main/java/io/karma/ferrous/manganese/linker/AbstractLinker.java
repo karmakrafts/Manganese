@@ -36,7 +36,7 @@ public abstract class AbstractLinker implements Linker {
                                          final Path objectFile);
 
     @Override
-    public void link(final CompileContext compileContext, final Path outFile, final Path objectFile) {
+    public void link(final CompileContext compileContext, final Path outFile, final Path objectFile, final LinkModel linkModel) {
         final var command = getType().findCommand();
         if (command == null) {
             compileContext.reportError(compileContext.makeError(CompileErrorCode.E6000));

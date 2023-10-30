@@ -15,29 +15,24 @@
 
 package io.karma.ferrous.manganese.linker;
 
-import io.karma.ferrous.manganese.compiler.CompileContext;
-import org.apiguardian.api.API;
-
-import java.nio.file.Path;
-
 /**
  * @author Alexander Hinze
- * @since 28/10/2023
+ * @since 30/10/2023
  */
-@API(status = API.Status.STABLE)
-public interface Linker {
-    void link(final CompileContext compileContext, final Path outFile, final Path objectFile, final LinkModel linkModel);
+public enum LinkModel {
+    // @formatter:off
+    FULL        ("full"),
+    PORTABLE    ("portable"),
+    FREESTANDING("freestanding");
+    // @formatter:on
 
-    void addOption(final String option);
+    private final String name;
 
-    void clearOptions();
+    LinkModel(final String name) {
+        this.name = name;
+    }
 
-    LinkerType getType();
-
-    default void addRawOptions(final String options) {
-        final var chunks = options.split(",");
-        for (final var chunk : chunks) {
-            addOption(chunk.trim());
-        }
+    public String getName() {
+        return name;
     }
 }
