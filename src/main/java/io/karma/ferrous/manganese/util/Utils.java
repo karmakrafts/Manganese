@@ -38,6 +38,7 @@ import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 
 /**
@@ -49,6 +50,15 @@ public final class Utils {
     // @formatter:off
     private Utils() {}
     // @formatter:on
+
+    public static <E extends Enum<E>> EnumSet<E> allExcept(final Class<E> type, final E... excluded) {
+        final var values = type.getEnumConstants();
+        final var result = EnumSet.allOf(type);
+        for (final var value : excluded) {
+            result.remove(value);
+        }
+        return result;
+    }
 
     private static String getSystemShell() {
         return switch(SystemInfo.Platform.getCurrent()) { // @formatter:off

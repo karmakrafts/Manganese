@@ -186,6 +186,17 @@ public final class Compiler {
     }
 
     public CompileResult compile(final Path in, final Path out, final CompileContext context) {
+        final var outDirectory = out.getParent();
+        if (!Files.exists(outDirectory)) {
+            try {
+                Files.createDirectories(outDirectory);
+            }
+            catch (Exception error) {
+                context.reportError(context.makeError(error.getMessage(), CompileErrorCode.E0005));
+                return context.makeResult();
+            }
+        }
+
         final var inputFiles = Utils.findFilesWithExtensions(in, IN_EXTENSIONS);
         final var numFiles = inputFiles.size();
         final var maxProgress = (numFiles << 1) + 1;
@@ -283,7 +294,7 @@ public final class Compiler {
             .a(Attribute.RESET)
             .toString());
         // @formatter:on
-        linker.link(context, out, objectFile, LinkModel.FULL); // TODO: parse link model from CLI
+        linker.link(this, context, out, objectFile, LinkModel.FULL); // TODO: parse link model from CLI
 
         return context.makeResult();
     }

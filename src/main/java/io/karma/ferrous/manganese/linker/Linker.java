@@ -16,9 +16,12 @@
 package io.karma.ferrous.manganese.linker;
 
 import io.karma.ferrous.manganese.compiler.CompileContext;
+import io.karma.ferrous.manganese.compiler.Compiler;
+import io.karma.ferrous.manganese.target.Architecture;
 import org.apiguardian.api.API;
 
 import java.nio.file.Path;
+import java.util.EnumSet;
 
 /**
  * @author Alexander Hinze
@@ -26,13 +29,16 @@ import java.nio.file.Path;
  */
 @API(status = API.Status.STABLE)
 public interface Linker {
-    void link(final CompileContext compileContext, final Path outFile, final Path objectFile, final LinkModel linkModel);
+    void link(final Compiler compiler, final CompileContext compileContext, final Path outFile, final Path objectFile,
+              final LinkModel linkModel);
 
     void addOption(final String option);
 
     void clearOptions();
 
     LinkerType getType();
+
+    EnumSet<Architecture> getSupportedArchitectures();
 
     default void addRawOptions(final String options) {
         final var chunks = options.split(",");

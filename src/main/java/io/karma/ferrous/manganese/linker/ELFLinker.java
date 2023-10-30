@@ -15,6 +15,8 @@
 
 package io.karma.ferrous.manganese.linker;
 
+import io.karma.ferrous.manganese.target.Architecture;
+import io.karma.ferrous.manganese.util.Utils;
 import org.apiguardian.api.API;
 
 import java.nio.file.Path;
@@ -26,21 +28,25 @@ import java.util.ArrayList;
  */
 @API(status = API.Status.INTERNAL)
 public final class ELFLinker extends AbstractLinker {
+    public ELFLinker() {
+        super(Utils.allExcept(Architecture.class, Architecture.WASM32, Architecture.WASM64));
+    }
+
     @Override
     protected void buildCommand(final ArrayList<String> buffer, final String command, final Path outFile,
                                 final Path objectFile) {
         buffer.add(command);
         buffer.addAll(options);
-        buffer.add("-dynamic-linker");
-        buffer.add("/usr/x86_64-linux-gnu/lib/ld-linux-x86-64.so.2");
-        buffer.add("-L/usr/x86_64-linux-gnu/lib");
+        //buffer.add("-dynamic-linker");
+        //buffer.add("/usr/x86_64-linux-gnu/lib/ld-linux-x86-64.so.2");
+        //buffer.add("-L/usr/x86_64-linux-gnu/lib");
         buffer.add("-o");
         buffer.add(outFile.toAbsolutePath().normalize().toString());
-        buffer.add("/usr/x86_64-linux-gnu/lib/crt1.o");
-        buffer.add("/usr/x86_64-linux-gnu/lib/crti.o");
-        buffer.add("-lc");
+        //buffer.add("/usr/x86_64-linux-gnu/lib/crt1.o");
+        //buffer.add("/usr/x86_64-linux-gnu/lib/crti.o");
+        //buffer.add("-lc");
         buffer.add(objectFile.toAbsolutePath().normalize().toString());
-        buffer.add("/usr/x86_64-linux-gnu/lib/crtn.o");
+        //buffer.add("/usr/x86_64-linux-gnu/lib/crtn.o");
     }
 
     @Override

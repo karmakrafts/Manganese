@@ -17,12 +17,15 @@ package io.karma.ferrous.manganese.linker;
 
 import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.CompileErrorCode;
+import io.karma.ferrous.manganese.compiler.Compiler;
+import io.karma.ferrous.manganese.target.Architecture;
 import io.karma.ferrous.manganese.util.Logger;
 import io.karma.ferrous.manganese.util.Utils;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.stream.Collectors;
 
 /**
@@ -30,13 +33,23 @@ import java.util.stream.Collectors;
  * @since 28/10/2023
  */
 public abstract class AbstractLinker implements Linker {
+    protected final EnumSet<Architecture> supportedArchitectures;
     protected final ArrayList<String> options = new ArrayList<>();
+
+    protected AbstractLinker(final EnumSet<Architecture> supportedArchitectures) {
+        this.supportedArchitectures = supportedArchitectures;
+    }
 
     protected abstract void buildCommand(final ArrayList<String> buffer, final String command, final Path outFile,
                                          final Path objectFile);
 
     @Override
-    public void link(final CompileContext compileContext, final Path outFile, final Path objectFile, final LinkModel linkModel) {
+    public void link(final Compiler compiler, final CompileContext compileContext, final Path outFile,
+                     final Path objectFile, final LinkModel linkModel) {
+        if (!supportedArchitectures.contains(compiler.getTargetMachine().getTarget().getArchitecture())) {
+            compileContext.reportError(compileContext.makeError(CompileErrorCode.E6004));
+            return;
+        }
         final var command = getType().findCommand();
         if (command == null) {
             compileContext.reportError(compileContext.makeError(CompileErrorCode.E6000));
@@ -80,5 +93,10 @@ public abstract class AbstractLinker implements Linker {
     @Override
     public void clearOptions() {
         options.clear();
+    }
+
+    @Override
+    public EnumSet<Architecture> getSupportedArchitectures() {
+        return supportedArchitectures;
     }
 }

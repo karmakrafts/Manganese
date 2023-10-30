@@ -27,6 +27,7 @@ public enum CompileErrorCode {
     E0002("Could not create character stream while analyzing file", CompileStatus.IO_ERROR),
     E0003("Could not open file input stream while analyzing file", CompileStatus.IO_ERROR),
     E0004("Could not open file output stream while compiling file", CompileStatus.IO_ERROR),
+    E0005("Could not create target directory", CompileStatus.IO_ERROR),
     // Verification Errors
     E1000("Translation unit module could not be verified", CompileStatus.VERIFY_ERROR),
     E1001("Builtin module could not be verified", CompileStatus.VERIFY_ERROR),
@@ -50,6 +51,7 @@ public enum CompileErrorCode {
     E6001("Could not spawn linker process", CompileStatus.LINK_ERROR),
     E6002("Linker exited with abnormal exit code", CompileStatus.LINK_ERROR),
     E6003("Linker process was interrupted unexpectedly", CompileStatus.LINK_ERROR),
+    E6004("Target architecture not supported by linker", CompileStatus.LINK_ERROR),
     // Unknown error
     E9999("Encountered an unhandled error", CompileStatus.UNKNOWN_ERROR)
     // @formatter:on

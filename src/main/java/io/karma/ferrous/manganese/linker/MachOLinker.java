@@ -15,10 +15,12 @@
 
 package io.karma.ferrous.manganese.linker;
 
+import io.karma.ferrous.manganese.target.Architecture;
 import org.apiguardian.api.API;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.EnumSet;
 
 /**
  * @author Alexander Hinze
@@ -26,6 +28,10 @@ import java.util.ArrayList;
  */
 @API(status = API.Status.INTERNAL)
 public final class MachOLinker extends AbstractLinker {
+    public MachOLinker() {
+        super(EnumSet.of(Architecture.X86, Architecture.X86_64, Architecture.AARCH64));
+    }
+
     @Override
     protected void buildCommand(final ArrayList<String> buffer, final String command, final Path outFile,
                                 final Path objectFile) {

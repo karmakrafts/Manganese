@@ -21,6 +21,7 @@ import org.apiguardian.api.API;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
 
@@ -58,6 +59,12 @@ public enum LinkerType {
         }
         if (Utils.hasCommand(alias, "-help")) {
             return alias;
+        }
+        final var path = String.format("%s/bin/%s",
+            Objects.requireNonNull(LLVMUtils.findLLVMPath()).toAbsolutePath().normalize(),
+            alias);
+        if (Utils.hasCommand(path, "-help")) {
+            return path;
         }
         return null;
     }

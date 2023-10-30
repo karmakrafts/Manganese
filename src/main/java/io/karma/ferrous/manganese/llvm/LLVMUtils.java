@@ -142,45 +142,44 @@ public final class LLVMUtils {
         LLVMInitializeWebAssemblyDisassembler();
     }
 
-    public static @Nullable String getLLVMVersion() {
+    public static @Nullable Path findLLVMPath() {
         for (final var searchPath : PATHS_TO_SEARCH) {
             for (final var directory : NAMES_TO_SEARCH) {
                 final var path = Path.of(searchPath).resolve(directory);
                 if (!Files.exists(path) || !Files.isDirectory(path)) {
                     continue;
                 }
-                final var libFolder = path.resolve("lib");
-                if (!Files.exists(libFolder) || !Files.isDirectory(libFolder)) {
-                    continue;
-                }
-                final var libFolderPath = libFolder.toAbsolutePath().normalize().toString();
-                final var matcher = VERSION_PATTERN.matcher(libFolderPath);
-                if (!matcher.find()) {
-                    continue;
-                }
-                return matcher.group(1);
+                return path;
             }
         }
         return null;
     }
 
-    public static void loadLLVM() {
-        for (final var searchPath : PATHS_TO_SEARCH) {
-            for (final var directory : NAMES_TO_SEARCH) {
-                final var path = Path.of(searchPath).resolve(directory);
-                if (!Files.exists(path) || !Files.isDirectory(path)) {
-                    continue;
-                }
-                final var libFolder = path.resolve("lib");
-                if (!Files.exists(libFolder) || !Files.isDirectory(libFolder)) {
-                    continue;
-                }
-                final var pathString = libFolder.toAbsolutePath().normalize().toString();
-                System.setProperty("org.lwjgl.librarypath", pathString);
-                System.out.printf("Loading LLVM from %s..\n\n", pathString);
-                break;
-            }
+    public static @Nullable String getLLVMVersion() {
+        final var path = findLLVMPath();
+        if (path == null) {
+            return null;
         }
+        final var libFolderPath = path.toAbsolutePath().normalize().toString();
+        final var matcher = VERSION_PATTERN.matcher(libFolderPath);
+        if (!matcher.find()) {
+            return null;
+        }
+        return matcher.group(1);
+    }
+
+    public static void loadLLVM() {
+        final var path = findLLVMPath();
+        if (path == null) {
+            return;
+        }
+        final var libFolder = path.resolve("lib");
+        if (!Files.exists(libFolder) || !Files.isDirectory(libFolder)) {
+            return;
+        }
+        final var pathString = libFolder.toAbsolutePath().normalize().toString();
+        System.setProperty("org.lwjgl.librarypath", pathString);
+        System.out.printf("Loading LLVM from %s..\n\n", pathString);
     }
 
     public static void checkNatives() {
