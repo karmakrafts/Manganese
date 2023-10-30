@@ -1,0 +1,10 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="std" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="io.karma.ferrous.manganese.Main" />
+    <module name="manganese.main" />
+    <option name="PROGRAM_PARAMETERS" value="-i std/ -o std/build/std.elf -Dd" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>
