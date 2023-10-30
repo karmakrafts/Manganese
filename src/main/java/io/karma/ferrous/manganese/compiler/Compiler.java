@@ -16,6 +16,7 @@
 package io.karma.ferrous.manganese.compiler;
 
 import io.karma.ferrous.manganese.analyze.Analyzer;
+import io.karma.ferrous.manganese.linker.LinkModel;
 import io.karma.ferrous.manganese.linker.Linker;
 import io.karma.ferrous.manganese.target.FileType;
 import io.karma.ferrous.manganese.target.TargetMachine;
@@ -282,7 +283,7 @@ public final class Compiler {
             .a(Attribute.RESET)
             .toString());
         // @formatter:on
-        linker.link(context, out, objectFile);
+        linker.link(context, out, objectFile, LinkModel.FULL); // TODO: parse link model from CLI
 
         return context.makeResult();
     }
