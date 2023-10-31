@@ -52,6 +52,7 @@ public enum CompileErrorCode {
     E6002("Linker exited with abnormal exit code", CompileStatus.LINK_ERROR),
     E6003("Linker process was interrupted unexpectedly", CompileStatus.LINK_ERROR),
     E6004("Target architecture not supported by linker", CompileStatus.LINK_ERROR),
+    E6005("Target platform not supported by linker", CompileStatus.LINK_ERROR),
     // Unknown error
     E9999("Encountered an unhandled error", CompileStatus.UNKNOWN_ERROR)
     // @formatter:on

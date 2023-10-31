@@ -42,7 +42,8 @@ public abstract class AbstractLinker implements Linker {
     }
 
     protected abstract void buildCommand(final ArrayList<String> buffer, final String command, final Path outFile,
-                                         final Path objectFile, final LinkModel linkModel, final Target target);
+                                         final Path objectFile, final LinkModel linkModel, final Target target,
+                                         final CompileContext compileContext);
 
     @Override
     public void link(final Compiler compiler, final CompileContext compileContext, final Path outFile,
@@ -58,7 +59,7 @@ public abstract class AbstractLinker implements Linker {
         }
         try {
             final var commandBuffer = new ArrayList<String>();
-            buildCommand(commandBuffer, command, outFile, objectFile, linkModel, target);
+            buildCommand(commandBuffer, command, outFile, objectFile, linkModel, target, compileContext);
             final var process = Utils.createProcess(commandBuffer.toArray(String[]::new)).start();
             try (final var reader = process.inputReader()) {
                 while (process.isAlive()) {

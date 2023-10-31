@@ -15,8 +15,12 @@
 
 package io.karma.ferrous.manganese.linker;
 
+import io.karma.ferrous.manganese.compiler.CompileContext;
+import io.karma.ferrous.manganese.compiler.CompileErrorCode;
 import io.karma.ferrous.manganese.target.Architecture;
+import io.karma.ferrous.manganese.target.Platform;
 import io.karma.ferrous.manganese.target.Target;
+import io.karma.ferrous.manganese.util.Logger;
 import org.apiguardian.api.API;
 
 import java.nio.file.Path;
@@ -48,12 +52,33 @@ public final class MachOLinker extends AbstractLinker {
         }; // @formatter:on
     }
 
+    private void handleLibraries(final ArrayList<String> buffer, final LinkModel linkModel, final Target target,
+                                 final CompileContext compileContext) {
+        if(linkModel == LinkModel.FULL) {
+            if(target.getPlatform() != Platform.MACOS) {
+                compileContext.reportError(compileContext.makeError(CompileErrorCode.E6005));
+                return;
+            }
+            buffer.add("-L/usr/lib/system");
+            buffer.add("-lsystem_kernel");
+            buffer.add("-lsystem_platform");
+            buffer.add("-lsystem_pthread");
+        }
+    }
+
     @Override
     protected void buildCommand(final ArrayList<String> buffer, final String command, final Path outFile,
-                                final Path objectFile, final LinkModel linkModel, final Target target) {
+                                final Path objectFile, final LinkModel linkModel, final Target target,
+                                final CompileContext compileContext) {
         buffer.add(command);
         buffer.add("-arch");
         buffer.add(remapArchitectureName(target));
+        buffer.add("-platform_version");
+        buffer.add(target.getPlatform().getName());
+        final var osVersion = System.getProperty("os.version");
+        buffer.add(osVersion);
+        buffer.add(osVersion);
+        handleLibraries(buffer, linkModel, target, compileContext);
         buffer.addAll(options);
         buffer.add("-o");
         buffer.add(outFile.toAbsolutePath().normalize().toString());
