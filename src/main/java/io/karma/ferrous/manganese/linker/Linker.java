@@ -18,6 +18,7 @@ package io.karma.ferrous.manganese.linker;
 import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.target.Architecture;
+import io.karma.ferrous.manganese.target.Target;
 import org.apiguardian.api.API;
 
 import java.nio.file.Path;
@@ -30,7 +31,7 @@ import java.util.EnumSet;
 @API(status = API.Status.STABLE)
 public interface Linker {
     void link(final Compiler compiler, final CompileContext compileContext, final Path outFile, final Path objectFile,
-              final LinkModel linkModel);
+              final LinkModel linkModel, final Target target);
 
     void addOption(final String option);
 

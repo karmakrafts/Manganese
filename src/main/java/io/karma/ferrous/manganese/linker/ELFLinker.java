@@ -16,6 +16,7 @@
 package io.karma.ferrous.manganese.linker;
 
 import io.karma.ferrous.manganese.target.Architecture;
+import io.karma.ferrous.manganese.target.Target;
 import io.karma.ferrous.manganese.util.Utils;
 import org.apiguardian.api.API;
 
@@ -34,7 +35,7 @@ public final class ELFLinker extends AbstractLinker {
 
     @Override
     protected void buildCommand(final ArrayList<String> buffer, final String command, final Path outFile,
-                                final Path objectFile) {
+                                final Path objectFile, final LinkModel linkModel, final Target target) {
         buffer.add(command);
         buffer.addAll(options);
         //buffer.add("-dynamic-linker");

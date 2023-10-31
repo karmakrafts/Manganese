@@ -16,6 +16,7 @@
 package io.karma.ferrous.manganese.linker;
 
 import io.karma.ferrous.manganese.target.Architecture;
+import io.karma.ferrous.manganese.target.Target;
 import org.apiguardian.api.API;
 
 import java.nio.file.Path;
@@ -29,13 +30,30 @@ import java.util.EnumSet;
 @API(status = API.Status.INTERNAL)
 public final class MachOLinker extends AbstractLinker {
     public MachOLinker() {
-        super(EnumSet.of(Architecture.X86, Architecture.X86_64, Architecture.AARCH64));
+        super(EnumSet.of(Architecture.PPC32,
+            Architecture.PPC64,
+            Architecture.X86,
+            Architecture.X86_64,
+            Architecture.AARCH64));
+    }
+
+    private static String remapArchitectureName(final Target target) {
+        return switch(target.getArchitecture()) { // @formatter:off
+            case PPC32   -> "ppc";
+            case PPC64   -> "ppc64";
+            case X86     -> "i386";
+            case X86_64  -> "x86_64";
+            case AARCH64 -> "aarch64";
+            default      -> throw new IllegalArgumentException("Unsupported architecture");
+        }; // @formatter:on
     }
 
     @Override
     protected void buildCommand(final ArrayList<String> buffer, final String command, final Path outFile,
-                                final Path objectFile) {
+                                final Path objectFile, final LinkModel linkModel, final Target target) {
         buffer.add(command);
+        buffer.add("-arch");
+        buffer.add(remapArchitectureName(target));
         buffer.addAll(options);
         buffer.add("-o");
         buffer.add(outFile.toAbsolutePath().normalize().toString());

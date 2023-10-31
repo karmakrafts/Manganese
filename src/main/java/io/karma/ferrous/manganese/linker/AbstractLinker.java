@@ -19,6 +19,7 @@ import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.CompileErrorCode;
 import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.target.Architecture;
+import io.karma.ferrous.manganese.target.Target;
 import io.karma.ferrous.manganese.util.Logger;
 import io.karma.ferrous.manganese.util.Utils;
 
@@ -41,11 +42,11 @@ public abstract class AbstractLinker implements Linker {
     }
 
     protected abstract void buildCommand(final ArrayList<String> buffer, final String command, final Path outFile,
-                                         final Path objectFile);
+                                         final Path objectFile, final LinkModel linkModel, final Target target);
 
     @Override
     public void link(final Compiler compiler, final CompileContext compileContext, final Path outFile,
-                     final Path objectFile, final LinkModel linkModel) {
+                     final Path objectFile, final LinkModel linkModel, final Target target) {
         if (!supportedArchitectures.contains(compiler.getTargetMachine().getTarget().getArchitecture())) {
             compileContext.reportError(compileContext.makeError(CompileErrorCode.E6004));
             return;
@@ -57,7 +58,7 @@ public abstract class AbstractLinker implements Linker {
         }
         try {
             final var commandBuffer = new ArrayList<String>();
-            buildCommand(commandBuffer, command, outFile, objectFile);
+            buildCommand(commandBuffer, command, outFile, objectFile, linkModel, target);
             final var process = Utils.createProcess(commandBuffer.toArray(String[]::new)).start();
             try (final var reader = process.inputReader()) {
                 while (process.isAlive()) {

@@ -294,7 +294,12 @@ public final class Compiler {
             .a(Attribute.RESET)
             .toString());
         // @formatter:on
-        linker.link(this, context, out, objectFile, LinkModel.FULL); // TODO: parse link model from CLI
+        linker.link(this,
+            context,
+            out,
+            objectFile,
+            LinkModel.FULL,
+            targetMachine.getTarget()); // TODO: parse link model from CLI
 
         return context.makeResult();
     }
