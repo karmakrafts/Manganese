@@ -96,7 +96,12 @@ final class Main {
             final var profilerOpt = parser.accepts("Dx", "Enable the profiler and show results at the end of the compilation.")
                 .availableIf("d");
             // Target options
-            final var targetOpt = parser.accepts("t", "The target triple for which to compile the code.")
+            final var targetOpt = parser.accepts("t", Ansi.ansi()
+                    .a("The target triple to compile for. ")
+                    .fg(Ansi.Color.CYAN)
+                    .a("List with ?")
+                    .a(Ansi.Attribute.RESET)
+                    .toString())
                 .withOptionalArg()
                 .ofType(String.class)
                 .defaultsTo(Target.getHostTargetTriple());
@@ -170,6 +175,12 @@ final class Main {
                         .map(feat -> feat.substring(1))
                         .forEach(feat -> Logger.INSTANCE.infoln("  - %s", feat));
                     // @formatter:on
+                    return;
+                }
+                if (options.has(targetOpt)) {
+                    printAvailableValues(Architecture.class, "Available architectures:");
+                    printAvailableValues(Platform.class, "Available platforms:");
+                    printAvailableValues(ABI.class, "Available ABIs:");
                     return;
                 }
                 if (options.has(linkModelOpt)) {
