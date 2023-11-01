@@ -49,7 +49,7 @@ public final class Profiler {
         sections.clear();
     }
 
-    public void push(final @Nullable String name) {
+    public void push(final String name) {
         try {
             final var traceElements = Thread.currentThread().getStackTrace();
             if (traceElements.length < 3) {
