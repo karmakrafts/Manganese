@@ -69,4 +69,9 @@ public enum Platform {
     public LinkerType getDefaultLinkerType() {
         return defaultLinkerType;
     }
+
+    @Override
+    public String toString() {
+        return name;
+    }
 }

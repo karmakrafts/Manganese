@@ -49,4 +49,9 @@ public enum FileType {
     public int getLLVMValue() {
         return llvmValue;
     }
+
+    @Override
+    public String toString() {
+        return extension;
+    }
 }

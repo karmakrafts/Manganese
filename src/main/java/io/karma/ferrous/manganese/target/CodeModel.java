@@ -56,4 +56,9 @@ public enum CodeModel {
     public int getLLVMValue() {
         return llvmValue;
     }
+
+    @Override
+    public String toString() {
+        return name;
+    }
 }

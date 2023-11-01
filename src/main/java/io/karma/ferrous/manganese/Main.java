@@ -31,6 +31,7 @@ import joptsimple.OptionException;
 import joptsimple.OptionParser;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
+import org.fusesource.jansi.Ansi;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -47,6 +48,14 @@ import static org.lwjgl.llvm.LLVMTargetMachine.LLVMGetHostCPUFeatures;
  */
 @API(status = Status.INTERNAL)
 final class Main {
+    private static <E extends Enum<E>> void printAvailableValues(final Class<E> type, final String message) {
+        Logger.INSTANCE.infoln(message);
+        final var values = type.getEnumConstants();
+        for (final var value : values) {
+            Logger.INSTANCE.infoln("  - %s", value);
+        }
+    }
+
     public static void main(final String[] args) {
         Manganese.init();
         var status = CompileStatus.SUCCESS;
@@ -91,7 +100,12 @@ final class Main {
                 .withOptionalArg()
                 .ofType(String.class)
                 .defaultsTo(Target.getHostTargetTriple());
-            final var codeModelOpt = parser.accepts("Tm", "The code model to use when generating assembly code for the target machine.")
+            final var codeModelOpt = parser.accepts("Tm", Ansi.ansi()
+                    .a("The code model to use when generating assembly code for the target machine. ")
+                    .fg(Ansi.Color.CYAN)
+                    .a("List with ?")
+                    .a(Ansi.Attribute.RESET)
+                    .toString())
                 .withOptionalArg()
                 .ofType(String.class)
                 .defaultsTo(CodeModel.DEFAULT.getName());
@@ -99,7 +113,12 @@ final class Main {
                 .withOptionalArg()
                 .ofType(String.class)
                 .defaultsTo(Objects.requireNonNull(LLVMGetHostCPUFeatures()));
-            final var relocOpt = parser.accepts("Tr", "The type of relocation used when linking the final object.")
+            final var relocOpt = parser.accepts("Tr", Ansi.ansi()
+                    .a("The type of code relocation used by the linker. ")
+                    .fg(Ansi.Color.CYAN)
+                    .a("List with ?")
+                    .a(Ansi.Attribute.RESET)
+                    .toString())
                 .withOptionalArg()
                 .ofType(String.class)
                 .defaultsTo(Relocation.DEFAULT.getName());
@@ -107,16 +126,31 @@ final class Main {
                 .withOptionalArg()
                 .ofType(String.class)
                 .defaultsTo("");
-            final var optimizationOpt = parser.accepts("To", "The level of optimization.")
+            final var optimizationOpt = parser.accepts("To", Ansi.ansi()
+                    .a("The level of optimization applied to the resulting assembly code. ")
+                    .fg(Ansi.Color.CYAN)
+                    .a("List with ?")
+                    .a(Ansi.Attribute.RESET)
+                    .toString())
                 .withOptionalArg()
                 .ofType(String.class)
                 .defaultsTo(OptimizationLevel.DEFAULT.getName());
             // Link options
-            final var linkerTypeOpt = parser.accepts("Lt", "The linker to use when linking the module.")
+            final var linkerTypeOpt = parser.accepts("Lt", Ansi.ansi()
+                    .a("The type of linker to use when creating the target binary. ")
+                    .fg(Ansi.Color.CYAN)
+                    .a("List with ?")
+                    .a(Ansi.Attribute.RESET)
+                    .toString())
                 .withOptionalArg()
                 .ofType(String.class)
                 .defaultsTo(Platform.getHostPlatform().getDefaultLinkerType().getName());
-            final var linkModelOpt = parser.accepts("Lm", "The link model to use when creating the executable/library.")
+            final var linkModelOpt = parser.accepts("Lm", Ansi.ansi()
+                    .a("The type of link model to use while linking. ")
+                    .fg(Ansi.Color.CYAN)
+                    .a("List with ?")
+                    .a(Ansi.Attribute.RESET)
+                    .toString())
                 .withOptionalArg()
                 .ofType(String.class)
                 .defaultsTo(LinkModel.FULL.getName());
@@ -138,32 +172,24 @@ final class Main {
                     // @formatter:on
                     return;
                 }
+                if (options.has(linkModelOpt)) {
+                    printAvailableValues(LinkModel.class, "Available link models:");
+                    return;
+                }
                 if (options.has(linkerTypeOpt)) {
-                    Logger.INSTANCE.infoln("Available linker types:");
-                    for (final var type : LinkerType.values()) {
-                        Logger.INSTANCE.infoln("  - %s", type.getName());
-                    }
+                    printAvailableValues(LinkerType.class, "Available linker types:");
                     return;
                 }
                 if (options.has(optimizationOpt)) {
-                    Logger.INSTANCE.infoln("Available optimization levels:");
-                    for (final var level : OptimizationLevel.values()) {
-                        Logger.INSTANCE.infoln("  - %s", level.getName());
-                    }
+                    printAvailableValues(OptimizationLevel.class, "Available optimization levels:");
                     return;
                 }
                 if (options.has(codeModelOpt)) {
-                    Logger.INSTANCE.infoln("Available code models:");
-                    for (final var model : CodeModel.values()) {
-                        Logger.INSTANCE.infoln("  - %s", model.getName());
-                    }
+                    printAvailableValues(CodeModel.class, "Available code models:");
                     return;
                 }
                 if (options.has(relocOpt)) {
-                    Logger.INSTANCE.infoln("Available relocation types:");
-                    for (final var type : Relocation.values()) {
-                        Logger.INSTANCE.infoln("  - %s", type.getName());
-                    }
+                    printAvailableValues(Relocation.class, "Available relocation types:");
                     return;
                 }
                 parser.formatHelpWith(new BuiltinHelpFormatter(120, 8));

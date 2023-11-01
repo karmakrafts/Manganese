@@ -93,4 +93,9 @@ public enum Architecture {
     public String getDefaultCPU() {
         return defaultCPU;
     }
+
+    @Override
+    public String toString() {
+        return name;
+    }
 }

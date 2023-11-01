@@ -85,4 +85,9 @@ public enum LinkerType {
     public Linker create() {
         return factory.get();
     }
+
+    @Override
+    public String toString() {
+        return name;
+    }
 }
