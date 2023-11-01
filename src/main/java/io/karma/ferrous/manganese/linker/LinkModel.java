@@ -15,6 +15,9 @@
 
 package io.karma.ferrous.manganese.linker;
 
+import java.util.Arrays;
+import java.util.Optional;
+
 /**
  * @author Alexander Hinze
  * @since 30/10/2023
@@ -30,6 +33,10 @@ public enum LinkModel {
 
     LinkModel(final String name) {
         this.name = name;
+    }
+
+    public static Optional<LinkModel> byName(final String name) {
+        return Arrays.stream(values()).filter(model -> model.name.equals(name)).findFirst();
     }
 
     public String getName() {

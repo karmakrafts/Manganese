@@ -181,7 +181,8 @@ public final class Compiler {
         context.setCurrentPass(CompilePass.NONE);
     }
 
-    public CompileResult compile(final Path in, final Path out, final CompileContext context) {
+    public CompileResult compile(final Path in, final Path out, final CompileContext context,
+                                 final LinkModel linkModel) {
         final var outDirectory = out.getParent();
         if (!Files.exists(outDirectory)) {
             try {
@@ -231,7 +232,7 @@ public final class Compiler {
         }
 
         while (numRunningTasks.get() > 0) {
-            Thread.yield();
+            Thread.onSpinWait();
         }
 
         final var moduleName = Utils.getRawFileName(in);
@@ -289,12 +290,7 @@ public final class Compiler {
             .a(Attribute.RESET)
             .toString());
         // @formatter:on
-        linker.link(this,
-            context,
-            out,
-            objectFile,
-            LinkModel.FULL,
-            targetMachine.getTarget()); // TODO: parse link model from CLI
+        linker.link(this, context, out, objectFile, linkModel, targetMachine.getTarget());
 
         return context.makeResult();
     }
@@ -339,7 +335,7 @@ public final class Compiler {
         public void syntaxError(final Recognizer<?, ?> recognizer, final Object offendingSymbol, final int line,
                                 final int charPositionInLine, final String msg, final RecognitionException e) {
             context.reportError(context.makeError((Token) offendingSymbol,
-                Utils.capitalize(msg),
+                Utils.makeCompilerMessage(Utils.capitalize(msg)),
                 CompileErrorCode.E2000));
         }
 

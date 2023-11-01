@@ -111,11 +111,11 @@ public record CompileError(@Nullable Token token, @Nullable List<Token> lineToke
     }
 
     public int getLine() {
-        return token == null ? -1 : token.getLine();
+        return token == null ? 0 : token.getLine();
     }
 
     public int getColumn() {
-        return token == null ? -1 : token.getCharPositionInLine();
+        return token == null ? 0 : token.getCharPositionInLine();
     }
 
     public @Nullable CompileStatus getStatus() {
@@ -142,6 +142,13 @@ public record CompileError(@Nullable Token token, @Nullable List<Token> lineToke
         stream.print(render());
     }
 
+    private int getLength() {
+        if (token == null) {
+            return 1;
+        }
+        return Math.max(1, token.getStopIndex() - token.getStartIndex() + 1);
+    }
+
     public String render() {
         final var builder = Ansi.ansi();
 
@@ -161,9 +168,8 @@ public record CompileError(@Nullable Token token, @Nullable List<Token> lineToke
             builder.a("\n\n  ");
             builder.a(getAnsiText());
             builder.a("\n  ");
-            final var length = Math.max(1, token.getStopIndex() - token.getStartIndex() + 1);
             builder.a(" ".repeat(Math.max(0, column)));
-            for (var i = 0; i < length; i++) {
+            for (var i = 0; i < getLength(); i++) {
                 builder.fgBright(Color.RED);
                 builder.a('^');
             }
@@ -179,11 +185,12 @@ public record CompileError(@Nullable Token token, @Nullable List<Token> lineToke
         }// @formatter:on
 
         if (text != null) {
-            builder.fgBright(Color.RED).a(errorCode).a("\n").a(Attribute.RESET);
-            builder.a("    ").a(" ".repeat(Math.max(0, getColumn()))).a(text).a("\n\n");
+            builder.bgBright(Color.RED).fg(Color.BLACK).a(errorCode).a(Attribute.RESET).a("\n");
+            final var processedText = String.join("\n    ", text.split("\n"));
+            builder.a("    ").a(" ".repeat(Math.max(0, getColumn() + getLength() - 1))).a(processedText).a("\n\n");
         }
         else {
-            builder.fgBright(Color.RED).a(errorCode).a("\n\n").a(Attribute.RESET);
+            builder.a("    ").bgBright(Color.RED).fg(Color.BLACK).a(errorCode).a(Attribute.RESET).a("\n\n");
         }
         return builder.toString();
     }

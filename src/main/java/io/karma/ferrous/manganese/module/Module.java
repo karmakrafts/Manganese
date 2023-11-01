@@ -199,9 +199,7 @@ public final class Module {
             if (bufferAddr == NULL) {
                 return null;
             }
-            final var size = (int) LLVMGetBufferSize(bufferAddr);
-            final var sourceBuffer = MemoryUtil.memByteBuffer(bufferAddr, size);
-            final var result = MemoryUtil.memUTF8(sourceBuffer);
+            final var result = MemoryUtil.memUTF8(nLLVMGetBufferStart(bufferAddr));
             LLVMDisposeMemoryBuffer(bufferAddr);
             return result;
         }

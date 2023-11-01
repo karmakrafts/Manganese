@@ -18,6 +18,7 @@ package io.karma.ferrous.manganese;
 import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.CompileStatus;
 import io.karma.ferrous.manganese.compiler.Compiler;
+import io.karma.ferrous.manganese.linker.LinkModel;
 import io.karma.ferrous.manganese.linker.LinkerType;
 import io.karma.ferrous.manganese.profiler.Profiler;
 import io.karma.ferrous.manganese.target.*;
@@ -55,60 +56,71 @@ final class Main {
                 throw new NoArgsException();
             }
 
-            final var parser = new OptionParser(true);
+            final var parser = new OptionParser(false);
             // @formatter:off
+            // Actions
             final var helpOpt = parser.accepts("?", "Print this help dialog or list valid values for an enum option.");
+            final var versionOpt = parser.accepts("v", "Prints version information about the compiler and runtime.");
+            // IO options
             final var inOpt = parser.accepts("i", "A Ferrous file or directory of files from which to compile.")
                 .withRequiredArg()
                 .ofType(String.class);
             final var outOpt = parser.accepts("o", "The path to the linked binary.")
                 .withOptionalArg()
                 .ofType(String.class);
-            final var optimizationOpt = parser.accepts("O", "The level of optimization.")
-                .withOptionalArg()
-                .ofType(String.class)
-                .defaultsTo(OptimizationLevel.DEFAULT.getName());
+            // General options
+            final var silentOpt = parser.accepts("s", "Silent mode. This will suppress any warning level log messages during compilation.");
             final var threadsOpt = parser.accepts("j", "Number of threads to use when compiling.")
                 .withOptionalArg()
                 .ofType(Integer.class)
                 .defaultsTo(Runtime.getRuntime().availableProcessors());
-            final var disassembleOpt = parser.accepts("d", "Disassemble the output and print it into the console.");
-            final var debugOpt = parser.accepts("D", "Debug mode. This will print debug information during the compilation.");
-            final var parseWarningsOpt = parser.accepts("p", "Display parser warnings during compilation.")
-                .availableIf("D");
-            final var opaquePointerOpt = parser.accepts("P", "Disable opaque pointers. Useful for disassembling compile output.");
+            // Debug options
+            final var debugOpt = parser.accepts("d", "Debug mode. This will print debug information during the compilation.");
+            final var parseWarningsOpt = parser.accepts("Dp", "Display parser warnings during compilation.")
+                .availableIf("d");
+            final var tokenViewOpt = parser.accepts("Dt", "Token view. This will print a tree structure containing all tokens during compilation.")
+                .availableIf("d");
+            final var opaquePointerOpt = parser.accepts("DP", "Disable opaque pointers. Useful for disassembling compile output.")
+                .availableIf("d");
+            final var disassembleOpt = parser.accepts("Dd", "Disassemble the output and print it into the console.")
+                .availableIf("d");
+            final var profilerOpt = parser.accepts("Dx", "Enable the profiler and show results at the end of the compilation.")
+                .availableIf("d");
+            // Target options
             final var targetOpt = parser.accepts("t", "The target triple for which to compile the code.")
                 .withOptionalArg()
                 .ofType(String.class)
                 .defaultsTo(Target.getHostTargetTriple());
-            final var tokenViewOpt = parser.accepts("T", "Token view. This will print a tree structure containing all tokens during compilation.");
-            final var silentOpt = parser.accepts("s", "Silent mode. This will suppress any warning level log messages during compilation.");
-            final var versionOpt = parser.accepts("v", "Prints version information about the compiler and runtime.");
-            final var codeModelOpt = parser.accepts("M", "The code model to use when generating assembly code for the target machine.")
+            final var codeModelOpt = parser.accepts("Tm", "The code model to use when generating assembly code for the target machine.")
                 .withOptionalArg()
                 .ofType(String.class)
                 .defaultsTo(CodeModel.DEFAULT.getName());
-            final var featuresOpt = parser.accepts("f", "Feature options forwarded to LLVM during compilation.")
+            final var featuresOpt = parser.accepts("Tf", "Feature options forwarded to LLVM during compilation.")
                 .withOptionalArg()
                 .ofType(String.class)
                 .defaultsTo(Objects.requireNonNull(LLVMGetHostCPUFeatures()));
-            final var fileTypeOpt = parser.accepts("F", "The type of the linked output file.")
-                .withOptionalArg()
-                .ofType(String.class)
-                .defaultsTo("");
-            final var relocOpt = parser.accepts("r", "The type of relocation used when linking the final object.")
+            final var relocOpt = parser.accepts("Tr", "The type of relocation used when linking the final object.")
                 .withOptionalArg()
                 .ofType(String.class)
                 .defaultsTo(Relocation.DEFAULT.getName());
-            final var cpuOpt = parser.accepts("c", "The type of processor to compile for. Depends on the given target architecture.")
+            final var cpuOpt = parser.accepts("Tc", "The type of processor to compile for. Depends on the given target architecture.")
                 .withOptionalArg()
                 .ofType(String.class)
                 .defaultsTo("");
-            final var linkerTypeOpt = parser.accepts("l", "The linker to use when linking the module.")
+            final var optimizationOpt = parser.accepts("To", "The level of optimization.")
+                .withOptionalArg()
+                .ofType(String.class)
+                .defaultsTo(OptimizationLevel.DEFAULT.getName());
+            // Link options
+            final var linkerTypeOpt = parser.accepts("Lt", "The linker to use when linking the module.")
                 .withOptionalArg()
                 .ofType(String.class)
                 .defaultsTo(Platform.getHostPlatform().getDefaultLinkerType().getName());
-            final var linkerOptionsOpt = parser.accepts("L", "Options passed directly to the linker.")
+            final var linkModelOpt = parser.accepts("Lm", "The link model to use when creating the executable/library.")
+                .withOptionalArg()
+                .ofType(String.class)
+                .defaultsTo(LinkModel.FULL.getName());
+            final var linkerOptionsOpt = parser.accepts("Lo", "Options passed directly to the linker.")
                 .withOptionalArg()
                 .ofType(String.class)
                 .defaultsTo("");
@@ -156,8 +168,6 @@ final class Main {
                 }
                 parser.formatHelpWith(new BuiltinHelpFormatter(120, 8));
                 parser.printHelpOn(Logger.INSTANCE); // Print help
-                Logger.INSTANCE.infoln("You can also combine the following options with -?:");
-                Logger.INSTANCE.infoln("  -O, -F, -M, -r, -f, -l");
                 return;
             }
             if (options.has(versionOpt)) {
@@ -180,7 +190,8 @@ final class Main {
             final var optLevel = OptimizationLevel.byName(options.valueOf(optimizationOpt));
             final var relocation = Relocation.byName(options.valueOf(relocOpt));
             final var codeModel = CodeModel.byName(options.valueOf(codeModelOpt));
-            if (optLevel.isEmpty() || relocation.isEmpty() || codeModel.isEmpty()) {
+            final var linkModel = LinkModel.byName(options.valueOf(linkModelOpt));
+            if (optLevel.isEmpty() || relocation.isEmpty() || codeModel.isEmpty() || linkModel.isEmpty()) {
                 Logger.INSTANCE.errorln("Malformed parameter");
                 return;
             }
@@ -225,7 +236,7 @@ final class Main {
             // @formatter:on
 
             final var context = new CompileContext();
-            final var result = compiler.compile(in, out, context);
+            final var result = compiler.compile(in, out, context, linkModel.get());
             context.dispose();
             targetMachine.dispose();
             status = status.worse(result.status());
@@ -234,7 +245,7 @@ final class Main {
             Collections.sort(errors);
             errors.forEach(error -> error.print(System.out));
 
-            if (debugMode) {
+            if (options.has(profilerOpt)) {
                 System.out.printf("\n%s\n", Profiler.INSTANCE.renderSections());
             }
         }

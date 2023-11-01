@@ -71,16 +71,18 @@ public abstract class AbstractLinker implements Linker {
             }
             if (process.waitFor() != 0) {
                 try (final var reader = process.errorReader()) {
-                    final var error = reader.lines().collect(Collectors.joining("\n"));
+                    final var error = Utils.makeCompilerMessage(reader.lines().collect(Collectors.joining("\n")));
                     compileContext.reportError(compileContext.makeError(error, CompileErrorCode.E6002));
                 }
             }
         }
         catch (IOException error) {
-            compileContext.reportError(compileContext.makeError(error.getMessage(), CompileErrorCode.E6001));
+            compileContext.reportError(compileContext.makeError(Utils.makeCompilerMessage(error.getMessage()),
+                CompileErrorCode.E6001));
         }
         catch (InterruptedException error) {
-            compileContext.reportError(compileContext.makeError(error.getMessage(), CompileErrorCode.E6003));
+            compileContext.reportError(compileContext.makeError(Utils.makeCompilerMessage(error.getMessage()),
+                CompileErrorCode.E6003));
         }
     }
 
