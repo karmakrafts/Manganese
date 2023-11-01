@@ -30,7 +30,7 @@ import java.util.ArrayList;
  */
 @API(status = API.Status.INTERNAL)
 public final class ELFLinker extends AbstractLinker {
-    public ELFLinker() {
+    ELFLinker() {
         super(Utils.allExcept(Architecture.class, Architecture.WASM32, Architecture.WASM64));
     }
 
@@ -40,16 +40,16 @@ public final class ELFLinker extends AbstractLinker {
                                 final CompileContext compileContext) {
         buffer.add(command);
         buffer.addAll(options);
-        //buffer.add("-dynamic-linker");
-        //buffer.add("/usr/x86_64-linux-gnu/lib/ld-linux-x86-64.so.2");
-        //buffer.add("-L/usr/x86_64-linux-gnu/lib");
+        buffer.add("-dynamic-linker");
+        buffer.add("/usr/x86_64-linux-gnu/lib/ld-linux-x86-64.so.2");
+        buffer.add("-L/usr/x86_64-linux-gnu/lib");
         buffer.add("-o");
         buffer.add(outFile.toAbsolutePath().normalize().toString());
-        //buffer.add("/usr/x86_64-linux-gnu/lib/crt1.o");
-        //buffer.add("/usr/x86_64-linux-gnu/lib/crti.o");
-        //buffer.add("-lc");
+        buffer.add("/usr/x86_64-linux-gnu/lib/crt1.o");
+        buffer.add("/usr/x86_64-linux-gnu/lib/crti.o");
+        buffer.add("-lc");
         buffer.add(objectFile.toAbsolutePath().normalize().toString());
-        //buffer.add("/usr/x86_64-linux-gnu/lib/crtn.o");
+        buffer.add("/usr/x86_64-linux-gnu/lib/crtn.o");
     }
 
     @Override

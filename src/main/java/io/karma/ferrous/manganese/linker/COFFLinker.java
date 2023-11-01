@@ -30,7 +30,7 @@ import java.util.EnumSet;
  */
 @API(status = API.Status.INTERNAL)
 public final class COFFLinker extends AbstractLinker {
-    public COFFLinker() {
+    COFFLinker() {
         super(EnumSet.of( // @formatter:off
             Architecture.X86,
             Architecture.X86_64,

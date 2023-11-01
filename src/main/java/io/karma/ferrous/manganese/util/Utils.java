@@ -61,11 +61,10 @@ public final class Utils {
     }
 
     private static String getSystemShell() {
-        return switch(SystemInfo.Platform.getCurrent()) { // @formatter:off
-            case WINDOWS -> "cmd.exe /C";
-            case MAC     -> "/bin/zsh -c";
-            default      -> "/bin/bash -c";
-        }; // @formatter:on
+        if (SystemInfo.Platform.getCurrent() == SystemInfo.Platform.WINDOWS) {
+            return "cmd.exe /C";
+        }
+        return "/bin/sh -c";
     }
 
     public static ProcessBuilder createProcess(final String... command) {

@@ -42,28 +42,15 @@ import static org.lwjgl.system.MemoryUtil.NULL;
  */
 @API(status = Status.INTERNAL)
 public final class LLVMUtils {
-    private static final Pattern VERSION_PATTERN = Pattern.compile(".+(11|12|13|14|15)");
-    private static final String[] PATHS_TO_SEARCH = {"/usr/share/lib", "/usr/local/opt", "/usr/lib", "/"};
-    private static final String[] NAMES_TO_SEARCH = { // @formatter:off
-        "llvm-15/build/Release",
-        "llvm-14/build/Release",
-        "llvm-13/build/Release",
-        "llvm-12/build/Release",
-        "llvm-11/build/Release",
+    private static final String[] VERSIONS = {"15", "14", "13", "12", "11", ""};
+    private static final Pattern VERSION_PATTERN = Pattern.compile(String.format(".+(%s)", String.join("|", VERSIONS)));
+    private static final String[] BASE_PATHS = {"/usr/share/lib", "/usr/local/opt", "/usr/lib", "/"};
+    private static final String[] SUB_PATHS = { // @formatter:off
+        "llvm-{}/build/Release",
         "llvm/build/Release",
-        "LLVM/build/Release",
-        "llvm@15",
-        "llvm@14",
-        "llvm@13",
-        "llvm@12",
-        "llvm@11",
-        "llvm-15",
-        "llvm-14",
-        "llvm-13",
-        "llvm-12",
-        "llvm-11",
-        "llvm",
-        "LLVM"
+        "llvm@{}",
+        "llvm-{}",
+        "llvm"
     }; // @formatter:on
 
     // @formatter:off
@@ -143,13 +130,19 @@ public final class LLVMUtils {
     }
 
     public static @Nullable Path findLLVMPath() {
-        for (final var searchPath : PATHS_TO_SEARCH) {
-            for (final var directory : NAMES_TO_SEARCH) {
-                final var path = Path.of(searchPath).resolve(directory);
-                if (!Files.exists(path) || !Files.isDirectory(path)) {
-                    continue;
+        for (final var searchPath : BASE_PATHS) {
+            for (final var directory : SUB_PATHS) {
+                for (final var version : VERSIONS) {
+                    var dirPath = directory;
+                    if (directory.contains("{}")) {
+                        dirPath = dirPath.replace("{}", version);
+                    }
+                    final var path = Path.of(searchPath).resolve(dirPath);
+                    if (!Files.exists(path) || !Files.isDirectory(path)) {
+                        continue;
+                    }
+                    return path;
                 }
-                return path;
             }
         }
         return null;

@@ -54,7 +54,7 @@ public enum Relocation {
         return name;
     }
 
-    public int getLlvmValue() {
+    public int getLLVMValue() {
         return llvmValue;
     }
 }

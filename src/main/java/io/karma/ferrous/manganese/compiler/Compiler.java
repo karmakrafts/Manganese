@@ -18,6 +18,7 @@ package io.karma.ferrous.manganese.compiler;
 import io.karma.ferrous.manganese.analyze.Analyzer;
 import io.karma.ferrous.manganese.linker.LinkModel;
 import io.karma.ferrous.manganese.linker.Linker;
+import io.karma.ferrous.manganese.profiler.Profiler;
 import io.karma.ferrous.manganese.target.FileType;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.translate.TranslationUnit;
@@ -90,15 +91,14 @@ public final class Compiler {
             context.setCurrentModuleName(name);
 
             // Tokenize
-            var startTime = System.currentTimeMillis();
             context.setCurrentPass(CompilePass.TOKENIZE);
+            Profiler.INSTANCE.push("Tokenize");
             final var lexer = new FerrousLexer(CharStreams.fromChannel(in, StandardCharsets.UTF_8));
             context.setLexer(lexer);
             final var tokenStream = new CommonTokenStream(lexer);
             tokenStream.fill();
             context.setTokenStream(tokenStream);
-            var time = System.currentTimeMillis() - startTime;
-            Logger.INSTANCE.debugln("Finished pass TOKENIZE in %dms", time);
+            Profiler.INSTANCE.pop();
             if (tokenView) {
                 System.out.printf("\n%s\n",
                     TokenUtils.renderTokenTree(context.getCurrentModuleName(),
@@ -112,10 +112,9 @@ public final class Compiler {
             parser.removeErrorListeners(); // Remove default error listener
             parser.addErrorListener(new ErrorListener(context));
             context.setParser(parser);
-            startTime = System.currentTimeMillis();
+            Profiler.INSTANCE.push("Parse");
             context.setFileContext(parser.file());
-            time = System.currentTimeMillis() - startTime;
-            Logger.INSTANCE.debugln("Finished pass PARSE in %dms", time);
+            Profiler.INSTANCE.pop();
 
             context.setCurrentPass(CompilePass.NONE);
         }
@@ -128,24 +127,22 @@ public final class Compiler {
     public void analyzeAndProcess(final String name, final CompileContext context) {
         context.setCurrentModuleName(name);
 
-        var startTime = System.currentTimeMillis();
         context.setCurrentPass(CompilePass.ANALYZE);
         final var analyzer = new Analyzer(this, context);
         context.setAnalyzer(analyzer);
         final var fileContext = Objects.requireNonNull(context.getFileContext());
+        Profiler.INSTANCE.push("Analyzer");
         ParseTreeWalker.DEFAULT.walk(analyzer, fileContext);
         analyzer.preProcessTypes(); // Pre-materializes all UDTs in the right order
-        var time = System.currentTimeMillis() - startTime;
-        Logger.INSTANCE.debugln("Finished pass ANALYZE in %dms", time);
+        Profiler.INSTANCE.pop();
 
         final var tokenStream = Objects.requireNonNull(context.getTokenStream());
         final var tokens = tokenStream.getTokens();
 
-        startTime = System.currentTimeMillis();
         context.setCurrentPass(CompilePass.PROCESS);
+        Profiler.INSTANCE.push("Process Tokens");
         processTokens(tokens);
-        time = System.currentTimeMillis() - startTime;
-        Logger.INSTANCE.debugln("Finished pass PROCESS in %dms", time);
+        Profiler.INSTANCE.pop();
 
         final var newTokenStream = new CommonTokenStream(new ListTokenSource(tokens));
         newTokenStream.fill();
@@ -161,13 +158,12 @@ public final class Compiler {
     public void compile(final String name, final String sourceName, final CompileContext context) {
         context.setCurrentModuleName(name);
 
-        var startTime = System.currentTimeMillis();
         context.setCurrentPass(CompilePass.COMPILE);
         final var translationUnit = new TranslationUnit(this, context);
+        Profiler.INSTANCE.push("Translate");
         ParseTreeWalker.DEFAULT.walk(translationUnit, context.getFileContext()); // Walk the entire AST with the TU
         context.setTranslationUnit(translationUnit);
-        var time = System.currentTimeMillis() - startTime;
-        Logger.INSTANCE.debugln("Finished pass COMPILE in %dms", time);
+        Profiler.INSTANCE.pop();
 
         final var module = Objects.requireNonNull(context.getTranslationUnit()).getModule();
         module.setSourceFileName(sourceName);
@@ -276,7 +272,6 @@ public final class Compiler {
             Logger.INSTANCE.infoln("Linked disassembly:\n\n%s", module.disassembleBitcode());
             Logger.INSTANCE.infoln("Native disassembly:\n\n%s", module.disassembleAssembly(targetMachine));
         }
-        Logger.INSTANCE.infoln("");
 
         final var objectFile = out.getParent().resolve(String.format("%s.o", Utils.getRawFileName(out)));
         module.generateAssembly(targetMachine, FileType.OBJECT, objectFile);

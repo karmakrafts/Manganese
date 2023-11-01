@@ -56,8 +56,8 @@ public final class TargetMachine {
             cpu,
             features,
             level.getLLVMValue(),
-            reloc.getLlvmValue(),
-            model.getLlvmValue());
+            reloc.getLLVMValue(),
+            model.getLLVMValue());
         if (address == NULL) {
             throw new RuntimeException("Could not create target machine");
         }

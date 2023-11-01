@@ -53,7 +53,7 @@ public enum CodeModel {
         return name;
     }
 
-    public int getLlvmValue() {
+    public int getLLVMValue() {
         return llvmValue;
     }
 }

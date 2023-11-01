@@ -26,6 +26,7 @@ import io.karma.ferrous.manganese.ocm.access.ScopedAccess;
 import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.ocm.type.*;
+import io.karma.ferrous.manganese.profiler.Profiler;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.*;
 import io.karma.ferrous.vanadium.FerrousParser.*;
@@ -230,6 +231,7 @@ public final class Analyzer extends ParseAdapter {
     }
 
     public @Nullable Type findCompleteTypeInScope(final Identifier name, final Identifier scopeName) {
+        Profiler.INSTANCE.push();
         Type type = ScopeUtils.findInScope(udts, name, scopeName);
         if (type == null) {
             return null;
@@ -244,6 +246,7 @@ public final class Analyzer extends ParseAdapter {
             final var typeName = ((NamedType) type).getQualifiedName();
             type = ScopeUtils.findInScope(udts, typeName, scopeName);
         }
+        Profiler.INSTANCE.pop();
         return type;
     }
 
@@ -252,10 +255,17 @@ public final class Analyzer extends ParseAdapter {
     }
 
     public @Nullable Type findTypeInScope(final Identifier name, final Identifier scopeName) {
-        return ScopeUtils.findInScope(udts, name, scopeName);
+        try {
+            Profiler.INSTANCE.push();
+            return ScopeUtils.findInScope(udts, name, scopeName);
+        }
+        finally {
+            Profiler.INSTANCE.pop();
+        }
     }
 
     private boolean resolveAliasedType(final AliasedType alias, final Identifier scopeName) {
+        Profiler.INSTANCE.push();
         var currentType = alias.getBackingType();
         while (!currentType.isComplete()) {
             if (currentType.isAliased()) {
@@ -273,10 +283,12 @@ public final class Analyzer extends ParseAdapter {
             currentType = completeType;
         }
         alias.setBackingType(currentType);
+        Profiler.INSTANCE.pop();
         return true;
     }
 
     private boolean resolveFieldTypes(final UDT udt, final Identifier scopeName) {
+        Profiler.INSTANCE.push();
         final var type = udt.type();
         final var fieldTypes = type.getFieldTypes();
         final var numFields = fieldTypes.size();
@@ -294,10 +306,12 @@ public final class Analyzer extends ParseAdapter {
             Logger.INSTANCE.debugln("  > Resolved to complete type '%s'", completeType);
             type.setFieldType(i, completeType.derive(fieldType.getAttributes()));
         }
+        Profiler.INSTANCE.pop();
         return true;
     }
 
     private void resolveTypes() {
+        Profiler.INSTANCE.push();
         final var udts = this.udts.values();
         for (final var udt : udts) {
             final var scopeName = udt.getScopeName();
@@ -315,9 +329,11 @@ public final class Analyzer extends ParseAdapter {
                     CompileErrorCode.E3004));
             }
         }
+        Profiler.INSTANCE.pop();
     }
 
     private void materializeTypes() {
+        Profiler.INSTANCE.push();
         for (final var udt : udts.values()) {
             if (udt.isAliased()) {
                 continue; // Don't need to waste time on doing nothing..
@@ -329,9 +345,11 @@ public final class Analyzer extends ParseAdapter {
             udt.materialize(compiler.getTargetMachine());
             Logger.INSTANCE.debugln("Materializing type %s", udt.getQualifiedName());
         }
+        Profiler.INSTANCE.pop();
     }
 
     private void sortTypes() {
+        Profiler.INSTANCE.push();
         final var rootNode = new TopoNode<NamedType>(DummyType.INSTANCE);
         // @formatter:off
         final var nodes = udts.entrySet()
@@ -375,6 +393,7 @@ public final class Analyzer extends ParseAdapter {
 
         udts.clear();
         udts.putAll(sortedMap);
+        Profiler.INSTANCE.pop();
     }
 
     private void analyzeFieldLayout(final ParserRuleContext parent, final Identifier name,
@@ -393,6 +412,7 @@ public final class Analyzer extends ParseAdapter {
     }
 
     private void resolveTypeAccess() {
+        Profiler.INSTANCE.push();
         final var udts = this.udts.values();
         for (final var udt : udts) {
             if (!(udt instanceof UDT)) {
@@ -424,6 +444,7 @@ public final class Analyzer extends ParseAdapter {
                 }
             }
         }
+        Profiler.INSTANCE.pop();
     }
 
     private void checkTypeAccess() {

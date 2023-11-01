@@ -19,6 +19,7 @@ import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.CompileStatus;
 import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.linker.LinkerType;
+import io.karma.ferrous.manganese.profiler.Profiler;
 import io.karma.ferrous.manganese.target.*;
 import io.karma.ferrous.manganese.util.Logger;
 import io.karma.ferrous.manganese.util.Logger.LogLevel;
@@ -206,7 +207,8 @@ final class Main {
             compiler.setEnableOpaquePointers(!options.has(opaquePointerOpt));
 
             // Update the log level if we are in verbose mode.
-            if (options.has(debugOpt)) {
+            final var debugMode = options.has(debugOpt);
+            if (debugMode) {
                 Logger.INSTANCE.setLogLevel(LogLevel.DEBUG);
             }
             if (options.has(silentOpt)) {
@@ -231,6 +233,10 @@ final class Main {
             final var errors = result.errors();
             Collections.sort(errors);
             errors.forEach(error -> error.print(System.out));
+
+            if (debugMode) {
+                System.out.printf("\n%s\n", Profiler.INSTANCE.renderSections());
+            }
         }
         catch (OptionException | NoArgsException error) {
             // Special case; display help instead of logging the exception.

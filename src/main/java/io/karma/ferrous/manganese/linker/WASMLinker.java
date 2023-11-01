@@ -30,7 +30,7 @@ import java.util.EnumSet;
  */
 @API(status = API.Status.INTERNAL)
 public final class WASMLinker extends AbstractLinker {
-    public WASMLinker() {
+    WASMLinker() {
         super(EnumSet.of(Architecture.WASM32, Architecture.WASM64));
     }
 
