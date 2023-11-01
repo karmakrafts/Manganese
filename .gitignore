@@ -25,5 +25,3 @@ forge*changelog.txt
 .floo
 .flooignore
 logs/
-test/
-test_build/
