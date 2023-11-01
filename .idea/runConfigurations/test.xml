@@ -1,8 +1,8 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="std" type="Application" factoryName="Application">
+  <configuration default="false" name="test" type="Application" factoryName="Application">
     <option name="MAIN_CLASS_NAME" value="io.karma.ferrous.manganese.Main" />
     <module name="manganese.main" />
-    <option name="PROGRAM_PARAMETERS" value="-i src/main/ferrous/std -o build/ferrous/std/std -d -Dd" />
+    <option name="PROGRAM_PARAMETERS" value="-i src/main/ferrous/test -o build/ferrous/test/test -d -Dd" />
     <method v="2">
       <option name="Make" enabled="true" />
     </method>

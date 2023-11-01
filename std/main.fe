@@ -1,3 +1,0 @@
-fun main(num_args: i32, args: **i8): i32 {
-    return 0
-}
