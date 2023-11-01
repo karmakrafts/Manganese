@@ -8,7 +8,7 @@ only supports LLVM as its backend. **Other backends will not be supported**.
 You can run the Manganese compiler by simple running the following command:
 
 ```shell
-java -jar manganese-x.x.x.x.jar [options]
+java -jar manganese-<version>.jar [options]
 ```
 
 If you need a list of all available options, run the compiler with the `-?` option.
@@ -48,41 +48,7 @@ dependencies {
 </project>
 ```
 
-You can obtain the latest version from the provided repository batch at the top of the page.  
-The following demonstrates the programmatical use of the compiler:
-
-```java
-import io.karma.ferrous.manganese.Manganese;
-import io.karma.ferrous.manganese.target.FileType;
-import java.io.ByteArrayOutputStream;
-import java.nio.ByteBuffer;
-import java.nio.channels.Channels;
-import java.nio.file.Files;
-import java.nio.file.Path;
-
-static {
-    Manganese.init();
-}
-
-public CompileStatus compileSomething(final Path inPath, final ByteBuffer outBuffer) {
-    final var compiler = Manganese.createCompiler(FileType.ELF);
-    // @formatter:off
-    try (final var inStream = Files.newInputStream(inPath); 
-         final var inChannel = Channels.newChannel(inStream); 
-         final var outStream = new ByteArrayOutputStream();
-         final var outChannel = Channels.newChannel(outStream)) {
-        // @formatter:on
-        final var result = compiler.compile(inChannel, outChannel);
-        if(result.getStatus() != CompileStatus.SUCCESS) {
-            // Throw first compiler error as runtime exception
-            throw new RuntimeException(result.getErrors().get(0));
-        }
-        outBuffer.put(outStream.toByteArray());
-        outBuffer.flip();
-    }
-    compiler.dispose();
-}
-```
+You can obtain the latest version from the provided repository batch at the top of the page.
 
 ### Building
 
