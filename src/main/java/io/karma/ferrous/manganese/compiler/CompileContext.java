@@ -31,10 +31,9 @@ import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
@@ -44,7 +43,7 @@ import java.util.function.Function;
  */
 @API(status = Status.STABLE)
 public final class CompileContext {
-    private final List<CompileError> errors = Collections.synchronizedList(new ArrayList<>());
+    private final ConcurrentLinkedQueue<CompileError> errors = new ConcurrentLinkedQueue<>();
     private final ConcurrentHashMap<String, Module> modules = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, ModuleData> moduleData = new ConcurrentHashMap<>();
     private final ThreadLocal<CompilePass> pass = ThreadLocal.withInitial(() -> CompilePass.NONE);
@@ -69,10 +68,7 @@ public final class CompileContext {
     }
 
     public CompileResult makeResult() {
-        final var status = getCurrentStatus();
-        synchronized (this) {
-            return new CompileResult(status, new ArrayList<>(errors));
-        }
+        return new CompileResult(getCurrentStatus(), new ArrayList<>(errors));
     }
 
     public CompileError makeError(final CompileErrorCode errorCode) {
@@ -106,12 +102,10 @@ public final class CompileContext {
         if (tokenStream != null && tokenStream.size() == 0) {
             tokenStream.fill();
         }
-        synchronized (this) {
-            if (errors.contains(error)) {
-                return; // Don't report duplicates
-            }
-            errors.add(error);
+        if (errors.contains(error)) {
+            return; // Don't report duplicates
         }
+        errors.add(error);
         setCurrentStatus(getCurrentStatus().worse(error.getStatus()));
     }
 
@@ -199,9 +193,7 @@ public final class CompileContext {
         modules.values().forEach(Module::dispose); // Dispose the actual modules
         modules.clear();
         moduleData.clear();
-        synchronized (this) {
-            errors.clear();
-        }
+        errors.clear();
     }
 
     public void addModule(final Module module) {
