@@ -60,9 +60,14 @@ public enum LinkerType {
         if (Utils.hasCommand(alias, "-help")) {
             return alias;
         }
-        final var path = String.format("%s/bin/%s",
-            Objects.requireNonNull(LLVMUtils.findLLVMPath()).toAbsolutePath().normalize(),
-            alias);
+        // @formatter:off
+        final var path = Objects.requireNonNull(LLVMUtils.getLLVMPath())
+            .resolve("bin")
+            .resolve(alias)
+            .toAbsolutePath()
+            .normalize()
+            .toString();
+        // @formatter:on
         if (Utils.hasCommand(path, "-help")) {
             return path;
         }
