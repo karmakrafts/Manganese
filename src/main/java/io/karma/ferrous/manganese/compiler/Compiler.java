@@ -77,7 +77,7 @@ public final class Compiler {
     public Compiler(final TargetMachine targetMachine, final Linker linker, final int numThreads) {
         this.targetMachine = targetMachine;
         this.linker = linker;
-        executorService = Executors.newFixedThreadPool(numThreads);
+        executorService = Executors.newWorkStealingPool(numThreads);
         Runtime.getRuntime().addShutdownHook(new Thread(() -> Functions.tryDo(() -> {
             executorService.shutdown();
             if (!executorService.awaitTermination(1, TimeUnit.SECONDS)) {
