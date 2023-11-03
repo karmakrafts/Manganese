@@ -15,31 +15,28 @@
 
 package io.karma.ferrous.manganese.linker;
 
-import org.apiguardian.api.API;
-
 import java.util.Arrays;
 import java.util.Optional;
 
 /**
  * @author Alexander Hinze
- * @since 30/10/2023
+ * @since 01/11/2023
  */
-@API(status = API.Status.STABLE)
-public enum LinkModel {
+public enum LinkTargetType {
     // @formatter:off
-    FULL        ("full"),
-    PORTABLE    ("portable"),
-    FREESTANDING("freestanding");
+    EXECUTABLE  ("executable"),
+    STATIC      ("static"),
+    SHARED      ("shared");
     // @formatter:on
 
     private final String name;
 
-    LinkModel(final String name) {
+    LinkTargetType(final String name) {
         this.name = name;
     }
 
-    public static Optional<LinkModel> byName(final String name) {
-        return Arrays.stream(values()).filter(model -> model.name.equals(name)).findFirst();
+    public static Optional<LinkTargetType> byName(final String name) {
+        return Arrays.stream(values()).filter(type -> type.name.equals(name)).findFirst();
     }
 
     public String getName() {

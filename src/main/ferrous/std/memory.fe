@@ -1,0 +1,6 @@
+pub mod std {
+    pub mod memory {
+        pub struct Testing {
+        }
+    }
+}

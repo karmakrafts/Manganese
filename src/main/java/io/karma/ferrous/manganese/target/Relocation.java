@@ -29,25 +29,31 @@ import java.util.Optional;
 @API(status = Status.STABLE)
 public enum Relocation {
     // @formatter:off
-    DEFAULT     ("default",         LLVMTargetMachine.LLVMRelocDefault),
-    STATIC      ("static",          LLVMTargetMachine.LLVMRelocStatic),
-    PIC         ("pic",             LLVMTargetMachine.LLVMRelocPIC),
-    DYN_NO_PIC  ("dynamic_nopic",   LLVMTargetMachine.LLVMRelocDynamicNoPic),
-    ROPI        ("ropi",            LLVMTargetMachine.LLVMRelocROPI),
-    RWPI        ("rwpi",            LLVMTargetMachine.LLVMRelocRWPI),
-    ROPI_RWPI   ("ropi_rwpi",       LLVMTargetMachine.LLVMRelocROPI_RWPI);
+    DEFAULT     ("default",         LLVMTargetMachine.LLVMRelocDefault,      false),
+    STATIC      ("static",          LLVMTargetMachine.LLVMRelocStatic,       false),
+    PIC         ("pic",             LLVMTargetMachine.LLVMRelocPIC,          true ),
+    DYN_NO_PIC  ("dynamic_nopic",   LLVMTargetMachine.LLVMRelocDynamicNoPic, true ),
+    ROPI        ("ropi",            LLVMTargetMachine.LLVMRelocROPI,         true ),
+    RWPI        ("rwpi",            LLVMTargetMachine.LLVMRelocRWPI,         true ),
+    ROPI_RWPI   ("ropi_rwpi",       LLVMTargetMachine.LLVMRelocROPI_RWPI,    true );
     // @formatter:on
 
     private final String name;
     private final int llvmValue;
+    private final boolean isDynamic;
 
-    Relocation(final String name, final int llvmValue) {
+    Relocation(final String name, final int llvmValue, final boolean isDynamic) {
         this.name = name;
         this.llvmValue = llvmValue;
+        this.isDynamic = isDynamic;
     }
 
     public static Optional<Relocation> byName(final String name) {
         return Arrays.stream(values()).filter(reloc -> reloc.name.equals(name)).findFirst();
+    }
+
+    public boolean isDynamic() {
+        return isDynamic;
     }
 
     public String getName() {

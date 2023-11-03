@@ -17,6 +17,7 @@ package io.karma.ferrous.manganese.compiler;
 
 import io.karma.ferrous.manganese.analyze.Analyzer;
 import io.karma.ferrous.manganese.linker.LinkModel;
+import io.karma.ferrous.manganese.linker.LinkTargetType;
 import io.karma.ferrous.manganese.linker.Linker;
 import io.karma.ferrous.manganese.profiler.Profiler;
 import io.karma.ferrous.manganese.target.FileType;
@@ -181,8 +182,8 @@ public final class Compiler {
         context.setCurrentPass(CompilePass.NONE);
     }
 
-    public CompileResult compile(final Path in, final Path out, final CompileContext context,
-                                 final LinkModel linkModel) {
+    public CompileResult compile(final Path in, final Path out, final CompileContext context, final LinkModel linkModel,
+                                 final LinkTargetType targetType) {
         final var outDirectory = out.getParent();
         if (!Files.exists(outDirectory)) {
             try {
@@ -290,7 +291,7 @@ public final class Compiler {
             .a(Attribute.RESET)
             .toString());
         // @formatter:on
-        linker.link(this, context, out, objectFile, linkModel, targetMachine.getTarget());
+        linker.link(this, context, out, objectFile, linkModel, targetMachine, targetType);
 
         return context.makeResult();
     }

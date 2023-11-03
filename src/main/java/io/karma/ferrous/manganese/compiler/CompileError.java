@@ -165,9 +165,9 @@ public record CompileError(@Nullable Token token, @Nullable List<Token> lineToke
                 builder.a(String.format("Error during compilation in %d:%d", line, endColumn));
             }
             builder.a(Attribute.RESET);
-            builder.a("\n\n  ");
+            builder.a("\n\n");
             builder.a(getAnsiText());
-            builder.a("\n  ");
+            builder.a("\n");
             builder.a(" ".repeat(Math.max(0, column)));
             for (var i = 0; i < getLength(); i++) {
                 builder.fgBright(Color.RED);

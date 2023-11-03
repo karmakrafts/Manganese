@@ -20,6 +20,7 @@ import io.karma.ferrous.manganese.compiler.CompileErrorCode;
 import io.karma.ferrous.manganese.target.Architecture;
 import io.karma.ferrous.manganese.target.Platform;
 import io.karma.ferrous.manganese.target.Target;
+import io.karma.ferrous.manganese.target.TargetMachine;
 import org.apiguardian.api.API;
 
 import java.nio.file.Path;
@@ -70,8 +71,9 @@ public final class MachOLinker extends AbstractLinker {
 
     @Override
     protected void buildCommand(final ArrayList<String> buffer, final String command, final Path outFile,
-                                final Path objectFile, final LinkModel linkModel, final Target target,
-                                final CompileContext compileContext) {
+                                final Path objectFile, final LinkModel linkModel, final TargetMachine targetMachine,
+                                final CompileContext compileContext, final LinkTargetType targetType) {
+        final var target = targetMachine.getTarget();
         if (linkModel == LinkModel.FULL && target.getPlatform() != Platform.MACOS) {
             compileContext.reportError(compileContext.makeError("Full link model not supported when cross-compiling",
                 CompileErrorCode.E6005));

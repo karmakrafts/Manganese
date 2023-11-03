@@ -22,6 +22,7 @@ import org.lwjgl.PointerBuffer;
 import org.lwjgl.llvm.LLVMCore;
 import org.lwjgl.system.MemoryStack;
 
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.regex.Pattern;
@@ -44,7 +45,7 @@ import static org.lwjgl.system.MemoryUtil.NULL;
  */
 @API(status = Status.INTERNAL)
 public final class LLVMUtils {
-    private static final String[] VERSIONS = {"15", "14", "13", "12", "11", ""};
+    private static final String[] VERSIONS = {"15", "14", "13", "12", "11"};
     private static final Pattern VERSION_PATTERN = Pattern.compile(String.format(".+(%s)", String.join("|", VERSIONS)));
     private static final String[] BASE_PATHS = {"/usr/share/lib", "/usr/local/opt", "/usr/lib", "/"};
     private static final String[] SUB_PATHS = { // @formatter:off
@@ -136,8 +137,11 @@ public final class LLVMUtils {
         if (pathString != null) {
             return Path.of(pathString);
         }
-        for (final var searchPath : BASE_PATHS) {
-            for (final var directory : SUB_PATHS) {
+        final var separator = FileSystems.getDefault().getSeparator();
+        for (var searchPath : BASE_PATHS) {
+            searchPath = searchPath.replaceAll("/", separator);
+            for (var directory : SUB_PATHS) {
+                directory = directory.replaceAll("/", separator);
                 for (final var version : VERSIONS) {
                     var dirPath = directory;
                     if (directory.contains("{}")) {

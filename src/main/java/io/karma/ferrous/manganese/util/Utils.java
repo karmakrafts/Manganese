@@ -68,6 +68,7 @@ public final class Utils {
     }
 
     public static ProcessBuilder createProcess(final String... command) {
+        Logger.INSTANCE.debugln("Spawning process: %s", String.join(" ", command));
         final var builder = new ProcessBuilder(getSystemShell()).command(command);
         builder.environment().putAll(System.getenv());
         return builder;

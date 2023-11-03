@@ -53,6 +53,10 @@ public enum CompileErrorCode {
     E6003("Linker process was interrupted unexpectedly", CompileStatus.LINK_ERROR),
     E6004("Target architecture not supported by linker", CompileStatus.LINK_ERROR),
     E6005("Target platform not supported by linker", CompileStatus.LINK_ERROR),
+    E6006("Target link model required dynamic code relocation", CompileStatus.LINK_ERROR),
+    E6007("Could not find dynamic linker binary", CompileStatus.LINK_ERROR),
+    E6008("Link target doesn't support system runtime", CompileStatus.LINK_ERROR),
+    E6009("Could not find CRT object while linking", CompileStatus.LINK_ERROR),
     // Unknown error
     E9999("Encountered an unhandled error", CompileStatus.UNKNOWN_ERROR)
     // @formatter:on

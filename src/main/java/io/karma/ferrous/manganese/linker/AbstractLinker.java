@@ -19,9 +19,11 @@ import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.CompileErrorCode;
 import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.target.Architecture;
-import io.karma.ferrous.manganese.target.Target;
+import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Logger;
 import io.karma.ferrous.manganese.util.Utils;
+import org.apiguardian.api.API;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -33,21 +35,25 @@ import java.util.stream.Collectors;
  * @author Alexander Hinze
  * @since 28/10/2023
  */
+@API(status = API.Status.INTERNAL)
 public abstract class AbstractLinker implements Linker {
     protected final EnumSet<Architecture> supportedArchitectures;
     protected final ArrayList<String> options = new ArrayList<>();
+    protected Path dynamicLinkerPath;
 
     protected AbstractLinker(final EnumSet<Architecture> supportedArchitectures) {
         this.supportedArchitectures = supportedArchitectures;
     }
 
     protected abstract void buildCommand(final ArrayList<String> buffer, final String command, final Path outFile,
-                                         final Path objectFile, final LinkModel linkModel, final Target target,
-                                         final CompileContext compileContext);
+                                         final Path objectFile, final LinkModel linkModel,
+                                         final TargetMachine targetMachine, final CompileContext compileContext,
+                                         final LinkTargetType targetType);
 
     @Override
     public void link(final Compiler compiler, final CompileContext compileContext, final Path outFile,
-                     final Path objectFile, final LinkModel linkModel, final Target target) {
+                     final Path objectFile, final LinkModel linkModel, final TargetMachine targetMachine,
+                     final LinkTargetType targetType) {
         if (!supportedArchitectures.contains(compiler.getTargetMachine().getTarget().getArchitecture())) {
             compileContext.reportError(compileContext.makeError(CompileErrorCode.E6004));
             return;
@@ -59,7 +65,14 @@ public abstract class AbstractLinker implements Linker {
         }
         try {
             final var commandBuffer = new ArrayList<String>();
-            buildCommand(commandBuffer, command, outFile, objectFile, linkModel, target, compileContext);
+            buildCommand(commandBuffer,
+                command,
+                outFile,
+                objectFile,
+                linkModel,
+                targetMachine,
+                compileContext,
+                targetType);
             final var process = Utils.createProcess(commandBuffer.toArray(String[]::new)).start();
             try (final var reader = process.inputReader()) {
                 while (process.isAlive()) {
@@ -84,6 +97,16 @@ public abstract class AbstractLinker implements Linker {
             compileContext.reportError(compileContext.makeError(Utils.makeCompilerMessage(error.getMessage()),
                 CompileErrorCode.E6003));
         }
+    }
+
+    @Override
+    public @Nullable Path getDynamicLinkerPath() {
+        return dynamicLinkerPath;
+    }
+
+    @Override
+    public void setDynamicLinkerPath(final Path path) {
+        dynamicLinkerPath = path;
     }
 
     @Override

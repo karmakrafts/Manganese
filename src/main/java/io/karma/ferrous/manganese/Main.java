@@ -19,6 +19,7 @@ import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.CompileStatus;
 import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.linker.LinkModel;
+import io.karma.ferrous.manganese.linker.LinkTargetType;
 import io.karma.ferrous.manganese.linker.LinkerType;
 import io.karma.ferrous.manganese.profiler.Profiler;
 import io.karma.ferrous.manganese.target.*;
@@ -126,7 +127,7 @@ final class Main {
                     .toString())
                 .withOptionalArg()
                 .ofType(String.class)
-                .defaultsTo(Relocation.DEFAULT.getName());
+                .defaultsTo(Relocation.DYN_NO_PIC.getName());
             final var cpuOpt = parser.accepts("Tc", "The type of processor to compile for. Depends on the given target architecture.")
                 .withOptionalArg()
                 .ofType(String.class)
@@ -141,7 +142,7 @@ final class Main {
                 .ofType(String.class)
                 .defaultsTo(OptimizationLevel.DEFAULT.getName());
             // Link options
-            final var linkerTypeOpt = parser.accepts("Lt", Ansi.ansi()
+            final var linkerTypeOpt = parser.accepts("LT", Ansi.ansi()
                     .a("The type of linker to use when creating the target binary. ")
                     .fg(Ansi.Color.CYAN)
                     .a("List with ?")
@@ -159,6 +160,15 @@ final class Main {
                 .withOptionalArg()
                 .ofType(String.class)
                 .defaultsTo(LinkModel.FULL.getName());
+            final var linkTargetTypeOpt = parser.accepts("Lt", Ansi.ansi()
+                    .a("The type of target to create when linking. ")
+                    .fg(Ansi.Color.CYAN)
+                    .a("List with ?")
+                    .a(Ansi.Attribute.RESET)
+                    .toString())
+                .withOptionalArg()
+                .ofType(String.class)
+                .defaultsTo(LinkTargetType.EXECUTABLE.getName());
             final var linkerOptionsOpt = parser.accepts("Lo", "Options passed directly to the linker.")
                 .withOptionalArg()
                 .ofType(String.class)
@@ -181,6 +191,10 @@ final class Main {
                     printAvailableValues(Architecture.class, "Available architectures:");
                     printAvailableValues(Platform.class, "Available platforms:");
                     printAvailableValues(ABI.class, "Available ABIs:");
+                    return;
+                }
+                if (options.has(linkTargetTypeOpt)) {
+                    printAvailableValues(LinkTargetType.class, "Available link target types:");
                     return;
                 }
                 if (options.has(linkModelOpt)) {
@@ -228,7 +242,8 @@ final class Main {
             final var relocation = Relocation.byName(options.valueOf(relocOpt));
             final var codeModel = CodeModel.byName(options.valueOf(codeModelOpt));
             final var linkModel = LinkModel.byName(options.valueOf(linkModelOpt));
-            if (optLevel.isEmpty() || relocation.isEmpty() || codeModel.isEmpty() || linkModel.isEmpty()) {
+            final var linkTargetType = LinkTargetType.byName(options.valueOf(linkTargetTypeOpt));
+            if (optLevel.isEmpty() || relocation.isEmpty() || codeModel.isEmpty() || linkModel.isEmpty() || linkTargetType.isEmpty()) {
                 Logger.INSTANCE.errorln("Malformed parameter");
                 return;
             }
@@ -273,7 +288,7 @@ final class Main {
             // @formatter:on
 
             final var context = new CompileContext();
-            final var result = compiler.compile(in, out, context, linkModel.get());
+            final var result = compiler.compile(in, out, context, linkModel.get(), linkTargetType.get());
             context.dispose();
             targetMachine.dispose();
             status = status.worse(result.status());

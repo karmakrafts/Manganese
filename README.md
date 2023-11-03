@@ -68,3 +68,6 @@ gradlew build --info --no-daemon
 This will produce three different `JAR` files under `build/libs` in the
 project directory. The `slim` version can be used for development/embedding
 since it does not contain all the shadowed dependencies.
+
+### Environment Variables
+
