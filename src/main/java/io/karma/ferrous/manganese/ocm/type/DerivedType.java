@@ -38,6 +38,7 @@ public final class DerivedType implements NamedType {
     private final Type baseType;
     private final TypeAttribute[] attributes;
     private final GenericParameter[] genericParams;
+    private final TokenSlice tokenSlice;
     private long materializedType = MemoryUtil.NULL;
 
     DerivedType(final Type baseType, final TypeAttribute... attributes) {
@@ -54,6 +55,16 @@ public final class DerivedType implements NamedType {
                 type -> param.getConstraints().test(type),
                 param.getValue());
         }
+
+        // Calculate token range
+        final var baseSlice = baseType.getTokenSlice();
+        var begin = baseSlice.begin();
+        var end = baseSlice.end();
+        for (final var attrib : attributes) {
+            begin -= attrib.getLHWidth();
+            end += attrib.getRHWidth();
+        }
+        tokenSlice = new TokenSlice(baseSlice.tokenStream(), begin, end);
     }
 
     // NameProvider
@@ -81,10 +92,7 @@ public final class DerivedType implements NamedType {
 
     @Override
     public TokenSlice getTokenSlice() {
-        final var baseSlice = baseType.getTokenSlice();
-        final var begin = baseSlice.begin() - attributes.length;
-        final var end = baseSlice.end();
-        return new TokenSlice(baseSlice.tokenStream(), begin, end);
+        return tokenSlice;
     }
 
     @Override
