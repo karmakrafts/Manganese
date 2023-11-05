@@ -16,7 +16,6 @@
 package io.karma.ferrous.manganese.ocm.constant;
 
 import io.karma.ferrous.manganese.ocm.BlockBuilder;
-import io.karma.ferrous.manganese.ocm.type.BuiltinType;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import org.apiguardian.api.API;
@@ -28,10 +27,10 @@ import org.lwjgl.llvm.LLVMCore;
  * @since 16/10/2023
  */
 @API(status = Status.INTERNAL)
-public record IntConstant(int value, boolean isUnsigned) implements Constant {
+public record IntConstant(Type type, long value) implements Constant {
     @Override
     public Type getType() {
-        return isUnsigned ? BuiltinType.U32 : BuiltinType.I32;
+        return type;
     }
 
     @Override

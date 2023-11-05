@@ -30,46 +30,18 @@ public interface Constant extends Expression {
         return true;
     }
 
-    default byte getByte() {
-        if (this instanceof ByteConstant constant) {
-            return constant.value();
-        }
-        throw new UnsupportedOperationException("Constant is not a byte");
-    }
-
-    default short getShort() {
-        if (this instanceof ShortConstant constant) {
-            return constant.value();
-        }
-        throw new UnsupportedOperationException("Constant is not a short");
-    }
-
-    default int getInt() {
+    default long getInt() {
         if (this instanceof IntConstant constant) {
             return constant.value();
         }
-        throw new UnsupportedOperationException("Constant is not a int");
+        throw new UnsupportedOperationException("Constant is not a integer");
     }
 
-    default long getLong() {
-        if (this instanceof LongConstant constant) {
+    default double getReal() {
+        if (this instanceof RealConstant constant) {
             return constant.value();
         }
-        throw new UnsupportedOperationException("Constant is not a long");
-    }
-
-    default float getFloat() {
-        if (this instanceof FloatConstant constant) {
-            return constant.value();
-        }
-        throw new UnsupportedOperationException("Constant is not a float");
-    }
-
-    default double getDouble() {
-        if (this instanceof DoubleConstant constant) {
-            return constant.value();
-        }
-        throw new UnsupportedOperationException("Constant is not a double");
+        throw new UnsupportedOperationException("Constant is not a real");
     }
 
     default boolean getBoolean() {

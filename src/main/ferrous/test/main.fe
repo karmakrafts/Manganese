@@ -3,7 +3,7 @@ struct Foo {
     size: usize
 }
 
-fun foo(value: &Lorenz): bool {
+fun foo(value: Foo): bool {
     return false
 }
 

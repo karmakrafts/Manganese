@@ -34,12 +34,14 @@ public enum CompileErrorCode {
     E1002("Dynamic module could not be verified", CompileStatus.VERIFY_ERROR),
     // Syntax Errors
     E2000("Encountered syntax error while parsing", CompileStatus.SYNTAX_ERROR),
+    E2001("Encountered error while parsing expression", CompileStatus.SYNTAX_ERROR),
     // Type errors
     E3000("The given type is already defined within the same scope", CompileStatus.TYPE_ERROR),
     E3001("The given type cannot have more than one level of reference", CompileStatus.TYPE_ERROR),
     E3002("The given type could not be found", CompileStatus.TYPE_ERROR),
     E3003("The given aliased type cannot be resolved", CompileStatus.TYPE_ERROR),
     E3004("The given field type cannot be resolved", CompileStatus.TYPE_ERROR),
+    E3005("The given signature type cannot be resolved", CompileStatus.TYPE_ERROR),
     // Translation errors
     E4000("Could not materialize the underlying function type", CompileStatus.TRANSLATION_ERROR),
     // Semantic errors

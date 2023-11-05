@@ -53,7 +53,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.function.BooleanSupplier;
 
 import static org.lwjgl.llvm.LLVMCore.LLVMContextSetOpaquePointers;
 import static org.lwjgl.llvm.LLVMCore.LLVMGetGlobalContext;
@@ -232,18 +231,8 @@ public final class Compiler {
             }, executorService));
         }
 
-        // TODO: this can probably be prettified somehow..
-        final BooleanSupplier isDone = () -> {
-            for (final var future : futures) {
-                if (future.isDone()) {
-                    continue;
-                }
-                return false;
-            }
-            return true;
-        };
-        while (!isDone.getAsBoolean()) {
-            Thread.onSpinWait();
+        for (final var future : futures) {
+            future.join();
         }
 
         final var moduleName = Utils.getRawFileName(in);

@@ -21,10 +21,12 @@ import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.Function;
 import io.karma.ferrous.manganese.ocm.Parameter;
 import io.karma.ferrous.manganese.ocm.scope.ScopeStack;
+import io.karma.ferrous.manganese.ocm.statement.Statement;
 import io.karma.ferrous.manganese.util.FunctionUtils;
 import io.karma.ferrous.manganese.util.TokenSlice;
 import io.karma.ferrous.vanadium.FerrousParser.FunctionBodyContext;
 import io.karma.ferrous.vanadium.FerrousParser.ProtoFunctionContext;
+import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 
@@ -76,8 +78,9 @@ public final class FunctionAnalyzer extends ParseAdapter {
         if (function.getBody() != null) {
             return;
         }
-        final var body = function.createBody();
-        // TODO: implement body parsing
+        final var analyzer = new FunctionBodyAnalyzer(compiler, compileContext);
+        ParseTreeWalker.DEFAULT.walk(analyzer, context);
+        function.createBody(analyzer.getStatements().toArray(Statement[]::new));
         super.enterFunctionBody(context);
     }
 

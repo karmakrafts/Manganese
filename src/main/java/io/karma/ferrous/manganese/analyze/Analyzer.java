@@ -487,7 +487,13 @@ public final class Analyzer extends ParseAdapter {
                 if (!type.isNamed()) {
                     continue;
                 }
-                param.setType(findCompleteType((NamedType) type));
+                final var completeType = findCompleteType((NamedType) type);
+                if (completeType == null) {
+                    compileContext.reportError(compileContext.makeError(type.getTokenSlice().getFirstToken(),
+                        CompileErrorCode.E3005));
+                    continue;
+                }
+                param.setType(completeType);
             }
         }
         Profiler.INSTANCE.pop();

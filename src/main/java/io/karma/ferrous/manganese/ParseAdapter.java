@@ -64,6 +64,18 @@ public abstract class ParseAdapter implements FerrousParserListener {
     }
 
     // @formatter:off
+
+
+    @Override
+    public void enterAnonScope(final AnonScopeContext context) {
+        scopeStack.push(new DefaultScope(ScopeType.ANON_SCOPE, Identifier.EMPTY));
+    }
+
+    @Override
+    public void exitAnonScope(final AnonScopeContext context) {
+        scopeStack.pop();
+    }
+
     @Override
     public void enterDestructureStatement(DestructureStatementContext destructureStatementContext) {}
 
@@ -426,10 +438,14 @@ public abstract class ParseAdapter implements FerrousParserListener {
     public void exitReturnStatement(ReturnStatementContext returnStatementContext) {}
 
     @Override
-    public void enterWhenStatement(final WhenStatementContext context) {}
+    public void enterWhenExpr(final WhenExprContext context) {
+        scopeStack.push(new DefaultScope(ScopeType.WHEN, Identifier.EMPTY));
+    }
 
     @Override
-    public void exitWhenStatement(final WhenStatementContext context) {}
+    public void exitWhenExpr(final WhenExprContext context) {
+        scopeStack.pop();
+    }
 
     @Override
     public void enterWhenBranch(WhenBranchContext whenBranchContext) {}
@@ -450,16 +466,30 @@ public abstract class ParseAdapter implements FerrousParserListener {
     public void exitWhenBranchBody(WhenBranchBodyContext whenBranchBodyContext) {}
 
     @Override
-    public void enterLoop(LoopContext loopContext) {}
+    public void enterLoop(final LoopContext context) {
+        scopeStack.push(new DefaultScope(ScopeType.LOOP, Identifier.EMPTY));
+    }
 
     @Override
-    public void exitLoop(LoopContext loopContext) {}
+    public void exitLoop(final LoopContext context) {
+        scopeStack.pop();
+    }
 
     @Override
-    public void enterWhileLoop(WhileLoopContext whileLoopContext) {}
+    public void enterWhileBody(final WhileBodyContext context) {
+        scopeStack.push(new DefaultScope(ScopeType.WHILE, Identifier.EMPTY));
+    }
 
     @Override
-    public void exitWhileLoop(WhileLoopContext whileLoopContext) {}
+    public void exitWhileBody(final WhileBodyContext context) {
+        scopeStack.pop();
+    }
+
+    @Override
+    public void enterWhileLoop(WhileLoopContext context) {}
+
+    @Override
+    public void exitWhileLoop(WhileLoopContext context) {}
 
     @Override
     public void enterSimpleWhileLoop(SimpleWhileLoopContext simpleWhileLoopContext) {}
@@ -486,16 +516,30 @@ public abstract class ParseAdapter implements FerrousParserListener {
     public void exitWhileHead(WhileHeadContext whileHeadContext) {}
 
     @Override
-    public void enterDoBlock(DoBlockContext doBlockContext) {}
+    public void enterDoStatement(DoStatementContext doStatementContext) {}
 
     @Override
-    public void exitDoBlock(DoBlockContext doBlockContext) {}
+    public void exitDoStatement(DoStatementContext doStatementContext) {}
 
     @Override
-    public void enterForLoop(ForLoopContext forLoopContext) {}
+    public void enterDoBody(final DoBodyContext context) {
+        scopeStack.push(new DefaultScope(ScopeType.DO, Identifier.EMPTY));
+    }
 
     @Override
-    public void exitForLoop(ForLoopContext forLoopContext) {}
+    public void exitDoBody(final DoBodyContext context) {
+        scopeStack.pop();
+    }
+
+    @Override
+    public void enterForLoop(final ForLoopContext context) {
+        scopeStack.push(new DefaultScope(ScopeType.FOR, Identifier.EMPTY));
+    }
+
+    @Override
+    public void exitForLoop(final ForLoopContext context) {
+        scopeStack.pop();
+    }
 
     @Override
     public void enterRangedLoopHead(RangedLoopHeadContext rangedLoopHeadContext) {}
@@ -510,42 +554,42 @@ public abstract class ParseAdapter implements FerrousParserListener {
     public void exitIndexedLoopHead(IndexedLoopHeadContext indexedLoopHeadContext) {}
 
     @Override
-    public void enterIfStatement(final IfStatementContext context) {
+    public void enterIfExpr(final IfExprContext context) {
         if(context.ifBody() != null) {
             scopeStack.push(new DefaultScope(ScopeType.IF, Identifier.EMPTY));
         }
     }
 
     @Override
-    public void exitIfStatement(final IfStatementContext context) {
+    public void exitIfExpr(final IfExprContext context) {
         if(context.ifBody() != null) {
             scopeStack.pop();
         }
     }
 
     @Override
-    public void enterElseIfStatement(final ElseIfStatementContext context) {
+    public void enterElseIfExpr(final ElseIfExprContext context) {
         if(context.ifBody() != null) {
             scopeStack.push(new DefaultScope(ScopeType.ELSE_IF, Identifier.EMPTY));
         }
     }
 
     @Override
-    public void exitElseIfStatement(final ElseIfStatementContext context) {
+    public void exitElseIfExpr(final ElseIfExprContext context) {
         if(context.ifBody() != null) {
             scopeStack.pop();
         }
     }
 
     @Override
-    public void enterElseStatement(final ElseStatementContext context) {
+    public void enterElseExpr(final ElseExprContext context) {
         if(context.ifBody() != null) {
             scopeStack.push(new DefaultScope(ScopeType.ELSE, Identifier.EMPTY));
         }
     }
 
     @Override
-    public void exitElseStatement(final ElseStatementContext context) {
+    public void exitElseExpr(final ElseExprContext context) {
         if(context.ifBody() != null) {
             scopeStack.pop();
         }

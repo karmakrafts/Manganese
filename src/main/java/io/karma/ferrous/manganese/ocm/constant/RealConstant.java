@@ -16,7 +16,6 @@
 package io.karma.ferrous.manganese.ocm.constant;
 
 import io.karma.ferrous.manganese.ocm.BlockBuilder;
-import io.karma.ferrous.manganese.ocm.type.BuiltinType;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import org.apiguardian.api.API;
@@ -28,15 +27,15 @@ import org.lwjgl.llvm.LLVMCore;
  * @since 16/10/2023
  */
 @API(status = Status.INTERNAL)
-public record ByteConstant(byte value, boolean isUnsigned) implements Constant {
+public record RealConstant(Type type, double value) implements Constant {
     @Override
     public Type getType() {
-        return isUnsigned ? BuiltinType.U8 : BuiltinType.I8;
+        return type;
     }
 
     @Override
     public long materialize(final TargetMachine targetMachine, final BlockBuilder builder) {
-        return LLVMCore.LLVMConstInt(getType().materialize(targetMachine), value, false);
+        return LLVMCore.LLVMConstReal(getType().materialize(targetMachine), value);
     }
 
     @Override

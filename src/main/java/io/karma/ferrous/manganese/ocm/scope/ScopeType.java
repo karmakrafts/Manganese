@@ -48,6 +48,7 @@ public enum ScopeType {
     WHEN,
     FOR,
     WHILE,
+    DO,
     LOOP;
     // @formatter:on
 
