@@ -81,7 +81,10 @@ public final class DerivedType implements NamedType {
 
     @Override
     public TokenSlice getTokenSlice() {
-        return baseType.getTokenSlice(); // TODO: improve this
+        final var baseSlice = baseType.getTokenSlice();
+        final var begin = baseSlice.begin() - attributes.length;
+        final var end = baseSlice.end();
+        return new TokenSlice(baseSlice.tokenStream(), begin, end);
     }
 
     @Override

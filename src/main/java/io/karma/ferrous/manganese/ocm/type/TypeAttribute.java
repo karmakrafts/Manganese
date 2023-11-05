@@ -27,18 +27,30 @@ import java.util.function.Function;
 @API(status = Status.INTERNAL)
 public enum TypeAttribute {
     // @formatter:off
-    SLICE    (type -> String.format("[%s]", type)),
-    POINTER  (type -> String.format("*%s", type)),
-    REFERENCE(type -> String.format("&%s", type));
+    SLICE    (type -> String.format("[%s]", type), 1, 1),
+    POINTER  (type -> String.format("*%s", type),  1, 0),
+    REFERENCE(type -> String.format("&%s", type),  1, 0);
     // @formatter:on
 
     private final Function<String, String> formatter;
+    private final int lhw;
+    private final int rhw;
 
-    TypeAttribute(final Function<String, String> formatter) {
+    TypeAttribute(final Function<String, String> formatter, final int lhw, final int rhw) {
         this.formatter = formatter;
+        this.lhw = lhw;
+        this.rhw = rhw;
     }
 
     public String format(final String type) {
         return formatter.apply(type);
+    }
+
+    public int getLHWidth() {
+        return lhw;
+    }
+
+    public int getRHWidth() {
+        return rhw;
     }
 }
