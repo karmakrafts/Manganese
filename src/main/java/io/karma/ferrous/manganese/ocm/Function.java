@@ -116,12 +116,18 @@ public final class Function implements NameProvider, Scoped {
         return materializedValue = address;
     }
 
-    public void materialize(final Module module, final TargetMachine targetMachine) {
+    public long materialize(final Module module, final TargetMachine targetMachine) {
         if (body != null) {
             body.materialize(module, targetMachine); // Auto-materializes prototype
-            return;
+            return materializedValue; // This won't be NULL at this point
         }
-        materializePrototype(module, targetMachine);
+        return materializePrototype(module, targetMachine);
+    }
+
+    public void dispose() {
+        if(body != null) {
+            body.dispose();
+        }
     }
 
     // NameProvider

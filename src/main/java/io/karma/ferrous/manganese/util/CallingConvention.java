@@ -86,4 +86,9 @@ public enum CallingConvention {
     public int getLLVMValue(final TargetMachine machine) {
         return valueProvider.applyAsInt(machine);
     }
+
+    @Override
+    public String toString() {
+        return text;
+    }
 }
