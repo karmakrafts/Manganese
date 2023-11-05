@@ -125,7 +125,7 @@ public final class Function implements NameProvider, Scoped {
     }
 
     public void dispose() {
-        if(body != null) {
+        if (body != null) {
             body.dispose();
         }
     }
