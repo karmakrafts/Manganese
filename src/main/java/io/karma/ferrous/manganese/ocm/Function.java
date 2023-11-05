@@ -15,16 +15,26 @@
 
 package io.karma.ferrous.manganese.ocm;
 
+import io.karma.ferrous.manganese.module.Module;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.ocm.scope.Scoped;
+import io.karma.ferrous.manganese.ocm.statement.Statement;
+import io.karma.ferrous.manganese.ocm.type.FunctionType;
 import io.karma.ferrous.manganese.ocm.type.Type;
+import io.karma.ferrous.manganese.ocm.type.Types;
+import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.CallingConvention;
 import io.karma.ferrous.manganese.util.Identifier;
+import io.karma.ferrous.manganese.util.TokenSlice;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
+import java.util.stream.Collectors;
+
+import static org.lwjgl.llvm.LLVMCore.*;
+import static org.lwjgl.system.MemoryUtil.NULL;
 
 /**
  * @author Alexander Hinze
@@ -38,25 +48,45 @@ public final class Function implements NameProvider, Scoped {
     private final boolean isVarArg;
     private final Type returnType;
     private final Parameter[] parameters;
+    private final TokenSlice tokenSlice;
+    private final FunctionType type;
+    private FunctionBody body;
     private Scope enclosingScope;
+    private long materializedValue;
 
     public Function(final Identifier name, final CallingConvention callConv, final boolean isExtern,
-                    final boolean isVarArg, final Type returnType, final Parameter... params) {
+                    final boolean isVarArg, final Type returnType, final TokenSlice tokenSlice,
+                    final Parameter... params) {
         this.name = name;
         this.callConv = callConv;
         this.isExtern = isExtern;
         this.isVarArg = isVarArg;
         this.returnType = returnType;
+        this.tokenSlice = tokenSlice;
         this.parameters = params;
+
+        final var paramTypes = Arrays.stream(parameters).map(Parameter::type).collect(Collectors.toList());
+        type = Types.function(returnType, paramTypes, isVarArg, type -> {
+            type.setEnclosingScope(getEnclosingScope());
+            return type;
+        }, tokenSlice);
     }
 
     public Function(final Identifier name, final CallingConvention callConv, final Type returnType,
-                    final Parameter... params) {
-        this(name, callConv, false, false, returnType, params);
+                    final TokenSlice tokenSlice, final Parameter... params) {
+        this(name, callConv, false, false, returnType, tokenSlice, params);
     }
 
-    public Function(final Identifier name, final Type returnType, final Parameter... params) {
-        this(name, CallingConvention.CDECL, false, false, returnType, params);
+    public Function(final Identifier name, final Type returnType, final TokenSlice tokenSlice,
+                    final Parameter... params) {
+        this(name, CallingConvention.CDECL, false, false, returnType, tokenSlice, params);
+    }
+
+    public FunctionBody createBody(final Statement... statements) {
+        if (body != null) {
+            throw new IllegalStateException("Body already exists for this function");
+        }
+        return body = new FunctionBody(this, statements);
     }
 
     public CallingConvention getCallConv() {
@@ -65,6 +95,29 @@ public final class Function implements NameProvider, Scoped {
 
     public boolean isExtern() {
         return isExtern;
+    }
+
+    public @Nullable FunctionBody getBody() {
+        return body;
+    }
+
+    public FunctionType getType() {
+        return type;
+    }
+
+    public long materialize(final Module module, final TargetMachine targetMachine) {
+        if (materializedValue != NULL) {
+            return materializedValue;
+        }
+        final var address = LLVMAddFunction(module.getAddress(),
+            name.toInternalName(),
+            getType().materialize(targetMachine));
+        LLVMSetLinkage(address, isExtern ? LLVMExternalLinkage : LLVMInternalLinkage);
+        LLVMSetFunctionCallConv(address, callConv.getLLVMValue(targetMachine));
+        if (body != null) {
+            body.materialize(module, targetMachine);
+        }
+        return materializedValue = address;
     }
 
     // NameProvider

@@ -15,10 +15,13 @@
 
 package io.karma.ferrous.manganese.ocm.constant;
 
+import io.karma.ferrous.manganese.ocm.BlockBuilder;
 import io.karma.ferrous.manganese.ocm.type.BuiltinType;
 import io.karma.ferrous.manganese.ocm.type.Type;
+import io.karma.ferrous.manganese.target.TargetMachine;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
+import org.lwjgl.llvm.LLVMCore;
 
 /**
  * @author Alexander Hinze
@@ -32,5 +35,15 @@ public record BoolConstant(boolean value) implements Constant {
     @Override
     public Type getType() {
         return BuiltinType.BOOL;
+    }
+
+    @Override
+    public long materialize(final TargetMachine targetMachine, final BlockBuilder builder) {
+        return LLVMCore.LLVMConstInt(getType().materialize(targetMachine), value ? 1 : 0, false);
+    }
+
+    @Override
+    public void emit(final TargetMachine targetMachine, final BlockBuilder builder) {
+
     }
 }

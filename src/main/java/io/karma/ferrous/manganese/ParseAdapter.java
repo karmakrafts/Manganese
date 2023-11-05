@@ -421,10 +421,10 @@ public abstract class ParseAdapter implements FerrousParserListener {
     public void exitReturnStatement(ReturnStatementContext returnStatementContext) {}
 
     @Override
-    public void enterWhenStatement(WhenStatementContext whenStatementContext) {}
+    public void enterWhenStatement(final WhenStatementContext context) {}
 
     @Override
-    public void exitWhenStatement(WhenStatementContext whenStatementContext) {}
+    public void exitWhenStatement(final WhenStatementContext context) {}
 
     @Override
     public void enterWhenBranch(WhenBranchContext whenBranchContext) {}
@@ -505,22 +505,46 @@ public abstract class ParseAdapter implements FerrousParserListener {
     public void exitIndexedLoopHead(IndexedLoopHeadContext indexedLoopHeadContext) {}
 
     @Override
-    public void enterIfStatement(IfStatementContext ifStatementContext) {}
+    public void enterIfStatement(final IfStatementContext context) {
+        if(context.ifBody() != null) {
+            scopeStack.push(new DefaultScope(ScopeType.IF, Identifier.EMPTY));
+        }
+    }
 
     @Override
-    public void exitIfStatement(IfStatementContext ifStatementContext) {}
+    public void exitIfStatement(final IfStatementContext context) {
+        if(context.ifBody() != null) {
+            scopeStack.pop();
+        }
+    }
 
     @Override
-    public void enterElseIfStatement(ElseIfStatementContext elseIfStatementContext) {}
+    public void enterElseIfStatement(final ElseIfStatementContext context) {
+        if(context.ifBody() != null) {
+            scopeStack.push(new DefaultScope(ScopeType.ELSE_IF, Identifier.EMPTY));
+        }
+    }
 
     @Override
-    public void exitElseIfStatement(ElseIfStatementContext elseIfStatementContext) {}
+    public void exitElseIfStatement(final ElseIfStatementContext context) {
+        if(context.ifBody() != null) {
+            scopeStack.pop();
+        }
+    }
 
     @Override
-    public void enterElseStatement(ElseStatementContext elseStatementContext) {}
+    public void enterElseStatement(final ElseStatementContext context) {
+        if(context.ifBody() != null) {
+            scopeStack.push(new DefaultScope(ScopeType.ELSE, Identifier.EMPTY));
+        }
+    }
 
     @Override
-    public void exitElseStatement(ElseStatementContext elseStatementContext) {}
+    public void exitElseStatement(final ElseStatementContext context) {
+        if(context.ifBody() != null) {
+            scopeStack.pop();
+        }
+    }
 
     @Override
     public void enterIfBody(IfBodyContext ifBodyContext) {}

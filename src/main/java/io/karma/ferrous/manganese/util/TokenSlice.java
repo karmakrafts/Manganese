@@ -72,4 +72,10 @@ public record TokenSlice(@Nullable TokenStream tokenStream, int begin, int end) 
         }
         return tokens;
     }
+
+    @Override
+    public String toString() {
+        final var text = tokenStream.getText(tokenStream.get(begin), tokenStream.get(end));
+        return text != null ? text : "Unknown token range";
+    }
 }

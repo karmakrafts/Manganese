@@ -15,9 +15,11 @@
 
 package io.karma.ferrous.manganese.ocm.expr;
 
+import io.karma.ferrous.manganese.ocm.BlockBuilder;
 import io.karma.ferrous.manganese.ocm.constant.Constant;
 import io.karma.ferrous.manganese.ocm.statement.Statement;
 import io.karma.ferrous.manganese.ocm.type.Type;
+import io.karma.ferrous.manganese.target.TargetMachine;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 
@@ -27,6 +29,8 @@ import org.apiguardian.api.API.Status;
  */
 @API(status = Status.INTERNAL)
 public interface Expression extends Statement {
+    long materialize(final TargetMachine targetMachine, final BlockBuilder builder);
+
     Type getType();
 
     default boolean isConstant() {

@@ -21,10 +21,9 @@ import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.Function;
 import io.karma.ferrous.manganese.ocm.Parameter;
 import io.karma.ferrous.manganese.ocm.scope.ScopeStack;
-import io.karma.ferrous.manganese.ocm.type.FunctionType;
-import io.karma.ferrous.manganese.util.CallingConvention;
 import io.karma.ferrous.manganese.util.FunctionUtils;
-import io.karma.ferrous.manganese.util.Identifier;
+import io.karma.ferrous.manganese.util.TokenSlice;
+import io.karma.ferrous.vanadium.FerrousParser.FunctionBodyContext;
 import io.karma.ferrous.vanadium.FerrousParser.ProtoFunctionContext;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
@@ -36,27 +35,25 @@ import org.apiguardian.api.API.Status;
 @API(status = Status.INTERNAL)
 public final class FunctionAnalyzer extends ParseAdapter {
     private final ScopeStack capturedScopeStack;
-    private Identifier identifier;
-    private FunctionType type;
-    private CallingConvention callConv;
-    private Identifier[] paramNames = new Identifier[0];
+    private final TokenSlice tokenSlice;
+    private Function function;
 
     public FunctionAnalyzer(final Compiler compiler, final CompileContext compileContext,
-                            final ScopeStack capturedScopeStack) {
+                            final ScopeStack capturedScopeStack, final TokenSlice tokenSlice) {
         super(compiler, compileContext);
         this.capturedScopeStack = capturedScopeStack;
+        this.tokenSlice = tokenSlice;
     }
 
     @Override
     public void enterProtoFunction(ProtoFunctionContext context) {
-        identifier = FunctionUtils.getFunctionName(context.functionIdent());
-        callConv = FunctionUtils.getCallingConvention(compileContext, context);
-        this.type = FunctionUtils.getFunctionType(compiler, compileContext, capturedScopeStack, context);
-        paramNames = FunctionUtils.getParameterNames(context);
-        super.enterProtoFunction(context);
-    }
-
-    public Function getFunction() {
+        if (function != null) {
+            return;
+        }
+        final var identifier = FunctionUtils.getFunctionName(context.functionIdent());
+        final var callConv = FunctionUtils.getCallingConvention(compileContext, context);
+        final var type = FunctionUtils.getFunctionType(compiler, compileContext, capturedScopeStack, context);
+        final var paramNames = FunctionUtils.getParameterNames(context);
         final var paramTypes = type.getParamTypes();
         final var numParams = paramTypes.length;
         if (numParams != paramNames.length) {
@@ -66,9 +63,25 @@ public final class FunctionAnalyzer extends ParseAdapter {
         for (var i = 0; i < numParams; i++) {
             params[i] = new Parameter(paramNames[i], paramTypes[i], null);
         }
-        return capturedScopeStack.applyEnclosingScopes(new Function(identifier,
+        function = capturedScopeStack.applyEnclosingScopes(new Function(identifier,
             callConv,
             type.getReturnType(),
+            tokenSlice,
             params));
+        super.enterProtoFunction(context);
+    }
+
+    @Override
+    public void enterFunctionBody(final FunctionBodyContext context) {
+        if (function.getBody() != null) {
+            return;
+        }
+        final var body = function.createBody();
+        // TODO: implement body parsing
+        super.enterFunctionBody(context);
+    }
+
+    public Function getFunction() {
+        return function;
     }
 }

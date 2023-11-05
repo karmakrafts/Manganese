@@ -13,26 +13,29 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.ocm.statement;
+package io.karma.ferrous.manganese.ocm;
 
-import io.karma.ferrous.manganese.ocm.BlockBuilder;
-import io.karma.ferrous.manganese.target.TargetMachine;
+import org.apiguardian.api.API;
 
 /**
  * @author Alexander Hinze
- * @since 22/10/2023
+ * @since 05/11/2023
  */
-public interface Statement {
-    void emit(final TargetMachine targetMachine, final BlockBuilder builder);
+@API(status = API.Status.INTERNAL)
+public final class BlockBuilder {
+    private static final ThreadLocal<BlockBuilder> INSTANCE = ThreadLocal.withInitial(BlockBuilder::new);
+    private long address;
 
-    default void dispose() {
+    // @formatter:off
+    private BlockBuilder() {}
+    // @formatter:on
+
+    public static BlockBuilder getInstance(final long address) {
+        return INSTANCE.get().reset(address);
     }
 
-    default boolean returnsFromCurrentScope() {
-        return false;
-    }
-
-    default boolean breaksCurrentScope() {
-        return false;
+    private BlockBuilder reset(final long address) {
+        this.address = address;
+        return this;
     }
 }

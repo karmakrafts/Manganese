@@ -15,8 +15,10 @@
 
 package io.karma.ferrous.manganese.ocm.statement;
 
+import io.karma.ferrous.manganese.ocm.BlockBuilder;
 import io.karma.ferrous.manganese.ocm.constant.VoidConstant;
 import io.karma.ferrous.manganese.ocm.expr.Expression;
+import io.karma.ferrous.manganese.target.TargetMachine;
 
 /**
  * @author Alexander Hinze
@@ -36,6 +38,20 @@ public final class ReturnStatement implements Statement {
     public Expression getValue() {
         return value;
     }
+
+    // Statement
+
+    @Override
+    public void emit(final TargetMachine targetMachine, final BlockBuilder builder) {
+
+    }
+
+    @Override
+    public boolean returnsFromCurrentScope() {
+        return true;
+    }
+
+    // Object
 
     @Override
     public int hashCode() {

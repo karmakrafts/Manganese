@@ -15,10 +15,13 @@
 
 package io.karma.ferrous.manganese.ocm.constant;
 
+import io.karma.ferrous.manganese.ocm.BlockBuilder;
 import io.karma.ferrous.manganese.ocm.type.BuiltinType;
 import io.karma.ferrous.manganese.ocm.type.Type;
+import io.karma.ferrous.manganese.target.TargetMachine;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
+import org.lwjgl.llvm.LLVMCore;
 
 /**
  * @author Alexander Hinze
@@ -29,5 +32,15 @@ public record DoubleConstant(double value) implements Constant {
     @Override
     public Type getType() {
         return BuiltinType.F64;
+    }
+
+    @Override
+    public long materialize(final TargetMachine targetMachine, final BlockBuilder builder) {
+        return LLVMCore.LLVMConstReal(getType().materialize(targetMachine), value);
+    }
+
+    @Override
+    public void emit(final TargetMachine targetMachine, final BlockBuilder builder) {
+
     }
 }

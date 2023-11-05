@@ -15,8 +15,10 @@
 
 package io.karma.ferrous.manganese.ocm.constant;
 
+import io.karma.ferrous.manganese.ocm.BlockBuilder;
 import io.karma.ferrous.manganese.ocm.type.ImaginaryType;
 import io.karma.ferrous.manganese.ocm.type.Type;
+import io.karma.ferrous.manganese.target.TargetMachine;
 
 /**
  * @author Alexander Hinze
@@ -26,5 +28,14 @@ public record TypeConstant(Type value) implements Constant {
     @Override
     public Type getType() {
         return ImaginaryType.TYPE;
+    }
+
+    @Override
+    public long materialize(final TargetMachine targetMachine, final BlockBuilder builder) {
+        throw new UnsupportedOperationException("Cannot materialize imaginary constant");
+    }
+
+    @Override
+    public void emit(final TargetMachine targetMachine, final BlockBuilder builder) {
     }
 }

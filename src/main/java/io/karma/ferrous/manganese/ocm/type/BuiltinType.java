@@ -94,7 +94,7 @@ public enum BuiltinType implements NamedType {
 
     @Override
     public TokenSlice getTokenSlice() {
-        return null;
+        return TokenSlice.EMPTY;
     }
 
     @Override

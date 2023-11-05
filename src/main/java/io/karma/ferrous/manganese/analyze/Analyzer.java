@@ -20,7 +20,6 @@ import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.CompileErrorCode;
 import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.Field;
-import io.karma.ferrous.manganese.ocm.Function;
 import io.karma.ferrous.manganese.ocm.access.AccessKind;
 import io.karma.ferrous.manganese.ocm.access.ScopedAccess;
 import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
@@ -51,7 +50,6 @@ import java.util.stream.Collectors;
 @API(status = Status.INTERNAL)
 public final class Analyzer extends ParseAdapter {
     private final LinkedHashMap<Identifier, NamedType> udts = new LinkedHashMap<>();
-    private final HashMap<Identifier, Function> functions = new HashMap<>();
 
     public Analyzer(final Compiler compiler, final CompileContext compileContext) {
         super(compiler, compileContext);
@@ -124,9 +122,13 @@ public final class Analyzer extends ParseAdapter {
 
     @Override
     public void enterFunction(final FunctionContext context) {
-        final var analyzer = new FunctionAnalyzer(compiler, compileContext, scopeStack);
-        ParseTreeWalker.DEFAULT.walk(analyzer, context);
-        final var function = analyzer.getFunction();
+        final var parser = new FunctionAnalyzer(compiler,
+            compileContext,
+            scopeStack,
+            TokenSlice.from(compileContext, context));
+        ParseTreeWalker.DEFAULT.walk(parser, context);
+        final var function = parser.getFunction();
+        // TODO: add functions to global map
         super.enterFunction(context);
     }
 

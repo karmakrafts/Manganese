@@ -58,13 +58,18 @@ public final class DerivedType implements NamedType {
 
         // Calculate token range
         final var baseSlice = baseType.getTokenSlice();
-        var begin = baseSlice.begin();
-        var end = baseSlice.end();
-        for (final var attrib : attributes) {
-            begin -= attrib.getLHWidth();
-            end += attrib.getRHWidth();
+        if (baseSlice != TokenSlice.EMPTY) {
+            var begin = baseSlice.begin();
+            var end = baseSlice.end();
+            for (final var attrib : attributes) {
+                begin -= attrib.getLHWidth();
+                end += attrib.getRHWidth();
+            }
+            tokenSlice = new TokenSlice(baseSlice.tokenStream(), begin, end);
         }
-        tokenSlice = new TokenSlice(baseSlice.tokenStream(), begin, end);
+        else {
+            tokenSlice = TokenSlice.EMPTY;
+        }
     }
 
     // NameProvider

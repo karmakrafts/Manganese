@@ -17,16 +17,10 @@ package io.karma.ferrous.manganese.translate;
 
 import io.karma.ferrous.manganese.ParseAdapter;
 import io.karma.ferrous.manganese.compiler.CompileContext;
-import io.karma.ferrous.manganese.compiler.CompileErrorCode;
 import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.module.Module;
-import io.karma.ferrous.manganese.util.FunctionUtils;
-import io.karma.ferrous.vanadium.FerrousParser.ExternFunctionContext;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
-
-import static org.lwjgl.llvm.LLVMCore.*;
-import static org.lwjgl.system.MemoryUtil.NULL;
 
 /**
  * @author Alexander Hinze
@@ -42,22 +36,23 @@ public class TranslationUnit extends ParseAdapter {
         module = compiler.getTargetMachine().createModule(compileContext.getCurrentModuleName());
     }
 
-    @Override
-    public void enterExternFunction(final ExternFunctionContext context) {
-        final var prototype = context.protoFunction();
-        final var type = FunctionUtils.getFunctionType(compiler, compileContext, scopeStack, prototype);
-        final var name = FunctionUtils.getFunctionName(prototype.functionIdent()).toString();
-        final var functionType = type.materialize(compiler.getTargetMachine());
-        final var function = LLVMAddFunction(module.getAddress(), name, functionType);
-        if (function == NULL) {
-            compileContext.reportError(compileContext.makeError(context.start, CompileErrorCode.E4000));
-            return;
-        }
-        LLVMSetLinkage(function, LLVMExternalLinkage);
-        LLVMSetFunctionCallConv(function,
-            FunctionUtils.getCallingConvention(compileContext, prototype).getLLVMValue(compiler.getTargetMachine()));
-        super.enterExternFunction(context);
-    }
+    // TODO: replace this mess
+    //@Override
+    //public void enterExternFunction(final ExternFunctionContext context) {
+    //    final var prototype = context.protoFunction();
+    //    final var type = FunctionUtils.getFunctionType(compiler, compileContext, scopeStack, prototype);
+    //    final var name = FunctionUtils.getFunctionName(prototype.functionIdent()).toString();
+    //    final var functionType = type.materialize(compiler.getTargetMachine());
+    //    final var function = LLVMAddFunction(module.getAddress(), name, functionType);
+    //    if (function == NULL) {
+    //        compileContext.reportError(compileContext.makeError(context.start, CompileErrorCode.E4000));
+    //        return;
+    //    }
+    //    LLVMSetLinkage(function, LLVMExternalLinkage);
+    //    LLVMSetFunctionCallConv(function,
+    //        FunctionUtils.getCallingConvention(compileContext, prototype).getLLVMValue(compiler.getTargetMachine()));
+    //    super.enterExternFunction(context);
+    //}
 
     public Module getModule() {
         return module;

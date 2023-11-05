@@ -15,7 +15,9 @@
 
 package io.karma.ferrous.manganese.ocm.expr;
 
+import io.karma.ferrous.manganese.ocm.BlockBuilder;
 import io.karma.ferrous.manganese.ocm.type.Type;
+import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Operator;
 
 import java.util.Objects;
@@ -48,6 +50,16 @@ public final class BinaryExpression implements Expression {
 
     public Expression getRHS() {
         return rhs;
+    }
+
+    @Override
+    public long materialize(final TargetMachine targetMachine, final BlockBuilder builder) {
+        return 0;
+    }
+
+    @Override
+    public void emit(final TargetMachine targetMachine, final BlockBuilder builder) {
+
     }
 
     @Override

@@ -15,8 +15,10 @@
 
 package io.karma.ferrous.manganese.ocm.constant;
 
+import io.karma.ferrous.manganese.ocm.BlockBuilder;
 import io.karma.ferrous.manganese.ocm.type.BuiltinType;
 import io.karma.ferrous.manganese.ocm.type.Type;
+import io.karma.ferrous.manganese.target.TargetMachine;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 
@@ -35,5 +37,14 @@ public final class VoidConstant implements Constant {
     @Override
     public Type getType() {
         return BuiltinType.VOID;
+    }
+
+    @Override
+    public long materialize(final TargetMachine targetMachine, final BlockBuilder builder) {
+        throw new UnsupportedOperationException("Cannot materialize void constant");
+    }
+
+    @Override
+    public void emit(final TargetMachine targetMachine, final BlockBuilder builder) {
     }
 }
