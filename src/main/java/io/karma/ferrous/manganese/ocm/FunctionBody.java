@@ -21,7 +21,6 @@ import io.karma.ferrous.manganese.target.TargetMachine;
 import org.apiguardian.api.API;
 
 import static org.lwjgl.llvm.LLVMCore.LLVMAppendBasicBlockInContext;
-import static org.lwjgl.llvm.LLVMCore.LLVMGetGlobalContext;
 
 /**
  * @author Alexander Hinze
@@ -30,13 +29,19 @@ import static org.lwjgl.llvm.LLVMCore.LLVMGetGlobalContext;
 @API(status = API.Status.INTERNAL)
 public record FunctionBody(Function function, Statement... statements) {
     public long materialize(final Module module, final TargetMachine targetMachine) {
-        final var fnAddress = function.materialize(module, targetMachine);
+        final var fnAddress = function.materializePrototype(module, targetMachine);
         final var name = function.getQualifiedName().toInternalName();
-        final var blockAddress = LLVMAppendBasicBlockInContext(LLVMGetGlobalContext(), fnAddress, name);
+        final var blockAddress = LLVMAppendBasicBlockInContext(module.getContext(), fnAddress, name);
         final var builder = BlockBuilder.getInstance(blockAddress);
         for (final var statement : statements) {
             statement.emit(targetMachine, builder);
         }
         return blockAddress;
+    }
+
+    public void dispose() {
+        for (final var statement : statements) {
+            statement.dispose();
+        }
     }
 }

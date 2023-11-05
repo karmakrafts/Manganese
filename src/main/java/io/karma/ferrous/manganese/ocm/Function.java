@@ -104,7 +104,7 @@ public final class Function implements NameProvider, Scoped {
         return parameters;
     }
 
-    public long materialize(final Module module, final TargetMachine targetMachine) {
+    public long materializePrototype(final Module module, final TargetMachine targetMachine) {
         if (materializedValue != NULL) {
             return materializedValue;
         }
@@ -113,10 +113,15 @@ public final class Function implements NameProvider, Scoped {
             getType().materialize(targetMachine));
         LLVMSetLinkage(address, isExtern ? LLVMExternalLinkage : LLVMInternalLinkage);
         LLVMSetFunctionCallConv(address, callConv.getLLVMValue(targetMachine));
-        if (body != null) {
-            body.materialize(module, targetMachine);
-        }
         return materializedValue = address;
+    }
+
+    public void materialize(final Module module, final TargetMachine targetMachine) {
+        if (body != null) {
+            body.materialize(module, targetMachine); // Auto-materializes prototype
+            return;
+        }
+        materializePrototype(module, targetMachine);
     }
 
     // NameProvider

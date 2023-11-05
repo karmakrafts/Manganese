@@ -1,3 +1,16 @@
+struct Lorenz {
+    value: mut *void
+    size: usize
+}
+
+fun foo(value: &Lorenz): bool {
+    return false
+}
+
 fun main(num_args: i32, args: **i8): i32 {
-    return 1
+    return 0
+}
+
+fun main(num_args: i32, args: **i8): i32 {
+    return 0
 }

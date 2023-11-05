@@ -1,5 +1,3 @@
-use std::libc
-
 pub mod std {
 
 }
