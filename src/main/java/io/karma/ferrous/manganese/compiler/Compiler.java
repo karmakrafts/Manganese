@@ -45,13 +45,15 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayDeque;
 import java.util.BitSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BooleanSupplier;
 
 import static org.lwjgl.llvm.LLVMCore.LLVMContextSetOpaquePointers;
 import static org.lwjgl.llvm.LLVMCore.LLVMGetGlobalContext;
@@ -67,7 +69,6 @@ public final class Compiler {
     private final TargetMachine targetMachine;
     private final Linker linker;
     private final ExecutorService executorService;
-    private final AtomicInteger numRunningTasks = new AtomicInteger(0);
 
     private boolean tokenView = false;
     private boolean extendedTokenView = false;
@@ -134,7 +135,7 @@ public final class Compiler {
         final var fileContext = Objects.requireNonNull(context.getFileContext());
         Profiler.INSTANCE.push("Analyzer");
         ParseTreeWalker.DEFAULT.walk(analyzer, fileContext);
-        analyzer.preProcessTypes(); // Pre-materializes all UDTs in the right order
+        analyzer.preProcess();
         Profiler.INSTANCE.pop();
 
         final var tokenStream = Objects.requireNonNull(context.getTokenStream());
@@ -198,6 +199,7 @@ public final class Compiler {
         final var inputFiles = Utils.findFilesWithExtensions(in, IN_EXTENSIONS);
         final var numFiles = inputFiles.size();
         final var maxProgress = (numFiles << 1) + 1;
+        final var futures = new ArrayDeque<CompletableFuture<Void>>();
 
         for (var i = 0; i < numFiles; ++i) {
             final var file = inputFiles.get(i);
@@ -216,8 +218,7 @@ public final class Compiler {
                 .toString());
             // @formatter:on
 
-            numRunningTasks.incrementAndGet();
-            executorService.submit(() -> {
+            futures.add(CompletableFuture.runAsync(() -> {
                 context.setCurrentSourceFile(file);
                 Logger.INSTANCE.debugln("Input: %s (Thread %d)", file, Thread.currentThread().threadId());
                 try (final var stream = Files.newInputStream(file); final var channel = Channels.newChannel(stream)) {
@@ -228,11 +229,20 @@ public final class Compiler {
                     context.reportError(context.makeError(CompileErrorCode.E0003));
                 }
                 context.setCurrentSourceFile(null);
-                numRunningTasks.decrementAndGet();
-            });
+            }, executorService));
         }
 
-        while (numRunningTasks.get() > 0) {
+        // TODO: this can probably be prettified somehow..
+        final BooleanSupplier isDone = () -> {
+            for (final var future : futures) {
+                if (future.isDone()) {
+                    continue;
+                }
+                return false;
+            }
+            return true;
+        };
+        while (!isDone.getAsBoolean()) {
             Thread.onSpinWait();
         }
 

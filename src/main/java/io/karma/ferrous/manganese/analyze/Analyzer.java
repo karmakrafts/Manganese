@@ -20,6 +20,7 @@ import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.CompileErrorCode;
 import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.Field;
+import io.karma.ferrous.manganese.ocm.Function;
 import io.karma.ferrous.manganese.ocm.access.AccessKind;
 import io.karma.ferrous.manganese.ocm.access.ScopedAccess;
 import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
@@ -50,6 +51,7 @@ import java.util.stream.Collectors;
 @API(status = Status.INTERNAL)
 public final class Analyzer extends ParseAdapter {
     private final LinkedHashMap<Identifier, NamedType> udts = new LinkedHashMap<>();
+    private final HashMap<Identifier, Function> functions = new HashMap<>();
 
     public Analyzer(final Compiler compiler, final CompileContext compileContext) {
         super(compiler, compileContext);
@@ -122,20 +124,28 @@ public final class Analyzer extends ParseAdapter {
 
     @Override
     public void enterFunction(final FunctionContext context) {
+        if (checkIsFunctionAlreadyDefined(context.protoFunction().functionIdent())) {
+            return;
+        }
         final var parser = new FunctionAnalyzer(compiler,
             compileContext,
             scopeStack,
             TokenSlice.from(compileContext, context));
         ParseTreeWalker.DEFAULT.walk(parser, context);
         final var function = parser.getFunction();
-        // TODO: add functions to global map
+        functions.put(function.getQualifiedName(), function);
         super.enterFunction(context);
+    }
+
+    @Override
+    public void enterExternFunction(final ExternFunctionContext context) {
+        super.enterExternFunction(context);
     }
 
     @Override
     public void enterTypeAlias(final TypeAliasContext context) {
         final var identContext = context.ident();
-        if (checkIsAlreadyDefined(identContext)) {
+        if (checkIsTypeAlreadyDefined(identContext)) {
             return;
         }
         final var type = Objects.requireNonNull(TypeUtils.getType(compiler,
@@ -158,7 +168,7 @@ public final class Analyzer extends ParseAdapter {
     @Override
     public void enterAttrib(AttribContext context) {
         final var identContext = context.ident();
-        if (checkIsAlreadyDefined(identContext)) {
+        if (checkIsTypeAlreadyDefined(identContext)) {
             return;
         }
         final var genericParams = TypeUtils.getGenericParams(compiler,
@@ -172,7 +182,7 @@ public final class Analyzer extends ParseAdapter {
     @Override
     public void enterStruct(final StructContext context) {
         final var identContext = context.ident();
-        if (checkIsAlreadyDefined(identContext)) {
+        if (checkIsTypeAlreadyDefined(identContext)) {
             return;
         }
         final var genericParams = TypeUtils.getGenericParams(compiler,
@@ -186,7 +196,7 @@ public final class Analyzer extends ParseAdapter {
     @Override
     public void enterClass(final ClassContext context) {
         final var identContext = context.ident();
-        if (checkIsAlreadyDefined(identContext)) {
+        if (checkIsTypeAlreadyDefined(identContext)) {
             return;
         }
         final var genericParams = TypeUtils.getGenericParams(compiler,
@@ -200,7 +210,7 @@ public final class Analyzer extends ParseAdapter {
     @Override
     public void enterEnumClass(final EnumClassContext context) {
         final var identContext = context.ident();
-        if (checkIsAlreadyDefined(identContext)) {
+        if (checkIsTypeAlreadyDefined(identContext)) {
             return;
         }
         analyzeFieldLayout(context, Utils.getIdentifier(identContext), new GenericParameter[0], UDTKind.ENUM_CLASS);
@@ -210,7 +220,7 @@ public final class Analyzer extends ParseAdapter {
     @Override
     public void enterTrait(final TraitContext context) {
         final var identContext = context.ident();
-        if (checkIsAlreadyDefined(identContext)) {
+        if (checkIsTypeAlreadyDefined(identContext)) {
             return;
         }
         final var genericParams = TypeUtils.getGenericParams(compiler,
@@ -221,9 +231,20 @@ public final class Analyzer extends ParseAdapter {
         super.enterTrait(context);
     }
 
-    private boolean checkIsAlreadyDefined(final IdentContext identContext) {
+    private boolean checkIsFunctionAlreadyDefined(final FunctionIdentContext identContext) {
+        final var name = FunctionUtils.getFunctionName(identContext);
+        final var function = functions.get(name);
+        if (function != null) {
+            final var message = Utils.makeCompilerMessage(String.format("Function '%s' is already defined", name));
+            compileContext.reportError(compileContext.makeError(identContext.start, message, CompileErrorCode.E5003));
+            return true;
+        }
+        return false;
+    }
+
+    private boolean checkIsTypeAlreadyDefined(final IdentContext identContext) {
         final var name = Utils.getIdentifier(identContext);
-        final var type = findTypeInScope(name, scopeStack.getScopeName());
+        final var type = udts.get(name);
         if (type != null) {
             final var message = Utils.makeCompilerMessage(String.format("Type '%s' is already defined", name));
             compileContext.reportError(compileContext.makeError(identContext.start, message, CompileErrorCode.E3000));
@@ -253,6 +274,9 @@ public final class Analyzer extends ParseAdapter {
     }
 
     public @Nullable Type findCompleteType(final NamedType type) {
+        if (type.isComplete()) {
+            return type;
+        }
         return findCompleteTypeInScope(type.getName(), type.getScopeName());
     }
 
@@ -312,7 +336,7 @@ public final class Analyzer extends ParseAdapter {
         return true;
     }
 
-    private void resolveTypes() {
+    private void resolveUDTs() {
         Profiler.INSTANCE.push();
         final var udts = this.udts.values();
         for (final var udt : udts) {
@@ -453,12 +477,29 @@ public final class Analyzer extends ParseAdapter {
         // TODO: implement access checks
     }
 
-    public void preProcessTypes() {
+    private void resolveFunctionTypes() {
+        Profiler.INSTANCE.push();
+        final var functions = this.functions.values();
+        for (final var function : functions) {
+            final var params = function.getParameters();
+            for (final var param : params) {
+                final var type = param.getType();
+                if (!type.isNamed()) {
+                    continue;
+                }
+                param.setType(findCompleteType((NamedType) type));
+            }
+        }
+        Profiler.INSTANCE.pop();
+    }
+
+    public void preProcess() {
         sortTypes();
-        resolveTypes();
+        resolveUDTs();
         materializeTypes();
         resolveTypeAccess();
         checkTypeAccess();
+        resolveFunctionTypes();
     }
 
     private static final class DummyType implements NamedType {

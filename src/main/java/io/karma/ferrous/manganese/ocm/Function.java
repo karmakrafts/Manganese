@@ -65,7 +65,7 @@ public final class Function implements NameProvider, Scoped {
         this.tokenSlice = tokenSlice;
         this.parameters = params;
 
-        final var paramTypes = Arrays.stream(parameters).map(Parameter::type).collect(Collectors.toList());
+        final var paramTypes = Arrays.stream(parameters).map(Parameter::getType).collect(Collectors.toList());
         type = Types.function(returnType, paramTypes, isVarArg, type -> {
             type.setEnclosingScope(getEnclosingScope());
             return type;
@@ -75,11 +75,6 @@ public final class Function implements NameProvider, Scoped {
     public Function(final Identifier name, final CallingConvention callConv, final Type returnType,
                     final TokenSlice tokenSlice, final Parameter... params) {
         this(name, callConv, false, false, returnType, tokenSlice, params);
-    }
-
-    public Function(final Identifier name, final Type returnType, final TokenSlice tokenSlice,
-                    final Parameter... params) {
-        this(name, CallingConvention.CDECL, false, false, returnType, tokenSlice, params);
     }
 
     public FunctionBody createBody(final Statement... statements) {
@@ -103,6 +98,10 @@ public final class Function implements NameProvider, Scoped {
 
     public FunctionType getType() {
         return type;
+    }
+
+    public Parameter[] getParameters() {
+        return parameters;
     }
 
     public long materialize(final Module module, final TargetMachine targetMachine) {

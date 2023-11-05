@@ -36,24 +36,6 @@ public class TranslationUnit extends ParseAdapter {
         module = compiler.getTargetMachine().createModule(compileContext.getCurrentModuleName());
     }
 
-    // TODO: replace this mess
-    //@Override
-    //public void enterExternFunction(final ExternFunctionContext context) {
-    //    final var prototype = context.protoFunction();
-    //    final var type = FunctionUtils.getFunctionType(compiler, compileContext, scopeStack, prototype);
-    //    final var name = FunctionUtils.getFunctionName(prototype.functionIdent()).toString();
-    //    final var functionType = type.materialize(compiler.getTargetMachine());
-    //    final var function = LLVMAddFunction(module.getAddress(), name, functionType);
-    //    if (function == NULL) {
-    //        compileContext.reportError(compileContext.makeError(context.start, CompileErrorCode.E4000));
-    //        return;
-    //    }
-    //    LLVMSetLinkage(function, LLVMExternalLinkage);
-    //    LLVMSetFunctionCallConv(function,
-    //        FunctionUtils.getCallingConvention(compileContext, prototype).getLLVMValue(compiler.getTargetMachine()));
-    //    super.enterExternFunction(context);
-    //}
-
     public Module getModule() {
         return module;
     }

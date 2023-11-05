@@ -144,7 +144,7 @@ public record CompileError(@Nullable Token token, @Nullable List<Token> lineToke
 
     private int getLength() {
         if (token == null) {
-            return 1;
+            return 0;
         }
         return Math.max(1, token.getStopIndex() - token.getStartIndex() + 1);
     }
@@ -184,15 +184,13 @@ public record CompileError(@Nullable Token token, @Nullable List<Token> lineToke
             builder.a("\n\n");
         }// @formatter:on
 
+        builder.bgBright(Color.RED).fg(Color.BLACK).a(errorCode).a(Attribute.RESET).a("\n");
         if (text != null) {
-            builder.bgBright(Color.RED).fg(Color.BLACK).a(errorCode).a(Attribute.RESET).a("\n");
-            final var processedText = String.join("\n    ", text.split("\n"));
-            builder.a("    ").a(" ".repeat(Math.max(0, getColumn() + getLength() - 1))).a(processedText).a("\n\n");
+            final var processedText = String.join("\n  ", text.split("\n"));
+            builder.a("  ").a(" ".repeat(Math.max(0, getColumn() + getLength() - 1))).a(processedText).a("\n");
         }
-        else {
-            builder.a("    ").bgBright(Color.RED).fg(Color.BLACK).a(errorCode).a(Attribute.RESET).a("\n\n");
-        }
-        return builder.toString();
+
+        return builder.a("\n").toString();
     }
 
     @Override

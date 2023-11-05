@@ -178,7 +178,7 @@ public final class Utils {
         builder.fgBright(color);
         builder.a(message);
         if (values != null) {
-            builder.a(":\n  ");
+            builder.a(":\n");
             final var numValues = values.size();
             for (var i = 0; i < numValues; i++) {
                 builder.fgBright(Color.BLUE);

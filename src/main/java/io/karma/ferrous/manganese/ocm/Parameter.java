@@ -22,12 +22,36 @@ import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Objects;
+
 /**
  * @author Alexander Hinze
  * @since 16/10/2023
  */
 @API(status = Status.INTERNAL)
-public record Parameter(Identifier name, Type type, @Nullable Expression defaultValue) implements NameProvider {
+public final class Parameter implements NameProvider {
+    private final Identifier name;
+    private final Expression defaultValue;
+    private Type type;
+
+    public Parameter(final Identifier name, final Type type, final @Nullable Expression defaultValue) {
+        this.name = name;
+        this.type = type;
+        this.defaultValue = defaultValue;
+    }
+
+    public Type getType() {
+        return type;
+    }
+
+    public void setType(final Type type) {
+        this.type = type;
+    }
+
+    public @Nullable Expression getDefaultValue() {
+        return defaultValue;
+    }
+
     @Override
     public Identifier getName() {
         return name;
@@ -41,5 +65,20 @@ public record Parameter(Identifier name, Type type, @Nullable Expression default
             return String.format("%s:%s", name, type);
         }
         return String.format("%s:%s=%s", name, type, defaultValue);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(name, type, defaultValue);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if(obj instanceof Parameter param) { // @formatter:off
+            return name.equals(param.name)
+                && type.equals(param.type)
+                && Objects.equals(defaultValue, param.defaultValue);
+        } // @formatter:on
+        return false;
     }
 }

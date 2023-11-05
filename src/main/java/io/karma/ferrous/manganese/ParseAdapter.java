@@ -181,12 +181,17 @@ public abstract class ParseAdapter implements FerrousParserListener {
     public void exitModule(ModuleContext moduleContext) {}
 
     @Override
-    public void enterModBlock(ModBlockContext modBlockContext) {
-        scopeStack.push(new DefaultScope(ScopeType.MODULE, Utils.getIdentifier(modBlockContext.ident())));
+    public void enterModBlock(final ModBlockContext context) {
+        final var qualifiedIdent = context.qualifiedIdent();
+        if(qualifiedIdent != null) {
+            scopeStack.push(new DefaultScope(ScopeType.MODULE, Utils.getIdentifier(qualifiedIdent)));
+            return;
+        }
+        scopeStack.push(new DefaultScope(ScopeType.MODULE, Utils.getIdentifier(context.ident())));
     }
 
     @Override
-    public void exitModBlock(ModBlockContext modBlockContext) {
+    public void exitModBlock(final ModBlockContext context) {
         lastScope = scopeStack.pop();
     }
 

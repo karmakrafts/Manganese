@@ -46,6 +46,7 @@ public enum CompileErrorCode {
     E5000("The given calling convention does not exist", CompileStatus.SEMANTIC_ERROR),
     E5001("The given element cannot be accessed from this scope", CompileStatus.SEMANTIC_ERROR),
     E5002("A parameter cannot have the type void", CompileStatus.SEMANTIC_ERROR),
+    E5003("The given function is already defined in the same scope", CompileStatus.SEMANTIC_ERROR),
     // Link errors
     E6000("Could not find linker command", CompileStatus.LINK_ERROR),
     E6001("Could not spawn linker process", CompileStatus.LINK_ERROR),
