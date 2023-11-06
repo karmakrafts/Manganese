@@ -15,12 +15,14 @@
 
 package io.karma.ferrous.manganese.util;
 
+import io.karma.ferrous.manganese.ocm.scope.ScopeStack;
 import io.karma.ferrous.vanadium.FerrousLexer;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Objects;
 
 /**
  * @author Alexander Hinze
@@ -30,6 +32,20 @@ import java.util.Arrays;
 public record Identifier(String... components) {
     public static final Identifier EMPTY = new Identifier("");
     public static final String DELIMITER = TokenUtils.getLiteral(FerrousLexer.DOUBLE_COLON);
+
+    public static Identifier generate(final String prefix, final Identifier scopeName, boolean inheritScope,
+                                      final Object... hashArgs) {
+        var result = new Identifier(String.format("%s%d", prefix, Objects.hash(Objects.hash(hashArgs), scopeName)));
+        if (inheritScope) {
+            return scopeName.join(result);
+        }
+        return result;
+    }
+
+    public static Identifier generate(final String prefix, final ScopeStack scopeStack, boolean inheritScope,
+                                      final Object... hashArgs) {
+        return generate(prefix, scopeStack.getScopeName(), inheritScope, hashArgs);
+    }
 
     public static Identifier parse(final String value) {
         if (!value.contains(DELIMITER)) {

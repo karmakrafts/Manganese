@@ -41,7 +41,6 @@ public enum ScopeType {
     CONSTRUCTOR,
     DESTRUCTOR,
     FUNCTION,
-    ANON_SCOPE,
     IF,
     ELSE_IF,
     ELSE,

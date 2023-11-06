@@ -509,10 +509,6 @@ public final class Analyzer extends ParseAdapter {
         resolveFunctionTypes();
     }
 
-    public void dispose() {
-
-    }
-
     private static final class DummyType implements NamedType {
         public static final DummyType INSTANCE = new DummyType();
         private Scope enclosingScope;

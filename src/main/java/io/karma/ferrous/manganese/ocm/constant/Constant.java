@@ -46,7 +46,7 @@ public interface Constant extends Expression {
 
     default boolean getBoolean() {
         if (this instanceof BoolConstant constant) {
-            return constant.getValue();
+            return constant.value();
         }
         throw new UnsupportedOperationException("Constant is not a boolean");
     }
