@@ -17,14 +17,19 @@ package io.karma.ferrous.manganese.translate;
 
 import io.karma.ferrous.manganese.ParseAdapter;
 import io.karma.ferrous.manganese.compiler.CompileContext;
+import io.karma.ferrous.manganese.compiler.CompileErrorCode;
 import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.constant.BoolConstant;
 import io.karma.ferrous.manganese.ocm.constant.IntConstant;
 import io.karma.ferrous.manganese.ocm.constant.NullConstant;
 import io.karma.ferrous.manganese.ocm.constant.RealConstant;
+import io.karma.ferrous.manganese.ocm.expr.BinaryExpression;
 import io.karma.ferrous.manganese.ocm.expr.Expression;
+import io.karma.ferrous.manganese.ocm.expr.UnaryExpression;
 import io.karma.ferrous.manganese.ocm.type.BuiltinType;
+import io.karma.ferrous.manganese.util.ExpressionUtils;
 import io.karma.ferrous.manganese.util.Identifier;
+import io.karma.ferrous.manganese.util.Operator;
 import io.karma.ferrous.manganese.util.Utils;
 import io.karma.ferrous.vanadium.FerrousParser.*;
 import org.antlr.v4.runtime.tree.TerminalNode;
@@ -76,11 +81,46 @@ public final class ExpressionParser extends ParseAdapter {
 
     @Override
     public void enterUnaryExpr(final UnaryExprContext context) {
+        if (expression != null) {
+            return;
+        }
+        final var opText = context.unaryOp().getText();
+        final var op = Operator.findByText(opText);
+        if (op.isEmpty()) {
+            compileContext.reportError(context.unaryOp().start, opText, CompileErrorCode.E5001);
+            return;
+        }
+        final var value = ExpressionUtils.parseExpression(compiler, compileContext, context.expr());
+        if (value == null) {
+            compileContext.reportError(context.expr().start, CompileErrorCode.E5003);
+            return;
+        }
+        expression = new UnaryExpression(op.get(), value);
         super.enterUnaryExpr(context);
     }
 
     @Override
     public void enterBinaryExpr(final BinaryExprContext context) {
+        if (expression != null) {
+            return;
+        }
+        final var opText = context.binaryOp().getText();
+        final var op = Operator.findByText(opText);
+        if (op.isEmpty()) {
+            compileContext.reportError(context.binaryOp().start, opText, CompileErrorCode.E5001);
+            return;
+        }
+        final var lhs = ExpressionUtils.parseExpression(compiler, compileContext, context.simpleExpr());
+        if (lhs == null) {
+            compileContext.reportError(context.simpleExpr().start, CompileErrorCode.E5003);
+            return;
+        }
+        final var rhs = ExpressionUtils.parseExpression(compiler, compileContext, context.expr());
+        if (rhs == null) {
+            compileContext.reportError(context.expr().start, CompileErrorCode.E5003);
+            return;
+        }
+        expression = new BinaryExpression(op.get(), lhs, rhs);
         super.enterBinaryExpr(context);
     }
 
