@@ -72,6 +72,17 @@ public abstract class ParseAdapter implements FerrousParserListener {
     }
 
     // @formatter:off
+    @Override
+    public void enterBinaryExpr(BinaryExprContext binaryExprContext) {}
+
+    @Override
+    public void exitBinaryExpr(BinaryExprContext binaryExprContext) {}
+
+    @Override
+    public void enterUnaryExpr(UnaryExprContext unaryExprContext) {}
+
+    @Override
+    public void exitUnaryExpr(UnaryExprContext unaryExprContext) {}
 
     @Override
     public void enterDestructureStatement(DestructureStatementContext destructureStatementContext) {}
@@ -761,28 +772,10 @@ public abstract class ParseAdapter implements FerrousParserListener {
     public void exitDecrementExpr(DecrementExprContext decrementExprContext) {}
 
     @Override
-    public void enterSimpleExpr(SimpleExprContext simpleExprContext) {}
-
-    @Override
-    public void exitSimpleExpr(SimpleExprContext simpleExprContext) {}
-
-    @Override
-    public void enterBinaryExpr(BinaryExprContext binaryExprContext) {}
-
-    @Override
-    public void exitBinaryExpr(BinaryExprContext binaryExprContext) {}
-
-    @Override
     public void enterBinaryOp(BinaryOpContext binaryOpContext) {}
 
     @Override
     public void exitBinaryOp(BinaryOpContext binaryOpContext) {}
-
-    @Override
-    public void enterUnaryExpr(UnaryExprContext unaryExprContext) {}
-
-    @Override
-    public void exitUnaryExpr(UnaryExprContext unaryExprContext) {}
 
     @Override
     public void enterUnaryOp(UnaryOpContext unaryOpContext) {}
@@ -855,18 +848,6 @@ public abstract class ParseAdapter implements FerrousParserListener {
 
     @Override
     public void exitGenericGroupedExpr(GenericGroupedExprContext genericGroupedExprContext) {}
-
-    @Override
-    public void enterGenericBinaryExpr(GenericBinaryExprContext genericBinaryExprContext) {}
-
-    @Override
-    public void exitGenericBinaryExpr(GenericBinaryExprContext genericBinaryExprContext) {}
-
-    @Override
-    public void enterGenericBinaryExprLhs(GenericBinaryExprLhsContext genericBinaryExprLhsContext) {}
-
-    @Override
-    public void exitGenericBinaryExprLhs(GenericBinaryExprLhsContext genericBinaryExprLhsContext) {}
 
     @Override
     public void enterGenericOp(GenericOpContext genericOpContext) {}

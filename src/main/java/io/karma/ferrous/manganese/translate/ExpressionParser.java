@@ -67,7 +67,64 @@ public final class ExpressionParser extends ParseAdapter {
     }
 
     @Override
+    public void enterBinaryExpr(final BinaryExprContext context) {
+        if (expression != null) {
+            return;
+        }
+        final var binaryOpContext = context.binaryOp();
+        if (binaryOpContext == null) {
+            return;
+        }
+        final var opText = binaryOpContext.getText();
+        final var op = Operator.findByText(opText);
+        if (op.isEmpty()) {
+            compileContext.reportError(context.binaryOp().start, opText, CompileErrorCode.E5002);
+            return;
+        }
+        final var sides = context.binaryExpr();
+        if (sides.size() < 2) {
+            compileContext.reportError(context.start, CompileErrorCode.E5003);
+            return;
+        }
+        final var lhs = ExpressionUtils.parseExpression(compiler, compileContext, sides.get(0));
+        if (lhs == null) {
+            compileContext.reportError(sides.get(0).start, CompileErrorCode.E5003);
+            return;
+        }
+        final var rhs = ExpressionUtils.parseExpression(compiler, compileContext, sides.get(1));
+        if (rhs == null) {
+            compileContext.reportError(sides.get(1).start, CompileErrorCode.E5003);
+            return;
+        }
+        expression = new BinaryExpression(op.get(), lhs, rhs);
+        super.enterBinaryExpr(context);
+    }
+
+    @Override
+    public void enterUnaryExpr(final UnaryExprContext context) {
+        if (expression != null) {
+            return;
+        }
+        final var unaryOpContext = context.unaryOp();
+        if (unaryOpContext == null) {
+            return;
+        }
+        final var opText = unaryOpContext.getText();
+        final var op = Operator.findByText(opText);
+        if (op.isEmpty()) {
+            compileContext.reportError(opText, CompileErrorCode.E5001);
+            return;
+        }
+        expression = new UnaryExpression(op.get(),
+            ExpressionUtils.parseExpression(compiler, compileContext, context.unaryExpr()));
+        super.enterUnaryExpr(context);
+    }
+
+    @Override
     public void enterCallExpr(final CallExprContext context) {
+        if (expression != null) {
+            return;
+        }
         final var qualifiedIdentContext = context.qualifiedIdent();
         Identifier name;
         if (qualifiedIdentContext != null) {
@@ -76,52 +133,8 @@ public final class ExpressionParser extends ParseAdapter {
         else {
             name = Utils.getIdentifier(context.ident());
         }
+        // TODO: implement call expression parsing
         super.enterCallExpr(context);
-    }
-
-    @Override
-    public void enterUnaryExpr(final UnaryExprContext context) {
-        if (expression != null) {
-            return;
-        }
-        final var opText = context.unaryOp().getText();
-        final var op = Operator.findByText(opText);
-        if (op.isEmpty()) {
-            compileContext.reportError(context.unaryOp().start, opText, CompileErrorCode.E5001);
-            return;
-        }
-        final var value = ExpressionUtils.parseExpression(compiler, compileContext, context.expr());
-        if (value == null) {
-            compileContext.reportError(context.expr().start, CompileErrorCode.E5003);
-            return;
-        }
-        expression = new UnaryExpression(op.get(), value);
-        super.enterUnaryExpr(context);
-    }
-
-    @Override
-    public void enterBinaryExpr(final BinaryExprContext context) {
-        if (expression != null) {
-            return;
-        }
-        final var opText = context.binaryOp().getText();
-        final var op = Operator.findByText(opText);
-        if (op.isEmpty()) {
-            compileContext.reportError(context.binaryOp().start, opText, CompileErrorCode.E5001);
-            return;
-        }
-        final var lhs = ExpressionUtils.parseExpression(compiler, compileContext, context.simpleExpr());
-        if (lhs == null) {
-            compileContext.reportError(context.simpleExpr().start, CompileErrorCode.E5003);
-            return;
-        }
-        final var rhs = ExpressionUtils.parseExpression(compiler, compileContext, context.expr());
-        if (rhs == null) {
-            compileContext.reportError(context.expr().start, CompileErrorCode.E5003);
-            return;
-        }
-        expression = new BinaryExpression(op.get(), lhs, rhs);
-        super.enterBinaryExpr(context);
     }
 
     @Override

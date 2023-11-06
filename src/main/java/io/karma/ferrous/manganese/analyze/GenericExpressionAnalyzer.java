@@ -19,7 +19,6 @@ import io.karma.ferrous.manganese.ParseAdapter;
 import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.generic.GenericConstraint;
-import io.karma.ferrous.vanadium.FerrousParser.GenericBinaryExprContext;
 import io.karma.ferrous.vanadium.FerrousParser.GenericGroupedExprContext;
 import io.karma.ferrous.vanadium.FerrousParser.TypeContext;
 import org.apiguardian.api.API;
@@ -49,18 +48,7 @@ public final class GenericExpressionAnalyzer extends ParseAdapter {
         super.exitGenericGroupedExpr(context);
     }
 
-    @Override
-    public void enterGenericBinaryExpr(final GenericBinaryExprContext context) {
-        final var op = context.genericOp();
-        if (op.AMP() != null) {
-
-            return;
-        }
-        if (op.PIPE() != null) {
-
-        }
-        super.enterGenericBinaryExpr(context);
-    }
+    // TODO: implement me
 
     @Override
     public void enterType(final TypeContext context) {
