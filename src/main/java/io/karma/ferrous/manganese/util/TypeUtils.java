@@ -35,7 +35,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * @author Alexander Hinze
@@ -68,7 +67,7 @@ public final class TypeUtils {
                 ParseTreeWalker.DEFAULT.walk(analyzer, expr);
                 constraints = analyzer.getConstraints();
             }
-            result.add(new GenericParameter(name, constraints, new TypeConstant(defaultType)));
+            result.add(new GenericParameter(name.toString(), constraints, new TypeConstant(defaultType)));
         }
         return result;
     }
@@ -80,16 +79,13 @@ public final class TypeUtils {
         }
         // @formatter:off
         return context.type().stream()
-            .map(ctx -> Objects.requireNonNull(getType(compiler, compileContext, scopeStack, ctx)))
+            .map(ctx -> getType(compiler, compileContext, scopeStack, ctx))
             .toList();
         // @formatter:on
     }
 
-    public static @Nullable Type getType(final Compiler compiler, final CompileContext compileContext,
-                                         final ScopeStack scopeStack, final @Nullable TypeContext context) {
-        if (context == null) {
-            return null;
-        }
+    public static Type getType(final Compiler compiler, final CompileContext compileContext,
+                               final ScopeStack scopeStack, final TypeContext context) {
         final TypeAnalyzer unit = new TypeAnalyzer(compiler, compileContext, scopeStack);
         ParseTreeWalker.DEFAULT.walk(unit, context);
         return unit.getType();

@@ -16,7 +16,6 @@
 package io.karma.ferrous.manganese.ocm.generic;
 
 import io.karma.ferrous.manganese.ocm.expr.Expression;
-import io.karma.ferrous.manganese.util.Identifier;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
@@ -26,22 +25,22 @@ import java.util.Objects;
  * @since 28/10/2023
  */
 public final class GenericParameter {
-    private final Identifier name;
+    private final String name;
     private final GenericConstraint constraints;
     private Expression value;
 
-    public GenericParameter(final Identifier name, final GenericConstraint constraints,
+    public GenericParameter(final String name, final GenericConstraint constraints,
                             final @Nullable Expression defaultValue) {
         this.name = name;
         this.constraints = constraints;
         value = defaultValue;
     }
 
-    public GenericParameter(final Identifier name) {
+    public GenericParameter(final String name) {
         this(name, GenericConstraint.TRUE, null);
     }
 
-    public Identifier getName() {
+    public String getName() {
         return name;
     }
 

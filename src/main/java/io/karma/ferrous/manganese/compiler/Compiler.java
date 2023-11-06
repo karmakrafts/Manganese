@@ -121,7 +121,7 @@ public final class Compiler {
         }
         catch (IOException error) {
             context.setCurrentPass(CompilePass.NONE);
-            context.reportError(context.makeError(CompileErrorCode.E0002));
+            context.reportError(CompileErrorCode.E0002);
         }
     }
 
@@ -170,7 +170,7 @@ public final class Compiler {
         module.setSourceFileName(sourceName);
         final var verificationStatus = module.verify();
         if (verificationStatus != null) {
-            context.reportError(context.makeError(CompileErrorCode.E0002));
+            context.reportError(CompileErrorCode.E0002);
             return;
         }
 
@@ -190,7 +190,7 @@ public final class Compiler {
                 Files.createDirectories(outDirectory);
             }
             catch (Exception error) {
-                context.reportError(context.makeError(error.getMessage(), CompileErrorCode.E0005));
+                context.reportError(error.getMessage(), CompileErrorCode.E0005);
                 return context.makeResult();
             }
         }
@@ -225,14 +225,16 @@ public final class Compiler {
                     analyzeAndProcess(rawFileName, context);
                 }
                 catch (IOException error) {
-                    context.reportError(context.makeError(CompileErrorCode.E0003));
+                    context.reportError(CompileErrorCode.E0003);
                 }
                 context.setCurrentSourceFile(null);
             }, executorService));
         }
 
         for (final var future : futures) {
-            future.join();
+            while (!future.isDone()) {
+                Thread.onSpinWait();
+            }
         }
 
         final var moduleName = Utils.getRawFileName(in);
@@ -334,9 +336,9 @@ public final class Compiler {
         @Override
         public void syntaxError(final Recognizer<?, ?> recognizer, final Object offendingSymbol, final int line,
                                 final int charPositionInLine, final String msg, final RecognitionException e) {
-            context.reportError(context.makeError((Token) offendingSymbol,
+            context.reportError((Token) offendingSymbol,
                 Utils.makeCompilerMessage(Utils.capitalize(msg)),
-                CompileErrorCode.E2000));
+                CompileErrorCode.E2000);
         }
 
         @Override

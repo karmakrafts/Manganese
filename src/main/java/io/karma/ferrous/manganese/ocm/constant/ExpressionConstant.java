@@ -15,7 +15,7 @@
 
 package io.karma.ferrous.manganese.ocm.constant;
 
-import io.karma.ferrous.manganese.ocm.BlockBuilder;
+import io.karma.ferrous.manganese.ocm.BlockContext;
 import io.karma.ferrous.manganese.ocm.expr.Expression;
 import io.karma.ferrous.manganese.ocm.type.ImaginaryType;
 import io.karma.ferrous.manganese.ocm.type.Type;
@@ -32,12 +32,7 @@ public record ExpressionConstant(Expression value) implements Constant {
     }
 
     @Override
-    public long materialize(final TargetMachine targetMachine, final BlockBuilder builder) {
-        return value.materialize(targetMachine, builder);
-    }
-
-    @Override
-    public void emit(final TargetMachine targetMachine, final BlockBuilder builder) {
-        value.emit(targetMachine, builder);
+    public long emit(final TargetMachine targetMachine, final BlockContext blockContext) {
+        return value.emit(targetMachine, blockContext);
     }
 }

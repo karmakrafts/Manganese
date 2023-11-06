@@ -15,7 +15,7 @@
 
 package io.karma.ferrous.manganese.ocm.constant;
 
-import io.karma.ferrous.manganese.ocm.BlockBuilder;
+import io.karma.ferrous.manganese.ocm.BlockContext;
 import io.karma.ferrous.manganese.ocm.type.ImaginaryType;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.target.TargetMachine;
@@ -32,11 +32,7 @@ public record TokenConstant(Token value) implements Constant {
     }
 
     @Override
-    public long materialize(final TargetMachine targetMachine, final BlockBuilder builder) {
-        throw new UnsupportedOperationException("Cannot materialize imaginary constant");
-    }
-
-    @Override
-    public void emit(final TargetMachine targetMachine, final BlockBuilder builder) {
+    public long emit(final TargetMachine targetMachine, final BlockContext blockContext) {
+        return 0L;
     }
 }

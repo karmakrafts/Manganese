@@ -52,7 +52,7 @@ public final class Function implements NameProvider, Scoped {
     private final FunctionType type;
     private FunctionBody body;
     private Scope enclosingScope;
-    private long materializedValue;
+    private long materializedPrototype;
 
     public Function(final Identifier name, final CallingConvention callConv, final boolean isExtern,
                     final boolean isVarArg, final Type returnType, final TokenSlice tokenSlice,
@@ -81,7 +81,7 @@ public final class Function implements NameProvider, Scoped {
         if (body != null) {
             throw new IllegalStateException("Body already exists for this function");
         }
-        return body = new FunctionBody(this, statements);
+        return body = new FunctionBody(statements);
     }
 
     public CallingConvention getCallConv() {
@@ -105,29 +105,23 @@ public final class Function implements NameProvider, Scoped {
     }
 
     public long materializePrototype(final Module module, final TargetMachine targetMachine) {
-        if (materializedValue != NULL) {
-            return materializedValue;
+        if (materializedPrototype != NULL) {
+            return materializedPrototype;
         }
         final var address = LLVMAddFunction(module.getAddress(),
             name.toInternalName(),
             getType().materialize(targetMachine));
         LLVMSetLinkage(address, isExtern ? LLVMExternalLinkage : LLVMInternalLinkage);
         LLVMSetFunctionCallConv(address, callConv.getLLVMValue(targetMachine));
-        return materializedValue = address;
+        return materializedPrototype = address;
     }
 
     public long materialize(final Module module, final TargetMachine targetMachine) {
         if (body != null) {
-            body.materialize(module, targetMachine); // Auto-materializes prototype
-            return materializedValue; // This won't be NULL at this point
+            body.append(this, module, targetMachine);
+            return materializedPrototype; // This won't be NULL at this point
         }
         return materializePrototype(module, targetMachine);
-    }
-
-    public void dispose() {
-        if (body != null) {
-            body.dispose();
-        }
     }
 
     // NameProvider

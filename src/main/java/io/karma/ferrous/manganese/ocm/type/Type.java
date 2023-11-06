@@ -19,7 +19,6 @@ import io.karma.ferrous.manganese.ocm.expr.Expression;
 import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
 import io.karma.ferrous.manganese.ocm.scope.Scoped;
 import io.karma.ferrous.manganese.target.TargetMachine;
-import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.TokenSlice;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
@@ -43,7 +42,7 @@ public interface Type extends Scoped {
 
     GenericParameter[] getGenericParams();
 
-    default @Nullable GenericParameter getGenericParam(final Identifier name) {
+    default @Nullable GenericParameter getGenericParam(final String name) {
         final var params = getGenericParams();
         for (final GenericParameter param : params) {
             if (!param.getName().equals(name)) {
@@ -54,7 +53,21 @@ public interface Type extends Scoped {
         return null;
     }
 
-    default boolean isNamed() {
+    default int getSize(final TargetMachine targetMachine) {
+        return targetMachine.getTypeSize(materialize(targetMachine));
+    }
+
+    default int getAlignment(final TargetMachine targetMachine) {
+        return targetMachine.getTypeAlignment(materialize(targetMachine));
+    }
+
+    /**
+     * @param targetMachine The current target machine instance.
+     * @param type          The type to check against.
+     * @return True if the given type may be assigned or
+     * implicitly casted to this type. False otherwise.
+     */
+    default boolean canAccept(final TargetMachine targetMachine, final Type type) {
         return false;
     }
 

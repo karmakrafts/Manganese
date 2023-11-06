@@ -15,13 +15,10 @@
 
 package io.karma.ferrous.manganese.ocm.constant;
 
-import io.karma.ferrous.manganese.ocm.BlockBuilder;
-import io.karma.ferrous.manganese.ocm.type.BuiltinType;
+import io.karma.ferrous.manganese.ocm.BlockContext;
 import io.karma.ferrous.manganese.ocm.type.NullType;
 import io.karma.ferrous.manganese.ocm.type.Type;
-import io.karma.ferrous.manganese.ocm.type.TypeAttribute;
 import io.karma.ferrous.manganese.target.TargetMachine;
-import org.lwjgl.llvm.LLVMCore;
 
 /**
  * @author Alexander Hinze
@@ -40,12 +37,7 @@ public final class NullConstant implements Constant {
     }
 
     @Override
-    public long materialize(final TargetMachine targetMachine, final BlockBuilder builder) {
-        return LLVMCore.LLVMConstPointerNull(BuiltinType.VOID.derive(TypeAttribute.POINTER).materialize(targetMachine));
-    }
-
-    @Override
-    public void emit(final TargetMachine targetMachine, final BlockBuilder builder) {
-
+    public long emit(final TargetMachine targetMachine, final BlockContext blockContext) {
+        return 0L;
     }
 }

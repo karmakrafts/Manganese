@@ -99,6 +99,10 @@ public final class TargetMachine {
         return LLVMPointerSize(dataAddress);
     }
 
+    public int getTypeSize(final long type) {
+        return (int) LLVMABISizeOfType(dataAddress, type);
+    }
+
     public int getTypeAlignment(final long type) {
         return LLVMPreferredAlignmentOfType(dataAddress, type);
     }

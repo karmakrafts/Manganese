@@ -97,7 +97,23 @@ public final class CompileContext {
             errorCode);
     }
 
-    public void reportError(final CompileError error) {
+    public void reportError(final Token token, final String text, final CompileErrorCode errorCode) {
+        addError(makeError(token, text, errorCode));
+    }
+
+    public void reportError(final Token token, final CompileErrorCode errorCode) {
+        addError(makeError(token, errorCode));
+    }
+
+    public void reportError(final String text, final CompileErrorCode errorCode) {
+        addError(makeError(text, errorCode));
+    }
+
+    public void reportError(final CompileErrorCode errorCode) {
+        addError(makeError(errorCode));
+    }
+
+    public void addError(final CompileError error) {
         final var tokenStream = getTokenStream();
         if (tokenStream != null && tokenStream.size() == 0) {
             tokenStream.fill();

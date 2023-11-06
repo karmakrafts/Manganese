@@ -15,7 +15,7 @@
 
 package io.karma.ferrous.manganese.ocm.constant;
 
-import io.karma.ferrous.manganese.ocm.BlockBuilder;
+import io.karma.ferrous.manganese.ocm.BlockContext;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import org.apiguardian.api.API;
@@ -27,19 +27,26 @@ import org.lwjgl.llvm.LLVMCore;
  * @since 16/10/2023
  */
 @API(status = Status.INTERNAL)
-public record IntConstant(Type type, long value) implements Constant {
+public final class IntConstant implements Constant {
+    private final Type type;
+    private final long value;
+
+    public IntConstant(final Type type, final long value) {
+        this.type = type;
+        this.value = value;
+    }
+
+    public long getValue() {
+        return value;
+    }
+
     @Override
     public Type getType() {
         return type;
     }
 
     @Override
-    public long materialize(final TargetMachine targetMachine, final BlockBuilder builder) {
-        return LLVMCore.LLVMConstInt(getType().materialize(targetMachine), value, false);
-    }
-
-    @Override
-    public void emit(final TargetMachine targetMachine, final BlockBuilder builder) {
-
+    public long emit(final TargetMachine targetMachine, final BlockContext blockContext) {
+        return LLVMCore.LLVMConstInt(type.materialize(targetMachine), value, false);
     }
 }

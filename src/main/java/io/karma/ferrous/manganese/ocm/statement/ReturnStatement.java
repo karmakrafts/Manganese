@@ -15,9 +15,10 @@
 
 package io.karma.ferrous.manganese.ocm.statement;
 
-import io.karma.ferrous.manganese.ocm.BlockBuilder;
+import io.karma.ferrous.manganese.ocm.BlockContext;
 import io.karma.ferrous.manganese.ocm.constant.VoidConstant;
 import io.karma.ferrous.manganese.ocm.expr.Expression;
+import io.karma.ferrous.manganese.ocm.type.BuiltinType;
 import io.karma.ferrous.manganese.target.TargetMachine;
 
 /**
@@ -42,8 +43,16 @@ public final class ReturnStatement implements Statement {
     // Statement
 
     @Override
-    public void emit(final TargetMachine targetMachine, final BlockBuilder builder) {
-
+    public long emit(final TargetMachine targetMachine, final BlockContext blockContext) {
+        final var builder = blockContext.getCurrentOrCreate();
+        final var type = value.getType();
+        if (type.isImaginary()) {
+            return 0L; // We don't emit anything for imaginary types
+        }
+        if (type == BuiltinType.VOID) {
+            return builder.ret();
+        }
+        return builder.ret(value.emit(targetMachine, blockContext));
     }
 
     @Override

@@ -15,31 +15,37 @@
 
 package io.karma.ferrous.manganese.ocm.constant;
 
-import io.karma.ferrous.manganese.ocm.BlockBuilder;
+import io.karma.ferrous.manganese.ocm.BlockContext;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
-import org.lwjgl.llvm.LLVMCore;
 
 /**
  * @author Alexander Hinze
  * @since 16/10/2023
  */
 @API(status = Status.INTERNAL)
-public record RealConstant(Type type, double value) implements Constant {
+public final class RealConstant implements Constant {
+    private final Type type;
+    private final double value;
+
+    public RealConstant(final Type type, final double value) {
+        this.type = type;
+        this.value = value;
+    }
+
+    public double getValue() {
+        return value;
+    }
+
     @Override
     public Type getType() {
         return type;
     }
 
     @Override
-    public long materialize(final TargetMachine targetMachine, final BlockBuilder builder) {
-        return LLVMCore.LLVMConstReal(getType().materialize(targetMachine), value);
-    }
-
-    @Override
-    public void emit(final TargetMachine targetMachine, final BlockBuilder builder) {
-
+    public long emit(final TargetMachine targetMachine, final BlockContext blockContext) {
+        return 0L;
     }
 }

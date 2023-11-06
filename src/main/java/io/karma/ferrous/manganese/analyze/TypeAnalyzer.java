@@ -60,7 +60,7 @@ public final class TypeAnalyzer extends ParseAdapter {
     @Override
     public void enterRefType(final RefTypeContext context) {
         if (attributes.contains(TypeAttribute.REFERENCE)) {
-            compileContext.reportError(compileContext.makeError(context.start, CompileErrorCode.E3001));
+            compileContext.reportError(context.start, CompileErrorCode.E3001);
             return;
         }
         attributes.push(TypeAttribute.REFERENCE);

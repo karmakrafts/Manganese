@@ -79,7 +79,7 @@ public enum DefaultAccess implements Access {
 
         // TODO: Implement protected
 
-        compileContext.reportError(compileContext.makeError(CompileErrorCode.E5001));
+        compileContext.reportError(CompileErrorCode.E4001);
         return false;
     }
 }

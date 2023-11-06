@@ -79,9 +79,7 @@ public final class FunctionUtils {
                 "'%s' is not a valid calling convention, expected one of the following values",
                 name);
             final var formattedMessage = Utils.makeCompilerMessage(message, CallingConvention.EXPECTED_VALUES);
-            compileContext.reportError(compileContext.makeError(identifier.getSymbol(),
-                formattedMessage,
-                CompileErrorCode.E5000));
+            compileContext.reportError(identifier.getSymbol(), formattedMessage, CompileErrorCode.E4000);
             return CallingConvention.CDECL;
         }
         return conv.get();
@@ -109,7 +107,7 @@ public final class FunctionUtils {
         return context.functionParamList().functionParam().stream()
             .map(FerrousParser.FunctionParamContext::type)
             .filter(type -> type != null && !type.getText().equals(TokenUtils.getLiteral(FerrousLexer.KW_VAARGS)))
-            .map(type -> Objects.requireNonNull(TypeUtils.getType(compiler, compileContext, scopeStack, type)))
+            .map(type -> TypeUtils.getType(compiler, compileContext, scopeStack, type))
             .peek(type -> {
                 //if(type == BuiltinType.VOID) {
                 //    compileContext.reportError(compileContext.makeError());

@@ -32,21 +32,21 @@ public interface Constant extends Expression {
 
     default long getInt() {
         if (this instanceof IntConstant constant) {
-            return constant.value();
+            return constant.getValue();
         }
         throw new UnsupportedOperationException("Constant is not a integer");
     }
 
     default double getReal() {
         if (this instanceof RealConstant constant) {
-            return constant.value();
+            return constant.getValue();
         }
         throw new UnsupportedOperationException("Constant is not a real");
     }
 
     default boolean getBoolean() {
         if (this instanceof BoolConstant constant) {
-            return constant.value();
+            return constant.getValue();
         }
         throw new UnsupportedOperationException("Constant is not a boolean");
     }

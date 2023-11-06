@@ -15,7 +15,7 @@
 
 package io.karma.ferrous.manganese.ocm.statement;
 
-import io.karma.ferrous.manganese.ocm.BlockBuilder;
+import io.karma.ferrous.manganese.ocm.BlockContext;
 import io.karma.ferrous.manganese.target.TargetMachine;
 
 /**
@@ -23,10 +23,7 @@ import io.karma.ferrous.manganese.target.TargetMachine;
  * @since 22/10/2023
  */
 public interface Statement {
-    void emit(final TargetMachine targetMachine, final BlockBuilder builder);
-
-    default void dispose() {
-    }
+    long emit(final TargetMachine targetMachine, final BlockContext blockContext);
 
     default boolean returnsFromCurrentScope() {
         return false;

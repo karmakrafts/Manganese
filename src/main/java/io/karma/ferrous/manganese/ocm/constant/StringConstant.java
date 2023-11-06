@@ -15,27 +15,30 @@
 
 package io.karma.ferrous.manganese.ocm.constant;
 
-import io.karma.ferrous.manganese.ocm.BlockBuilder;
+import io.karma.ferrous.manganese.ocm.BlockContext;
 import io.karma.ferrous.manganese.ocm.type.ImaginaryType;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.target.TargetMachine;
+import org.lwjgl.llvm.LLVMCore;
 
 /**
  * @author Alexander Hinze
  * @since 24/10/2023
  */
-public record StringConstant(String value) implements Constant {
+public final class StringConstant implements Constant {
+    private final String value;
+
+    public StringConstant(final String value) {
+        this.value = value;
+    }
+
     @Override
     public Type getType() {
         return ImaginaryType.STRING;
     }
 
     @Override
-    public long materialize(final TargetMachine targetMachine, final BlockBuilder builder) {
-        throw new UnsupportedOperationException("Cannot materialize imaginary constant");
-    }
-
-    @Override
-    public void emit(final TargetMachine targetMachine, final BlockBuilder builder) {
+    public long emit(final TargetMachine targetMachine, final BlockContext blockContext) {
+        return LLVMCore.LLVMConstString(value, true);
     }
 }

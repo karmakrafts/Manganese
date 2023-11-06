@@ -21,11 +21,13 @@ import io.karma.ferrous.manganese.llvm.LLVMUtils;
 import io.karma.ferrous.manganese.target.*;
 import io.karma.ferrous.manganese.util.DiagnosticSeverity;
 import io.karma.ferrous.manganese.util.Logger;
+import org.apiguardian.api.API;
 import org.lwjgl.llvm.LLVMCore;
 import org.lwjgl.llvm.LLVMDiagnosticHandler;
 import org.lwjgl.system.MemoryUtil;
 
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.lwjgl.llvm.LLVMCore.*;
 import static org.lwjgl.llvm.LLVMInitialization.LLVMInitializeCore;
@@ -36,12 +38,19 @@ import static org.lwjgl.system.MemoryUtil.NULL;
  * @author Alexander Hinze
  * @since 19/10/2023
  */
+@API(status = API.Status.STABLE)
 public final class Manganese {
     private static final AtomicBoolean IS_INITIALIZED = new AtomicBoolean(false);
+    private static final AtomicReference<String> LAST_LLVM_ERROR = new AtomicReference<>("");
 
     // @formatter:off
     private Manganese() {}
     // @formatter:on
+
+    @API(status = API.Status.INTERNAL)
+    public static String getLastLLVMError() {
+        return LAST_LLVM_ERROR.getAndSet("");
+    }
 
     public static void init() {
         if (IS_INITIALIZED.getAndSet(true)) {
@@ -77,15 +86,11 @@ public final class Manganese {
                 Logger.INSTANCE.errorln("Unknown diagnostic severity %d", severityValue);
                 return;
             }
-            final var message = MemoryUtil.memUTF8(LLVMGetDiagInfoDescription(info));
-            switch (severity.get()) {
-                case ERROR:
-                    Logger.INSTANCE.errorln("%s", message);
-                    break;
-                default:
-                    Logger.INSTANCE.debugln("%s", message);
-                    break;
+            if (severity.get() != DiagnosticSeverity.ERROR) {
+                return;
             }
+            final var message = MemoryUtil.memUTF8(LLVMGetDiagInfoDescription(info)).toString();
+            LAST_LLVM_ERROR.set(message);
         }), NULL);
     }
 

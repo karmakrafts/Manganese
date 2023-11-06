@@ -55,12 +55,12 @@ public abstract class AbstractLinker implements Linker {
                      final Path objectFile, final LinkModel linkModel, final TargetMachine targetMachine,
                      final LinkTargetType targetType) {
         if (!supportedArchitectures.contains(compiler.getTargetMachine().getTarget().getArchitecture())) {
-            compileContext.reportError(compileContext.makeError(CompileErrorCode.E6004));
+            compileContext.reportError(CompileErrorCode.E5004);
             return;
         }
         final var command = getType().findCommand();
         if (command == null) {
-            compileContext.reportError(compileContext.makeError(CompileErrorCode.E6000));
+            compileContext.reportError(CompileErrorCode.E5000);
             return;
         }
         try {
@@ -85,17 +85,15 @@ public abstract class AbstractLinker implements Linker {
             if (process.waitFor() != 0) {
                 try (final var reader = process.errorReader()) {
                     final var error = Utils.makeCompilerMessage(reader.lines().collect(Collectors.joining("\n")));
-                    compileContext.reportError(compileContext.makeError(error, CompileErrorCode.E6002));
+                    compileContext.reportError(error, CompileErrorCode.E5002);
                 }
             }
         }
         catch (IOException error) {
-            compileContext.reportError(compileContext.makeError(Utils.makeCompilerMessage(error.getMessage()),
-                CompileErrorCode.E6001));
+            compileContext.reportError(Utils.makeCompilerMessage(error.getMessage()), CompileErrorCode.E5001);
         }
         catch (InterruptedException error) {
-            compileContext.reportError(compileContext.makeError(Utils.makeCompilerMessage(error.getMessage()),
-                CompileErrorCode.E6003));
+            compileContext.reportError(Utils.makeCompilerMessage(error.getMessage()), CompileErrorCode.E5003);
         }
     }
 

@@ -27,6 +27,7 @@ import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 import org.lwjgl.llvm.LLVMCore;
 
+import java.util.EnumSet;
 import java.util.function.ToLongFunction;
 
 /**
@@ -56,6 +57,9 @@ public enum BuiltinType implements NamedType {
     F64     (FerrousLexer.KW_F64,   target -> LLVMCore.LLVMDoubleType());
     // @formatter:on
 
+    public static final EnumSet<BuiltinType> SIGNED_INT_TYPES = EnumSet.of(I8, I16, I32, I64, ISIZE);
+    public static final EnumSet<BuiltinType> UNSIGNED_INT_TYPES = EnumSet.of(U8, U16, U32, U64, USIZE);
+    public static final EnumSet<BuiltinType> FLOAT_TYPES = EnumSet.of(F32, F64);
     private final Identifier name;
     private final ToLongFunction<TargetMachine> typeProvider;
 
@@ -70,6 +74,22 @@ public enum BuiltinType implements NamedType {
 
     private static long getSizedIntType(final TargetMachine machine) {
         return machine.getPointerSize() == 8 ? LLVMCore.LLVMInt64Type() : LLVMCore.LLVMInt32Type();
+    }
+
+    public boolean isSignedInt() {
+        return SIGNED_INT_TYPES.contains(this);
+    }
+
+    public boolean isUnsignedInt() {
+        return UNSIGNED_INT_TYPES.contains(this);
+    }
+
+    public boolean isInt() {
+        return isSignedInt() || isUnsignedInt();
+    }
+
+    public boolean isFloatType() {
+        return FLOAT_TYPES.contains(this);
     }
 
     // NameProvider
@@ -91,6 +111,17 @@ public enum BuiltinType implements NamedType {
     }
 
     // Type
+
+    @Override
+    public boolean canAccept(final TargetMachine targetMachine, final Type type) {
+        if (type == this) {
+            return true;
+        }
+        if (type instanceof BuiltinType) {
+            return getSize(targetMachine) >= type.getSize(targetMachine);
+        }
+        return false;
+    }
 
     @Override
     public TokenSlice getTokenSlice() {

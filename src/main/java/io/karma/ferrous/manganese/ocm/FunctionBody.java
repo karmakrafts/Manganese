@@ -19,6 +19,9 @@ import io.karma.ferrous.manganese.module.Module;
 import io.karma.ferrous.manganese.ocm.statement.Statement;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import org.apiguardian.api.API;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.LinkedHashMap;
 
 import static org.lwjgl.llvm.LLVMCore.LLVMAppendBasicBlockInContext;
 
@@ -27,21 +30,62 @@ import static org.lwjgl.llvm.LLVMCore.LLVMAppendBasicBlockInContext;
  * @since 05/11/2023
  */
 @API(status = API.Status.INTERNAL)
-public record FunctionBody(Function function, Statement... statements) {
-    public long materialize(final Module module, final TargetMachine targetMachine) {
-        final var fnAddress = function.materializePrototype(module, targetMachine);
-        final var name = function.getQualifiedName().toInternalName();
-        final var blockAddress = LLVMAppendBasicBlockInContext(module.getContext(), fnAddress, name);
-        final var builder = BlockBuilder.getInstance(blockAddress);
+public record FunctionBody(Statement... statements) {
+    public void append(final Function function, final Module module, final TargetMachine targetMachine) {
+        final var context = new BlockContextImpl(module, targetMachine, function);
         for (final var statement : statements) {
-            statement.emit(targetMachine, builder);
+            statement.emit(targetMachine, context);
         }
-        return blockAddress;
+        context.dispose();
     }
 
-    public void dispose() {
-        for (final var statement : statements) {
-            statement.dispose();
+    private static final class BlockContextImpl implements BlockContext {
+        private final Module module;
+        private final TargetMachine targetMachine;
+        private final Function function;
+        private final LinkedHashMap<String, BlockBuilder> builders = new LinkedHashMap<>();
+        private BlockBuilder current;
+        private BlockBuilder last;
+
+        public BlockContextImpl(final Module module, final TargetMachine targetMachine, final Function function) {
+            this.module = module;
+            this.targetMachine = targetMachine;
+            this.function = function;
+        }
+
+        public void dispose() {
+            builders.values().forEach(BlockBuilder::dispose);
+        }
+
+        @Override
+        public Function getFunction() {
+            return function;
+        }
+
+        @Override
+        public @Nullable BlockBuilder getCurrentBlock() {
+            return current;
+        }
+
+        @Override
+        public @Nullable BlockBuilder getLastBlock() {
+            return last;
+        }
+
+        @Override
+        public BlockBuilder createBlock(final String name) {
+            last = current;
+            return current = builders.computeIfAbsent(name, n -> {
+                final var fnAddress = function.materializePrototype(module, targetMachine);
+                final var context = module.getContext();
+                final var blockAddress = LLVMAppendBasicBlockInContext(context, fnAddress, name);
+                return new BlockBuilder(module, targetMachine, blockAddress, context);
+            });
+        }
+
+        @Override
+        public @Nullable BlockBuilder getBlockBuilder(final String name) {
+            return builders.get(name);
         }
     }
 }

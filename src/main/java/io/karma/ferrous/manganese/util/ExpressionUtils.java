@@ -39,7 +39,7 @@ public final class ExpressionUtils {
         ParseTreeWalker.DEFAULT.walk(analyzer, context);
         final var expression = analyzer.getExpression();
         if (expression == null) {
-            compileContext.reportError(compileContext.makeError(context.start, CompileErrorCode.E2001));
+            compileContext.reportError(context.start, CompileErrorCode.E2001);
         }
         return expression;
     }

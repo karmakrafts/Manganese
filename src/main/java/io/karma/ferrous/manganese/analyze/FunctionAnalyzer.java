@@ -22,6 +22,7 @@ import io.karma.ferrous.manganese.ocm.Function;
 import io.karma.ferrous.manganese.ocm.Parameter;
 import io.karma.ferrous.manganese.ocm.scope.ScopeStack;
 import io.karma.ferrous.manganese.ocm.statement.Statement;
+import io.karma.ferrous.manganese.ocm.type.FunctionType;
 import io.karma.ferrous.manganese.util.FunctionUtils;
 import io.karma.ferrous.manganese.util.TokenSlice;
 import io.karma.ferrous.vanadium.FerrousParser.FunctionBodyContext;
@@ -38,6 +39,7 @@ import org.apiguardian.api.API.Status;
 public final class FunctionAnalyzer extends ParseAdapter {
     private final ScopeStack capturedScopeStack;
     private final TokenSlice tokenSlice;
+    private FunctionType type;
     private Function function;
 
     public FunctionAnalyzer(final Compiler compiler, final CompileContext compileContext,
@@ -48,13 +50,13 @@ public final class FunctionAnalyzer extends ParseAdapter {
     }
 
     @Override
-    public void enterProtoFunction(ProtoFunctionContext context) {
+    public void enterProtoFunction(final ProtoFunctionContext context) {
         if (function != null) {
             return;
         }
         final var identifier = FunctionUtils.getFunctionName(context.functionIdent());
         final var callConv = FunctionUtils.getCallingConvention(compileContext, context);
-        final var type = FunctionUtils.getFunctionType(compiler, compileContext, capturedScopeStack, context);
+        type = FunctionUtils.getFunctionType(compiler, compileContext, capturedScopeStack, context);
         final var paramNames = FunctionUtils.getParameterNames(context);
         final var paramTypes = type.getParamTypes();
         final var numParams = paramTypes.length;
@@ -78,7 +80,7 @@ public final class FunctionAnalyzer extends ParseAdapter {
         if (function.getBody() != null) {
             return;
         }
-        final var analyzer = new FunctionBodyAnalyzer(compiler, compileContext);
+        final var analyzer = new FunctionBodyAnalyzer(compiler, compileContext, type);
         ParseTreeWalker.DEFAULT.walk(analyzer, context);
         function.createBody(analyzer.getStatements().toArray(Statement[]::new));
         super.enterFunctionBody(context);

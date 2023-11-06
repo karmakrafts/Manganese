@@ -29,7 +29,6 @@ import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 
 import java.util.ArrayList;
-import java.util.Objects;
 
 /**
  * @author Alexander Hinze
@@ -67,10 +66,7 @@ public final class FieldLayoutAnalyzer extends ParseAdapter {
             return;
         }
         final var name = Utils.getIdentifier(context.ident());
-        final var type = Objects.requireNonNull(TypeUtils.getType(compiler,
-            compileContext,
-            capturedScopeStack,
-            context.type()));
+        final var type = TypeUtils.getType(compiler, compileContext, capturedScopeStack, context.type());
         fields.add(new Field(name,
             type,
             Utils.getAccess(compiler, compileContext, scopeStack, context.accessMod()),
