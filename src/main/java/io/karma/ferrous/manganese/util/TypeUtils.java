@@ -46,6 +46,32 @@ public final class TypeUtils {
     private TypeUtils() {}
     // @formatter:on
 
+    public static @Nullable Type findCommonType(final Type... types) {
+        final var numTypes = types.length;
+        return switch(numTypes) { // @formatter:off
+            case 0  -> null;
+            case 1  -> types[0];
+            default -> {
+                Type result = null;
+                for(var i = 0; i < numTypes; i++) {
+                    final var baseType = types[i];
+                    for(var j = 0; j < numTypes; j++) {
+                        if(i == j) {
+                            continue; // If we are at the same index, skip this iteration
+                        }
+                        final var type = types[j];
+                        if(!baseType.canAccept(type)) {
+                            result = null; // Reset result if type was not compatible
+                            continue;
+                        }
+                        result = baseType;
+                    }
+                }
+                yield result;
+            }
+        }; // @formatter:on
+    }
+
     public static List<GenericParameter> getGenericParams(final Compiler compiler, final CompileContext compileContext,
                                                           final ScopeStack scopeStack,
                                                           final @Nullable GenericParamListContext context) {

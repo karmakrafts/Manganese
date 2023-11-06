@@ -62,12 +62,11 @@ public interface Type extends Scoped {
     }
 
     /**
-     * @param targetMachine The current target machine instance.
-     * @param type          The type to check against.
+     * @param type The type to check against.
      * @return True if the given type may be assigned or
      * implicitly casted to this type. False otherwise.
      */
-    default boolean canAccept(final TargetMachine targetMachine, final Type type) {
+    default boolean canAccept(final Type type) {
         return false;
     }
 

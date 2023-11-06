@@ -64,7 +64,7 @@ public final class ELFLinker extends AbstractLinker {
             // CRT implementation
             final var crtImplPath = findSystemLibrary(architecture, path -> path.resolve("lib"), "crt[012]\\.o");
             if (crtImplPath == null) {
-                compileContext.reportError("CRT", CompileErrorCode.E5009);
+                compileContext.reportError("CRT", CompileErrorCode.E6009);
                 return;
             }
             Logger.INSTANCE.debugln("Located CRT implementation at %s", crtImplPath);
@@ -72,7 +72,7 @@ public final class ELFLinker extends AbstractLinker {
             // Prologue object
             final var crtProloguePath = findSystemLibrary(architecture, path -> path.resolve("lib"), "crti\\.o");
             if (crtProloguePath == null) {
-                compileContext.reportError("CRT Prologue", CompileErrorCode.E5009);
+                compileContext.reportError("CRT Prologue", CompileErrorCode.E6009);
                 return;
             }
             Logger.INSTANCE.debugln("Located CRT prologue at %s", crtProloguePath);
@@ -87,7 +87,7 @@ public final class ELFLinker extends AbstractLinker {
             // Epilogue object
             final var crtEpiloguePath = findSystemLibrary(architecture, path -> path.resolve("lib"), "crtn\\.o");
             if (crtEpiloguePath == null) {
-                compileContext.reportError("CRT Epilogue", CompileErrorCode.E5009);
+                compileContext.reportError("CRT Epilogue", CompileErrorCode.E6009);
                 return;
             }
             Logger.INSTANCE.debugln("Located CRT epilogue at %s", crtEpiloguePath);
@@ -141,12 +141,12 @@ public final class ELFLinker extends AbstractLinker {
         final var isDynamic = targetMachine.getRelocation().isDynamic();
         final var usesSystemRuntime = linkModel == LinkModel.FULL;
         if (usesSystemRuntime && !isDynamic) {
-            compileContext.reportError(CompileErrorCode.E5006);
+            compileContext.reportError(CompileErrorCode.E6006);
             return;
         }
         final var architecture = targetMachine.getTarget().getArchitecture();
         if (usesSystemRuntime && targetType == LinkTargetType.STATIC) {
-            compileContext.reportError(CompileErrorCode.E5008);
+            compileContext.reportError(CompileErrorCode.E6008);
             return;
         }
         buffer.add(command);
@@ -164,7 +164,7 @@ public final class ELFLinker extends AbstractLinker {
                 Functions.castingIdentity(),
                 String.format("ld[\\-_.]linux[\\-_.](%s)(\\.so(\\.[0-9])?)", architecture.makePattern()));
             if (path == null) {
-                compileContext.reportError(CompileErrorCode.E5007);
+                compileContext.reportError(CompileErrorCode.E6007);
                 return;
             }
             Logger.INSTANCE.debugln("Located dynamic linker at %s", path);

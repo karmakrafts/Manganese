@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.analyze;
+package io.karma.ferrous.manganese.translate;
 
 import io.karma.ferrous.manganese.ParseAdapter;
 import io.karma.ferrous.manganese.compiler.CompileContext;
@@ -23,7 +23,9 @@ import io.karma.ferrous.manganese.ocm.statement.ReturnStatement;
 import io.karma.ferrous.manganese.ocm.statement.Statement;
 import io.karma.ferrous.manganese.ocm.type.FunctionType;
 import io.karma.ferrous.manganese.util.ExpressionUtils;
+import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.Utils;
+import io.karma.ferrous.vanadium.FerrousParser.CallExprContext;
 import io.karma.ferrous.vanadium.FerrousParser.ReturnStatementContext;
 import org.apiguardian.api.API;
 
@@ -34,14 +36,28 @@ import java.util.ArrayList;
  * @since 05/11/2023
  */
 @API(status = API.Status.INTERNAL)
-public final class FunctionBodyAnalyzer extends ParseAdapter {
+public final class FunctionBodyParser extends ParseAdapter {
     private final ArrayList<Statement> statements = new ArrayList<>();
     private final FunctionType functionType;
 
-    public FunctionBodyAnalyzer(final Compiler compiler, final CompileContext compileContext,
-                                final FunctionType functionType) {
+    public FunctionBodyParser(final Compiler compiler, final CompileContext compileContext,
+                              final FunctionType functionType) {
         super(compiler, compileContext);
         this.functionType = functionType;
+    }
+
+    @Override
+    public void enterCallExpr(final CallExprContext context) {
+        final var qualifiedIdentContext = context.qualifiedIdent();
+        Identifier name;
+        if (qualifiedIdentContext != null) {
+            name = Utils.getIdentifier(qualifiedIdentContext);
+        }
+        else {
+            name = Utils.getIdentifier(context.ident());
+        }
+        // TODO: ...
+        super.enterCallExpr(context);
     }
 
     @Override
@@ -54,7 +70,7 @@ public final class FunctionBodyAnalyzer extends ParseAdapter {
             }
             final var exprType = expr.getType();
             final var returnType = functionType.getReturnType();
-            if (!returnType.canAccept(compiler.getTargetMachine(), exprType)) {
+            if (!returnType.canAccept(exprType)) {
                 final var message = Utils.makeCompilerMessage(String.format("%s cannot be assigned to %s",
                     exprType,
                     returnType));

@@ -49,6 +49,10 @@ public class FunctionType implements Type {
         this.tokenSlice = tokenSlice;
     }
 
+    public boolean isVarArg() {
+        return isVarArg;
+    }
+
     public Type getReturnType() {
         return returnType;
     }

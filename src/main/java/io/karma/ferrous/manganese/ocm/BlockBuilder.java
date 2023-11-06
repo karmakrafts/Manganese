@@ -29,14 +29,16 @@ import static org.lwjgl.system.MemoryUtil.NULL;
  */
 @API(status = API.Status.INTERNAL)
 public final class BlockBuilder {
+    private final BlockContext blockContext;
     private final Module module;
     private final TargetMachine targetMachine;
     private final long blockAddress;
     private final long address;
     private boolean isDisposed = false;
 
-    public BlockBuilder(final Module module, final TargetMachine targetMachine, final long blockAddress,
-                        final long context) {
+    public BlockBuilder(final BlockContext blockContext, final Module module, final TargetMachine targetMachine,
+                        final long blockAddress, final long context) {
+        this.blockContext = blockContext;
         this.module = module;
         this.targetMachine = targetMachine;
         if (blockAddress == NULL || context == NULL) {
@@ -80,6 +82,10 @@ public final class BlockBuilder {
         return LLVMBuildURem(address, lhs, rhs, "");
     }
 
+    public long neg(final long value) {
+        return LLVMBuildNeg(address, value, "");
+    }
+
     // Floating point arithmetics
 
     public long fadd(final long lhs, final long rhs) {
@@ -102,7 +108,15 @@ public final class BlockBuilder {
         return LLVMBuildFRem(address, lhs, rhs, "");
     }
 
+    public long fneg(final long value) {
+        return LLVMBuildFNeg(address, value, "");
+    }
+
     // Control flow
+
+    public long jump(final String name) {
+        return LLVMBuildBr(address, blockContext.getOrCreate(name).blockAddress);
+    }
 
     public long call(final Function function, final long... args) {
         final var fnAddress = function.materializePrototype(module, targetMachine);

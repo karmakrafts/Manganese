@@ -598,12 +598,16 @@ public abstract class ParseAdapter implements FerrousParserListener {
 
     @Override
     public void enterFunction(final FunctionContext context) {
-        pushScope(ScopeType.FUNCTION, FunctionUtils.getFunctionName(context.protoFunction().functionIdent()));
+        if(context.functionBody() != null) {
+            pushScope(ScopeType.FUNCTION, FunctionUtils.getFunctionName(context.protoFunction().functionIdent()));
+        }
     }
 
     @Override
     public void exitFunction(final FunctionContext context) {
-        popScope();
+        if(context.functionBody() != null) {
+            popScope();
+        }
     }
 
     @Override
@@ -625,10 +629,10 @@ public abstract class ParseAdapter implements FerrousParserListener {
     public void exitFunctionBody(FunctionBodyContext functionBodyContext) {}
 
     @Override
-    public void enterVariable(VariableContext variableContext) {}
+    public void enterLetExpr(LetExprContext variableContext) {}
 
     @Override
-    public void exitVariable(VariableContext variableContext) {}
+    public void exitLetExpr(LetExprContext variableContext) {}
 
     @Override
     public void enterInlineFunctionBody(InlineFunctionBodyContext inlineFunctionBodyContext) {}

@@ -30,12 +30,11 @@ import java.util.Optional;
 public enum Operator {
     // @formatter:off
     // Arithmetics
-    PLUS            (FerrousLexer.OP_PLUS,              "op.plus",              true,   true ),
+    PLUS            (FerrousLexer.OP_PLUS,              "op.plus",              false,  true ),
     MINUS           (FerrousLexer.OP_MINUS,             "op.minus",             true,   true ),
     TIMES           (FerrousLexer.ASTERISK,             "op.times",             false,  true ),
     DIV             (FerrousLexer.OP_DIV,               "op.div",               false,  true ),
     MOD             (FerrousLexer.OP_MOD,               "op.mod",               false,  true ),
-    POW             (FerrousLexer.OP_POW,               "op.pow",               false,  true ),
     SAT_PLUS        (FerrousLexer.OP_SAT_PLUS,          "op.s.plus",            false,  true ),
     SAT_MINUS       (FerrousLexer.OP_SAT_MINUS,         "op.s.minus",           false,  true ),
     SAT_TIMES       (FerrousLexer.OP_SAT_TIMES,         "op.s.times",           false,  true ),

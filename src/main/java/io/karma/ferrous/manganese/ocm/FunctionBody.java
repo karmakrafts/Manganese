@@ -15,13 +15,15 @@
 
 package io.karma.ferrous.manganese.ocm;
 
+import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.module.Module;
 import io.karma.ferrous.manganese.ocm.statement.Statement;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import org.apiguardian.api.API;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.LinkedHashMap;
+import java.util.HashMap;
+import java.util.Stack;
 
 import static org.lwjgl.llvm.LLVMCore.LLVMAppendBasicBlockInContext;
 
@@ -31,8 +33,9 @@ import static org.lwjgl.llvm.LLVMCore.LLVMAppendBasicBlockInContext;
  */
 @API(status = API.Status.INTERNAL)
 public record FunctionBody(Statement... statements) {
-    public void append(final Function function, final Module module, final TargetMachine targetMachine) {
-        final var context = new BlockContextImpl(module, targetMachine, function);
+    public void append(final CompileContext compileContext, final Function function, final Module module,
+                       final TargetMachine targetMachine) {
+        final var context = new BlockContextImpl(compileContext, module, targetMachine, function);
         for (final var statement : statements) {
             statement.emit(targetMachine, context);
         }
@@ -40,14 +43,16 @@ public record FunctionBody(Statement... statements) {
     }
 
     private static final class BlockContextImpl implements BlockContext {
+        private final CompileContext compileContext;
         private final Module module;
         private final TargetMachine targetMachine;
         private final Function function;
-        private final LinkedHashMap<String, BlockBuilder> builders = new LinkedHashMap<>();
-        private BlockBuilder current;
-        private BlockBuilder last;
+        private final HashMap<String, BlockBuilder> builders = new HashMap<>();
+        private final Stack<BlockBuilder> stack = new Stack<>();
 
-        public BlockContextImpl(final Module module, final TargetMachine targetMachine, final Function function) {
+        public BlockContextImpl(final CompileContext compileContext, final Module module,
+                                final TargetMachine targetMachine, final Function function) {
+            this.compileContext = compileContext;
             this.module = module;
             this.targetMachine = targetMachine;
             this.function = function;
@@ -58,34 +63,51 @@ public record FunctionBody(Statement... statements) {
         }
 
         @Override
+        public void pushCurrent(final BlockBuilder builder) {
+            stack.push(builder);
+        }
+
+        @Override
+        public BlockBuilder popCurrent() {
+            return stack.pop();
+        }
+
+        @Override
+        public CompileContext getCompileContext() {
+            return compileContext;
+        }
+
+        @Override
         public Function getFunction() {
             return function;
         }
 
         @Override
-        public @Nullable BlockBuilder getCurrentBlock() {
-            return current;
+        public @Nullable BlockBuilder getCurrent() {
+            if (stack.isEmpty()) {
+                return null;
+            }
+            return stack.peek();
         }
 
         @Override
-        public @Nullable BlockBuilder getLastBlock() {
-            return last;
+        public @Nullable BlockBuilder getLast() {
+            if (stack.size() < 2) {
+                return null;
+            }
+            return stack.get(1);
         }
 
         @Override
-        public BlockBuilder createBlock(final String name) {
-            last = current;
-            return current = builders.computeIfAbsent(name, n -> {
+        public BlockBuilder getOrCreate(final String name) {
+            final var builder = builders.computeIfAbsent(name, n -> {
                 final var fnAddress = function.materializePrototype(module, targetMachine);
                 final var context = module.getContext();
                 final var blockAddress = LLVMAppendBasicBlockInContext(context, fnAddress, name);
-                return new BlockBuilder(module, targetMachine, blockAddress, context);
+                return new BlockBuilder(this, module, targetMachine, blockAddress, context);
             });
-        }
-
-        @Override
-        public @Nullable BlockBuilder getBlockBuilder(final String name) {
-            return builders.get(name);
+            stack.push(builder);
+            return builder;
         }
     }
 }

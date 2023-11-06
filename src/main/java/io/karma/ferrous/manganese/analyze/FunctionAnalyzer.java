@@ -21,31 +21,27 @@ import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.Function;
 import io.karma.ferrous.manganese.ocm.Parameter;
 import io.karma.ferrous.manganese.ocm.scope.ScopeStack;
-import io.karma.ferrous.manganese.ocm.statement.Statement;
-import io.karma.ferrous.manganese.ocm.type.FunctionType;
 import io.karma.ferrous.manganese.util.FunctionUtils;
 import io.karma.ferrous.manganese.util.TokenSlice;
-import io.karma.ferrous.vanadium.FerrousParser.FunctionBodyContext;
 import io.karma.ferrous.vanadium.FerrousParser.ProtoFunctionContext;
-import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import org.apiguardian.api.API;
-import org.apiguardian.api.API.Status;
 
 /**
  * @author Alexander Hinze
- * @since 14/10/2023
+ * @since 06/11/2023
  */
-@API(status = Status.INTERNAL)
+@API(status = API.Status.INTERNAL)
 public final class FunctionAnalyzer extends ParseAdapter {
     private final ScopeStack capturedScopeStack;
+    private final boolean isExtern;
     private final TokenSlice tokenSlice;
-    private FunctionType type;
     private Function function;
 
     public FunctionAnalyzer(final Compiler compiler, final CompileContext compileContext,
-                            final ScopeStack capturedScopeStack, final TokenSlice tokenSlice) {
+                            final ScopeStack capturedScopeStack, final boolean isExtern, final TokenSlice tokenSlice) {
         super(compiler, compileContext);
         this.capturedScopeStack = capturedScopeStack;
+        this.isExtern = isExtern;
         this.tokenSlice = tokenSlice;
     }
 
@@ -56,11 +52,15 @@ public final class FunctionAnalyzer extends ParseAdapter {
         }
         final var identifier = FunctionUtils.getFunctionName(context.functionIdent());
         final var callConv = FunctionUtils.getCallingConvention(compileContext, context);
-        type = FunctionUtils.getFunctionType(compiler, compileContext, capturedScopeStack, context);
+        final var type = FunctionUtils.getFunctionType(compiler, compileContext, capturedScopeStack, context);
         final var paramNames = FunctionUtils.getParameterNames(context);
         final var paramTypes = type.getParamTypes();
         final var numParams = paramTypes.length;
-        if (numParams != paramNames.length) {
+        var expectedNumParams = paramNames.length;
+        if (type.isVarArg()) {
+            expectedNumParams--; // Account for trailing ...
+        }
+        if (numParams != expectedNumParams) {
             throw new IllegalStateException("Invalid function parser state");
         }
         final var params = new Parameter[numParams];
@@ -69,21 +69,12 @@ public final class FunctionAnalyzer extends ParseAdapter {
         }
         function = capturedScopeStack.applyEnclosingScopes(new Function(identifier,
             callConv,
+            isExtern,
+            type.isVarArg(),
             type.getReturnType(),
             tokenSlice,
             params));
         super.enterProtoFunction(context);
-    }
-
-    @Override
-    public void enterFunctionBody(final FunctionBodyContext context) {
-        if (function.getBody() != null) {
-            return;
-        }
-        final var analyzer = new FunctionBodyAnalyzer(compiler, compileContext, type);
-        ParseTreeWalker.DEFAULT.walk(analyzer, context);
-        function.createBody(analyzer.getStatements().toArray(Statement[]::new));
-        super.enterFunctionBody(context);
     }
 
     public Function getFunction() {

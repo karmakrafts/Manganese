@@ -16,6 +16,7 @@
 package io.karma.ferrous.manganese.ocm.expr;
 
 import io.karma.ferrous.manganese.ocm.BlockContext;
+import io.karma.ferrous.manganese.ocm.type.BuiltinType;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Operator;
@@ -48,12 +49,21 @@ public final class UnaryExpression implements Expression {
 
     @Override
     public long emit(final TargetMachine targetMachine, final BlockContext blockContext) {
-        return 0L;
+        final var builder = blockContext.getCurrentOrCreate();
+        final var type = value.getType();
+        if (!(type instanceof BuiltinType builtinType)) {
+            return 0L; // TODO: implement user defined operator calls
+        }
+        final var address = value.emit(targetMachine, blockContext);
+        return switch(op) { // @formatter:off
+            case MINUS -> builtinType.isFloatType() ? builder.fneg(address) : builder.neg(address);
+            default    -> throw new IllegalStateException("Operator not supported");
+        }; // @formatter:on
     }
 
     @Override
     public Type getType() {
-        return null;
+        return value.getType();
     }
 
     @Override

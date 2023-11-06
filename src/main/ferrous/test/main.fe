@@ -1,12 +1,3 @@
-struct Foo {
-    value: mut *void
-    size: usize
-}
-
-fun foo(value: Foo): bool {
-    return false
-}
-
 fun main(num_args: i32, args: **i8): i32 {
-    return 0
+    return 44
 }

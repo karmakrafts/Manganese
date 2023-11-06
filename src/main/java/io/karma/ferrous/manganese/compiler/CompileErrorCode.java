@@ -49,17 +49,19 @@ public enum CompileErrorCode {
     E4002("A parameter cannot have the type void", CompileStatus.SEMANTIC_ERROR),
     E4003("The given function is already defined in the same scope", CompileStatus.SEMANTIC_ERROR),
     E4004("Function that is not virtual, abstract or extern has no body", CompileStatus.SEMANTIC_ERROR),
+    // Translation errors
+    E5000("Could not find function during translation", CompileStatus.TRANSLATION_ERROR),
     // Link errors
-    E5000("Could not find linker command", CompileStatus.LINK_ERROR),
-    E5001("Could not spawn linker process", CompileStatus.LINK_ERROR),
-    E5002("Linker exited with abnormal exit code", CompileStatus.LINK_ERROR),
-    E5003("Linker process was interrupted unexpectedly", CompileStatus.LINK_ERROR),
-    E5004("Target architecture not supported by linker", CompileStatus.LINK_ERROR),
-    E5005("Target platform not supported by linker", CompileStatus.LINK_ERROR),
-    E5006("Target link model required dynamic code relocation", CompileStatus.LINK_ERROR),
-    E5007("Could not find dynamic linker binary", CompileStatus.LINK_ERROR),
-    E5008("Link target doesn't support system runtime", CompileStatus.LINK_ERROR),
-    E5009("Could not find CRT object while linking", CompileStatus.LINK_ERROR),
+    E6000("Could not find linker command", CompileStatus.LINK_ERROR),
+    E6001("Could not spawn linker process", CompileStatus.LINK_ERROR),
+    E6002("Linker exited with abnormal exit code", CompileStatus.LINK_ERROR),
+    E6003("Linker process was interrupted unexpectedly", CompileStatus.LINK_ERROR),
+    E6004("Target architecture not supported by linker", CompileStatus.LINK_ERROR),
+    E6005("Target platform not supported by linker", CompileStatus.LINK_ERROR),
+    E6006("Target link model required dynamic code relocation", CompileStatus.LINK_ERROR),
+    E6007("Could not find dynamic linker binary", CompileStatus.LINK_ERROR),
+    E6008("Link target doesn't support system runtime", CompileStatus.LINK_ERROR),
+    E6009("Could not find CRT object while linking", CompileStatus.LINK_ERROR),
     // Unknown error
     E9999("Encountered an unhandled error", CompileStatus.UNKNOWN_ERROR)
     // @formatter:on

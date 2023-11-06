@@ -15,6 +15,7 @@
 
 package io.karma.ferrous.manganese.ocm;
 
+import io.karma.ferrous.manganese.compiler.CompileContext;
 import org.apiguardian.api.API;
 import org.jetbrains.annotations.Nullable;
 
@@ -24,31 +25,35 @@ import org.jetbrains.annotations.Nullable;
  */
 @API(status = API.Status.INTERNAL)
 public interface BlockContext {
-    String DEFAULT_BLOCK = "entry";
+    String DEFAULT_BLOCK = "_entry";
+
+    CompileContext getCompileContext();
 
     Function getFunction();
 
-    @Nullable BlockBuilder getCurrentBlock();
+    @Nullable BlockBuilder getCurrent();
 
-    @Nullable BlockBuilder getLastBlock();
+    @Nullable BlockBuilder getLast();
 
-    BlockBuilder createBlock(final String name);
+    BlockBuilder getOrCreate(final String name);
 
-    @Nullable BlockBuilder getBlockBuilder(final String name);
+    void pushCurrent(final BlockBuilder builder);
+
+    BlockBuilder popCurrent();
 
     default BlockBuilder getCurrentOrCreate(final String name) {
-        var current = getCurrentBlock();
+        var current = getCurrent();
         if (current != null) {
             return current;
         }
-        return createBlock(name);
+        return getOrCreate(name);
     }
 
     default BlockBuilder getCurrentOrCreate() {
-        var current = getCurrentBlock();
+        var current = getCurrent();
         if (current != null) {
             return current;
         }
-        return createBlock(DEFAULT_BLOCK);
+        return getOrCreate(DEFAULT_BLOCK);
     }
 }

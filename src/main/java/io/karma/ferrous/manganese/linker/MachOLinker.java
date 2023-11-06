@@ -75,7 +75,7 @@ public final class MachOLinker extends AbstractLinker {
                                 final CompileContext compileContext, final LinkTargetType targetType) {
         final var target = targetMachine.getTarget();
         if (linkModel == LinkModel.FULL && target.getPlatform() != Platform.MACOS) {
-            compileContext.reportError("Full link model not supported when cross-compiling", CompileErrorCode.E5005);
+            compileContext.reportError("Full link model not supported when cross-compiling", CompileErrorCode.E6005);
             return;
         }
         buffer.add(command);

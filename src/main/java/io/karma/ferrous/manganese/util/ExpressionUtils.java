@@ -15,11 +15,11 @@
 
 package io.karma.ferrous.manganese.util;
 
-import io.karma.ferrous.manganese.analyze.ExpressionAnalyzer;
 import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.CompileErrorCode;
 import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.expr.Expression;
+import io.karma.ferrous.manganese.translate.ExpressionParser;
 import io.karma.ferrous.vanadium.FerrousParser.ExprContext;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import org.jetbrains.annotations.Nullable;
@@ -35,7 +35,7 @@ public final class ExpressionUtils {
 
     public static @Nullable Expression parseExpression(final Compiler compiler, final CompileContext compileContext,
                                                        final ExprContext context) {
-        final var analyzer = new ExpressionAnalyzer(compiler, compileContext);
+        final var analyzer = new ExpressionParser(compiler, compileContext);
         ParseTreeWalker.DEFAULT.walk(analyzer, context);
         final var expression = analyzer.getExpression();
         if (expression == null) {

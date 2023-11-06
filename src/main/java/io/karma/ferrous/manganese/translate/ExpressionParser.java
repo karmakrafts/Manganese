@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.analyze;
+package io.karma.ferrous.manganese.translate;
 
 import io.karma.ferrous.manganese.ParseAdapter;
 import io.karma.ferrous.manganese.compiler.CompileContext;
@@ -34,10 +34,10 @@ import org.jetbrains.annotations.Nullable;
  * @since 05/11/2023
  */
 @API(status = API.Status.INTERNAL)
-public final class ExpressionAnalyzer extends ParseAdapter {
+public final class ExpressionParser extends ParseAdapter {
     private Expression expression;
 
-    public ExpressionAnalyzer(final Compiler compiler, final CompileContext compileContext) {
+    public ExpressionParser(final Compiler compiler, final CompileContext compileContext) {
         super(compiler, compileContext);
     }
 
@@ -57,6 +57,16 @@ public final class ExpressionAnalyzer extends ParseAdapter {
             text = text.substring(0, text.length() - suffix.length());
         }
         return new RealConstant(type, Double.parseDouble(text));
+    }
+
+    @Override
+    public void enterUnaryExpr(final UnaryExprContext context) {
+        super.enterUnaryExpr(context);
+    }
+
+    @Override
+    public void enterBinaryExpr(final BinaryExprContext context) {
+        super.enterBinaryExpr(context);
     }
 
     @Override

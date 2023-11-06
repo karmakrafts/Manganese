@@ -51,7 +51,7 @@ import java.util.stream.Collectors;
 @API(status = Status.INTERNAL)
 public final class Analyzer extends ParseAdapter {
     private final LinkedHashMap<Identifier, NamedType> udts = new LinkedHashMap<>();
-    private final HashMap<Identifier, Function> functions = new HashMap<>();
+    private final LinkedHashMap<Identifier, Function> functions = new LinkedHashMap<>();
 
     public Analyzer(final Compiler compiler, final CompileContext compileContext) {
         super(compiler, compileContext);
@@ -131,22 +131,30 @@ public final class Analyzer extends ParseAdapter {
         if (checkIsFunctionAlreadyDefined(context.protoFunction().functionIdent())) {
             return;
         }
-        final var parser = new FunctionAnalyzer(compiler,
+        final var analyzer = new FunctionAnalyzer(compiler,
             compileContext,
             scopeStack,
+            false,
             TokenSlice.from(compileContext, context));
-        ParseTreeWalker.DEFAULT.walk(parser, context);
-        final var function = parser.getFunction();
-        if (function.getBody() == null) {
-            compileContext.reportError(function.toString(), CompileErrorCode.E4004);
-            return;
-        }
+        ParseTreeWalker.DEFAULT.walk(analyzer, context);
+        final var function = analyzer.getFunction();
         functions.put(function.getQualifiedName(), function);
         super.enterFunction(context);
     }
 
     @Override
     public void enterExternFunction(final ExternFunctionContext context) {
+        if (checkIsFunctionAlreadyDefined(context.protoFunction().functionIdent())) {
+            return;
+        }
+        final var analyzer = new FunctionAnalyzer(compiler,
+            compileContext,
+            scopeStack,
+            true,
+            TokenSlice.from(compileContext, context));
+        ParseTreeWalker.DEFAULT.walk(analyzer, context);
+        final var function = analyzer.getFunction();
+        functions.put(function.getQualifiedName(), function);
         super.enterExternFunction(context);
     }
 
@@ -507,6 +515,10 @@ public final class Analyzer extends ParseAdapter {
         resolveTypeAccess();
         checkTypeAccess();
         resolveFunctionTypes();
+    }
+
+    public LinkedHashMap<Identifier, Function> getFunctions() {
+        return functions;
     }
 
     private static final class DummyType implements NamedType {

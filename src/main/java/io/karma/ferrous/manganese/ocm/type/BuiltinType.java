@@ -113,14 +113,8 @@ public enum BuiltinType implements NamedType {
     // Type
 
     @Override
-    public boolean canAccept(final TargetMachine targetMachine, final Type type) {
-        if (type == this) {
-            return true;
-        }
-        if (type instanceof BuiltinType) {
-            return getSize(targetMachine) >= type.getSize(targetMachine);
-        }
-        return false;
+    public boolean canAccept(final Type type) {
+        return type == this;
     }
 
     @Override

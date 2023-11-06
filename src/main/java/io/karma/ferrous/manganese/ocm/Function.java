@@ -15,6 +15,7 @@
 
 package io.karma.ferrous.manganese.ocm;
 
+import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.module.Module;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.ocm.scope.Scoped;
@@ -72,11 +73,6 @@ public final class Function implements NameProvider, Scoped {
         }, tokenSlice);
     }
 
-    public Function(final Identifier name, final CallingConvention callConv, final Type returnType,
-                    final TokenSlice tokenSlice, final Parameter... params) {
-        this(name, callConv, false, false, returnType, tokenSlice, params);
-    }
-
     public FunctionBody createBody(final Statement... statements) {
         if (body != null) {
             throw new IllegalStateException("Body already exists for this function");
@@ -111,14 +107,15 @@ public final class Function implements NameProvider, Scoped {
         final var address = LLVMAddFunction(module.getAddress(),
             name.toInternalName(),
             getType().materialize(targetMachine));
-        LLVMSetLinkage(address, isExtern ? LLVMExternalLinkage : LLVMInternalLinkage);
+        LLVMSetLinkage(address, isExtern ? LLVMExternalLinkage : 0);
         LLVMSetFunctionCallConv(address, callConv.getLLVMValue(targetMachine));
         return materializedPrototype = address;
     }
 
-    public long materialize(final Module module, final TargetMachine targetMachine) {
+    public long materialize(final CompileContext compileContext, final Module module,
+                            final TargetMachine targetMachine) {
         if (body != null) {
-            body.append(this, module, targetMachine);
+            body.append(compileContext, this, module, targetMachine);
             return materializedPrototype; // This won't be NULL at this point
         }
         return materializePrototype(module, targetMachine);

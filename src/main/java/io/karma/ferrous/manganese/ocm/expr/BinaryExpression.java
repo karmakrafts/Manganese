@@ -16,6 +16,7 @@
 package io.karma.ferrous.manganese.ocm.expr;
 
 import io.karma.ferrous.manganese.ocm.BlockContext;
+import io.karma.ferrous.manganese.ocm.type.BuiltinType;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Operator;
@@ -54,12 +55,42 @@ public final class BinaryExpression implements Expression {
 
     @Override
     public long emit(final TargetMachine targetMachine, final BlockContext blockContext) {
-        return 0L;
+        final var builder = blockContext.getCurrentOrCreate();
+        final var lhsType = this.lhs.getType();
+        if (!(lhsType instanceof BuiltinType builtinType)) {
+            return 0L; // TODO: implement user defined operator calls
+        }
+        final var lhs = this.lhs.emit(targetMachine, blockContext);
+        final var rhs = this.rhs.emit(targetMachine, blockContext);
+        return switch (op) { // @formatter:off
+            case PLUS  -> builtinType.isFloatType() ? builder.fadd(lhs, rhs) : builder.add(lhs, rhs);
+            case MINUS -> builtinType.isFloatType() ? builder.fsub(lhs, rhs) : builder.sub(lhs, rhs);
+            case TIMES -> builtinType.isFloatType() ? builder.fmul(lhs, rhs) : builder.mul(lhs, rhs);
+            case DIV   -> {
+                if(builtinType.isFloatType()) {
+                    yield builder.fdiv(lhs, rhs);
+                }
+                if(builtinType.isUnsignedInt()) {
+                    yield builder.udiv(lhs, rhs);
+                }
+                yield builder.sdiv(lhs, rhs);
+            }
+            case MOD   -> {
+                if(builtinType.isFloatType()) {
+                    yield builder.frem(lhs, rhs);
+                }
+                if(builtinType.isUnsignedInt()) {
+                    yield builder.urem(lhs, rhs);
+                }
+                yield builder.srem(lhs, rhs);
+            }
+            default    -> throw new IllegalStateException("Unsupported operator");
+        }; // @formatter:on
     }
 
     @Override
     public Type getType() {
-        return null;
+        return lhs.getType(); // We always use the type of the left hand side expression
     }
 
     @Override
