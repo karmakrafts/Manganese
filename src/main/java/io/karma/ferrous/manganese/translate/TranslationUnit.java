@@ -25,7 +25,7 @@ import io.karma.ferrous.manganese.util.FunctionUtils;
 import io.karma.ferrous.manganese.util.Utils;
 import io.karma.ferrous.vanadium.FerrousParser.ExternFunctionContext;
 import io.karma.ferrous.vanadium.FerrousParser.FunctionContext;
-import io.karma.ferrous.vanadium.FerrousParser.FunctionIdentContext;
+import io.karma.ferrous.vanadium.FerrousParser.ProtoFunctionContext;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
@@ -45,10 +45,11 @@ public class TranslationUnit extends ParseAdapter {
         module = compiler.getTargetMachine().createModule(compileContext.getCurrentModuleName());
     }
 
-    private @Nullable Function getFunction(final FunctionIdentContext context) {
-        final var name = FunctionUtils.getFunctionName(context);
-        final var functions = compileContext.getAnalyzer().getFunctions();
-        final var function = functions.get(name);
+    private @Nullable Function getFunction(final ProtoFunctionContext context) {
+        final var name = FunctionUtils.getFunctionName(context.functionIdent());
+        final var scopeName = scopeStack.getScopeName();
+        final var type = FunctionUtils.getFunctionType(compiler, compileContext, scopeStack, context);
+        final var function = compileContext.getAnalyzer().findFunctionInScope(name, scopeName, type);
         if (function == null) {
             compileContext.reportError(Utils.makeCompilerMessage(name.toString()), CompileErrorCode.E5000);
         }
@@ -57,7 +58,7 @@ public class TranslationUnit extends ParseAdapter {
 
     @Override
     public void enterExternFunction(final ExternFunctionContext context) {
-        final var function = getFunction(context.protoFunction().functionIdent());
+        final var function = getFunction(context.protoFunction());
         if (function == null) {
             return; // TODO: log warning/error?
         }
@@ -67,7 +68,7 @@ public class TranslationUnit extends ParseAdapter {
 
     @Override
     public void enterFunction(final FunctionContext context) {
-        final var function = getFunction(context.protoFunction().functionIdent());
+        final var function = getFunction(context.protoFunction());
         if (function == null) {
             return; // TODO: log warning/error?
         }

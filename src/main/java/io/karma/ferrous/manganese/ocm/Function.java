@@ -32,6 +32,7 @@ import org.apiguardian.api.API.Status;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static org.lwjgl.llvm.LLVMCore.*;
@@ -141,6 +142,23 @@ public final class Function implements NameProvider, Scoped {
     }
 
     // Object
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(name, callConv, isExtern, type, enclosingScope);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if(obj instanceof Function function) { // @formatter:off
+            return name.equals(function.name)
+                && callConv == function.callConv
+                && isExtern == function.isExtern
+                && type.equals(function.type)
+                && Objects.equals(enclosingScope, function.enclosingScope);
+        } // @formatter:on
+        return false;
+    }
 
     @Override
     public String toString() {

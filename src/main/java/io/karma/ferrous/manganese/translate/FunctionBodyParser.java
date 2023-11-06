@@ -23,9 +23,7 @@ import io.karma.ferrous.manganese.ocm.statement.ReturnStatement;
 import io.karma.ferrous.manganese.ocm.statement.Statement;
 import io.karma.ferrous.manganese.ocm.type.FunctionType;
 import io.karma.ferrous.manganese.util.ExpressionUtils;
-import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.Utils;
-import io.karma.ferrous.vanadium.FerrousParser.CallExprContext;
 import io.karma.ferrous.vanadium.FerrousParser.ReturnStatementContext;
 import org.apiguardian.api.API;
 
@@ -44,20 +42,6 @@ public final class FunctionBodyParser extends ParseAdapter {
                               final FunctionType functionType) {
         super(compiler, compileContext);
         this.functionType = functionType;
-    }
-
-    @Override
-    public void enterCallExpr(final CallExprContext context) {
-        final var qualifiedIdentContext = context.qualifiedIdent();
-        Identifier name;
-        if (qualifiedIdentContext != null) {
-            name = Utils.getIdentifier(qualifiedIdentContext);
-        }
-        else {
-            name = Utils.getIdentifier(context.ident());
-        }
-        // TODO: ...
-        super.enterCallExpr(context);
     }
 
     @Override

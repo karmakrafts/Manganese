@@ -24,6 +24,8 @@ import io.karma.ferrous.manganese.ocm.constant.NullConstant;
 import io.karma.ferrous.manganese.ocm.constant.RealConstant;
 import io.karma.ferrous.manganese.ocm.expr.Expression;
 import io.karma.ferrous.manganese.ocm.type.BuiltinType;
+import io.karma.ferrous.manganese.util.Identifier;
+import io.karma.ferrous.manganese.util.Utils;
 import io.karma.ferrous.vanadium.FerrousParser.*;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.apiguardian.api.API;
@@ -57,6 +59,19 @@ public final class ExpressionParser extends ParseAdapter {
             text = text.substring(0, text.length() - suffix.length());
         }
         return new RealConstant(type, Double.parseDouble(text));
+    }
+
+    @Override
+    public void enterCallExpr(final CallExprContext context) {
+        final var qualifiedIdentContext = context.qualifiedIdent();
+        Identifier name;
+        if (qualifiedIdentContext != null) {
+            name = Utils.getIdentifier(qualifiedIdentContext);
+        }
+        else {
+            name = Utils.getIdentifier(context.ident());
+        }
+        super.enterCallExpr(context);
     }
 
     @Override

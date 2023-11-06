@@ -51,7 +51,7 @@ import java.util.stream.Collectors;
 @API(status = Status.INTERNAL)
 public final class Analyzer extends ParseAdapter {
     private final LinkedHashMap<Identifier, NamedType> udts = new LinkedHashMap<>();
-    private final LinkedHashMap<Identifier, Function> functions = new LinkedHashMap<>();
+    private final HashMap<Identifier, HashMap<FunctionType, Function>> functions = new HashMap<>();
 
     public Analyzer(final Compiler compiler, final CompileContext compileContext) {
         super(compiler, compileContext);
@@ -138,7 +138,7 @@ public final class Analyzer extends ParseAdapter {
             TokenSlice.from(compileContext, context));
         ParseTreeWalker.DEFAULT.walk(analyzer, context);
         final var function = analyzer.getFunction();
-        functions.put(function.getQualifiedName(), function);
+        functions.computeIfAbsent(function.getQualifiedName(), n -> new HashMap<>()).put(function.getType(), function);
         super.enterFunction(context);
     }
 
@@ -154,7 +154,7 @@ public final class Analyzer extends ParseAdapter {
             TokenSlice.from(compileContext, context));
         ParseTreeWalker.DEFAULT.walk(analyzer, context);
         final var function = analyzer.getFunction();
-        functions.put(function.getQualifiedName(), function);
+        functions.computeIfAbsent(function.getQualifiedName(), n -> new HashMap<>()).put(function.getType(), function);
         super.enterExternFunction(context);
     }
 
@@ -489,20 +489,22 @@ public final class Analyzer extends ParseAdapter {
 
     private void resolveFunctionTypes() {
         Profiler.INSTANCE.push();
-        final var functions = this.functions.values();
-        for (final var function : functions) {
-            final var params = function.getParameters();
-            for (final var param : params) {
-                final var type = param.getType();
-                if (!(type instanceof NamedType namedType)) {
-                    continue;
+        final var overloadSets = this.functions.values();
+        for (final var overloadSet : overloadSets) {
+            for (final var function : overloadSet.values()) {
+                final var params = function.getParameters();
+                for (final var param : params) {
+                    final var type = param.getType();
+                    if (!(type instanceof NamedType namedType)) {
+                        continue;
+                    }
+                    final var completeType = findCompleteType(namedType);
+                    if (completeType == null) {
+                        compileContext.reportError(type.getTokenSlice().getFirstToken(), CompileErrorCode.E3005);
+                        continue;
+                    }
+                    param.setType(completeType);
                 }
-                final var completeType = findCompleteType(namedType);
-                if (completeType == null) {
-                    compileContext.reportError(type.getTokenSlice().getFirstToken(), CompileErrorCode.E3005);
-                    continue;
-                }
-                param.setType(completeType);
             }
         }
         Profiler.INSTANCE.pop();
@@ -517,8 +519,30 @@ public final class Analyzer extends ParseAdapter {
         resolveFunctionTypes();
     }
 
-    public LinkedHashMap<Identifier, Function> getFunctions() {
+    public HashMap<Identifier, HashMap<FunctionType, Function>> getFunctions() {
         return functions;
+    }
+
+    public @Nullable Function findFunctionInScope(final Identifier name, final Identifier scopeName,
+                                                  final Type returnType, boolean isVarArg, final Type... paramTypes) {
+        final var overloadSet = ScopeUtils.findInScope(functions, name, scopeName);
+        if (overloadSet == null) {
+            return null;
+        }
+        final var types = overloadSet.keySet();
+        for (final var type : types) {
+            if (!type.getReturnType().equals(returnType) || !Arrays.equals(type.getParamTypes(),
+                paramTypes) || type.isVarArg() != isVarArg) {
+                continue;
+            }
+            return overloadSet.get(type);
+        }
+        return null;
+    }
+
+    public @Nullable Function findFunctionInScope(final Identifier name, final Identifier scopeName,
+                                                  final FunctionType type) {
+        return findFunctionInScope(name, scopeName, type.getReturnType(), type.isVarArg(), type.getParamTypes());
     }
 
     private static final class DummyType implements NamedType {
