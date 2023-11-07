@@ -18,6 +18,7 @@ package io.karma.ferrous.manganese.ocm.expr;
 import io.karma.ferrous.manganese.ocm.BlockContext;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.target.TargetMachine;
+import io.karma.ferrous.manganese.util.TokenSlice;
 import io.karma.ferrous.manganese.util.TypeUtils;
 import io.karma.kommons.lazy.Lazy;
 import io.karma.kommons.tuple.Pair;
@@ -33,8 +34,9 @@ import java.util.List;
 public final class IfExpression implements Expression {
     private final List<Pair<Expression, ScopeExpression>> branches;
     private final Lazy<Type> type;
+    private final TokenSlice tokenSlice;
 
-    public IfExpression(final List<Pair<Expression, ScopeExpression>> branches) {
+    public IfExpression(final List<Pair<Expression, ScopeExpression>> branches, final TokenSlice tokenSlice) {
         if (branches.isEmpty()) {
             throw new IllegalArgumentException("If expression requires at least one block");
         }
@@ -44,6 +46,12 @@ public final class IfExpression implements Expression {
             .map(pair -> pair.getRight().getType())
             .toArray(Type[]::new)));
         // @formatter:on
+        this.tokenSlice = tokenSlice;
+    }
+
+    @Override
+    public TokenSlice getTokenSlice() {
+        return tokenSlice;
     }
 
     @Override

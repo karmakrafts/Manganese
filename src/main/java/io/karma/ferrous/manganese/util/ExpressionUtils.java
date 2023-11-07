@@ -20,9 +20,13 @@ import io.karma.ferrous.manganese.compiler.CompileErrorCode;
 import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.expr.Expression;
 import io.karma.ferrous.manganese.translate.ExpressionParser;
+import io.karma.ferrous.vanadium.FerrousParser.ExprListContext;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Collections;
+import java.util.List;
 
 /**
  * @author Alexander Hinze
@@ -33,8 +37,33 @@ public final class ExpressionUtils {
     private ExpressionUtils() {}
     // @formatter:on
 
+    public static List<Expression> parseExpressions(final Compiler compiler, final CompileContext compileContext,
+                                                    final @Nullable ExprListContext context) {
+        if (context == null) {
+            return Collections.emptyList();
+        }
+        final var contexts = context.expr();
+        if (contexts == null) {
+            return Collections.emptyList();
+        }
+        // @formatter:off
+        return contexts.stream()
+            .map(exprContext -> {
+                final var expression = parseExpression(compiler, compileContext, exprContext);
+                if(expression == null) {
+                    compileContext.reportError(exprContext.start, CompileErrorCode.E5003);
+                }
+                return expression;
+            })
+            .toList();
+        // @formatter:on
+    }
+
     public static @Nullable Expression parseExpression(final Compiler compiler, final CompileContext compileContext,
-                                                       final ParserRuleContext context) {
+                                                       final @Nullable ParserRuleContext context) {
+        if (context == null) {
+            return null;
+        }
         final var parser = new ExpressionParser(compiler, compileContext);
         ParseTreeWalker.DEFAULT.walk(parser, context);
         final var expression = parser.getExpression();

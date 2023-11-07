@@ -20,6 +20,7 @@ import io.karma.ferrous.manganese.ocm.type.BuiltinType;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Operator;
+import io.karma.ferrous.manganese.util.TokenSlice;
 
 import java.util.Objects;
 
@@ -30,13 +31,15 @@ import java.util.Objects;
 public final class UnaryExpression implements Expression {
     private final Operator op;
     private final Expression value;
+    private final TokenSlice tokenSlice;
 
-    public UnaryExpression(final Operator op, final Expression value) {
+    public UnaryExpression(final Operator op, final Expression value, final TokenSlice tokenSlice) {
         if (!op.isUnary()) {
             throw new IllegalArgumentException(String.format("%s is not a unary operator", op));
         }
         this.op = op;
         this.value = value;
+        this.tokenSlice = tokenSlice;
     }
 
     public Operator getOp() {
@@ -45,6 +48,11 @@ public final class UnaryExpression implements Expression {
 
     public Expression getValue() {
         return value;
+    }
+
+    @Override
+    public TokenSlice getTokenSlice() {
+        return tokenSlice;
     }
 
     @Override

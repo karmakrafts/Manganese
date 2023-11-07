@@ -15,10 +15,13 @@
 
 package io.karma.ferrous.manganese.ocm.expr;
 
+import io.karma.ferrous.manganese.ocm.BlockContext;
 import io.karma.ferrous.manganese.ocm.statement.ReturnStatement;
 import io.karma.ferrous.manganese.ocm.statement.Statement;
 import io.karma.ferrous.manganese.ocm.type.BuiltinType;
 import io.karma.ferrous.manganese.ocm.type.Type;
+import io.karma.ferrous.manganese.target.TargetMachine;
+import io.karma.ferrous.manganese.util.TokenSlice;
 import io.karma.ferrous.manganese.util.TypeUtils;
 import io.karma.kommons.lazy.Lazy;
 import org.apiguardian.api.API;
@@ -30,12 +33,14 @@ import java.util.ArrayList;
  * @since 06/11/2023
  */
 @API(status = API.Status.INTERNAL)
-public final class ScopeExpression {
+public final class ScopeExpression implements Expression {
     private final Statement[] statements;
     private final Lazy<Type> type = new Lazy<>(this::findReturnType);
+    private final TokenSlice tokenSlice;
 
-    public ScopeExpression(final Statement... statements) {
+    public ScopeExpression(final TokenSlice tokenSlice, final Statement... statements) {
         this.statements = statements;
+        this.tokenSlice = tokenSlice;
     }
 
     public Statement[] getStatements() {
@@ -57,7 +62,21 @@ public final class ScopeExpression {
         return types.isEmpty() ? BuiltinType.VOID : TypeUtils.findCommonType(types.toArray(Type[]::new));
     }
 
+    @Override
+    public TokenSlice getTokenSlice() {
+        return tokenSlice;
+    }
+
+    @Override
     public Type getType() {
         return type.getOrCreate();
+    }
+
+    @Override
+    public long emit(final TargetMachine targetMachine, final BlockContext blockContext) {
+        for (final var statement : statements) {
+            statement.emit(targetMachine, blockContext);
+        }
+        return 0;
     }
 }

@@ -21,6 +21,7 @@ import org.antlr.v4.runtime.CommonToken;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.TokenStream;
+import org.antlr.v4.runtime.tree.TerminalNode;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -39,6 +40,11 @@ public record TokenSlice(@Nullable TokenStream tokenStream, int begin, int end) 
         return new TokenSlice(compileContext.getTokenStream(),
             context.start.getTokenIndex(),
             context.stop.getTokenIndex());
+    }
+
+    public static TokenSlice from(final CompileContext compileContext, final TerminalNode terminalNode) {
+        final var index = terminalNode.getSymbol().getTokenIndex();
+        return new TokenSlice(compileContext.getTokenStream(), index, index);
     }
 
     public Token findTokenOrFirst(final String text) {

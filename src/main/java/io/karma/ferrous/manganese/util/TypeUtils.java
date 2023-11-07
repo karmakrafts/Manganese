@@ -93,7 +93,9 @@ public final class TypeUtils {
                 ParseTreeWalker.DEFAULT.walk(analyzer, expr);
                 constraints = analyzer.getConstraints();
             }
-            result.add(new GenericParameter(name.toString(), constraints, new TypeConstant(defaultType)));
+            result.add(new GenericParameter(name.toString(),
+                constraints,
+                new TypeConstant(defaultType, TokenSlice.from(compileContext, param))));
         }
         return result;
     }

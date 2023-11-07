@@ -19,6 +19,7 @@ import io.karma.ferrous.manganese.ocm.BlockContext;
 import io.karma.ferrous.manganese.ocm.type.BuiltinType;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.target.TargetMachine;
+import io.karma.ferrous.manganese.util.TokenSlice;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 
@@ -33,6 +34,11 @@ public final class VoidConstant implements Constant {
     // @formatter:off
     private VoidConstant() {}
     // @formatter:on
+
+    @Override
+    public TokenSlice getTokenSlice() {
+        return TokenSlice.EMPTY;
+    }
 
     @Override
     public Type getType() {

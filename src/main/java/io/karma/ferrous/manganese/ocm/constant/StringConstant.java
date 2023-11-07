@@ -19,6 +19,7 @@ import io.karma.ferrous.manganese.ocm.BlockContext;
 import io.karma.ferrous.manganese.ocm.type.ImaginaryType;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.target.TargetMachine;
+import io.karma.ferrous.manganese.util.TokenSlice;
 import org.lwjgl.llvm.LLVMCore;
 
 /**
@@ -27,9 +28,16 @@ import org.lwjgl.llvm.LLVMCore;
  */
 public final class StringConstant implements Constant {
     private final String value;
+    private final TokenSlice tokenSlice;
 
-    public StringConstant(final String value) {
+    public StringConstant(final String value, final TokenSlice tokenSlice) {
         this.value = value;
+        this.tokenSlice = tokenSlice;
+    }
+
+    @Override
+    public TokenSlice getTokenSlice() {
+        return tokenSlice;
     }
 
     @Override

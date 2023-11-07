@@ -17,13 +17,19 @@ package io.karma.ferrous.manganese.translate;
 
 import io.karma.ferrous.manganese.ParseAdapter;
 import io.karma.ferrous.manganese.compiler.CompileContext;
+import io.karma.ferrous.manganese.compiler.CompileErrorCode;
 import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.Function;
+import io.karma.ferrous.manganese.ocm.statement.ReturnStatement;
 import io.karma.ferrous.manganese.ocm.statement.Statement;
+import io.karma.ferrous.manganese.ocm.type.BuiltinType;
+import io.karma.ferrous.manganese.util.TokenSlice;
 import io.karma.ferrous.vanadium.FerrousParser.FunctionBodyContext;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
+
+import java.util.Objects;
 
 /**
  * @author Alexander Hinze
@@ -47,6 +53,27 @@ public final class FunctionParser extends ParseAdapter {
         ParseTreeWalker.DEFAULT.walk(analyzer, context);
         function.createBody(analyzer.getStatements().toArray(Statement[]::new));
         super.enterFunctionBody(context);
+    }
+
+    @Override
+    public void exitFunctionBody(final FunctionBodyContext context) {
+        final var statements = Objects.requireNonNull(function.getBody()).getStatements();
+        if (statements.isEmpty() || !statements.getLast().returnsFromCurrentScope()) {
+            if (function.getType().getReturnType() == BuiltinType.VOID) {
+                statements.addLast(new ReturnStatement(TokenSlice.from(compileContext,
+                    context))); // Implicitly return from void functions at the end of scope
+            }
+            else {
+                if (statements.isEmpty()) {
+                    compileContext.reportError(CompileErrorCode.E4005);
+                }
+                else {
+                    compileContext.reportError(statements.getLast().getTokenSlice().getFirstToken(),
+                        CompileErrorCode.E4005);
+                }
+            }
+        }
+        super.exitFunctionBody(context);
     }
 
     public Function getFunction() {

@@ -19,13 +19,19 @@ import io.karma.ferrous.manganese.ocm.BlockContext;
 import io.karma.ferrous.manganese.ocm.type.ImaginaryType;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.target.TargetMachine;
+import io.karma.ferrous.manganese.util.TokenSlice;
 import org.antlr.v4.runtime.Token;
 
 /**
  * @author Alexander Hinze
  * @since 24/10/2023
  */
-public record TokenConstant(Token value) implements Constant {
+public record TokenConstant(Token value, TokenSlice tokenSlice) implements Constant {
+    @Override
+    public TokenSlice getTokenSlice() {
+        return tokenSlice;
+    }
+
     @Override
     public Type getType() {
         return ImaginaryType.TOKEN;

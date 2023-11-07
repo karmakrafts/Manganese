@@ -23,9 +23,11 @@ import io.karma.ferrous.manganese.ocm.statement.ReturnStatement;
 import io.karma.ferrous.manganese.ocm.statement.Statement;
 import io.karma.ferrous.manganese.ocm.type.FunctionType;
 import io.karma.ferrous.manganese.util.ExpressionUtils;
+import io.karma.ferrous.manganese.util.TokenSlice;
 import io.karma.ferrous.manganese.util.Utils;
 import io.karma.ferrous.vanadium.FerrousParser.ReturnStatementContext;
 import org.apiguardian.api.API;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 
@@ -35,8 +37,8 @@ import java.util.ArrayList;
  */
 @API(status = API.Status.INTERNAL)
 public final class FunctionBodyParser extends ParseAdapter {
-    private final ArrayList<Statement> statements = new ArrayList<>();
     private final FunctionType functionType;
+    private final ArrayList<Statement> statements = new ArrayList<>();
 
     public FunctionBodyParser(final Compiler compiler, final CompileContext compileContext,
                               final FunctionType functionType) {
@@ -52,8 +54,8 @@ public final class FunctionBodyParser extends ParseAdapter {
             if (expr == null) {
                 return;
             }
-            final var exprType = expr.getType();
             final var returnType = functionType.getReturnType();
+            final var exprType = expr.getType();
             if (!returnType.canAccept(exprType)) {
                 final var message = Utils.makeCompilerMessage(String.format("%s cannot be assigned to %s",
                     exprType,
@@ -61,15 +63,15 @@ public final class FunctionBodyParser extends ParseAdapter {
                 compileContext.reportError(context.start, message, CompileErrorCode.E3006);
                 return;
             }
-            statements.add(new ReturnStatement(expr));
+            statements.add(new ReturnStatement(expr, TokenSlice.from(compileContext, context)));
             super.enterReturnStatement(context);
             return;
         }
-        statements.add(new ReturnStatement());
+        statements.add(new ReturnStatement(TokenSlice.from(compileContext, context)));
         super.enterReturnStatement(context);
     }
 
-    public ArrayList<Statement> getStatements() {
+    public @Nullable ArrayList<Statement> getStatements() {
         return statements;
     }
 }

@@ -523,16 +523,17 @@ public final class Analyzer extends ParseAdapter {
         return functions;
     }
 
+    // TODO: implement matching against C-variadic functions
     public @Nullable Function findFunctionInScope(final Identifier name, final Identifier scopeName,
-                                                  final Type returnType, boolean isVarArg, final Type... paramTypes) {
+                                                  final @Nullable Type returnType, final Type... paramTypes) {
         final var overloadSet = ScopeUtils.findInScope(functions, name, scopeName);
         if (overloadSet == null) {
             return null;
         }
         final var types = overloadSet.keySet();
         for (final var type : types) {
-            if (!type.getReturnType().equals(returnType) || !Arrays.equals(type.getParamTypes(),
-                paramTypes) || type.isVarArg() != isVarArg) {
+            if ((returnType != null && !type.getReturnType().equals(returnType)) || !Arrays.equals(type.getParamTypes(),
+                paramTypes)) {
                 continue;
             }
             return overloadSet.get(type);
@@ -542,7 +543,7 @@ public final class Analyzer extends ParseAdapter {
 
     public @Nullable Function findFunctionInScope(final Identifier name, final Identifier scopeName,
                                                   final FunctionType type) {
-        return findFunctionInScope(name, scopeName, type.getReturnType(), type.isVarArg(), type.getParamTypes());
+        return findFunctionInScope(name, scopeName, type.getReturnType(), type.getParamTypes());
     }
 
     private static final class DummyType implements NamedType {

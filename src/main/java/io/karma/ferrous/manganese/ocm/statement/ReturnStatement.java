@@ -20,6 +20,7 @@ import io.karma.ferrous.manganese.ocm.constant.VoidConstant;
 import io.karma.ferrous.manganese.ocm.expr.Expression;
 import io.karma.ferrous.manganese.ocm.type.BuiltinType;
 import io.karma.ferrous.manganese.target.TargetMachine;
+import io.karma.ferrous.manganese.util.TokenSlice;
 
 /**
  * @author Alexander Hinze
@@ -27,13 +28,15 @@ import io.karma.ferrous.manganese.target.TargetMachine;
  */
 public final class ReturnStatement implements Statement {
     private final Expression value;
+    private final TokenSlice tokenSlice;
 
-    public ReturnStatement(final Expression value) {
+    public ReturnStatement(final Expression value, final TokenSlice tokenSlice) {
         this.value = value;
+        this.tokenSlice = tokenSlice;
     }
 
-    public ReturnStatement() {
-        this(VoidConstant.INSTANCE);
+    public ReturnStatement(final TokenSlice tokenSlice) {
+        this(VoidConstant.INSTANCE, tokenSlice);
     }
 
     public Expression getValue() {
@@ -41,6 +44,11 @@ public final class ReturnStatement implements Statement {
     }
 
     // Statement
+
+    @Override
+    public TokenSlice getTokenSlice() {
+        return tokenSlice;
+    }
 
     @Override
     public long emit(final TargetMachine targetMachine, final BlockContext blockContext) {

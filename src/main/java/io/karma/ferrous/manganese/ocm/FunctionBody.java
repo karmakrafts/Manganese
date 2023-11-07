@@ -22,6 +22,8 @@ import io.karma.ferrous.manganese.target.TargetMachine;
 import org.apiguardian.api.API;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Stack;
 
@@ -32,7 +34,17 @@ import static org.lwjgl.llvm.LLVMCore.LLVMAppendBasicBlockInContext;
  * @since 05/11/2023
  */
 @API(status = API.Status.INTERNAL)
-public record FunctionBody(Statement... statements) {
+public final class FunctionBody {
+    private final ArrayList<Statement> statements;
+
+    public FunctionBody(final Statement... statements) {
+        this.statements = new ArrayList<>(Arrays.asList(statements));
+    }
+
+    public ArrayList<Statement> getStatements() {
+        return statements;
+    }
+
     public void append(final CompileContext compileContext, final Function function, final Module module,
                        final TargetMachine targetMachine) {
         final var context = new BlockContextImpl(compileContext, module, targetMachine, function);

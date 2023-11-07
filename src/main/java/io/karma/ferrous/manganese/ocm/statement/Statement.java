@@ -17,12 +17,15 @@ package io.karma.ferrous.manganese.ocm.statement;
 
 import io.karma.ferrous.manganese.ocm.BlockContext;
 import io.karma.ferrous.manganese.target.TargetMachine;
+import io.karma.ferrous.manganese.util.TokenSlice;
 
 /**
  * @author Alexander Hinze
  * @since 22/10/2023
  */
 public interface Statement {
+    TokenSlice getTokenSlice();
+
     long emit(final TargetMachine targetMachine, final BlockContext blockContext);
 
     default boolean returnsFromCurrentScope() {

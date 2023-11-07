@@ -20,6 +20,7 @@ import io.karma.ferrous.manganese.ocm.type.BuiltinType;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Operator;
+import io.karma.ferrous.manganese.util.TokenSlice;
 
 import java.util.Objects;
 
@@ -31,14 +32,17 @@ public final class BinaryExpression implements Expression {
     private final Operator op;
     private final Expression lhs;
     private final Expression rhs;
+    private final TokenSlice tokenSlice;
 
-    public BinaryExpression(final Operator op, final Expression lhs, final Expression rhs) {
+    public BinaryExpression(final Operator op, final Expression lhs, final Expression rhs,
+                            final TokenSlice tokenSlice) {
         if (!op.isBinary()) {
             throw new IllegalArgumentException(String.format("%s is not a binary operator", op));
         }
         this.op = op;
         this.lhs = lhs;
         this.rhs = rhs;
+        this.tokenSlice = tokenSlice;
     }
 
     public Operator getOp() {
@@ -51,6 +55,11 @@ public final class BinaryExpression implements Expression {
 
     public Expression getRHS() {
         return rhs;
+    }
+
+    @Override
+    public TokenSlice getTokenSlice() {
+        return tokenSlice;
     }
 
     @Override

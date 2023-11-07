@@ -19,6 +19,7 @@ import io.karma.ferrous.manganese.ocm.BlockContext;
 import io.karma.ferrous.manganese.ocm.Function;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.target.TargetMachine;
+import io.karma.ferrous.manganese.util.TokenSlice;
 import org.apiguardian.api.API;
 
 import java.util.Arrays;
@@ -31,9 +32,11 @@ import java.util.Arrays;
 public final class CallExpression implements Expression {
     private final Function function;
     private final Expression[] args;
+    private final TokenSlice tokenSlice;
 
-    public CallExpression(final Function function, final Expression... args) {
+    public CallExpression(final Function function, final TokenSlice tokenSlice, final Expression... args) {
         this.function = function;
+        this.tokenSlice = tokenSlice;
         this.args = args;
     }
 
@@ -43,6 +46,11 @@ public final class CallExpression implements Expression {
 
     public Expression[] getArgs() {
         return args;
+    }
+
+    @Override
+    public TokenSlice getTokenSlice() {
+        return tokenSlice;
     }
 
     @Override

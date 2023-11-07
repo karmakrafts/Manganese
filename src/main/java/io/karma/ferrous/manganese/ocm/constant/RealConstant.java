@@ -18,6 +18,7 @@ package io.karma.ferrous.manganese.ocm.constant;
 import io.karma.ferrous.manganese.ocm.BlockContext;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.target.TargetMachine;
+import io.karma.ferrous.manganese.util.TokenSlice;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 
@@ -29,14 +30,21 @@ import org.apiguardian.api.API.Status;
 public final class RealConstant implements Constant {
     private final Type type;
     private final double value;
+    private final TokenSlice tokenSlice;
 
-    public RealConstant(final Type type, final double value) {
+    public RealConstant(final Type type, final double value, final TokenSlice tokenSlice) {
         this.type = type;
         this.value = value;
+        this.tokenSlice = tokenSlice;
     }
 
     public double getValue() {
         return value;
+    }
+
+    @Override
+    public TokenSlice getTokenSlice() {
+        return tokenSlice;
     }
 
     @Override

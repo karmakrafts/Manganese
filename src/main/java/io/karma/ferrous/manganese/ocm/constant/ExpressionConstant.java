@@ -20,12 +20,18 @@ import io.karma.ferrous.manganese.ocm.expr.Expression;
 import io.karma.ferrous.manganese.ocm.type.ImaginaryType;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.target.TargetMachine;
+import io.karma.ferrous.manganese.util.TokenSlice;
 
 /**
  * @author Alexander Hinze
  * @since 24/10/2023
  */
-public record ExpressionConstant(Expression value) implements Constant {
+public record ExpressionConstant(Expression value, TokenSlice tokenSlice) implements Constant {
+    @Override
+    public TokenSlice getTokenSlice() {
+        return tokenSlice;
+    }
+
     @Override
     public Type getType() {
         return ImaginaryType.EXPR;

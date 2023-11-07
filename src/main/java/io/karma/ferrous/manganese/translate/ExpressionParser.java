@@ -24,13 +24,12 @@ import io.karma.ferrous.manganese.ocm.constant.IntConstant;
 import io.karma.ferrous.manganese.ocm.constant.NullConstant;
 import io.karma.ferrous.manganese.ocm.constant.RealConstant;
 import io.karma.ferrous.manganese.ocm.expr.BinaryExpression;
+import io.karma.ferrous.manganese.ocm.expr.CallExpression;
 import io.karma.ferrous.manganese.ocm.expr.Expression;
 import io.karma.ferrous.manganese.ocm.expr.UnaryExpression;
 import io.karma.ferrous.manganese.ocm.type.BuiltinType;
-import io.karma.ferrous.manganese.util.ExpressionUtils;
-import io.karma.ferrous.manganese.util.Identifier;
-import io.karma.ferrous.manganese.util.Operator;
-import io.karma.ferrous.manganese.util.Utils;
+import io.karma.ferrous.manganese.ocm.type.Type;
+import io.karma.ferrous.manganese.util.*;
 import io.karma.ferrous.vanadium.FerrousParser.*;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.apiguardian.api.API;
@@ -48,22 +47,22 @@ public final class ExpressionParser extends ParseAdapter {
         super(compiler, compileContext);
     }
 
-    private static IntConstant parseIntConstant(final BuiltinType type, final TerminalNode node) {
+    private IntConstant parseIntConstant(final BuiltinType type, final TerminalNode node) {
         final var suffix = type.getName().toString();
         var text = node.getText();
         if (text.endsWith(suffix)) {
             text = text.substring(0, text.length() - suffix.length());
         }
-        return new IntConstant(type, Long.parseLong(text));
+        return new IntConstant(type, Long.parseLong(text), TokenSlice.from(compileContext, node));
     }
 
-    private static RealConstant parseRealConstant(final BuiltinType type, final TerminalNode node) {
+    private RealConstant parseRealConstant(final BuiltinType type, final TerminalNode node) {
         final var suffix = type.getName().toString();
         var text = node.getText();
         if (text.endsWith(suffix)) {
             text = text.substring(0, text.length() - suffix.length());
         }
-        return new RealConstant(type, Double.parseDouble(text));
+        return new RealConstant(type, Double.parseDouble(text), TokenSlice.from(compileContext, node));
     }
 
     @Override
@@ -96,7 +95,7 @@ public final class ExpressionParser extends ParseAdapter {
             compileContext.reportError(sides.get(1).start, CompileErrorCode.E5003);
             return;
         }
-        expression = new BinaryExpression(op.get(), lhs, rhs);
+        expression = new BinaryExpression(op.get(), lhs, rhs, TokenSlice.from(compileContext, context));
         super.enterBinaryExpr(context);
     }
 
@@ -116,7 +115,8 @@ public final class ExpressionParser extends ParseAdapter {
             return;
         }
         expression = new UnaryExpression(op.get(),
-            ExpressionUtils.parseExpression(compiler, compileContext, context.unaryExpr()));
+            ExpressionUtils.parseExpression(compiler, compileContext, context.unaryExpr()),
+            TokenSlice.from(compileContext, context));
         super.enterUnaryExpr(context);
     }
 
@@ -133,7 +133,13 @@ public final class ExpressionParser extends ParseAdapter {
         else {
             name = Utils.getIdentifier(context.ident());
         }
-        // TODO: implement call expression parsing
+        final var scopeName = scopeStack.getScopeName();
+        final var args = ExpressionUtils.parseExpressions(compiler, compileContext, context.exprList());
+        final var paramTypes = args.stream().map(Expression::getType).toArray(Type[]::new);
+        final var function = compileContext.getAnalyzer().findFunctionInScope(name, scopeName, null, paramTypes);
+        expression = new CallExpression(function,
+            TokenSlice.from(compileContext, context),
+            args.toArray(Expression[]::new));
         super.enterCallExpr(context);
     }
 
@@ -223,7 +229,7 @@ public final class ExpressionParser extends ParseAdapter {
         if (expression != null) {
             return;
         }
-        expression = new BoolConstant(context.KW_TRUE() != null);
+        expression = new BoolConstant(context.KW_TRUE() != null, TokenSlice.from(compileContext, context));
         super.enterBoolLiteral(context);
     }
 

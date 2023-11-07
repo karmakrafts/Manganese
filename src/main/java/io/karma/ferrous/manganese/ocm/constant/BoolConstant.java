@@ -19,6 +19,7 @@ import io.karma.ferrous.manganese.ocm.BlockContext;
 import io.karma.ferrous.manganese.ocm.type.BuiltinType;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.target.TargetMachine;
+import io.karma.ferrous.manganese.util.TokenSlice;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 import org.lwjgl.llvm.LLVMCore;
@@ -28,9 +29,14 @@ import org.lwjgl.llvm.LLVMCore;
  * @since 24/10/2023
  */
 @API(status = Status.INTERNAL)
-public record BoolConstant(boolean value) implements Constant {
-    public static final BoolConstant TRUE = new BoolConstant(true);
-    public static final BoolConstant FALSE = new BoolConstant(false);
+public record BoolConstant(boolean value, TokenSlice tokenSlice) implements Constant {
+    public static final BoolConstant TRUE = new BoolConstant(true, TokenSlice.EMPTY);
+    public static final BoolConstant FALSE = new BoolConstant(false, TokenSlice.EMPTY);
+
+    @Override
+    public TokenSlice getTokenSlice() {
+        return tokenSlice;
+    }
 
     @Override
     public Type getType() {

@@ -1,3 +1,10 @@
+fun test(): i32 {
+    return 44
+}
+
+fun test2() {}
+
 fun main(num_args: i32, args: **i8): i32 {
+    test2()
     return 44
 }

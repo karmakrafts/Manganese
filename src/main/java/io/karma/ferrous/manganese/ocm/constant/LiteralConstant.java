@@ -19,12 +19,18 @@ import io.karma.ferrous.manganese.ocm.BlockContext;
 import io.karma.ferrous.manganese.ocm.type.ImaginaryType;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.target.TargetMachine;
+import io.karma.ferrous.manganese.util.TokenSlice;
 
 /**
  * @author Alexander Hinze
  * @since 24/10/2023
  */
-public record LiteralConstant(Constant value) implements Constant {
+public record LiteralConstant(Constant value, TokenSlice tokenSlice) implements Constant {
+    @Override
+    public TokenSlice getTokenSlice() {
+        return tokenSlice;
+    }
+
     @Override
     public Type getType() {
         return ImaginaryType.LITERAL;

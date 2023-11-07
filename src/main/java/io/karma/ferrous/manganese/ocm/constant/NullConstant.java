@@ -19,6 +19,7 @@ import io.karma.ferrous.manganese.ocm.BlockContext;
 import io.karma.ferrous.manganese.ocm.type.NullType;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.target.TargetMachine;
+import io.karma.ferrous.manganese.util.TokenSlice;
 
 /**
  * @author Alexander Hinze
@@ -30,6 +31,11 @@ public final class NullConstant implements Constant {
     // @formatter:off
     private NullConstant() {}
     // @formatter:on
+
+    @Override
+    public TokenSlice getTokenSlice() {
+        return TokenSlice.EMPTY;
+    }
 
     @Override
     public Type getType() {
