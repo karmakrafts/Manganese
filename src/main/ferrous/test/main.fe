@@ -1,8 +1,9 @@
-fun test() {
+extern fun printf(fmt: *char, args: vaargs): i32
 
+fun test(): i32 {
+    return 22 * 2
 }
 
 fun main(num_args: i32, args: **i8): i32 {
-    test()
-    return 44
+    return test()
 }

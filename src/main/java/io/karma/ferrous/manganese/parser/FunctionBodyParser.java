@@ -15,6 +15,7 @@
 
 package io.karma.ferrous.manganese.parser;
 
+import io.karma.ferrous.manganese.ParseAdapter;
 import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.CompileErrorCode;
 import io.karma.ferrous.manganese.compiler.Compiler;
@@ -36,7 +37,7 @@ import java.util.List;
  * @since 05/11/2023
  */
 @API(status = API.Status.INTERNAL)
-public final class FunctionBodyParser extends ExpressionParser {
+public final class FunctionBodyParser extends ParseAdapter {
     private final FunctionType functionType;
     private final ArrayList<Statement> statements = new ArrayList<>();
 

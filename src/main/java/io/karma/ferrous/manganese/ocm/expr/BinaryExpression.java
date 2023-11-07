@@ -58,7 +58,7 @@ public final class BinaryExpression implements Expression {
     }
 
     @Override
-    public TokenSlice getTokenSlice() {
+    public TokenSlice tokenSlice() {
         return tokenSlice;
     }
 

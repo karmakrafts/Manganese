@@ -40,8 +40,8 @@ import org.jetbrains.annotations.Nullable;
  * @since 05/11/2023
  */
 @API(status = API.Status.INTERNAL)
-public class ExpressionParser extends ParseAdapter {
-    protected Expression expression;
+public final class ExpressionParser extends ParseAdapter {
+    private Expression expression;
 
     public ExpressionParser(final Compiler compiler, final CompileContext compileContext) {
         super(compiler, compileContext);
@@ -136,7 +136,7 @@ public class ExpressionParser extends ParseAdapter {
         final var scopeName = scopeStack.getScopeName();
         final var args = ExpressionUtils.parseExpressions(compiler, compileContext, context.exprList());
         final var paramTypes = args.stream().map(Expression::getType).toArray(Type[]::new);
-        final var function = compileContext.getAnalyzer().findFunctionInScope(name, scopeName, null, paramTypes);
+        final var function = compileContext.getPreAnalyzer().findFunctionInScope(name, scopeName, null, paramTypes);
         expression = new CallExpression(function,
             TokenSlice.from(compileContext, context),
             args.toArray(Expression[]::new));

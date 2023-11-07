@@ -28,31 +28,11 @@ import java.util.Objects;
  * @author Alexander Hinze
  * @since 22/10/2023
  */
-public final class UnaryExpression implements Expression {
-    private final Operator op;
-    private final Expression value;
-    private final TokenSlice tokenSlice;
-
-    public UnaryExpression(final Operator op, final Expression value, final TokenSlice tokenSlice) {
+public record UnaryExpression(Operator op, Expression value, TokenSlice tokenSlice) implements Expression {
+    public UnaryExpression {
         if (!op.isUnary()) {
             throw new IllegalArgumentException(String.format("%s is not a unary operator", op));
         }
-        this.op = op;
-        this.value = value;
-        this.tokenSlice = tokenSlice;
-    }
-
-    public Operator getOp() {
-        return op;
-    }
-
-    public Expression getValue() {
-        return value;
-    }
-
-    @Override
-    public TokenSlice getTokenSlice() {
-        return tokenSlice;
     }
 
     @Override

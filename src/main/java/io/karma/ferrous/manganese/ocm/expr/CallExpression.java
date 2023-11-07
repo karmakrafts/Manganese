@@ -29,30 +29,7 @@ import java.util.Arrays;
  * @since 06/11/2023
  */
 @API(status = API.Status.INTERNAL)
-public final class CallExpression implements Expression {
-    private final Function function;
-    private final Expression[] args;
-    private final TokenSlice tokenSlice;
-
-    public CallExpression(final Function function, final TokenSlice tokenSlice, final Expression... args) {
-        this.function = function;
-        this.tokenSlice = tokenSlice;
-        this.args = args;
-    }
-
-    public Function getFunction() {
-        return function;
-    }
-
-    public Expression[] getArgs() {
-        return args;
-    }
-
-    @Override
-    public TokenSlice getTokenSlice() {
-        return tokenSlice;
-    }
-
+public record CallExpression(Function function, TokenSlice tokenSlice, Expression... args) implements Expression {
     @Override
     public Type getType() {
         return function.getType().getReturnType();

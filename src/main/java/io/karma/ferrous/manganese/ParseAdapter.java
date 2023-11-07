@@ -16,11 +16,14 @@
 package io.karma.ferrous.manganese;
 
 import io.karma.ferrous.manganese.compiler.CompileContext;
+import io.karma.ferrous.manganese.compiler.CompileErrorCode;
 import io.karma.ferrous.manganese.compiler.Compiler;
+import io.karma.ferrous.manganese.ocm.Function;
 import io.karma.ferrous.manganese.ocm.scope.DefaultScope;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.ocm.scope.ScopeStack;
 import io.karma.ferrous.manganese.ocm.scope.ScopeType;
+import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.util.FunctionUtils;
 import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.Utils;
@@ -31,6 +34,7 @@ import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 
@@ -69,6 +73,27 @@ public abstract class ParseAdapter implements FerrousParserListener {
 
     protected Scope popScope() {
         return lastScope = scopeStack.pop();
+    }
+
+    protected @Nullable Function getFunction(final ProtoFunctionContext context) {
+        final var name = FunctionUtils.getFunctionName(context.functionIdent());
+        final var scopeName = scopeStack.getScopeName();
+        final var type = FunctionUtils.getFunctionType(compiler, compileContext, scopeStack, context);
+        final var function = compileContext.getPreAnalyzer().findFunctionInScope(name, scopeName, type);
+        if (function == null) {
+            compileContext.reportError(Utils.makeCompilerMessage(name.toString()), CompileErrorCode.E5000);
+        }
+        return function;
+    }
+
+    protected @Nullable Type getType(final IdentContext context) {
+        return compileContext.getPreAnalyzer().findCompleteTypeInScope(Utils.getIdentifier(context),
+            scopeStack.getScopeName());
+    }
+
+    protected @Nullable Type getType(final QualifiedIdentContext context) {
+        return compileContext.getPreAnalyzer().findCompleteTypeInScope(Utils.getIdentifier(context),
+            scopeStack.getScopeName());
     }
 
     // @formatter:off

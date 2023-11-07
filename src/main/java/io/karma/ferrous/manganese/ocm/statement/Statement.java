@@ -24,7 +24,7 @@ import io.karma.ferrous.manganese.util.TokenSlice;
  * @since 22/10/2023
  */
 public interface Statement {
-    TokenSlice getTokenSlice();
+    TokenSlice tokenSlice();
 
     long emit(final TargetMachine targetMachine, final BlockContext blockContext);
 

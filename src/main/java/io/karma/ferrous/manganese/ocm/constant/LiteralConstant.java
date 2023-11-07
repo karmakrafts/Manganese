@@ -27,7 +27,7 @@ import io.karma.ferrous.manganese.util.TokenSlice;
  */
 public record LiteralConstant(Constant value, TokenSlice tokenSlice) implements Constant {
     @Override
-    public TokenSlice getTokenSlice() {
+    public TokenSlice tokenSlice() {
         return tokenSlice;
     }
 

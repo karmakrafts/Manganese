@@ -49,8 +49,12 @@ public final class CompileContext {
     private final ThreadLocal<Path> currentSourceFile = ThreadLocal.withInitial(() -> null);
     private final AtomicInteger status = new AtomicInteger(CompileStatus.SUCCESS.ordinal());
 
-    public Module getModule() {
-        return Objects.requireNonNull(modules.get(Objects.requireNonNull(getCurrentModuleName())));
+    public void addModule(final Module module) {
+        modules.put(module.getName(), module);
+    }
+
+    public @Nullable Module getModule(final String name) {
+        return modules.get(name);
     }
 
     private ModuleData getOrCreateModuleData(final String name) {
@@ -187,12 +191,20 @@ public final class CompileContext {
         getOrCreateModuleData().setFileContext(fileContext);
     }
 
-    public Analyzer getAnalyzer() {
-        return getModuleComponent(ModuleData::getAnalyzer);
+    public PreAnalyzer getPreAnalyzer() {
+        return getModuleComponent(ModuleData::getPreAnalyzer);
     }
 
-    void setAnalyzer(final Analyzer analyzer) {
-        getOrCreateModuleData().setAnalyzer(analyzer);
+    void setPreAnalyzer(final PreAnalyzer preAnalyzer) {
+        getOrCreateModuleData().setPreAnalyzer(preAnalyzer);
+    }
+
+    public PostAnalyzer getPostAnalyzer() {
+        return getModuleComponent(ModuleData::getPostAnalyzer);
+    }
+
+    void setPostAnalyzer(final PostAnalyzer postAnalyzer) {
+        getOrCreateModuleData().setPostAnalyzer(postAnalyzer);
     }
 
     public TranslationUnit getTranslationUnit() {
@@ -208,9 +220,5 @@ public final class CompileContext {
         modules.clear();
         moduleData.clear();
         errors.clear();
-    }
-
-    public void addModule(final Module module) {
-        modules.put(module.getName(), module);
     }
 }

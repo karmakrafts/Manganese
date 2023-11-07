@@ -27,7 +27,7 @@ import io.karma.ferrous.manganese.util.TokenSlice;
  */
 public record TypeConstant(Type value, TokenSlice tokenSlice) implements Constant {
     @Override
-    public TokenSlice getTokenSlice() {
+    public TokenSlice tokenSlice() {
         return tokenSlice;
     }
 

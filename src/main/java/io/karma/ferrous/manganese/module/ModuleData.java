@@ -15,7 +15,8 @@
 
 package io.karma.ferrous.manganese.module;
 
-import io.karma.ferrous.manganese.compiler.Analyzer;
+import io.karma.ferrous.manganese.compiler.PostAnalyzer;
+import io.karma.ferrous.manganese.compiler.PreAnalyzer;
 import io.karma.ferrous.manganese.compiler.TranslationUnit;
 import io.karma.ferrous.vanadium.FerrousLexer;
 import io.karma.ferrous.vanadium.FerrousParser;
@@ -32,7 +33,8 @@ import org.apiguardian.api.API.Status;
 public final class ModuleData {
     private final String name;
     private BufferedTokenStream tokenStream;
-    private Analyzer analyzer;
+    private PreAnalyzer preAnalyzer;
+    private PostAnalyzer postAnalyzer;
     private TranslationUnit translationUnit;
     private FileContext fileContext;
     private FerrousLexer lexer;
@@ -49,6 +51,15 @@ public final class ModuleData {
     @API(status = Status.INTERNAL)
     public synchronized void setLexer(final FerrousLexer lexer) {
         this.lexer = lexer;
+    }
+
+    public synchronized PostAnalyzer getPostAnalyzer() {
+        return postAnalyzer;
+    }
+
+    @API(status = Status.INTERNAL)
+    public synchronized void setPostAnalyzer(final PostAnalyzer analyzer) {
+        postAnalyzer = analyzer;
     }
 
     public synchronized FerrousParser getParser() {
@@ -78,13 +89,13 @@ public final class ModuleData {
         this.tokenStream = tokenStream;
     }
 
-    public synchronized Analyzer getAnalyzer() {
-        return analyzer;
+    public synchronized PreAnalyzer getPreAnalyzer() {
+        return preAnalyzer;
     }
 
     @API(status = Status.INTERNAL)
-    public synchronized void setAnalyzer(final Analyzer analyzer) {
-        this.analyzer = analyzer;
+    public synchronized void setPreAnalyzer(final PreAnalyzer preAnalyzer) {
+        this.preAnalyzer = preAnalyzer;
     }
 
     public synchronized TranslationUnit getTranslationUnit() {

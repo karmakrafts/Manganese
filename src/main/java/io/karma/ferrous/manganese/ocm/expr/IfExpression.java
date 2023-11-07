@@ -50,7 +50,7 @@ public final class IfExpression implements Expression {
     }
 
     @Override
-    public TokenSlice getTokenSlice() {
+    public TokenSlice tokenSlice() {
         return tokenSlice;
     }
 

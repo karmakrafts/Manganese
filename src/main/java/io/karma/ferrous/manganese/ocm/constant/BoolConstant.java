@@ -34,7 +34,7 @@ public record BoolConstant(boolean value, TokenSlice tokenSlice) implements Cons
     public static final BoolConstant FALSE = new BoolConstant(false, TokenSlice.EMPTY);
 
     @Override
-    public TokenSlice getTokenSlice() {
+    public TokenSlice tokenSlice() {
         return tokenSlice;
     }
 

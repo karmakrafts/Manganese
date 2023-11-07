@@ -124,15 +124,21 @@ public final class Compiler {
     }
 
     public void analyzeAndProcess(final String name, final CompileContext context) {
-        context.setCurrentModuleName(name);
-
-        context.setCurrentPass(CompilePass.ANALYZE);
-        final var analyzer = new Analyzer(this, context);
-        context.setAnalyzer(analyzer);
         final var fileContext = Objects.requireNonNull(context.getFileContext());
-        Profiler.INSTANCE.push("Analyzer");
-        ParseTreeWalker.DEFAULT.walk(analyzer, fileContext);
-        analyzer.preProcess();
+        context.setCurrentModuleName(name);
+        context.setCurrentPass(CompilePass.ANALYZE);
+
+        final var preAnalyzer = new PreAnalyzer(this, context);
+        context.setPreAnalyzer(preAnalyzer);
+        Profiler.INSTANCE.push("PreAnalyzer");
+        ParseTreeWalker.DEFAULT.walk(preAnalyzer, fileContext);
+        preAnalyzer.preProcess();
+        Profiler.INSTANCE.pop();
+
+        final var postAnalyzer = new PostAnalyzer(this, context);
+        context.setPostAnalyzer(postAnalyzer);
+        Profiler.INSTANCE.push("PostAnalyzer");
+        ParseTreeWalker.DEFAULT.walk(postAnalyzer, fileContext);
         Profiler.INSTANCE.pop();
 
         final var tokenStream = Objects.requireNonNull(context.getTokenStream());
@@ -168,7 +174,7 @@ public final class Compiler {
         module.setSourceFileName(sourceName);
         final var verificationStatus = module.verify();
         if (verificationStatus != null) {
-            context.reportError(CompileErrorCode.E0002);
+            context.reportError(verificationStatus, CompileErrorCode.E0002);
             return;
         }
 
@@ -257,8 +263,12 @@ public final class Compiler {
             final var rawFileName = Utils.getRawFileName(file);
 
             compile(rawFileName, file.getFileName().toString(), context);
+            final var compiledModule = context.getModule(rawFileName);
+            if (compiledModule == null) {
+                continue; // Can occur if an error occurs
+            }
             context.setCurrentPass(CompilePass.LINK);
-            module.linkIn(context.getModule());
+            module.linkIn(compiledModule);
             context.setCurrentPass(CompilePass.NONE);
 
             context.setCurrentSourceFile(null);

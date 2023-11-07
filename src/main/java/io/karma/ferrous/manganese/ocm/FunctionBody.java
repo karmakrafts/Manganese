@@ -36,6 +36,7 @@ import static org.lwjgl.llvm.LLVMCore.LLVMAppendBasicBlockInContext;
 @API(status = API.Status.INTERNAL)
 public final class FunctionBody {
     private final ArrayList<Statement> statements;
+    private boolean isAppended;
 
     public FunctionBody(final Statement... statements) {
         this.statements = new ArrayList<>(Arrays.asList(statements));
@@ -47,11 +48,15 @@ public final class FunctionBody {
 
     public void append(final CompileContext compileContext, final Function function, final Module module,
                        final TargetMachine targetMachine) {
+        if (isAppended) {
+            return;
+        }
         final var context = new BlockContextImpl(compileContext, module, targetMachine, function);
         for (final var statement : statements) {
             statement.emit(targetMachine, context);
         }
         context.dispose();
+        isAppended = true;
     }
 
     private static final class BlockContextImpl implements BlockContext {

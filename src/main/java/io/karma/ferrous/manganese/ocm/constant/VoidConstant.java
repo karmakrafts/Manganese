@@ -36,7 +36,7 @@ public final class VoidConstant implements Constant {
     // @formatter:on
 
     @Override
-    public TokenSlice getTokenSlice() {
+    public TokenSlice tokenSlice() {
         return TokenSlice.EMPTY;
     }
 

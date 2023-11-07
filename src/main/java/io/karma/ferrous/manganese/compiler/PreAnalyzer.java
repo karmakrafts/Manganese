@@ -16,6 +16,7 @@
 package io.karma.ferrous.manganese.compiler;
 
 import io.karma.ferrous.manganese.ParseAdapter;
+import io.karma.ferrous.manganese.module.Module;
 import io.karma.ferrous.manganese.ocm.Field;
 import io.karma.ferrous.manganese.ocm.Function;
 import io.karma.ferrous.manganese.ocm.access.AccessKind;
@@ -48,11 +49,11 @@ import java.util.stream.Collectors;
  * @since 14/10/2023
  */
 @API(status = Status.INTERNAL)
-public final class Analyzer extends ParseAdapter {
+public final class PreAnalyzer extends ParseAdapter {
     private final LinkedHashMap<Identifier, NamedType> udts = new LinkedHashMap<>();
     private final HashMap<Identifier, HashMap<FunctionType, Function>> functions = new HashMap<>();
 
-    public Analyzer(final Compiler compiler, final CompileContext compileContext) {
+    public PreAnalyzer(final Compiler compiler, final CompileContext compileContext) {
         super(compiler, compileContext);
     }
 
@@ -516,6 +517,19 @@ public final class Analyzer extends ParseAdapter {
         resolveTypeAccess();
         checkTypeAccess();
         resolveFunctionTypes();
+    }
+
+    public void preMaterializeFunctionPrototypes(final Module module) {
+        Logger.INSTANCE.debugln("Pre-materializing function prototypes");
+        Profiler.INSTANCE.push();
+        final var overloadSets = functions.values();
+        for (final var overloadSet : overloadSets) {
+            final var functions = overloadSet.values();
+            for (final var function : functions) {
+                function.materializePrototype(module, compiler.getTargetMachine());
+            }
+        }
+        Profiler.INSTANCE.pop();
     }
 
     public HashMap<Identifier, HashMap<FunctionType, Function>> getFunctions() {

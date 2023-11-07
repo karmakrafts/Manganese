@@ -79,7 +79,8 @@ public final class TypeParser extends ParseAdapter {
             return; // Qualified ident contains these, so if type exists, skip
         }
         final var name = Utils.getIdentifier(context);
-        final var type = compileContext.getAnalyzer().findCompleteTypeInScope(name, capturedScopeStack.getScopeName());
+        final var type = compileContext.getPreAnalyzer().findCompleteTypeInScope(name,
+            capturedScopeStack.getScopeName());
         if (type == null) {
             baseType = Types.incomplete(name, Functions.castingIdentity(), TokenSlice.from(compileContext, context));
             return;
@@ -91,7 +92,8 @@ public final class TypeParser extends ParseAdapter {
     @Override
     public void enterQualifiedIdent(final QualifiedIdentContext context) {
         final var name = Utils.getIdentifier(context);
-        final var type = compileContext.getAnalyzer().findCompleteTypeInScope(name, capturedScopeStack.getScopeName());
+        final var type = compileContext.getPreAnalyzer().findCompleteTypeInScope(name,
+            capturedScopeStack.getScopeName());
         if (type == null) {
             baseType = Types.incomplete(name, Functions.castingIdentity(), TokenSlice.from(compileContext, context));
             return;

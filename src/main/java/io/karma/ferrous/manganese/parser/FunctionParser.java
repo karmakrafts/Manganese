@@ -29,8 +29,6 @@ import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 
-import java.util.Objects;
-
 /**
  * @author Alexander Hinze
  * @since 14/10/2023
@@ -57,7 +55,11 @@ public final class FunctionParser extends ParseAdapter {
 
     @Override
     public void exitFunctionBody(final FunctionBodyContext context) {
-        final var statements = Objects.requireNonNull(function.getBody()).getStatements();
+        final var body = function.getBody();
+        if (body == null) {
+            return;
+        }
+        final var statements = body.getStatements();
         if (statements.isEmpty() || !statements.getLast().returnsFromCurrentScope()) {
             if (function.getType().getReturnType() == BuiltinType.VOID) {
                 statements.addLast(new ReturnStatement(TokenSlice.from(compileContext,
@@ -65,10 +67,10 @@ public final class FunctionParser extends ParseAdapter {
             }
             else {
                 if (statements.isEmpty()) {
-                    compileContext.reportError(CompileErrorCode.E4005);
+                    compileContext.reportError(context.start, CompileErrorCode.E4005);
                 }
                 else {
-                    compileContext.reportError(statements.getLast().getTokenSlice().getFirstToken(),
+                    compileContext.reportError(statements.getLast().tokenSlice().getFirstToken(),
                         CompileErrorCode.E4005);
                 }
             }

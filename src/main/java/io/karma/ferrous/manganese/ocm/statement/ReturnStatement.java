@@ -46,7 +46,7 @@ public final class ReturnStatement implements Statement {
     // Statement
 
     @Override
-    public TokenSlice getTokenSlice() {
+    public TokenSlice tokenSlice() {
         return tokenSlice;
     }
 

@@ -28,7 +28,7 @@ import org.antlr.v4.runtime.Token;
  */
 public record TokenConstant(Token value, TokenSlice tokenSlice) implements Constant {
     @Override
-    public TokenSlice getTokenSlice() {
+    public TokenSlice tokenSlice() {
         return tokenSlice;
     }
 

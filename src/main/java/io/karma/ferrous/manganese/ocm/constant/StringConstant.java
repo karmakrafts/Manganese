@@ -36,7 +36,7 @@ public final class StringConstant implements Constant {
     }
 
     @Override
-    public TokenSlice getTokenSlice() {
+    public TokenSlice tokenSlice() {
         return tokenSlice;
     }
 

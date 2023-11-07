@@ -119,11 +119,10 @@ public final class BlockBuilder {
     }
 
     public long call(final Function function, final long... args) {
-        final var fnAddress = function.materialize(blockContext.getCompileContext(), module, targetMachine);
-        final var returnType = function.getType().getReturnType();
         try (final var stack = MemoryStack.stackPush()) {
-            final var typeAddress = returnType.materialize(targetMachine);
-            return LLVMBuildCall(address, fnAddress, stack.pointers(args), "");
+            final var fnAddress = function.materialize(blockContext.getCompileContext(), module, targetMachine);
+            final var typeAddress = function.getType().materialize(targetMachine);
+            return LLVMBuildCall2(address, typeAddress, fnAddress, stack.pointers(args), "");
         }
     }
 
