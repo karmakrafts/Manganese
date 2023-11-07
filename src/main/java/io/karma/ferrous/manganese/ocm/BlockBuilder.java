@@ -16,7 +16,6 @@
 package io.karma.ferrous.manganese.ocm;
 
 import io.karma.ferrous.manganese.module.Module;
-import io.karma.ferrous.manganese.ocm.type.BuiltinType;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import org.apiguardian.api.API;
 import org.lwjgl.system.MemoryStack;
@@ -120,16 +119,11 @@ public final class BlockBuilder {
     }
 
     public long call(final Function function, final long... args) {
-        final var fnAddress = function.materializePrototype(module, targetMachine);
+        final var fnAddress = function.materialize(blockContext.getCompileContext(), module, targetMachine);
         final var returnType = function.getType().getReturnType();
         try (final var stack = MemoryStack.stackPush()) {
-            if (returnType == BuiltinType.VOID) {
-                return LLVMBuildCall(address, fnAddress, stack.pointers(args), "");
-            }
-            else {
-                final var typeAddress = returnType.materialize(targetMachine);
-                return LLVMBuildCall2(address, typeAddress, fnAddress, stack.pointers(args), "");
-            }
+            final var typeAddress = returnType.materialize(targetMachine);
+            return LLVMBuildCall(address, fnAddress, stack.pointers(args), "");
         }
     }
 

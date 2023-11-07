@@ -13,9 +13,8 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.translate;
+package io.karma.ferrous.manganese.parser;
 
-import io.karma.ferrous.manganese.ParseAdapter;
 import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.CompileErrorCode;
 import io.karma.ferrous.manganese.compiler.Compiler;
@@ -27,16 +26,17 @@ import io.karma.ferrous.manganese.util.TokenSlice;
 import io.karma.ferrous.manganese.util.Utils;
 import io.karma.ferrous.vanadium.FerrousParser.ReturnStatementContext;
 import org.apiguardian.api.API;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * @author Alexander Hinze
  * @since 05/11/2023
  */
 @API(status = API.Status.INTERNAL)
-public final class FunctionBodyParser extends ParseAdapter {
+public final class FunctionBodyParser extends ExpressionParser {
     private final FunctionType functionType;
     private final ArrayList<Statement> statements = new ArrayList<>();
 
@@ -71,7 +71,7 @@ public final class FunctionBodyParser extends ParseAdapter {
         super.enterReturnStatement(context);
     }
 
-    public @Nullable ArrayList<Statement> getStatements() {
-        return statements;
+    public List<Statement> getStatements() {
+        return statements == null ? Collections.emptyList() : statements;
     }
 }

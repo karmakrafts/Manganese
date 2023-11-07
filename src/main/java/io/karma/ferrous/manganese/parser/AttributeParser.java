@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.analyze;
+package io.karma.ferrous.manganese.parser;
 
 import io.karma.ferrous.manganese.ParseAdapter;
 import io.karma.ferrous.manganese.compiler.CompileContext;
@@ -23,8 +23,8 @@ import io.karma.ferrous.manganese.compiler.Compiler;
  * @author Alexander Hinze
  * @since 24/10/2023
  */
-public final class AttributeAnalyzer extends ParseAdapter {
-    public AttributeAnalyzer(final Compiler compiler, final CompileContext compileContext) {
+public final class AttributeParser extends ParseAdapter {
+    public AttributeParser(final Compiler compiler, final CompileContext compileContext) {
         super(compiler, compileContext);
     }
 }

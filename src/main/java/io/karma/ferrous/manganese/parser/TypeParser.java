@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.analyze;
+package io.karma.ferrous.manganese.parser;
 
 import io.karma.ferrous.manganese.ParseAdapter;
 import io.karma.ferrous.manganese.compiler.CompileContext;
@@ -40,13 +40,13 @@ import java.util.Stack;
  * @since 13/10/2023
  */
 @API(status = Status.INTERNAL)
-public final class TypeAnalyzer extends ParseAdapter {
+public final class TypeParser extends ParseAdapter {
     private final Stack<TypeAttribute> attributes = new Stack<>();
     private final ScopeStack capturedScopeStack;
     private Type baseType;
 
-    public TypeAnalyzer(final Compiler compiler, final CompileContext compileContext,
-                        final ScopeStack capturedScopeStack) {
+    public TypeParser(final Compiler compiler, final CompileContext compileContext,
+                      final ScopeStack capturedScopeStack) {
         super(compiler, compileContext);
         this.capturedScopeStack = capturedScopeStack;
     }

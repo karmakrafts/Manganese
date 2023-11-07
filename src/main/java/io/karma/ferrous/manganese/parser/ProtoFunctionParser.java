@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.analyze;
+package io.karma.ferrous.manganese.parser;
 
 import io.karma.ferrous.manganese.ParseAdapter;
 import io.karma.ferrous.manganese.compiler.CompileContext;
@@ -31,14 +31,15 @@ import org.apiguardian.api.API;
  * @since 06/11/2023
  */
 @API(status = API.Status.INTERNAL)
-public final class FunctionAnalyzer extends ParseAdapter {
+public final class ProtoFunctionParser extends ParseAdapter {
     private final ScopeStack capturedScopeStack;
     private final boolean isExtern;
     private final TokenSlice tokenSlice;
     private Function function;
 
-    public FunctionAnalyzer(final Compiler compiler, final CompileContext compileContext,
-                            final ScopeStack capturedScopeStack, final boolean isExtern, final TokenSlice tokenSlice) {
+    public ProtoFunctionParser(final Compiler compiler, final CompileContext compileContext,
+                               final ScopeStack capturedScopeStack, final boolean isExtern,
+                               final TokenSlice tokenSlice) {
         super(compiler, compileContext);
         this.capturedScopeStack = capturedScopeStack;
         this.isExtern = isExtern;

@@ -15,14 +15,12 @@
 
 package io.karma.ferrous.manganese.compiler;
 
-import io.karma.ferrous.manganese.analyze.Analyzer;
 import io.karma.ferrous.manganese.linker.LinkModel;
 import io.karma.ferrous.manganese.linker.LinkTargetType;
 import io.karma.ferrous.manganese.linker.Linker;
 import io.karma.ferrous.manganese.profiler.Profiler;
 import io.karma.ferrous.manganese.target.FileType;
 import io.karma.ferrous.manganese.target.TargetMachine;
-import io.karma.ferrous.manganese.translate.TranslationUnit;
 import io.karma.ferrous.manganese.util.Logger;
 import io.karma.ferrous.manganese.util.TokenUtils;
 import io.karma.ferrous.manganese.util.Utils;

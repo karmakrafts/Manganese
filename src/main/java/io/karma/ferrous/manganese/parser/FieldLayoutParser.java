@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.analyze;
+package io.karma.ferrous.manganese.parser;
 
 import io.karma.ferrous.manganese.ParseAdapter;
 import io.karma.ferrous.manganese.compiler.CompileContext;
@@ -35,13 +35,13 @@ import java.util.ArrayList;
  * @since 15/10/2023
  */
 @API(status = Status.INTERNAL)
-public final class FieldLayoutAnalyzer extends ParseAdapter {
+public final class FieldLayoutParser extends ParseAdapter {
     private final ArrayList<Field> fields = new ArrayList<>();
     private final ScopeStack capturedScopeStack;
     private int nestedScopes = 0;
 
-    public FieldLayoutAnalyzer(final Compiler compiler, final CompileContext compileContext,
-                               final ScopeStack capturedScopeStack) {
+    public FieldLayoutParser(final Compiler compiler, final CompileContext compileContext,
+                             final ScopeStack capturedScopeStack) {
         super(compiler, compileContext);
         this.capturedScopeStack = capturedScopeStack;
     }

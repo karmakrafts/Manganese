@@ -13,20 +13,14 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.translate;
+package io.karma.ferrous.manganese.compiler;
 
 import io.karma.ferrous.manganese.ParseAdapter;
-import io.karma.ferrous.manganese.compiler.CompileContext;
-import io.karma.ferrous.manganese.compiler.CompileErrorCode;
-import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.module.Module;
 import io.karma.ferrous.manganese.ocm.Function;
 import io.karma.ferrous.manganese.util.FunctionUtils;
 import io.karma.ferrous.manganese.util.Utils;
-import io.karma.ferrous.vanadium.FerrousParser.ExternFunctionContext;
-import io.karma.ferrous.vanadium.FerrousParser.FunctionContext;
 import io.karma.ferrous.vanadium.FerrousParser.ProtoFunctionContext;
-import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 import org.jetbrains.annotations.Nullable;
@@ -42,7 +36,8 @@ public class TranslationUnit extends ParseAdapter {
 
     public TranslationUnit(final Compiler compiler, final CompileContext compileContext) {
         super(compiler, compileContext);
-        module = compiler.getTargetMachine().createModule(compileContext.getCurrentModuleName());
+        final var targetMachine = compiler.getTargetMachine();
+        module = targetMachine.createModule(compileContext.getCurrentModuleName());
     }
 
     private @Nullable Function getFunction(final ProtoFunctionContext context) {
@@ -56,26 +51,26 @@ public class TranslationUnit extends ParseAdapter {
         return function;
     }
 
-    @Override
-    public void enterExternFunction(final ExternFunctionContext context) {
-        final var function = getFunction(context.protoFunction());
-        if (function == null) {
-            return; // TODO: log warning/error?
-        }
-        function.materialize(compileContext, module, compiler.getTargetMachine());
-        super.enterExternFunction(context);
-    }
+    //@Override
+    //public void enterExternFunction(final ExternFunctionContext context) {
+    //    final var function = getFunction(context.protoFunction());
+    //    if (function == null) {
+    //        return; // TODO: log warning/error?
+    //    }
+    //    function.materialize(compileContext, module, compiler.getTargetMachine());
+    //    super.enterExternFunction(context);
+    //}
 
-    @Override
-    public void enterFunction(final FunctionContext context) {
-        final var function = getFunction(context.protoFunction());
-        if (function == null) {
-            return; // TODO: log warning/error?
-        }
-        ParseTreeWalker.DEFAULT.walk(new FunctionParser(compiler, compileContext, function), context);
-        function.materialize(compileContext, module, compiler.getTargetMachine());
-        super.enterFunction(context);
-    }
+    //@Override
+    //public void enterFunction(final FunctionContext context) {
+    //    final var function = getFunction(context.protoFunction());
+    //    if (function == null) {
+    //        return; // TODO: log warning/error?
+    //    }
+    //    ParseTreeWalker.DEFAULT.walk(new FunctionAnalyzer(compiler, compileContext, function), context);
+    //    function.materialize(compileContext, module, compiler.getTargetMachine());
+    //    super.enterFunction(context);
+    //}
 
     public Module getModule() {
         return module;

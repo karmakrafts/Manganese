@@ -15,8 +15,8 @@
 
 package io.karma.ferrous.manganese.module;
 
-import io.karma.ferrous.manganese.analyze.Analyzer;
-import io.karma.ferrous.manganese.translate.TranslationUnit;
+import io.karma.ferrous.manganese.compiler.Analyzer;
+import io.karma.ferrous.manganese.compiler.TranslationUnit;
 import io.karma.ferrous.vanadium.FerrousLexer;
 import io.karma.ferrous.vanadium.FerrousParser;
 import io.karma.ferrous.vanadium.FerrousParser.FileContext;

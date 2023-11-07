@@ -13,12 +13,9 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.analyze;
+package io.karma.ferrous.manganese.compiler;
 
 import io.karma.ferrous.manganese.ParseAdapter;
-import io.karma.ferrous.manganese.compiler.CompileContext;
-import io.karma.ferrous.manganese.compiler.CompileErrorCode;
-import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.Field;
 import io.karma.ferrous.manganese.ocm.Function;
 import io.karma.ferrous.manganese.ocm.access.AccessKind;
@@ -26,6 +23,8 @@ import io.karma.ferrous.manganese.ocm.access.ScopedAccess;
 import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.ocm.type.*;
+import io.karma.ferrous.manganese.parser.FieldLayoutParser;
+import io.karma.ferrous.manganese.parser.ProtoFunctionParser;
 import io.karma.ferrous.manganese.profiler.Profiler;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.*;
@@ -131,7 +130,7 @@ public final class Analyzer extends ParseAdapter {
         if (checkIsFunctionAlreadyDefined(context.protoFunction().functionIdent())) {
             return;
         }
-        final var analyzer = new FunctionAnalyzer(compiler,
+        final var analyzer = new ProtoFunctionParser(compiler,
             compileContext,
             scopeStack,
             false,
@@ -147,7 +146,7 @@ public final class Analyzer extends ParseAdapter {
         if (checkIsFunctionAlreadyDefined(context.protoFunction().functionIdent())) {
             return;
         }
-        final var analyzer = new FunctionAnalyzer(compiler,
+        final var analyzer = new ProtoFunctionParser(compiler,
             compileContext,
             scopeStack,
             true,
@@ -435,7 +434,7 @@ public final class Analyzer extends ParseAdapter {
 
     private void analyzeFieldLayout(final ParserRuleContext parent, final Identifier name,
                                     final GenericParameter[] genericParams, final UDTKind kind) {
-        final var layoutAnalyzer = new FieldLayoutAnalyzer(compiler, compileContext, scopeStack);
+        final var layoutAnalyzer = new FieldLayoutParser(compiler, compileContext, scopeStack);
         ParseTreeWalker.DEFAULT.walk(layoutAnalyzer, parent);
 
         final var fields = layoutAnalyzer.getFields();
@@ -526,19 +525,25 @@ public final class Analyzer extends ParseAdapter {
     // TODO: implement matching against C-variadic functions
     public @Nullable Function findFunctionInScope(final Identifier name, final Identifier scopeName,
                                                   final @Nullable Type returnType, final Type... paramTypes) {
-        final var overloadSet = ScopeUtils.findInScope(functions, name, scopeName);
-        if (overloadSet == null) {
+        try {
+            Profiler.INSTANCE.push();
+            final var overloadSet = ScopeUtils.findInScope(functions, name, scopeName);
+            if (overloadSet == null) {
+                return null;
+            }
+            final var types = overloadSet.keySet();
+            for (final var type : types) {
+                if ((returnType != null && !type.getReturnType().equals(returnType)) || !Arrays.equals(type.getParamTypes(),
+                    paramTypes)) {
+                    continue;
+                }
+                return overloadSet.get(type);
+            }
             return null;
         }
-        final var types = overloadSet.keySet();
-        for (final var type : types) {
-            if ((returnType != null && !type.getReturnType().equals(returnType)) || !Arrays.equals(type.getParamTypes(),
-                paramTypes)) {
-                continue;
-            }
-            return overloadSet.get(type);
+        finally {
+            Profiler.INSTANCE.pop();
         }
-        return null;
     }
 
     public @Nullable Function findFunctionInScope(final Identifier name, final Identifier scopeName,

@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.translate;
+package io.karma.ferrous.manganese.parser;
 
 import io.karma.ferrous.manganese.ParseAdapter;
 import io.karma.ferrous.manganese.compiler.CompileContext;
@@ -40,8 +40,8 @@ import org.jetbrains.annotations.Nullable;
  * @since 05/11/2023
  */
 @API(status = API.Status.INTERNAL)
-public final class ExpressionParser extends ParseAdapter {
-    private Expression expression;
+public class ExpressionParser extends ParseAdapter {
+    protected Expression expression;
 
     public ExpressionParser(final Compiler compiler, final CompileContext compileContext) {
         super(compiler, compileContext);

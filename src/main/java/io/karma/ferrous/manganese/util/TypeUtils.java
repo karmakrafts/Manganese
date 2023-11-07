@@ -15,8 +15,6 @@
 
 package io.karma.ferrous.manganese.util;
 
-import io.karma.ferrous.manganese.analyze.GenericExpressionAnalyzer;
-import io.karma.ferrous.manganese.analyze.TypeAnalyzer;
 import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.constant.TypeConstant;
@@ -24,6 +22,8 @@ import io.karma.ferrous.manganese.ocm.generic.GenericConstraint;
 import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
 import io.karma.ferrous.manganese.ocm.scope.ScopeStack;
 import io.karma.ferrous.manganese.ocm.type.Type;
+import io.karma.ferrous.manganese.parser.GenericExpressionParser;
+import io.karma.ferrous.manganese.parser.TypeParser;
 import io.karma.ferrous.vanadium.FerrousParser.GenericParamListContext;
 import io.karma.ferrous.vanadium.FerrousParser.TypeContext;
 import io.karma.ferrous.vanadium.FerrousParser.TypeListContext;
@@ -89,9 +89,9 @@ public final class TypeUtils {
             final var defaultType = getType(compiler, compileContext, scopeStack, param.type());
             var constraints = GenericConstraint.TRUE;
             if (expr != null) {
-                final var analyzer = new GenericExpressionAnalyzer(compiler, compileContext);
-                ParseTreeWalker.DEFAULT.walk(analyzer, expr);
-                constraints = analyzer.getConstraints();
+                final var parser = new GenericExpressionParser(compiler, compileContext);
+                ParseTreeWalker.DEFAULT.walk(parser, expr);
+                constraints = parser.getConstraints();
             }
             result.add(new GenericParameter(name.toString(),
                 constraints,
@@ -114,7 +114,7 @@ public final class TypeUtils {
 
     public static Type getType(final Compiler compiler, final CompileContext compileContext,
                                final ScopeStack scopeStack, final TypeContext context) {
-        final TypeAnalyzer unit = new TypeAnalyzer(compiler, compileContext, scopeStack);
+        final TypeParser unit = new TypeParser(compiler, compileContext, scopeStack);
         ParseTreeWalker.DEFAULT.walk(unit, context);
         return unit.getType();
     }

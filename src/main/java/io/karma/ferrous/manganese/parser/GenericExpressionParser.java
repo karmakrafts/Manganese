@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.analyze;
+package io.karma.ferrous.manganese.parser;
 
 import io.karma.ferrous.manganese.ParseAdapter;
 import io.karma.ferrous.manganese.compiler.CompileContext;
@@ -28,11 +28,11 @@ import org.apiguardian.api.API;
  * @since 28/10/2023
  */
 @API(status = API.Status.INTERNAL)
-public final class GenericExpressionAnalyzer extends ParseAdapter {
+public final class GenericExpressionParser extends ParseAdapter {
     private final GenericConstraint constraints = GenericConstraint.TRUE;
     private int groupLevel = 0;
 
-    public GenericExpressionAnalyzer(final Compiler compiler, final CompileContext compileContext) {
+    public GenericExpressionParser(final Compiler compiler, final CompileContext compileContext) {
         super(compiler, compileContext);
     }
 

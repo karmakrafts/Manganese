@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.translate;
+package io.karma.ferrous.manganese.parser;
 
 import io.karma.ferrous.manganese.ParseAdapter;
 import io.karma.ferrous.manganese.compiler.CompileContext;
@@ -49,9 +49,9 @@ public final class FunctionParser extends ParseAdapter {
         if (function.getBody() != null) {
             return;
         }
-        final var analyzer = new FunctionBodyParser(compiler, compileContext, function.getType());
-        ParseTreeWalker.DEFAULT.walk(analyzer, context);
-        function.createBody(analyzer.getStatements().toArray(Statement[]::new));
+        final var parser = new FunctionBodyParser(compiler, compileContext, function.getType());
+        ParseTreeWalker.DEFAULT.walk(parser, context);
+        function.createBody(parser.getStatements().toArray(Statement[]::new));
         super.enterFunctionBody(context);
     }
 
