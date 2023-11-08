@@ -23,9 +23,6 @@ import io.karma.ferrous.manganese.ocm.access.ScopedAccess;
 import io.karma.ferrous.manganese.ocm.scope.ScopeStack;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.vanadium.FerrousParser.AccessModContext;
-import io.karma.ferrous.vanadium.FerrousParser.IdentContext;
-import io.karma.ferrous.vanadium.FerrousParser.LerpIdentContext;
-import io.karma.ferrous.vanadium.FerrousParser.QualifiedIdentContext;
 import io.karma.kommons.util.SystemInfo;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
@@ -46,9 +43,9 @@ import java.util.List;
  * @since 13/10/2023
  */
 @API(status = Status.INTERNAL)
-public final class Utils {
+public final class KitchenSink {
     // @formatter:off
-    private Utils() {}
+    private KitchenSink() {}
     // @formatter:on
 
     public static <E extends Enum<E>> EnumSet<E> allExcept(final Class<E> type, final E... excluded) {
@@ -123,34 +120,6 @@ public final class Utils {
         }
         catch (Exception error) { /* swallow exception */ }
         return files;
-    }
-
-    public static Identifier getIdentifier(final IdentContext context) {
-        final var children = context.children;
-        final var buffer = new StringBuilder();
-        for (final var child : children) {
-            if (child instanceof LerpIdentContext lerpContext) {
-                // TODO: handle interpolated identifiers
-                Logger.INSTANCE.warn("Identifier interpolation is not implemented right now");
-                continue;
-            }
-            buffer.append(child.getText());
-        }
-        return Identifier.parse(buffer.toString());
-    }
-
-    public static Identifier getIdentifier(final QualifiedIdentContext context) {
-        final var children = context.children;
-        final var buffer = new StringBuilder();
-        for (final var child : children) {
-            if (child instanceof LerpIdentContext lerpContext) {
-                // TODO: handle interpolated identifiers
-                Logger.INSTANCE.warn("Identifier interpolation is not implemented right now");
-                continue;
-            }
-            buffer.append(child.getText());
-        }
-        return Identifier.parse(buffer.toString());
     }
 
     public static String getRawFileName(final Path path) {

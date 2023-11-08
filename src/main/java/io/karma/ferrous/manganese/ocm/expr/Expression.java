@@ -29,6 +29,13 @@ import org.apiguardian.api.API.Status;
 public interface Expression extends Statement {
     Type getType();
 
+    default boolean isResultDiscarded() {
+        return false;
+    }
+
+    default void setResultDiscarded(boolean isResultDiscarded) {
+    }
+
     default boolean isConstant() {
         return false;
     }

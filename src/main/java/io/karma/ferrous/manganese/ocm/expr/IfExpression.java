@@ -16,6 +16,7 @@
 package io.karma.ferrous.manganese.ocm.expr;
 
 import io.karma.ferrous.manganese.ocm.BlockContext;
+import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.TokenSlice;
@@ -23,6 +24,7 @@ import io.karma.ferrous.manganese.util.TypeUtils;
 import io.karma.kommons.lazy.Lazy;
 import io.karma.kommons.tuple.Pair;
 import org.apiguardian.api.API;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
@@ -35,6 +37,7 @@ public final class IfExpression implements Expression {
     private final List<Pair<Expression, ScopeExpression>> branches;
     private final Lazy<Type> type;
     private final TokenSlice tokenSlice;
+    private Scope enclosingScope;
 
     public IfExpression(final List<Pair<Expression, ScopeExpression>> branches, final TokenSlice tokenSlice) {
         if (branches.isEmpty()) {
@@ -49,8 +52,22 @@ public final class IfExpression implements Expression {
         this.tokenSlice = tokenSlice;
     }
 
+    // Scoped
+
     @Override
-    public TokenSlice tokenSlice() {
+    public @Nullable Scope getEnclosingScope() {
+        return enclosingScope;
+    }
+
+    @Override
+    public void setEnclosingScope(final Scope enclosingScope) {
+        this.enclosingScope = enclosingScope;
+    }
+
+    // Expression
+
+    @Override
+    public TokenSlice getTokenSlice() {
         return tokenSlice;
     }
 

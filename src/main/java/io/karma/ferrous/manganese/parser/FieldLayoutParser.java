@@ -20,9 +20,10 @@ import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.Field;
 import io.karma.ferrous.manganese.ocm.scope.ScopeStack;
+import io.karma.ferrous.manganese.util.Identifier;
+import io.karma.ferrous.manganese.util.KitchenSink;
 import io.karma.ferrous.manganese.util.TokenSlice;
 import io.karma.ferrous.manganese.util.TypeUtils;
-import io.karma.ferrous.manganese.util.Utils;
 import io.karma.ferrous.vanadium.FerrousParser.FieldContext;
 import io.karma.ferrous.vanadium.FerrousParser.UdtContext;
 import org.apiguardian.api.API;
@@ -65,11 +66,11 @@ public final class FieldLayoutParser extends ParseAdapter {
         if (isOutOfScope()) {
             return;
         }
-        final var name = Utils.getIdentifier(context.ident());
-        final var type = TypeUtils.getType(compiler, compileContext, capturedScopeStack, context.type());
+        final var name = Identifier.parse(context.ident());
+        final var type = TypeUtils.parseType(compiler, compileContext, capturedScopeStack, context.type());
         fields.add(new Field(name,
             type,
-            Utils.getAccess(compiler, compileContext, scopeStack, context.accessMod()),
+            KitchenSink.getAccess(compiler, compileContext, scopeStack, context.accessMod()),
             TokenSlice.from(compileContext, context)));
         super.enterField(context);
     }

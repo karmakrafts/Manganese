@@ -21,9 +21,9 @@ import io.karma.ferrous.manganese.linker.Linker;
 import io.karma.ferrous.manganese.profiler.Profiler;
 import io.karma.ferrous.manganese.target.FileType;
 import io.karma.ferrous.manganese.target.TargetMachine;
+import io.karma.ferrous.manganese.util.KitchenSink;
 import io.karma.ferrous.manganese.util.Logger;
 import io.karma.ferrous.manganese.util.TokenUtils;
-import io.karma.ferrous.manganese.util.Utils;
 import io.karma.ferrous.vanadium.FerrousLexer;
 import io.karma.ferrous.vanadium.FerrousParser;
 import io.karma.kommons.function.Functions;
@@ -199,19 +199,19 @@ public final class Compiler {
             }
         }
 
-        final var inputFiles = Utils.findFilesWithExtensions(in, IN_EXTENSIONS);
+        final var inputFiles = KitchenSink.findFilesWithExtensions(in, IN_EXTENSIONS);
         final var numFiles = inputFiles.size();
         final var maxProgress = (numFiles << 1) + 1;
         final var futures = new ArrayDeque<CompletableFuture<Void>>();
 
         for (var i = 0; i < numFiles; ++i) {
             final var file = inputFiles.get(i);
-            final var rawFileName = Utils.getRawFileName(file);
+            final var rawFileName = KitchenSink.getRawFileName(file);
 
             // @formatter:off
             Logger.INSTANCE.infoln(Ansi.ansi()
                 .fg(Color.GREEN)
-                .a(Utils.getProgressIndicator(maxProgress, i))
+                .a(KitchenSink.getProgressIndicator(maxProgress, i))
                 .a(Attribute.RESET)
                 .a(" Analyzing file ")
                 .fg(Color.BLUE)
@@ -241,7 +241,7 @@ public final class Compiler {
             }
         }
 
-        final var moduleName = Utils.getRawFileName(in);
+        final var moduleName = KitchenSink.getRawFileName(in);
         final var module = targetMachine.createModule(moduleName);
         module.setSourceFileName(String.format("%s.o", moduleName));
 
@@ -251,7 +251,7 @@ public final class Compiler {
             // @formatter:off
             Logger.INSTANCE.infoln(Ansi.ansi()
                 .fg(Color.GREEN)
-                .a(Utils.getProgressIndicator(maxProgress, numFiles + 1 + i))
+                .a(KitchenSink.getProgressIndicator(maxProgress, numFiles + 1 + i))
                 .a(Attribute.RESET)
                 .a(" Compiling file ")
                 .fg(Color.BLUE)
@@ -260,7 +260,7 @@ public final class Compiler {
                 .a(Attribute.RESET)
                 .toString());
             // @formatter:on
-            final var rawFileName = Utils.getRawFileName(file);
+            final var rawFileName = KitchenSink.getRawFileName(file);
 
             compile(rawFileName, file.getFileName().toString(), context);
             final var compiledModule = context.getModule(rawFileName);
@@ -284,14 +284,14 @@ public final class Compiler {
             Logger.INSTANCE.infoln("Native disassembly:\n\n%s", module.disassembleAssembly(targetMachine));
         }
 
-        final var objectFile = out.getParent().resolve(String.format("%s.o", Utils.getRawFileName(out)));
+        final var objectFile = out.getParent().resolve(String.format("%s.o", KitchenSink.getRawFileName(out)));
         module.generateAssembly(targetMachine, FileType.OBJECT, objectFile);
         module.dispose();
 
         // @formatter:off
         Logger.INSTANCE.infoln(Ansi.ansi()
             .fg(Color.GREEN)
-            .a(Utils.getProgressIndicator(maxProgress, maxProgress))
+            .a(KitchenSink.getProgressIndicator(maxProgress, maxProgress))
             .a(Attribute.RESET)
             .a(" Linking module ")
             .fg(Color.BLUE)
@@ -345,7 +345,7 @@ public final class Compiler {
         public void syntaxError(final Recognizer<?, ?> recognizer, final Object offendingSymbol, final int line,
                                 final int charPositionInLine, final String msg, final RecognitionException e) {
             context.reportError((Token) offendingSymbol,
-                Utils.makeCompilerMessage(Utils.capitalize(msg)),
+                KitchenSink.makeCompilerMessage(KitchenSink.capitalize(msg)),
                 CompileErrorCode.E2000);
         }
 

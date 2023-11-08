@@ -51,10 +51,10 @@ public final class ProtoFunctionParser extends ParseAdapter {
         if (function != null) {
             return;
         }
-        final var identifier = FunctionUtils.getFunctionName(context.functionIdent());
-        final var callConv = FunctionUtils.getCallingConvention(compileContext, context);
-        final var type = FunctionUtils.getFunctionType(compiler, compileContext, capturedScopeStack, context);
-        final var paramNames = FunctionUtils.getParameterNames(context);
+        final var identifier = FunctionUtils.parseFunctionName(context.functionIdent());
+        final var callConv = FunctionUtils.parseCallingConvention(compileContext, context);
+        final var type = FunctionUtils.parseFunctionType(compiler, compileContext, capturedScopeStack, context);
+        final var paramNames = FunctionUtils.parseParameterNames(context);
         final var paramTypes = type.getParamTypes();
         final var numParams = paramTypes.length;
         var expectedNumParams = paramNames.length;

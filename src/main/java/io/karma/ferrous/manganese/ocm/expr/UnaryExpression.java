@@ -15,24 +15,81 @@
 
 package io.karma.ferrous.manganese.ocm.expr;
 
+import io.karma.ferrous.manganese.ocm.BlockBuilder;
 import io.karma.ferrous.manganese.ocm.BlockContext;
+import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.ocm.type.BuiltinType;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Operator;
 import io.karma.ferrous.manganese.util.TokenSlice;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
+
+import static org.lwjgl.llvm.LLVMCore.LLVMConstInt;
+import static org.lwjgl.system.MemoryUtil.NULL;
 
 /**
  * @author Alexander Hinze
  * @since 22/10/2023
  */
-public record UnaryExpression(Operator op, Expression value, TokenSlice tokenSlice) implements Expression {
-    public UnaryExpression {
+public final class UnaryExpression implements Expression {
+    private final Operator op;
+    private final Expression value;
+    private final TokenSlice tokenSlice;
+    private Scope enclosingScope;
+
+    public UnaryExpression(final Operator op, final Expression value, final TokenSlice tokenSlice) {
         if (!op.isUnary()) {
             throw new IllegalArgumentException(String.format("%s is not a unary operator", op));
         }
+        this.op = op;
+        this.value = value;
+        this.tokenSlice = tokenSlice;
+    }
+
+    private long emitPreIncrement(final long value, final BlockBuilder builder) {
+        return value;
+    }
+
+    private long emitIncrement(final long value, final BlockBuilder builder) {
+        return value;
+    }
+
+    private long emitPreDecrement(final long value, final BlockBuilder builder) {
+        return value;
+    }
+
+    private long emitDecrement(final long value, final BlockBuilder builder) {
+        return value;
+    }
+
+    private long emitPreInverseAssign(final long value, final BlockBuilder builder) {
+        return value;
+    }
+
+    private long emitInverseAssign(final long value, final BlockBuilder builder) {
+        return value;
+    }
+
+    // Scoped
+
+    @Override
+    public @Nullable Scope getEnclosingScope() {
+        return enclosingScope;
+    }
+
+    @Override
+    public void setEnclosingScope(final Scope enclosingScope) {
+        this.enclosingScope = enclosingScope;
+    }
+
+    // Expression
+
+    @Override
+    public TokenSlice getTokenSlice() {
+        return tokenSlice;
     }
 
     @Override
@@ -40,12 +97,20 @@ public record UnaryExpression(Operator op, Expression value, TokenSlice tokenSli
         final var builder = blockContext.getCurrentOrCreate();
         final var type = value.getType();
         if (!(type instanceof BuiltinType builtinType)) {
-            return 0L; // TODO: implement user defined operator calls
+            return NULL; // TODO: implement user defined operator calls
         }
         final var address = value.emit(targetMachine, blockContext);
         return switch(op) { // @formatter:off
-            case MINUS -> builtinType.isFloatType() ? builder.fneg(address) : builder.neg(address);
-            default    -> throw new IllegalStateException("Operator not supported");
+            case MINUS          -> builtinType.isFloatType() ? builder.fneg(address) : builder.neg(address);
+            case PLUS           -> builtinType.isFloatType() ? builder.fneg(address) : builder.neg(address);
+            case INV            -> builder.xor(address, LLVMConstInt(type.materialize(targetMachine), -1, false));
+            case PRE_INC        -> emitPreIncrement(address, builder);
+            case INC            -> emitIncrement(address, builder);
+            case PRE_DEC        -> emitPreDecrement(address, builder);
+            case DEC            -> emitDecrement(address, builder);
+            case PRE_INV_ASSIGN -> emitPreInverseAssign(address, builder);
+            case INV_ASSIGN     -> emitInverseAssign(address, builder);
+            default             -> throw new IllegalStateException("Operator not supported");
         }; // @formatter:on
     }
 

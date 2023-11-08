@@ -47,7 +47,7 @@ public final class FunctionUtils {
     private FunctionUtils() {}
     // @formatter:on
 
-    public static Identifier[] getParameterNames(final ProtoFunctionContext context) {
+    public static Identifier[] parseParameterNames(final ProtoFunctionContext context) {
         final var paramList = context.functionParamList();
         final var params = paramList.functionParam();
         if (params.isEmpty()) {
@@ -55,18 +55,18 @@ public final class FunctionUtils {
         }
         // @formatter:off
         final var names = params.stream()
-            .map(param -> Utils.getIdentifier(param.ident()))
+            .map(param -> Identifier.parse(param.ident()))
             .collect(Collectors.toCollection(ArrayList::new));
         // @formatter:on
         final var vaParam = paramList.vaFunctionParam();
         if (vaParam != null) {
-            names.add(Utils.getIdentifier(vaParam.ident()));
+            names.add(Identifier.parse(vaParam.ident()));
         }
         return names.toArray(Identifier[]::new);
     }
 
-    public static CallingConvention getCallingConvention(final CompileContext compileContext,
-                                                         final ProtoFunctionContext context) {
+    public static CallingConvention parseCallingConvention(final CompileContext compileContext,
+                                                           final ProtoFunctionContext context) {
         final var convContext = context.callConvMod();
         if (convContext == null) {
             return CallingConvention.CDECL;
@@ -78,14 +78,14 @@ public final class FunctionUtils {
             final var message = String.format(
                 "'%s' is not a valid calling convention, expected one of the following values",
                 name);
-            final var formattedMessage = Utils.makeCompilerMessage(message, CallingConvention.EXPECTED_VALUES);
+            final var formattedMessage = KitchenSink.makeCompilerMessage(message, CallingConvention.EXPECTED_VALUES);
             compileContext.reportError(identifier.getSymbol(), formattedMessage, CompileErrorCode.E4000);
             return CallingConvention.CDECL;
         }
         return conv.get();
     }
 
-    public static Identifier getFunctionName(final FunctionIdentContext context) {
+    public static Identifier parseFunctionName(final FunctionIdentContext context) {
         final var children = context.children;
         if (children.size() == 1) {
             final var text = children.getFirst().getText();
@@ -94,12 +94,12 @@ public final class FunctionUtils {
                 return Identifier.parse(op.get().getFunctionName());
             }
         }
-        return Utils.getIdentifier(context.ident());
+        return Identifier.parse(context.ident());
     }
 
-    public static List<Type> getParameterTypes(final Compiler compiler, final CompileContext compileContext,
-                                               final ScopeStack scopeStack,
-                                               final @Nullable ProtoFunctionContext context) {
+    public static List<Type> parseParameterTypes(final Compiler compiler, final CompileContext compileContext,
+                                                 final ScopeStack scopeStack,
+                                                 final @Nullable ProtoFunctionContext context) {
         if (context == null) {
             return Collections.emptyList();
         }
@@ -107,7 +107,7 @@ public final class FunctionUtils {
         return context.functionParamList().functionParam().stream()
             .map(FerrousParser.FunctionParamContext::type)
             .filter(type -> type != null && !type.getText().equals(TokenUtils.getLiteral(FerrousLexer.KW_VAARGS)))
-            .map(type -> TypeUtils.getType(compiler, compileContext, scopeStack, type))
+            .map(type -> TypeUtils.parseType(compiler, compileContext, scopeStack, type))
             .peek(type -> {
                 //if(type == BuiltinType.VOID) {
                 //    compileContext.reportError(compileContext.makeError());
@@ -117,16 +117,16 @@ public final class FunctionUtils {
         // @formatter:on
     }
 
-    public static FunctionType getFunctionType(final Compiler compiler, final CompileContext compileContext,
-                                               final ScopeStack scopeStack, final ProtoFunctionContext context) {
+    public static FunctionType parseFunctionType(final Compiler compiler, final CompileContext compileContext,
+                                                 final ScopeStack scopeStack, final ProtoFunctionContext context) {
         final var type = context.type();
         // @formatter:off
         final var returnType = type == null
             ? BuiltinType.VOID
-            : Objects.requireNonNull(TypeUtils.getType(compiler, compileContext, scopeStack, type));
+            : Objects.requireNonNull(TypeUtils.parseType(compiler, compileContext, scopeStack, type));
         // @formatter:on
         final var isVarArg = context.functionParamList().vaFunctionParam() != null;
-        final var paramTypes = getParameterTypes(compiler, compileContext, scopeStack, context);
+        final var paramTypes = parseParameterTypes(compiler, compileContext, scopeStack, context);
         return Types.function(returnType,
             paramTypes,
             isVarArg,

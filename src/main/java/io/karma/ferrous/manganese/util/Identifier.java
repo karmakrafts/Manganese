@@ -17,6 +17,8 @@ package io.karma.ferrous.manganese.util;
 
 import io.karma.ferrous.manganese.ocm.scope.ScopeStack;
 import io.karma.ferrous.vanadium.FerrousLexer;
+import io.karma.ferrous.vanadium.FerrousParser;
+import org.antlr.v4.runtime.ParserRuleContext;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 
@@ -52,6 +54,20 @@ public record Identifier(String... components) {
             return new Identifier(value);
         }
         return new Identifier(value.split(DELIMITER));
+    }
+
+    public static Identifier parse(final ParserRuleContext context) {
+        final var children = context.children;
+        final var buffer = new StringBuilder();
+        for (final var child : children) {
+            if (child instanceof FerrousParser.LerpIdentContext lerpContext) {
+                // TODO: handle interpolated identifiers
+                Logger.INSTANCE.warn("Identifier interpolation is not implemented right now");
+                continue;
+            }
+            buffer.append(child.getText());
+        }
+        return parse(buffer.toString());
     }
 
     public Identifier[] split(final String delimiter) {

@@ -144,6 +144,22 @@ public final class ExpressionParser extends ParseAdapter {
     }
 
     @Override
+    public void enterLetExpr(final LetExprContext context) {
+        final var name = Identifier.parse(context.ident());
+        Type type;
+        final var typeContext = context.type();
+        if (typeContext != null) {
+            type = TypeUtils.parseType(compiler, compileContext, scopeStack, typeContext);
+            if (type == null) {
+                compileContext.reportError(typeContext.start, name.toString(), CompileErrorCode.E3002);
+                return;
+            }
+        }
+
+        super.enterLetExpr(context);
+    }
+
+    @Override
     public void enterCallExpr(final CallExprContext context) {
         if (expression != null) {
             return;
@@ -151,10 +167,10 @@ public final class ExpressionParser extends ParseAdapter {
         final var qualifiedIdentContext = context.qualifiedIdent();
         Identifier name;
         if (qualifiedIdentContext != null) {
-            name = Utils.getIdentifier(qualifiedIdentContext);
+            name = Identifier.parse(qualifiedIdentContext);
         }
         else {
-            name = Utils.getIdentifier(context.ident());
+            name = Identifier.parse(context.ident());
         }
         final var scopeName = scopeStack.getScopeName();
         final var args = ExpressionUtils.parseExpressions(compiler, compileContext, context.exprList());
@@ -262,7 +278,7 @@ public final class ExpressionParser extends ParseAdapter {
             return;
         }
         if (context.KW_NULL() != null) {
-            expression = NullConstant.INSTANCE;
+            expression = new NullConstant(TokenSlice.from(compileContext, context));
         }
         super.enterLiteral(context);
     }

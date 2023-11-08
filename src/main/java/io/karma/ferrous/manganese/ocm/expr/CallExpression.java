@@ -17,10 +17,12 @@ package io.karma.ferrous.manganese.ocm.expr;
 
 import io.karma.ferrous.manganese.ocm.BlockContext;
 import io.karma.ferrous.manganese.ocm.Function;
+import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.TokenSlice;
 import org.apiguardian.api.API;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 
@@ -29,7 +31,37 @@ import java.util.Arrays;
  * @since 06/11/2023
  */
 @API(status = API.Status.INTERNAL)
-public record CallExpression(Function function, TokenSlice tokenSlice, Expression... args) implements Expression {
+public final class CallExpression implements Expression {
+    private final Function function;
+    private final TokenSlice tokenSlice;
+    private final Expression[] args;
+    private Scope enclosingScope;
+
+    public CallExpression(final Function function, final TokenSlice tokenSlice, final Expression... args) {
+        this.function = function;
+        this.tokenSlice = tokenSlice;
+        this.args = args;
+    }
+
+    // Scoped
+
+    @Override
+    public @Nullable Scope getEnclosingScope() {
+        return enclosingScope;
+    }
+
+    @Override
+    public void setEnclosingScope(final Scope enclosingScope) {
+        this.enclosingScope = enclosingScope;
+    }
+
+    // Expression
+
+    @Override
+    public TokenSlice getTokenSlice() {
+        return tokenSlice;
+    }
+
     @Override
     public Type getType() {
         return function.getType().getReturnType();

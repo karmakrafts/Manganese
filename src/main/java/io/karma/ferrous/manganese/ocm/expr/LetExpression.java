@@ -13,33 +13,46 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.ocm.constant;
+package io.karma.ferrous.manganese.ocm.expr;
 
 import io.karma.ferrous.manganese.ocm.BlockContext;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
-import io.karma.ferrous.manganese.ocm.type.ImaginaryType;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.TokenSlice;
-import org.antlr.v4.runtime.Token;
+import org.apiguardian.api.API;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * @author Alexander Hinze
- * @since 24/10/2023
+ * @since 08/11/2023
  */
-public final class TokenConstant implements Constant {
-    private final Token value;
+@API(status = API.Status.INTERNAL)
+public final class LetExpression implements Expression {
+    private final String name;
+    private final Type type;
     private final TokenSlice tokenSlice;
+    private Expression value;
     private Scope enclosingScope;
 
-    public TokenConstant(final Token value, final TokenSlice tokenSlice) {
+    public LetExpression(final String name, final Type type, final @Nullable Expression value,
+                         final TokenSlice tokenSlice) {
+        this.name = name;
+        this.type = type;
         this.value = value;
         this.tokenSlice = tokenSlice;
     }
 
-    public Token getValue() {
+    public LetExpression(final String name, final Expression value, final TokenSlice tokenSlice) {
+        this(name, value.getType(), value, tokenSlice);
+    }
+
+    public Expression getValue() {
         return value;
+    }
+
+    public void setValue(final @Nullable Expression value) {
+        this.value = value;
     }
 
     // Scoped
@@ -54,7 +67,12 @@ public final class TokenConstant implements Constant {
         this.enclosingScope = enclosingScope;
     }
 
-    // Expressions
+    // Expression
+
+    @Override
+    public Type getType() {
+        return type;
+    }
 
     @Override
     public TokenSlice getTokenSlice() {
@@ -62,12 +80,12 @@ public final class TokenConstant implements Constant {
     }
 
     @Override
-    public Type getType() {
-        return ImaginaryType.TOKEN;
-    }
-
-    @Override
     public long emit(final TargetMachine targetMachine, final BlockContext blockContext) {
-        return 0L;
+        final var builder = blockContext.getCurrentOrCreate();
+        final var address = builder.alloca(type.materialize(targetMachine));
+        if (value != null) {
+            builder.store(value.emit(targetMachine, blockContext), address);
+        }
+        return address;
     }
 }

@@ -16,18 +16,47 @@
 package io.karma.ferrous.manganese.ocm.constant;
 
 import io.karma.ferrous.manganese.ocm.BlockContext;
+import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.ocm.type.ImaginaryType;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.TokenSlice;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * @author Alexander Hinze
  * @since 24/10/2023
  */
-public record TypeConstant(Type value, TokenSlice tokenSlice) implements Constant {
+public final class TypeConstant implements Constant {
+    private final Type value;
+    private final TokenSlice tokenSlice;
+    private Scope enclosingScope;
+
+    public TypeConstant(Type value, TokenSlice tokenSlice) {
+        this.value = value;
+        this.tokenSlice = tokenSlice;
+    }
+
+    public Type getValue() {
+        return value;
+    }
+
+    // Scoped
+
     @Override
-    public TokenSlice tokenSlice() {
+    public @Nullable Scope getEnclosingScope() {
+        return enclosingScope;
+    }
+
+    @Override
+    public void setEnclosingScope(final Scope enclosingScope) {
+        this.enclosingScope = enclosingScope;
+    }
+
+    // Expressions
+
+    @Override
+    public TokenSlice getTokenSlice() {
         return tokenSlice;
     }
 

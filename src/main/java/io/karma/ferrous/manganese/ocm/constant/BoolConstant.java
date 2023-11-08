@@ -16,12 +16,14 @@
 package io.karma.ferrous.manganese.ocm.constant;
 
 import io.karma.ferrous.manganese.ocm.BlockContext;
+import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.ocm.type.BuiltinType;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.TokenSlice;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
+import org.jetbrains.annotations.Nullable;
 import org.lwjgl.llvm.LLVMCore;
 
 /**
@@ -29,12 +31,36 @@ import org.lwjgl.llvm.LLVMCore;
  * @since 24/10/2023
  */
 @API(status = Status.INTERNAL)
-public record BoolConstant(boolean value, TokenSlice tokenSlice) implements Constant {
-    public static final BoolConstant TRUE = new BoolConstant(true, TokenSlice.EMPTY);
-    public static final BoolConstant FALSE = new BoolConstant(false, TokenSlice.EMPTY);
+public final class BoolConstant implements Constant {
+    private final boolean value;
+    private final TokenSlice tokenSlice;
+    private Scope enclosingScope;
+
+    public BoolConstant(boolean value, TokenSlice tokenSlice) {
+        this.value = value;
+        this.tokenSlice = tokenSlice;
+    }
+
+    public boolean getValue() {
+        return value;
+    }
+
+    // Scoped
 
     @Override
-    public TokenSlice tokenSlice() {
+    public @Nullable Scope getEnclosingScope() {
+        return enclosingScope;
+    }
+
+    @Override
+    public void setEnclosingScope(Scope enclosingScope) {
+        this.enclosingScope = enclosingScope;
+    }
+
+    // Expression
+
+    @Override
+    public TokenSlice getTokenSlice() {
         return tokenSlice;
     }
 

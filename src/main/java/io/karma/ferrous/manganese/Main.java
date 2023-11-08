@@ -23,9 +23,9 @@ import io.karma.ferrous.manganese.linker.LinkTargetType;
 import io.karma.ferrous.manganese.linker.LinkerType;
 import io.karma.ferrous.manganese.profiler.Profiler;
 import io.karma.ferrous.manganese.target.*;
+import io.karma.ferrous.manganese.util.KitchenSink;
 import io.karma.ferrous.manganese.util.Logger;
 import io.karma.ferrous.manganese.util.Logger.LogLevel;
-import io.karma.ferrous.manganese.util.Utils;
 import io.karma.kommons.util.SystemInfo;
 import joptsimple.BuiltinHelpFormatter;
 import joptsimple.OptionException;
@@ -284,7 +284,7 @@ final class Main {
             // @formatter:off
             final var out = options.has(outOpt)
                 ? Path.of(options.valueOf(outOpt))
-                : Path.of(Utils.getRawFileName(in));
+                : Path.of(KitchenSink.getRawFileName(in));
             // @formatter:on
 
             final var context = new CompileContext();

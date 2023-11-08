@@ -16,11 +16,13 @@
 package io.karma.ferrous.manganese.ocm.constant;
 
 import io.karma.ferrous.manganese.ocm.BlockContext;
+import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.TokenSlice;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
+import org.jetbrains.annotations.Nullable;
 import org.lwjgl.llvm.LLVMCore;
 
 /**
@@ -32,8 +34,9 @@ public final class IntConstant implements Constant {
     private final Type type;
     private final long value;
     private final TokenSlice tokenSlice;
+    private Scope enclosingScope;
 
-    public IntConstant(final Type type, final long value, final TokenSlice tokenSlice) {
+    public IntConstant(Type type, long value, TokenSlice tokenSlice) {
         this.type = type;
         this.value = value;
         this.tokenSlice = tokenSlice;
@@ -43,14 +46,28 @@ public final class IntConstant implements Constant {
         return value;
     }
 
+    // Scoped
+
     @Override
-    public TokenSlice tokenSlice() {
-        return tokenSlice;
+    public @Nullable Scope getEnclosingScope() {
+        return enclosingScope;
     }
+
+    @Override
+    public void setEnclosingScope(final Scope enclosingScope) {
+        this.enclosingScope = enclosingScope;
+    }
+
+    // Expressions
 
     @Override
     public Type getType() {
         return type;
+    }
+
+    @Override
+    public TokenSlice getTokenSlice() {
+        return tokenSlice;
     }
 
     @Override

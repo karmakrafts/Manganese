@@ -16,6 +16,7 @@
 package io.karma.ferrous.manganese.ocm.expr;
 
 import io.karma.ferrous.manganese.ocm.BlockContext;
+import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.ocm.statement.ReturnStatement;
 import io.karma.ferrous.manganese.ocm.statement.Statement;
 import io.karma.ferrous.manganese.ocm.type.BuiltinType;
@@ -25,6 +26,7 @@ import io.karma.ferrous.manganese.util.TokenSlice;
 import io.karma.ferrous.manganese.util.TypeUtils;
 import io.karma.kommons.lazy.Lazy;
 import org.apiguardian.api.API;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 
@@ -37,6 +39,7 @@ public final class ScopeExpression implements Expression {
     private final Statement[] statements;
     private final Lazy<Type> type = new Lazy<>(this::findReturnType);
     private final TokenSlice tokenSlice;
+    private Scope enclosingScope;
 
     public ScopeExpression(final TokenSlice tokenSlice, final Statement... statements) {
         this.statements = statements;
@@ -62,8 +65,22 @@ public final class ScopeExpression implements Expression {
         return types.isEmpty() ? BuiltinType.VOID : TypeUtils.findCommonType(types.toArray(Type[]::new));
     }
 
+    // Scoped
+
     @Override
-    public TokenSlice tokenSlice() {
+    public @Nullable Scope getEnclosingScope() {
+        return enclosingScope;
+    }
+
+    @Override
+    public void setEnclosingScope(final Scope enclosingScope) {
+        this.enclosingScope = enclosingScope;
+    }
+
+    // Expression
+
+    @Override
+    public TokenSlice getTokenSlice() {
         return tokenSlice;
     }
 

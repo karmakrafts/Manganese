@@ -70,7 +70,7 @@ public final class FunctionParser extends ParseAdapter {
                     compileContext.reportError(context.start, CompileErrorCode.E4005);
                 }
                 else {
-                    compileContext.reportError(statements.getLast().tokenSlice().getFirstToken(),
+                    compileContext.reportError(statements.getLast().getTokenSlice().getFirstToken(),
                         CompileErrorCode.E4005);
                 }
             }

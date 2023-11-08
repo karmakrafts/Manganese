@@ -26,7 +26,7 @@ import io.karma.ferrous.manganese.ocm.scope.ScopeType;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.util.FunctionUtils;
 import io.karma.ferrous.manganese.util.Identifier;
-import io.karma.ferrous.manganese.util.Utils;
+import io.karma.ferrous.manganese.util.KitchenSink;
 import io.karma.ferrous.vanadium.FerrousParser.*;
 import io.karma.ferrous.vanadium.FerrousParserListener;
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -76,23 +76,23 @@ public abstract class ParseAdapter implements FerrousParserListener {
     }
 
     protected @Nullable Function getFunction(final ProtoFunctionContext context) {
-        final var name = FunctionUtils.getFunctionName(context.functionIdent());
+        final var name = FunctionUtils.parseFunctionName(context.functionIdent());
         final var scopeName = scopeStack.getScopeName();
-        final var type = FunctionUtils.getFunctionType(compiler, compileContext, scopeStack, context);
+        final var type = FunctionUtils.parseFunctionType(compiler, compileContext, scopeStack, context);
         final var function = compileContext.getPreAnalyzer().findFunctionInScope(name, scopeName, type);
         if (function == null) {
-            compileContext.reportError(Utils.makeCompilerMessage(name.toString()), CompileErrorCode.E5000);
+            compileContext.reportError(KitchenSink.makeCompilerMessage(name.toString()), CompileErrorCode.E5000);
         }
         return function;
     }
 
     protected @Nullable Type getType(final IdentContext context) {
-        return compileContext.getPreAnalyzer().findCompleteTypeInScope(Utils.getIdentifier(context),
+        return compileContext.getPreAnalyzer().findCompleteTypeInScope(Identifier.parse(context),
             scopeStack.getScopeName());
     }
 
     protected @Nullable Type getType(final QualifiedIdentContext context) {
-        return compileContext.getPreAnalyzer().findCompleteTypeInScope(Utils.getIdentifier(context),
+        return compileContext.getPreAnalyzer().findCompleteTypeInScope(Identifier.parse(context),
             scopeStack.getScopeName());
     }
 
@@ -217,10 +217,10 @@ public abstract class ParseAdapter implements FerrousParserListener {
     public void enterModBlock(final ModBlockContext context) {
         final var qualifiedIdent = context.qualifiedIdent();
         if(qualifiedIdent != null) {
-            pushScope(ScopeType.MODULE, Utils.getIdentifier(qualifiedIdent));
+            pushScope(ScopeType.MODULE, Identifier.parse(qualifiedIdent));
             return;
         }
-        pushScope(ScopeType.MODULE, Utils.getIdentifier(context.ident()));
+        pushScope(ScopeType.MODULE, Identifier.parse(context.ident()));
     }
 
     @Override
@@ -284,7 +284,7 @@ public abstract class ParseAdapter implements FerrousParserListener {
 
     @Override
     public void enterEnumClass(EnumClassContext context) {
-        pushScope(ScopeType.ENUM_CLASS, Utils.getIdentifier(context.ident()));
+        pushScope(ScopeType.ENUM_CLASS, Identifier.parse(context.ident()));
     }
 
     @Override
@@ -294,7 +294,7 @@ public abstract class ParseAdapter implements FerrousParserListener {
 
     @Override
     public void enterClass(ClassContext context) {
-        pushScope(ScopeType.CLASS, Utils.getIdentifier(context.ident()));
+        pushScope(ScopeType.CLASS, Identifier.parse(context.ident()));
     }
 
     @Override
@@ -316,7 +316,7 @@ public abstract class ParseAdapter implements FerrousParserListener {
 
     @Override
     public void enterEnum(EnumContext context) {
-        pushScope(ScopeType.ENUM, Utils.getIdentifier(context.ident()));
+        pushScope(ScopeType.ENUM, Identifier.parse(context.ident()));
     }
 
     @Override
@@ -338,7 +338,7 @@ public abstract class ParseAdapter implements FerrousParserListener {
 
     @Override
     public void enterStruct(StructContext context) {
-        pushScope(ScopeType.STRUCT, Utils.getIdentifier(context.ident()));
+        pushScope(ScopeType.STRUCT, Identifier.parse(context.ident()));
     }
 
     @Override
@@ -354,7 +354,7 @@ public abstract class ParseAdapter implements FerrousParserListener {
 
     @Override
     public void enterInterface(InterfaceContext context) {
-        pushScope(ScopeType.INTERFACE, Utils.getIdentifier(context.ident()));
+        pushScope(ScopeType.INTERFACE, Identifier.parse(context.ident()));
     }
 
     @Override
@@ -370,7 +370,7 @@ public abstract class ParseAdapter implements FerrousParserListener {
 
     @Override
     public void enterAttrib(final AttribContext context) {
-        pushScope(ScopeType.ATTRIBUTE, Utils.getIdentifier(context.ident()));
+        pushScope(ScopeType.ATTRIBUTE, Identifier.parse(context.ident()));
     }
 
     @Override
@@ -380,7 +380,7 @@ public abstract class ParseAdapter implements FerrousParserListener {
 
     @Override
     public void enterTrait(final TraitContext context) {
-        pushScope(ScopeType.TRAIT, Utils.getIdentifier(context.ident()));
+        pushScope(ScopeType.TRAIT, Identifier.parse(context.ident()));
     }
 
     @Override
@@ -408,7 +408,7 @@ public abstract class ParseAdapter implements FerrousParserListener {
 
     @Override
     public void enterConstructor(final ConstructorContext context) {
-        pushScope(ScopeType.CONSTRUCTOR, Utils.getIdentifier(context.ident()));
+        pushScope(ScopeType.CONSTRUCTOR, Identifier.parse(context.ident()));
     }
 
     @Override
@@ -430,7 +430,7 @@ public abstract class ParseAdapter implements FerrousParserListener {
 
     @Override
     public void enterDestructor(final DestructorContext context) {
-        pushScope(ScopeType.DESTRUCTOR, Utils.getIdentifier(context.ident()));
+        pushScope(ScopeType.DESTRUCTOR, Identifier.parse(context.ident()));
     }
 
     @Override
@@ -623,7 +623,7 @@ public abstract class ParseAdapter implements FerrousParserListener {
     @Override
     public void enterFunction(final FunctionContext context) {
         if(context.functionBody() != null) {
-            pushScope(ScopeType.FUNCTION, FunctionUtils.getFunctionName(context.protoFunction().functionIdent()));
+            pushScope(ScopeType.FUNCTION, FunctionUtils.parseFunctionName(context.protoFunction().functionIdent()));
         }
     }
 

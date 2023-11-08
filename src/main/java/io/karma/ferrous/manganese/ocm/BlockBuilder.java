@@ -52,6 +52,52 @@ public final class BlockBuilder {
         LLVMPositionBuilderAtEnd(address, blockAddress);
     }
 
+    // Memory
+
+    public long alloca(final long type) {
+        return LLVMBuildAlloca(address, type, "");
+    }
+
+    public long arrayAlloca(final long type, final long value) {
+        return LLVMBuildArrayAlloca(address, type, value, "");
+    }
+
+    public long malloc(final long type) {
+        return LLVMBuildMalloc(address, type, "");
+    }
+
+    public long arrayMalloc(final long type, final long value) {
+        return LLVMBuildArrayMalloc(address, type, value, "");
+    }
+
+    public long free(final long ptr) {
+        return LLVMBuildFree(address, ptr);
+    }
+
+    public long memset(final long ptr, final long value, final long size, final int alignment) {
+        return LLVMBuildMemSet(address, ptr, value, size, alignment);
+    }
+
+    public long memcpy(final long dst, final int dstAlignment, final long src, final int srcAlignment,
+                       final long size) {
+        return LLVMBuildMemCpy(address, dst, dstAlignment, src, srcAlignment, size);
+    }
+
+    public long memmove(final long dst, final int dstAlignment, final long src, final int srcAlignment,
+                        final long size) {
+        return LLVMBuildMemMove(address, dst, dstAlignment, src, srcAlignment, size);
+    }
+
+    // Load/store
+
+    public long load(final long type, final long ptr) {
+        return LLVMBuildLoad2(address, type, ptr, "");
+    }
+
+    public long store(final long value, final long ptr) {
+        return LLVMBuildStore(address, value, ptr);
+    }
+
     // Strings
 
     public long str(final String value) {
@@ -94,6 +140,32 @@ public final class BlockBuilder {
 
     public long neg(final long value) {
         return LLVMBuildNeg(address, value, "");
+    }
+
+    // Bitwise operations
+
+    public long and(final long lhs, final long rhs) {
+        return LLVMBuildAnd(address, lhs, rhs, "");
+    }
+
+    public long or(final long lhs, final long rhs) {
+        return LLVMBuildOr(address, lhs, rhs, "");
+    }
+
+    public long xor(final long lhs, final long rhs) {
+        return LLVMBuildXor(address, lhs, rhs, "");
+    }
+
+    public long shl(final long value, final long count) {
+        return LLVMBuildShl(address, value, count, "");
+    }
+
+    public long ashr(final long value, final long count) {
+        return LLVMBuildAShr(address, value, count, "");
+    }
+
+    public long lshr(final long value, final long count) {
+        return LLVMBuildLShr(address, value, count, "");
     }
 
     // Floating point arithmetics

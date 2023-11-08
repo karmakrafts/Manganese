@@ -164,12 +164,12 @@ public final class PreAnalyzer extends ParseAdapter {
         if (checkIsTypeAlreadyDefined(identContext)) {
             return;
         }
-        final var type = TypeUtils.getType(compiler, compileContext, scopeStack, context.type());
+        final var type = TypeUtils.parseType(compiler, compileContext, scopeStack, context.type());
         final var genericParams = TypeUtils.getGenericParams(compiler,
             compileContext,
             scopeStack,
             context.genericParamList()).toArray(GenericParameter[]::new);
-        final var aliasedType = Types.aliased(Utils.getIdentifier(identContext),
+        final var aliasedType = Types.aliased(Identifier.parse(identContext),
             type,
             scopeStack::applyEnclosingScopes,
             TokenSlice.from(compileContext, context),
@@ -188,7 +188,7 @@ public final class PreAnalyzer extends ParseAdapter {
             compileContext,
             scopeStack,
             context.genericParamList()).toArray(GenericParameter[]::new);
-        analyzeFieldLayout(context, Utils.getIdentifier(identContext), genericParams, UDTKind.ATTRIBUTE);
+        analyzeFieldLayout(context, Identifier.parse(identContext), genericParams, UDTKind.ATTRIBUTE);
         super.enterAttrib(context);
     }
 
@@ -202,7 +202,7 @@ public final class PreAnalyzer extends ParseAdapter {
             compileContext,
             scopeStack,
             context.genericParamList()).toArray(GenericParameter[]::new);
-        analyzeFieldLayout(context, Utils.getIdentifier(identContext), genericParams, UDTKind.STRUCT);
+        analyzeFieldLayout(context, Identifier.parse(identContext), genericParams, UDTKind.STRUCT);
         super.enterStruct(context);
     }
 
@@ -216,7 +216,7 @@ public final class PreAnalyzer extends ParseAdapter {
             compileContext,
             scopeStack,
             context.genericParamList()).toArray(GenericParameter[]::new);
-        analyzeFieldLayout(context, Utils.getIdentifier(identContext), genericParams, UDTKind.CLASS);
+        analyzeFieldLayout(context, Identifier.parse(identContext), genericParams, UDTKind.CLASS);
         super.enterClass(context);
     }
 
@@ -226,7 +226,7 @@ public final class PreAnalyzer extends ParseAdapter {
         if (checkIsTypeAlreadyDefined(identContext)) {
             return;
         }
-        analyzeFieldLayout(context, Utils.getIdentifier(identContext), new GenericParameter[0], UDTKind.ENUM_CLASS);
+        analyzeFieldLayout(context, Identifier.parse(identContext), new GenericParameter[0], UDTKind.ENUM_CLASS);
         super.enterEnumClass(context);
     }
 
@@ -240,19 +240,20 @@ public final class PreAnalyzer extends ParseAdapter {
             compileContext,
             scopeStack,
             context.genericParamList()).toArray(GenericParameter[]::new);
-        analyzeFieldLayout(context, Utils.getIdentifier(identContext), genericParams, UDTKind.TRAIT);
+        analyzeFieldLayout(context, Identifier.parse(identContext), genericParams, UDTKind.TRAIT);
         super.enterTrait(context);
     }
 
     private boolean checkIsFunctionAlreadyDefined(final ProtoFunctionContext context) {
         final var identContext = context.functionIdent();
-        final var name = FunctionUtils.getFunctionName(identContext);
+        final var name = FunctionUtils.parseFunctionName(identContext);
         final var overloadSet = functions.get(name);
         if (overloadSet != null) {
-            final var type = FunctionUtils.getFunctionType(compiler, compileContext, scopeStack, context);
+            final var type = FunctionUtils.parseFunctionType(compiler, compileContext, scopeStack, context);
             final var function = overloadSet.get(type);
-            if(function != null) {
-                final var message = Utils.makeCompilerMessage(String.format("Function '%s' is already defined", name));
+            if (function != null) {
+                final var message = KitchenSink.makeCompilerMessage(String.format("Function '%s' is already defined",
+                    name));
                 compileContext.reportError(identContext.start, message, CompileErrorCode.E4003);
                 return true;
             }
@@ -261,10 +262,10 @@ public final class PreAnalyzer extends ParseAdapter {
     }
 
     private boolean checkIsTypeAlreadyDefined(final IdentContext identContext) {
-        final var name = Utils.getIdentifier(identContext);
+        final var name = Identifier.parse(identContext);
         final var type = udts.get(name);
         if (type != null) {
-            final var message = Utils.makeCompilerMessage(String.format("Type '%s' is already defined", name));
+            final var message = KitchenSink.makeCompilerMessage(String.format("Type '%s' is already defined", name));
             compileContext.reportError(identContext.start, message, CompileErrorCode.E3000);
             return true;
         }

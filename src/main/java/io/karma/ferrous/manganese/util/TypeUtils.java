@@ -84,9 +84,9 @@ public final class TypeUtils {
         }
         final var result = new ArrayList<GenericParameter>();
         for (final var param : params) {
-            final var name = Utils.getIdentifier(param.ident());
+            final var name = Identifier.parse(param.ident());
             final var expr = param.genericExpr();
-            final var defaultType = getType(compiler, compileContext, scopeStack, param.type());
+            final var defaultType = parseType(compiler, compileContext, scopeStack, param.type());
             var constraints = GenericConstraint.TRUE;
             if (expr != null) {
                 final var parser = new GenericExpressionParser(compiler, compileContext);
@@ -107,13 +107,13 @@ public final class TypeUtils {
         }
         // @formatter:off
         return context.type().stream()
-            .map(ctx -> getType(compiler, compileContext, scopeStack, ctx))
+            .map(ctx -> parseType(compiler, compileContext, scopeStack, ctx))
             .toList();
         // @formatter:on
     }
 
-    public static Type getType(final Compiler compiler, final CompileContext compileContext,
-                               final ScopeStack scopeStack, final TypeContext context) {
+    public static Type parseType(final Compiler compiler, final CompileContext compileContext,
+                                 final ScopeStack scopeStack, final TypeContext context) {
         final TypeParser unit = new TypeParser(compiler, compileContext, scopeStack);
         ParseTreeWalker.DEFAULT.walk(unit, context);
         return unit.getType();

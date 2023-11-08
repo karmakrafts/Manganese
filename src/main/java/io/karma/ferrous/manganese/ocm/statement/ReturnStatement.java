@@ -18,9 +18,11 @@ package io.karma.ferrous.manganese.ocm.statement;
 import io.karma.ferrous.manganese.ocm.BlockContext;
 import io.karma.ferrous.manganese.ocm.constant.VoidConstant;
 import io.karma.ferrous.manganese.ocm.expr.Expression;
+import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.ocm.type.BuiltinType;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.TokenSlice;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * @author Alexander Hinze
@@ -29,6 +31,7 @@ import io.karma.ferrous.manganese.util.TokenSlice;
 public final class ReturnStatement implements Statement {
     private final Expression value;
     private final TokenSlice tokenSlice;
+    private Scope enclosingScope;
 
     public ReturnStatement(final Expression value, final TokenSlice tokenSlice) {
         this.value = value;
@@ -36,17 +39,29 @@ public final class ReturnStatement implements Statement {
     }
 
     public ReturnStatement(final TokenSlice tokenSlice) {
-        this(VoidConstant.INSTANCE, tokenSlice);
+        this(new VoidConstant(), tokenSlice);
     }
 
     public Expression getValue() {
         return value;
     }
 
+    // Scoped
+
+    @Override
+    public @Nullable Scope getEnclosingScope() {
+        return enclosingScope;
+    }
+
+    @Override
+    public void setEnclosingScope(final Scope enclosingScope) {
+        this.enclosingScope = enclosingScope;
+    }
+
     // Statement
 
     @Override
-    public TokenSlice tokenSlice() {
+    public TokenSlice getTokenSlice() {
         return tokenSlice;
     }
 

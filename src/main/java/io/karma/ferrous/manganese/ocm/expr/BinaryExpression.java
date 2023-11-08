@@ -16,11 +16,13 @@
 package io.karma.ferrous.manganese.ocm.expr;
 
 import io.karma.ferrous.manganese.ocm.BlockContext;
+import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.ocm.type.BuiltinType;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Operator;
 import io.karma.ferrous.manganese.util.TokenSlice;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 
@@ -33,6 +35,7 @@ public final class BinaryExpression implements Expression {
     private final Expression lhs;
     private final Expression rhs;
     private final TokenSlice tokenSlice;
+    private Scope enclosingScope;
 
     public BinaryExpression(final Operator op, final Expression lhs, final Expression rhs,
                             final TokenSlice tokenSlice) {
@@ -57,8 +60,22 @@ public final class BinaryExpression implements Expression {
         return rhs;
     }
 
+    // Scoped
+
     @Override
-    public TokenSlice tokenSlice() {
+    public @Nullable Scope getEnclosingScope() {
+        return enclosingScope;
+    }
+
+    @Override
+    public void setEnclosingScope(final Scope enclosingScope) {
+        this.enclosingScope = enclosingScope;
+    }
+
+    // Expression
+
+    @Override
+    public TokenSlice getTokenSlice() {
         return tokenSlice;
     }
 

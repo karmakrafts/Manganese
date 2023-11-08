@@ -16,12 +16,14 @@
 package io.karma.ferrous.manganese.ocm.constant;
 
 import io.karma.ferrous.manganese.ocm.BlockContext;
+import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.ocm.type.BuiltinType;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.TokenSlice;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * @author Alexander Hinze
@@ -29,14 +31,24 @@ import org.apiguardian.api.API.Status;
  */
 @API(status = Status.INTERNAL)
 public final class VoidConstant implements Constant {
-    public static final VoidConstant INSTANCE = new VoidConstant();
+    private Scope enclosingScope;
 
-    // @formatter:off
-    private VoidConstant() {}
-    // @formatter:on
+    // Scoped
 
     @Override
-    public TokenSlice tokenSlice() {
+    public @Nullable Scope getEnclosingScope() {
+        return enclosingScope;
+    }
+
+    @Override
+    public void setEnclosingScope(final Scope enclosingScope) {
+        this.enclosingScope = enclosingScope;
+    }
+
+    // Expressions
+
+    @Override
+    public TokenSlice getTokenSlice() {
         return TokenSlice.EMPTY;
     }
 

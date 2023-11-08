@@ -19,9 +19,9 @@ import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.CompileErrorCode;
 import io.karma.ferrous.manganese.target.Architecture;
 import io.karma.ferrous.manganese.target.TargetMachine;
+import io.karma.ferrous.manganese.util.KitchenSink;
 import io.karma.ferrous.manganese.util.Logger;
 import io.karma.ferrous.manganese.util.SimpleFileVisitor;
-import io.karma.ferrous.manganese.util.Utils;
 import io.karma.kommons.function.Functions;
 import org.apiguardian.api.API;
 import org.jetbrains.annotations.Nullable;
@@ -44,7 +44,7 @@ public final class ELFLinker extends AbstractLinker {
     private Path systemLibDir;
 
     ELFLinker() {
-        super(Utils.allExcept(Architecture.class, Architecture.WASM32, Architecture.WASM64));
+        super(KitchenSink.allExcept(Architecture.class, Architecture.WASM32, Architecture.WASM64));
     }
 
     private void handleLibraries(final ArrayList<String> buffer, final LinkModel linkModel,

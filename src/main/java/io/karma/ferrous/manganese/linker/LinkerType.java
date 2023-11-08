@@ -16,7 +16,7 @@
 package io.karma.ferrous.manganese.linker;
 
 import io.karma.ferrous.manganese.llvm.LLVMUtils;
-import io.karma.ferrous.manganese.util.Utils;
+import io.karma.ferrous.manganese.util.KitchenSink;
 import org.apiguardian.api.API;
 import org.jetbrains.annotations.Nullable;
 
@@ -54,10 +54,10 @@ public enum LinkerType {
 
     public @Nullable String findCommand() {
         final var command = String.format("%s-%s", alias, LLVMUtils.getLLVMVersion());
-        if (Utils.hasCommand(command, "-help")) {
+        if (KitchenSink.hasCommand(command, "-help")) {
             return command;
         }
-        if (Utils.hasCommand(alias, "-help")) {
+        if (KitchenSink.hasCommand(alias, "-help")) {
             return alias;
         }
         // @formatter:off
@@ -68,7 +68,7 @@ public enum LinkerType {
             .normalize()
             .toString();
         // @formatter:on
-        if (Utils.hasCommand(path, "-help")) {
+        if (KitchenSink.hasCommand(path, "-help")) {
             return path;
         }
         return null;

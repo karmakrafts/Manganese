@@ -26,7 +26,6 @@ import io.karma.ferrous.manganese.ocm.type.Types;
 import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.Logger;
 import io.karma.ferrous.manganese.util.TokenSlice;
-import io.karma.ferrous.manganese.util.Utils;
 import io.karma.ferrous.vanadium.FerrousParser.*;
 import io.karma.kommons.function.Functions;
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -78,7 +77,7 @@ public final class TypeParser extends ParseAdapter {
         if (baseType != null) {
             return; // Qualified ident contains these, so if type exists, skip
         }
-        final var name = Utils.getIdentifier(context);
+        final var name = Identifier.parse(context);
         final var type = compileContext.getPreAnalyzer().findCompleteTypeInScope(name,
             capturedScopeStack.getScopeName());
         if (type == null) {
@@ -91,7 +90,7 @@ public final class TypeParser extends ParseAdapter {
 
     @Override
     public void enterQualifiedIdent(final QualifiedIdentContext context) {
-        final var name = Utils.getIdentifier(context);
+        final var name = Identifier.parse(context);
         final var type = compileContext.getPreAnalyzer().findCompleteTypeInScope(name,
             capturedScopeStack.getScopeName());
         if (type == null) {

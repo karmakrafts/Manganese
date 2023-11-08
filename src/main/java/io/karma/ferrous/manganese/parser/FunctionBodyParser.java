@@ -19,13 +19,15 @@ import io.karma.ferrous.manganese.ParseAdapter;
 import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.CompileErrorCode;
 import io.karma.ferrous.manganese.compiler.Compiler;
+import io.karma.ferrous.manganese.ocm.expr.CallExpression;
 import io.karma.ferrous.manganese.ocm.statement.ReturnStatement;
 import io.karma.ferrous.manganese.ocm.statement.Statement;
 import io.karma.ferrous.manganese.ocm.type.FunctionType;
 import io.karma.ferrous.manganese.util.ExpressionUtils;
+import io.karma.ferrous.manganese.util.KitchenSink;
 import io.karma.ferrous.manganese.util.TokenSlice;
-import io.karma.ferrous.manganese.util.Utils;
 import io.karma.ferrous.vanadium.FerrousParser.ReturnStatementContext;
+import io.karma.ferrous.vanadium.FerrousParser.StatementContext;
 import org.apiguardian.api.API;
 
 import java.util.ArrayList;
@@ -48,6 +50,23 @@ public final class FunctionBodyParser extends ParseAdapter {
     }
 
     @Override
+    public void enterStatement(final StatementContext context) {
+        final var exprContext = context.expr();
+        if (exprContext != null) {
+            final var expr = ExpressionUtils.parseExpression(compiler, compileContext, exprContext);
+            if (expr == null) {
+                compileContext.reportError(exprContext.start, CompileErrorCode.E5003);
+                return;
+            }
+            if (expr instanceof CallExpression call) {
+
+            }
+            statements.add(expr);
+        }
+        super.enterStatement(context);
+    }
+
+    @Override
     public void enterReturnStatement(final ReturnStatementContext context) {
         final var exprContext = context.expr();
         if (exprContext != null) {
@@ -58,7 +77,7 @@ public final class FunctionBodyParser extends ParseAdapter {
             final var returnType = functionType.getReturnType();
             final var exprType = expr.getType();
             if (!returnType.canAccept(exprType)) {
-                final var message = Utils.makeCompilerMessage(String.format("%s cannot be assigned to %s",
+                final var message = KitchenSink.makeCompilerMessage(String.format("%s cannot be assigned to %s",
                     exprType,
                     returnType));
                 compileContext.reportError(context.start, message, CompileErrorCode.E3006);

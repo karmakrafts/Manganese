@@ -20,8 +20,8 @@ import io.karma.ferrous.manganese.compiler.CompileErrorCode;
 import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.target.Architecture;
 import io.karma.ferrous.manganese.target.TargetMachine;
+import io.karma.ferrous.manganese.util.KitchenSink;
 import io.karma.ferrous.manganese.util.Logger;
-import io.karma.ferrous.manganese.util.Utils;
 import org.apiguardian.api.API;
 import org.jetbrains.annotations.Nullable;
 
@@ -73,7 +73,7 @@ public abstract class AbstractLinker implements Linker {
                 targetMachine,
                 compileContext,
                 targetType);
-            final var process = Utils.createProcess(commandBuffer.toArray(String[]::new)).start();
+            final var process = KitchenSink.createProcess(commandBuffer.toArray(String[]::new)).start();
             try (final var reader = process.inputReader()) {
                 while (process.isAlive()) {
                     String line;
@@ -84,16 +84,16 @@ public abstract class AbstractLinker implements Linker {
             }
             if (process.waitFor() != 0) {
                 try (final var reader = process.errorReader()) {
-                    final var error = Utils.makeCompilerMessage(reader.lines().collect(Collectors.joining("\n")));
+                    final var error = KitchenSink.makeCompilerMessage(reader.lines().collect(Collectors.joining("\n")));
                     compileContext.reportError(error, CompileErrorCode.E6002);
                 }
             }
         }
         catch (IOException error) {
-            compileContext.reportError(Utils.makeCompilerMessage(error.getMessage()), CompileErrorCode.E6001);
+            compileContext.reportError(KitchenSink.makeCompilerMessage(error.getMessage()), CompileErrorCode.E6001);
         }
         catch (InterruptedException error) {
-            compileContext.reportError(Utils.makeCompilerMessage(error.getMessage()), CompileErrorCode.E6003);
+            compileContext.reportError(KitchenSink.makeCompilerMessage(error.getMessage()), CompileErrorCode.E6003);
         }
     }
 
