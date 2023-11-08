@@ -50,11 +50,11 @@ public enum CompileErrorCode {
     E4003("The given function is already defined in the same scope", CompileStatus.SEMANTIC_ERROR),
     E4004("Function that is not virtual, abstract or extern has no body", CompileStatus.SEMANTIC_ERROR),
     E4005("Function never returns", CompileStatus.SEMANTIC_ERROR),
+    E4006("Typeless variable requires explicit initialization", CompileStatus.SEMANTIC_ERROR),
     // Translation errors
     E5000("Could not find function during translation", CompileStatus.TRANSLATION_ERROR),
     E5001("Unknown unary operator", CompileStatus.TRANSLATION_ERROR),
     E5002("Unknown binary operator", CompileStatus.TRANSLATION_ERROR),
-    E5003("Malformed expression", CompileStatus.TRANSLATION_ERROR),
     // Link errors
     E6000("Could not find linker command", CompileStatus.LINK_ERROR),
     E6001("Could not spawn linker process", CompileStatus.LINK_ERROR),

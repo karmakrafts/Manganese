@@ -19,9 +19,12 @@ import io.karma.ferrous.manganese.ocm.BlockContext;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.target.TargetMachine;
+import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.TokenSlice;
 import org.apiguardian.api.API;
 import org.jetbrains.annotations.Nullable;
+
+import static org.lwjgl.llvm.LLVMCore.LLVMSetValueName2;
 
 /**
  * @author Alexander Hinze
@@ -29,13 +32,13 @@ import org.jetbrains.annotations.Nullable;
  */
 @API(status = API.Status.INTERNAL)
 public final class LetExpression implements Expression {
-    private final String name;
+    private final Identifier name;
     private final Type type;
     private final TokenSlice tokenSlice;
     private Expression value;
     private Scope enclosingScope;
 
-    public LetExpression(final String name, final Type type, final @Nullable Expression value,
+    public LetExpression(final Identifier name, final Type type, final @Nullable Expression value,
                          final TokenSlice tokenSlice) {
         this.name = name;
         this.type = type;
@@ -43,7 +46,7 @@ public final class LetExpression implements Expression {
         this.tokenSlice = tokenSlice;
     }
 
-    public LetExpression(final String name, final Expression value, final TokenSlice tokenSlice) {
+    public LetExpression(final Identifier name, final Expression value, final TokenSlice tokenSlice) {
         this(name, value.getType(), value, tokenSlice);
     }
 
@@ -83,9 +86,10 @@ public final class LetExpression implements Expression {
     public long emit(final TargetMachine targetMachine, final BlockContext blockContext) {
         final var builder = blockContext.getCurrentOrCreate();
         final var address = builder.alloca(type.materialize(targetMachine));
-        if (value != null) {
+        LLVMSetValueName2(address, name.toInternalName());
+        if (value != null) { // Emit/store expression value
             builder.store(value.emit(targetMachine, blockContext), address);
         }
-        return address;
+        return builder.load(type.materialize(targetMachine), address);
     }
 }

@@ -20,10 +20,7 @@ import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.CompileErrorCode;
 import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.constant.*;
-import io.karma.ferrous.manganese.ocm.expr.BinaryExpression;
-import io.karma.ferrous.manganese.ocm.expr.CallExpression;
-import io.karma.ferrous.manganese.ocm.expr.Expression;
-import io.karma.ferrous.manganese.ocm.expr.UnaryExpression;
+import io.karma.ferrous.manganese.ocm.expr.*;
 import io.karma.ferrous.manganese.ocm.type.BuiltinType;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.util.*;
@@ -93,7 +90,7 @@ public final class ExpressionParser extends ParseAdapter {
         }
         final var exprOpt = children.stream().filter(ExprContext.class::isInstance).findFirst();
         if (exprOpt.isEmpty()) {
-            compileContext.reportError(context.start, CompileErrorCode.E5003);
+            compileContext.reportError(context.start, CompileErrorCode.E2001);
             return null;
         }
         return new UnaryExpression(op,
@@ -115,12 +112,12 @@ public final class ExpressionParser extends ParseAdapter {
         }
         final var lhs = ExpressionUtils.parseExpression(compiler, compileContext, children.get(0));
         if (lhs == null) {
-            compileContext.reportError(context.start, CompileErrorCode.E5003);
+            compileContext.reportError(context.start, CompileErrorCode.E2001);
             return null;
         }
         final var rhs = ExpressionUtils.parseExpression(compiler, compileContext, children.get(2));
         if (rhs == null) {
-            compileContext.reportError(context.start, CompileErrorCode.E5003);
+            compileContext.reportError(context.start, CompileErrorCode.E2001);
             return null;
         }
         return new BinaryExpression(op.get(), lhs, rhs, TokenSlice.from(compileContext, context));
@@ -145,17 +142,38 @@ public final class ExpressionParser extends ParseAdapter {
 
     @Override
     public void enterLetExpr(final LetExprContext context) {
+        if (expression != null) {
+            return;
+        }
         final var name = Identifier.parse(context.ident());
-        Type type;
         final var typeContext = context.type();
+        final var exprContext = context.expr();
+        Type type = null;
         if (typeContext != null) {
             type = TypeUtils.parseType(compiler, compileContext, scopeStack, typeContext);
             if (type == null) {
                 compileContext.reportError(typeContext.start, name.toString(), CompileErrorCode.E3002);
                 return;
             }
+            if (exprContext == null) {
+                // TODO: create default-value expression from type
+                expression = new LetExpression(name, type, null, TokenSlice.from(compileContext, context));
+                return;
+            }
         }
-
+        if (exprContext == null) {
+            compileContext.reportError(context.start, CompileErrorCode.E4006);
+            return;
+        }
+        final var expr = ExpressionUtils.parseExpression(compiler, compileContext, exprContext);
+        if (expr == null) {
+            compileContext.reportError(exprContext.start, CompileErrorCode.E2001);
+            return;
+        }
+        if (type == null) {
+            type = expr.getType(); // Deduce variable type from expression
+        }
+        expression = new LetExpression(name, type, expr, TokenSlice.from(compileContext, context));
         super.enterLetExpr(context);
     }
 

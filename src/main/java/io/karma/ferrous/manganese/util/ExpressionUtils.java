@@ -51,7 +51,7 @@ public final class ExpressionUtils {
             .map(exprContext -> {
                 final var expression = parseExpression(compiler, compileContext, exprContext);
                 if(expression == null) {
-                    compileContext.reportError(exprContext.start, CompileErrorCode.E5003);
+                    compileContext.reportError(exprContext.start, CompileErrorCode.E2001);
                 }
                 return expression;
             })

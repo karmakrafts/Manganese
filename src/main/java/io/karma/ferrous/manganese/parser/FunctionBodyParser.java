@@ -55,7 +55,7 @@ public final class FunctionBodyParser extends ParseAdapter {
         if (exprContext != null) {
             final var expr = ExpressionUtils.parseExpression(compiler, compileContext, exprContext);
             if (expr == null) {
-                compileContext.reportError(exprContext.start, CompileErrorCode.E5003);
+                compileContext.reportError(exprContext.start, CompileErrorCode.E2001);
                 return;
             }
             if (expr instanceof CallExpression call) {
