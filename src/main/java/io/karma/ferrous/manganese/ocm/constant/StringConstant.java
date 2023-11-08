@@ -20,7 +20,6 @@ import io.karma.ferrous.manganese.ocm.type.ImaginaryType;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.TokenSlice;
-import org.lwjgl.llvm.LLVMCore;
 
 /**
  * @author Alexander Hinze
@@ -47,6 +46,6 @@ public final class StringConstant implements Constant {
 
     @Override
     public long emit(final TargetMachine targetMachine, final BlockContext blockContext) {
-        return LLVMCore.LLVMConstString(value, true);
+        return blockContext.getCurrentOrCreate().strPtr(value);
     }
 }

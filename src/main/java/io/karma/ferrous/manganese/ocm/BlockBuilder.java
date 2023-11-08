@@ -52,6 +52,16 @@ public final class BlockBuilder {
         LLVMPositionBuilderAtEnd(address, blockAddress);
     }
 
+    // Strings
+
+    public long str(final String value) {
+        return LLVMBuildGlobalString(address, value, "");
+    }
+
+    public long strPtr(final String value) {
+        return LLVMBuildGlobalStringPtr(address, value, "");
+    }
+
     // Integer arithmetics
 
     public long add(final long lhs, final long rhs) {

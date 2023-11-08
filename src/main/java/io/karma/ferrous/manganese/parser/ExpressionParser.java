@@ -270,6 +270,24 @@ public final class ExpressionParser extends ParseAdapter {
         super.enterLiteral(context);
     }
 
+    @Override
+    public void enterSimpleStringLiteral(final SimpleStringLiteralContext context) {
+        if (expression != null) {
+            return;
+        }
+        expression = parseStringConstant(context);
+        super.enterSimpleStringLiteral(context);
+    }
+
+    @Override
+    public void enterMultilineStringLiteral(final MultilineStringLiteralContext context) {
+        if (expression != null) {
+            return;
+        }
+        expression = parseStringConstant(context);
+        super.enterMultilineStringLiteral(context);
+    }
+
     public @Nullable Expression getExpression() {
         return expression;
     }
