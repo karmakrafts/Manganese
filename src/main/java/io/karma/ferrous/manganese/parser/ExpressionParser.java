@@ -31,9 +31,13 @@ import io.karma.ferrous.manganese.ocm.type.BuiltinType;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.util.*;
 import io.karma.ferrous.vanadium.FerrousParser.*;
+import org.antlr.v4.runtime.ParserRuleContext;
+import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.apiguardian.api.API;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.List;
 
 /**
  * @author Alexander Hinze
@@ -65,59 +69,81 @@ public final class ExpressionParser extends ParseAdapter {
         return new RealConstant(type, Double.parseDouble(text), TokenSlice.from(compileContext, node));
     }
 
-    @Override
-    public void enterBinaryExpr(final BinaryExprContext context) {
-        if (expression != null) {
-            return;
+    private StringConstant parseStringConstant(final ParserRuleContext context) {
+        return new StringConstant("", TokenSlice.from(compileContext, context));
+    }
+
+    private @Nullable UnaryExpression parseUnaryExpression(final ExprContext context, final List<ParseTree> children) {
+        final var opContextOpt = children.stream().filter(TerminalNode.class::isInstance).findFirst();
+        if (opContextOpt.isEmpty()) {
+            return null;
         }
-        final var binaryOpContext = context.binaryOp();
-        if (binaryOpContext == null) {
-            return;
+        final var opContext = opContextOpt.get();
+        final var opText = opContext.getText();
+        final var opOpt = Operator.findByText(opText);
+        if (opOpt.isEmpty()) {
+            compileContext.reportError(context.start, opText, CompileErrorCode.E5001);
+            return null;
         }
-        final var opText = binaryOpContext.getText();
+        var op = opOpt.get();
+        if (children.indexOf(opContext) > 0) {
+            op = switch(op) { // @formatter:off
+                case PRE_DEC        -> Operator.DEC;
+                case PRE_INC        -> Operator.INC;
+                case PRE_INV_ASSIGN -> Operator.INV_ASSIGN;
+                default             -> op;
+            }; // @formatter:on
+        }
+        final var exprOpt = children.stream().filter(ExprContext.class::isInstance).findFirst();
+        if (exprOpt.isEmpty()) {
+            compileContext.reportError(context.start, CompileErrorCode.E5003);
+            return null;
+        }
+        return new UnaryExpression(op,
+            ExpressionUtils.parseExpression(compiler, compileContext, exprOpt.get()),
+            TokenSlice.from(compileContext, context));
+    }
+
+    private @Nullable BinaryExpression parseBinaryExpression(final ExprContext context,
+                                                             final List<ParseTree> children) {
+        final var opContextOpt = children.stream().filter(TerminalNode.class::isInstance).findFirst();
+        if (opContextOpt.isEmpty()) {
+            return null;
+        }
+        final var opText = opContextOpt.get().getText();
         final var op = Operator.findByText(opText);
         if (op.isEmpty()) {
-            compileContext.reportError(context.binaryOp().start, opText, CompileErrorCode.E5002);
-            return;
+            compileContext.reportError(context.start, opText, CompileErrorCode.E5002);
+            return null;
         }
-        final var sides = context.binaryExpr();
-        if (sides.size() < 2) {
-            compileContext.reportError(context.start, CompileErrorCode.E5003);
-            return;
-        }
-        final var lhs = ExpressionUtils.parseExpression(compiler, compileContext, sides.get(0));
+        final var lhs = ExpressionUtils.parseExpression(compiler, compileContext, children.get(0));
         if (lhs == null) {
-            compileContext.reportError(sides.get(0).start, CompileErrorCode.E5003);
-            return;
+            compileContext.reportError(context.start, CompileErrorCode.E5003);
+            return null;
         }
-        final var rhs = ExpressionUtils.parseExpression(compiler, compileContext, sides.get(1));
+        final var rhs = ExpressionUtils.parseExpression(compiler, compileContext, children.get(2));
         if (rhs == null) {
-            compileContext.reportError(sides.get(1).start, CompileErrorCode.E5003);
-            return;
+            compileContext.reportError(context.start, CompileErrorCode.E5003);
+            return null;
         }
-        expression = new BinaryExpression(op.get(), lhs, rhs, TokenSlice.from(compileContext, context));
-        super.enterBinaryExpr(context);
+        return new BinaryExpression(op.get(), lhs, rhs, TokenSlice.from(compileContext, context));
     }
 
     @Override
-    public void enterUnaryExpr(final UnaryExprContext context) {
+    public void enterExpr(final ExprContext context) {
         if (expression != null) {
             return;
         }
-        final var unaryOpContext = context.unaryOp();
-        if (unaryOpContext == null) {
-            return;
+        final var children = context.children;
+        switch (children.size()) {
+            case 2:
+                expression = parseUnaryExpression(context, children);
+                break;
+            case 3:
+                expression = parseBinaryExpression(context, children);
+                break;
         }
-        final var opText = unaryOpContext.getText();
-        final var op = Operator.findByText(opText);
-        if (op.isEmpty()) {
-            compileContext.reportError(opText, CompileErrorCode.E5001);
-            return;
-        }
-        expression = new UnaryExpression(op.get(),
-            ExpressionUtils.parseExpression(compiler, compileContext, context.unaryExpr()),
-            TokenSlice.from(compileContext, context));
-        super.enterUnaryExpr(context);
+        super.enterExpr(context);
     }
 
     @Override

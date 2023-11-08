@@ -98,18 +98,6 @@ public abstract class ParseAdapter implements FerrousParserListener {
 
     // @formatter:off
     @Override
-    public void enterBinaryExpr(BinaryExprContext binaryExprContext) {}
-
-    @Override
-    public void exitBinaryExpr(BinaryExprContext binaryExprContext) {}
-
-    @Override
-    public void enterUnaryExpr(UnaryExprContext unaryExprContext) {}
-
-    @Override
-    public void exitUnaryExpr(UnaryExprContext unaryExprContext) {}
-
-    @Override
     public void enterDestructureStatement(DestructureStatementContext destructureStatementContext) {}
 
     @Override
@@ -795,18 +783,6 @@ public abstract class ParseAdapter implements FerrousParserListener {
 
     @Override
     public void exitDecrementExpr(DecrementExprContext decrementExprContext) {}
-
-    @Override
-    public void enterBinaryOp(BinaryOpContext binaryOpContext) {}
-
-    @Override
-    public void exitBinaryOp(BinaryOpContext binaryOpContext) {}
-
-    @Override
-    public void enterUnaryOp(UnaryOpContext unaryOpContext) {}
-
-    @Override
-    public void exitUnaryOp(UnaryOpContext unaryOpContext) {}
 
     @Override
     public void enterRef(RefContext refContext) {}

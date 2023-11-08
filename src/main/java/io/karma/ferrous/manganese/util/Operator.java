@@ -63,6 +63,7 @@ public enum Operator {
     XOR_ASSIGN      (FerrousLexer.OP_XOR_ASSIGN,        "op.xor.assign",        false,  true ),
     SHL_ASSIGN      (FerrousLexer.OP_LSH_ASSIGN,        "op.shl.assign",        false,  true ),
     SHR_ASSIGN      (FerrousLexer.OP_RSH_ASSIGN,        "op.shr.assign",        false,  true ),
+    PRE_INV_ASSIGN  (FerrousLexer.OP_INV_ASSIGN,        "op.inv.assign.pre",    false,  true ),
     INV_ASSIGN      (FerrousLexer.OP_INV_ASSIGN,        "op.inv.assign",        false,  true ),
     EQ              (FerrousLexer.OP_EQ,                "op.eq",                false,  true ),
     NEQ             (FerrousLexer.OP_NEQ,               "op.neq",               false,  true ),
@@ -73,10 +74,10 @@ public enum Operator {
     CMP_GTH         (FerrousLexer.R_CHEVRON,            "op.cmp.gth",           false,  true ),
     CMP_GEQ         (FerrousLexer.OP_GEQUAL,            "op.cmp.geq",           false,  true ),
     SWAP            (FerrousLexer.OP_SWAP,              "op.swap",              false,  true ),
-    INC             (FerrousLexer.OP_INCREMENT,         "op.inc",               false,  true ),
     PRE_INC         (FerrousLexer.OP_INCREMENT,         "op.inc.pre",           false,  true ),
-    DEC             (FerrousLexer.OP_DECREMENT,         "op.dec",               false,  true ),
-    PRE_DEC         (FerrousLexer.OP_DECREMENT,         "op.dec.pre",           false,  true )
+    INC             (FerrousLexer.OP_INCREMENT,         "op.inc",               false,  true ),
+    PRE_DEC         (FerrousLexer.OP_DECREMENT,         "op.dec.pre",           false,  true ),
+    DEC             (FerrousLexer.OP_DECREMENT,         "op.dec",               false,  true )
     ;
     // @formatter:on
 

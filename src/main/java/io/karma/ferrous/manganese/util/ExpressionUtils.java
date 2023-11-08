@@ -21,7 +21,7 @@ import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.expr.Expression;
 import io.karma.ferrous.manganese.parser.ExpressionParser;
 import io.karma.ferrous.vanadium.FerrousParser.ExprListContext;
-import org.antlr.v4.runtime.ParserRuleContext;
+import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import org.jetbrains.annotations.Nullable;
 
@@ -60,16 +60,12 @@ public final class ExpressionUtils {
     }
 
     public static @Nullable Expression parseExpression(final Compiler compiler, final CompileContext compileContext,
-                                                       final @Nullable ParserRuleContext context) {
+                                                       final @Nullable ParseTree context) {
         if (context == null) {
             return null;
         }
         final var parser = new ExpressionParser(compiler, compileContext);
         ParseTreeWalker.DEFAULT.walk(parser, context);
-        final var expression = parser.getExpression();
-        if (expression == null) {
-            compileContext.reportError(context.start, CompileErrorCode.E2001);
-        }
-        return expression;
+        return parser.getExpression();
     }
 }

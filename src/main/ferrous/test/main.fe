@@ -1,9 +1,16 @@
 extern fun printf(fmt: *char, args: vaargs): i32
 
+fun foo(): i32 {
+    return 1i32
+}
+fun foo(): f32 {
+    return 2f32
+}
+
 fun test(): i32 {
-    return 22 * 2
+    return 2 * 2 * 4
 }
 
 fun main(num_args: i32, args: **i8): i32 {
-    return test()
+    return -(2 + 2 * -test() + 4 / 2)
 }
