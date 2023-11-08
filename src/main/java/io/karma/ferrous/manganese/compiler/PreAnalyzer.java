@@ -128,7 +128,7 @@ public final class PreAnalyzer extends ParseAdapter {
 
     @Override
     public void enterFunction(final FunctionContext context) {
-        if (checkIsFunctionAlreadyDefined(context.protoFunction().functionIdent())) {
+        if (checkIsFunctionAlreadyDefined(context.protoFunction())) {
             return;
         }
         final var analyzer = new ProtoFunctionParser(compiler,
@@ -144,7 +144,7 @@ public final class PreAnalyzer extends ParseAdapter {
 
     @Override
     public void enterExternFunction(final ExternFunctionContext context) {
-        if (checkIsFunctionAlreadyDefined(context.protoFunction().functionIdent())) {
+        if (checkIsFunctionAlreadyDefined(context.protoFunction())) {
             return;
         }
         final var analyzer = new ProtoFunctionParser(compiler,
@@ -244,13 +244,18 @@ public final class PreAnalyzer extends ParseAdapter {
         super.enterTrait(context);
     }
 
-    private boolean checkIsFunctionAlreadyDefined(final FunctionIdentContext identContext) {
+    private boolean checkIsFunctionAlreadyDefined(final ProtoFunctionContext context) {
+        final var identContext = context.functionIdent();
         final var name = FunctionUtils.getFunctionName(identContext);
-        final var function = functions.get(name);
-        if (function != null) {
-            final var message = Utils.makeCompilerMessage(String.format("Function '%s' is already defined", name));
-            compileContext.reportError(identContext.start, message, CompileErrorCode.E4003);
-            return true;
+        final var overloadSet = functions.get(name);
+        if (overloadSet != null) {
+            final var type = FunctionUtils.getFunctionType(compiler, compileContext, scopeStack, context);
+            final var function = overloadSet.get(type);
+            if(function != null) {
+                final var message = Utils.makeCompilerMessage(String.format("Function '%s' is already defined", name));
+                compileContext.reportError(identContext.start, message, CompileErrorCode.E4003);
+                return true;
+            }
         }
         return false;
     }
