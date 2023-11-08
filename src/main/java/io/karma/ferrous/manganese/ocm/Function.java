@@ -74,11 +74,11 @@ public final class Function implements NameProvider, Scoped {
         }, tokenSlice);
     }
 
-    public FunctionBody createBody(final Statement... statements) {
+    public void createBody(final Statement... statements) {
         if (body != null) {
             throw new IllegalStateException("Body already exists for this function");
         }
-        return body = new FunctionBody(statements);
+        body = new FunctionBody(statements);
     }
 
     public CallingConvention getCallConv() {
@@ -108,6 +108,10 @@ public final class Function implements NameProvider, Scoped {
         final var address = LLVMAddFunction(module.getAddress(),
             name.toInternalName(),
             getType().materialize(targetMachine));
+        final var numParams = parameters.length;
+        for (var i = 0; i < numParams; i++) {
+            LLVMSetValueName2(LLVMGetParam(address, i), parameters[i].getName().toString());
+        }
         LLVMSetLinkage(address, isExtern ? LLVMExternalLinkage : 0);
         LLVMSetFunctionCallConv(address, callConv.getLLVMValue(targetMachine));
         return materializedPrototype = address;
