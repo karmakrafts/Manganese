@@ -25,7 +25,7 @@ import org.jetbrains.annotations.Nullable;
  */
 @API(status = API.Status.INTERNAL)
 public interface BlockContext {
-    String DEFAULT_BLOCK = "_entry";
+    String DEFAULT_BLOCK = "";
 
     CompileContext getCompileContext();
 
