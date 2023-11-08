@@ -21,6 +21,7 @@ import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.TokenSlice;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
+import org.lwjgl.llvm.LLVMCore;
 
 /**
  * @author Alexander Hinze
@@ -54,6 +55,6 @@ public final class RealConstant implements Constant {
 
     @Override
     public long emit(final TargetMachine targetMachine, final BlockContext blockContext) {
-        return 0L;
+        return LLVMCore.LLVMConstReal(type.materialize(targetMachine), value);
     }
 }
