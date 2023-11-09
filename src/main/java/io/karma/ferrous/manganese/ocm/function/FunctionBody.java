@@ -21,8 +21,10 @@ import io.karma.ferrous.manganese.ocm.ir.IRBuilder;
 import io.karma.ferrous.manganese.ocm.ir.IRContext;
 import io.karma.ferrous.manganese.ocm.statement.Statement;
 import io.karma.ferrous.manganese.target.TargetMachine;
+import io.karma.ferrous.manganese.util.Identifier;
 import org.apiguardian.api.API;
 import org.jetbrains.annotations.Nullable;
+import org.lwjgl.llvm.LLVMCore;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -30,6 +32,7 @@ import java.util.HashMap;
 import java.util.Stack;
 
 import static org.lwjgl.llvm.LLVMCore.LLVMAppendBasicBlockInContext;
+import static org.lwjgl.system.MemoryUtil.NULL;
 
 /**
  * @author Alexander Hinze
@@ -79,6 +82,20 @@ public final class FunctionBody {
 
         public void dispose() {
             builders.values().forEach(IRBuilder::dispose);
+        }
+
+        @Override
+        public long getParameter(final Identifier name) {
+            final var params = function.getParameters();
+            final var numParams = params.length;
+            final var address = function.materializePrototype(module, targetMachine);
+            for (var i = 0; i < numParams; i++) {
+                if (!params[i].getName().equals(name)) {
+                    continue;
+                }
+                return LLVMCore.LLVMGetParam(address, i);
+            }
+            return NULL;
         }
 
         @Override

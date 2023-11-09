@@ -15,6 +15,7 @@
 
 package io.karma.ferrous.manganese.ocm.expr;
 
+import io.karma.ferrous.manganese.ocm.ir.IRBuilder;
 import io.karma.ferrous.manganese.ocm.ir.IRContext;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.ocm.statement.LetStatement;
@@ -112,40 +113,44 @@ public final class BinaryExpression implements Expression {
         };
     }
 
+    private long emitDiv(final long lhs, final long rhs, final BuiltinType builtinType, final IRBuilder builder) {
+        if (builtinType.isFloatType()) {
+            return builder.fdiv(lhs, rhs);
+        }
+        if (builtinType.isUnsignedInt()) {
+            return builder.udiv(lhs, rhs);
+        }
+        return builder.sdiv(lhs, rhs);
+    }
+
+    private long emitMod(final long lhs, final long rhs, final BuiltinType builtinType, final IRBuilder builder) {
+        if (builtinType.isFloatType()) {
+            return builder.frem(lhs, rhs);
+        }
+        if (builtinType.isUnsignedInt()) {
+            return builder.urem(lhs, rhs);
+        }
+        return builder.srem(lhs, rhs);
+    }
+
     private long emitBuiltin(final TargetMachine targetMachine, final IRContext irContext,
                              final BuiltinType builtinType) {
         final var builder = irContext.getCurrentOrCreate();
         final var lhs = this.lhs.emit(targetMachine, irContext);
         final var rhs = this.rhs.emit(targetMachine, irContext);
-        return switch (op) {
-            case PLUS -> builtinType.isFloatType() ? builder.fadd(lhs, rhs) : builder.add(lhs, rhs);
+        return switch (op) { // @formatter:off
+            case PLUS  -> builtinType.isFloatType() ? builder.fadd(lhs, rhs) : builder.add(lhs, rhs);
             case MINUS -> builtinType.isFloatType() ? builder.fsub(lhs, rhs) : builder.sub(lhs, rhs);
             case TIMES -> builtinType.isFloatType() ? builder.fmul(lhs, rhs) : builder.mul(lhs, rhs);
-            case DIV -> {
-                if (builtinType.isFloatType()) {
-                    yield builder.fdiv(lhs, rhs);
-                }
-                if (builtinType.isUnsignedInt()) {
-                    yield builder.udiv(lhs, rhs);
-                }
-                yield builder.sdiv(lhs, rhs);
-            }
-            case MOD -> {
-                if (builtinType.isFloatType()) {
-                    yield builder.frem(lhs, rhs);
-                }
-                if (builtinType.isUnsignedInt()) {
-                    yield builder.urem(lhs, rhs);
-                }
-                yield builder.srem(lhs, rhs);
-            }
-            case AND -> builder.and(lhs, rhs);
-            case OR -> builder.or(lhs, rhs);
-            case XOR -> builder.xor(lhs, rhs);
-            case SHL -> builder.shl(lhs, rhs);
-            case SHR -> builtinType.isUnsignedInt() ? builder.lshr(lhs, rhs) : builder.ashr(lhs, rhs);
-            default -> throw new IllegalStateException("Unsupported operator");
-        };
+            case DIV   -> emitDiv(lhs, rhs, builtinType, builder);
+            case MOD   -> emitMod(lhs, rhs, builtinType, builder);
+            case AND   -> builder.and(lhs, rhs);
+            case OR    -> builder.or(lhs, rhs);
+            case XOR   -> builder.xor(lhs, rhs);
+            case SHL   -> builder.shl(lhs, rhs);
+            case SHR   -> builtinType.isUnsignedInt() ? builder.lshr(lhs, rhs) : builder.ashr(lhs, rhs);
+            default    -> throw new IllegalStateException("Unsupported operator");
+        }; // @formatter:on
     }
 
     @Override

@@ -16,6 +16,7 @@
 package io.karma.ferrous.manganese.ocm.expr;
 
 import io.karma.ferrous.manganese.ocm.Field;
+import io.karma.ferrous.manganese.ocm.Parameter;
 import io.karma.ferrous.manganese.ocm.function.Function;
 import io.karma.ferrous.manganese.ocm.function.FunctionReference;
 import io.karma.ferrous.manganese.ocm.ir.IRContext;
@@ -85,6 +86,7 @@ public final class ReferenceExpression implements Expression {
             case Function function        -> function.getType();
             case Field field              -> field.getType();
             case LetStatement expr        -> expr.getType();
+            case Parameter param          -> param.getType();
             default                       -> throw new IllegalStateException("Unknown reference kind");
         }; // @formatter:on
     }
@@ -119,6 +121,7 @@ public final class ReferenceExpression implements Expression {
                 }
                 yield statement.getImmutableAddress();
             }
+            case Parameter param -> irContext.getParameter(param.getName());
             // TODO: implement field references
             default -> throw new IllegalStateException("Unknown reference kind");
         };

@@ -18,6 +18,7 @@ package io.karma.ferrous.manganese.ocm.ir;
 import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.module.Module;
 import io.karma.ferrous.manganese.ocm.function.Function;
+import io.karma.ferrous.manganese.util.Identifier;
 import org.apiguardian.api.API;
 import org.jetbrains.annotations.Nullable;
 
@@ -28,6 +29,8 @@ import org.jetbrains.annotations.Nullable;
 @API(status = API.Status.INTERNAL)
 public interface IRContext {
     String DEFAULT_BLOCK = "";
+
+    long getParameter(final Identifier name);
 
     Module getModule();
 

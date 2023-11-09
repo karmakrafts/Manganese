@@ -37,6 +37,7 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 import org.apiguardian.api.API;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -155,7 +156,9 @@ public final class ExpressionParser extends ParseAdapter {
         return new BinaryExpression(op.get(), lhs, rhs, TokenSlice.from(compileContext, context));
     }
 
-    private @Nullable CallExpression parseCallExpr(final ExprContext exprContext, final List<ParseTree> children) {
+    private @Nullable CallExpression parseCallExpr(final ExprContext exprContext,
+                                                   final @Nullable ExprListContext argsContext,
+                                                   final List<ParseTree> children) {
         final var expr = ExpressionUtils.parseExpression(compiler,
             compileContext,
             capturedScopeStack,
@@ -168,7 +171,6 @@ public final class ExpressionParser extends ParseAdapter {
         if (genericListOpt.isPresent()) {
             // TODO: parse generic list
         }
-        final var argsContext = exprContext.exprList();
         final var args = ExpressionUtils.parseExpressions(compiler,
             compileContext,
             capturedScopeStack,
@@ -184,7 +186,7 @@ public final class ExpressionParser extends ParseAdapter {
             compileContext.reportError(refExpr.getTokenSlice().getFirstToken(), CompileErrorCode.E4009);
             return null;
         }
-        return new CallExpression(function, TokenSlice.from(compileContext, exprContext));
+        return new CallExpression(function, TokenSlice.from(compileContext, exprContext), args.toArray(Expression[]::new));
     }
 
     private @Nullable CallExpression parseNamedArgCallExpr(final List<ParseTree> children) {
@@ -206,6 +208,10 @@ public final class ExpressionParser extends ParseAdapter {
     private @Nullable ReferenceExpression parseReference(final ParserRuleContext context) {
         final var name = Identifier.parse(context);
         if (parent instanceof Function function) {
+            final var param = Arrays.stream(function.getParameters()).filter(p -> p.getName().equals(name)).findFirst();
+            if (param.isPresent()) {
+                return new ReferenceExpression(param.get(), false, TokenSlice.from(compileContext, context));
+            }
             final var local = compileContext.getPostAnalyzer().findLocalIn(function,
                 name,
                 capturedScopeStack.getScopeName());
@@ -292,7 +298,7 @@ public final class ExpressionParser extends ParseAdapter {
                         final var openParen = children.stream().filter(TerminalNode.class::isInstance).findFirst().orElseThrow();
                         // We know it is a function call because of regular parens
                         if (openParen.getText().equals(TokenUtils.getLiteral(FerrousLexer.L_PAREN))) {
-                            setExpression(context, parseCallExpr(exprContext, children));
+                            setExpression(context, parseCallExpr(exprContext, context.exprList(), children));
                             return;
                         }
                         // Otherwise it has to be an indexing expression
@@ -306,7 +312,7 @@ public final class ExpressionParser extends ParseAdapter {
                             compileContext.reportError(context.start, CompileErrorCode.E4008);
                             return;
                         }
-                        setExpression(context, parseCallExpr(exprContext, children));
+                        setExpression(context, parseCallExpr(exprContext, context.exprList(), children));
                     }
                 }
             }
