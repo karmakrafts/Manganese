@@ -18,8 +18,6 @@ package io.karma.ferrous.manganese.ocm.scope;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 
-import java.util.EnumSet;
-
 /**
  * @author Alexander Hinze
  * @since 15/10/2023

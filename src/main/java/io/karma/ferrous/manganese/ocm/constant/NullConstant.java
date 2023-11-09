@@ -23,7 +23,6 @@ import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.TokenSlice;
 import org.apiguardian.api.API;
 import org.jetbrains.annotations.Nullable;
-import org.lwjgl.llvm.LLVMCore;
 
 import static org.lwjgl.llvm.LLVMCore.LLVMConstNull;
 
@@ -41,12 +40,12 @@ public final class NullConstant implements Constant {
         this.tokenSlice = tokenSlice;
     }
 
-    public void setContextualType(final Type contextualType) {
-        this.contextualType = contextualType;
-    }
-
     public Type getContextualType() {
         return contextualType;
+    }
+
+    public void setContextualType(final Type contextualType) {
+        this.contextualType = contextualType;
     }
 
     // Scoped

@@ -35,7 +35,8 @@ public final class AllocExpression implements Expression {
     private final TokenSlice tokenSlice;
     private Scope enclosingScope;
 
-    public AllocExpression(final Type type, final boolean isHeapAlloc, final TokenSlice tokenSlice, final Expression... args) {
+    public AllocExpression(final Type type, final boolean isHeapAlloc, final TokenSlice tokenSlice,
+                           final Expression... args) {
         this.type = type;
         this.isHeapAlloc = isHeapAlloc;
         this.args = args;
