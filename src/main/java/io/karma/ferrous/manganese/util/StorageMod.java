@@ -13,27 +13,15 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.ocm.statement;
+package io.karma.ferrous.manganese.util;
 
-import io.karma.ferrous.manganese.ocm.ir.IRContext;
-import io.karma.ferrous.manganese.ocm.scope.Scoped;
-import io.karma.ferrous.manganese.target.TargetMachine;
-import io.karma.ferrous.manganese.util.TokenSlice;
+import org.apiguardian.api.API;
 
 /**
  * @author Alexander Hinze
- * @since 22/10/2023
+ * @since 08/11/2023
  */
-public interface Statement extends Scoped {
-    TokenSlice getTokenSlice();
-
-    long emit(final TargetMachine targetMachine, final IRContext blockContext);
-
-    default boolean returnsFromCurrentScope() {
-        return false;
-    }
-
-    default boolean breaksCurrentScope() {
-        return false;
-    }
+@API(status = API.Status.INTERNAL)
+public enum StorageMod {
+    CONST, TLS
 }

@@ -22,7 +22,9 @@ import io.karma.ferrous.manganese.ocm.access.DefaultAccess;
 import io.karma.ferrous.manganese.ocm.access.ScopedAccess;
 import io.karma.ferrous.manganese.ocm.scope.ScopeStack;
 import io.karma.ferrous.manganese.ocm.type.Type;
+import io.karma.ferrous.manganese.ocm.type.Types;
 import io.karma.ferrous.vanadium.FerrousParser.AccessModContext;
+import io.karma.ferrous.vanadium.FerrousParser.StorageModContext;
 import io.karma.kommons.util.SystemInfo;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
@@ -47,6 +49,47 @@ public final class KitchenSink {
     // @formatter:off
     private KitchenSink() {}
     // @formatter:on
+
+    public static boolean areTypesAssignable(final List<?> objects, final Class<?>... types) {
+        final var numObjects = objects.size();
+        if (numObjects != types.length) {
+            return false;
+        }
+        for (var i = 0; i < numObjects; i++) {
+            if (types[i].isAssignableFrom(objects.get(i).getClass())) {
+                continue;
+            }
+            return false;
+        }
+        return true;
+    }
+
+    public static boolean containsAssignableType(final List<?> objects, final Class<?> type) {
+        for (final var obj : objects) {
+            if (!type.isAssignableFrom(obj.getClass())) {
+                continue;
+            }
+            return true;
+        }
+        return false;
+    }
+
+    public static boolean containsAssignableTypeSequence(final List<?> objects, final Class<?>... types) {
+        final var numObjects = objects.size();
+        final var numTypes = types.length;
+        outer:
+        for (var start = 0; start <= numObjects - numTypes; start++) {
+            for (var i = 0; i < numTypes; i++) {
+                final var objType = objects.get(start + i).getClass();
+                final var type = types[i];
+                if (!type.isAssignableFrom(objType)) {
+                    continue outer;
+                }
+            }
+            return true;
+        }
+        return false;
+    }
 
     public static <E extends Enum<E>> EnumSet<E> allExcept(final Class<E> type, final E... excluded) {
         final var values = type.getEnumConstants();
@@ -80,15 +123,28 @@ public final class KitchenSink {
         }
     }
 
-    public static Access getAccess(final Compiler compiler, final CompileContext compileContext,
-                                   final ScopeStack scopeStack, final AccessModContext context) {
+    public static EnumSet<StorageMod> parseStorageMods(final List<StorageModContext> contexts) {
+        final var mods = EnumSet.noneOf(StorageMod.class);
+        for (final var context : contexts) {
+            if (context.KW_CONST() != null) {
+                mods.add(StorageMod.CONST);
+            }
+            if (context.KW_TLS() != null) {
+                mods.add(StorageMod.TLS);
+            }
+        }
+        return mods;
+    }
+
+    public static Access parseAccess(final Compiler compiler, final CompileContext compileContext,
+                                     final ScopeStack scopeStack, final AccessModContext context) {
         if (context == null || context.KW_PUB() == null) {
             return DefaultAccess.PRIVATE;
         }
         final var typeContext = context.typeList();
         if (typeContext != null) {
             return new ScopedAccess(TokenSlice.from(compileContext, context),
-                TypeUtils.getTypes(compiler, compileContext, scopeStack, typeContext).toArray(Type[]::new));
+                Types.parse(compiler, compileContext, scopeStack, typeContext).toArray(Type[]::new));
         }
         if (context.KW_MOD() != null) {
             return DefaultAccess.MODULE;

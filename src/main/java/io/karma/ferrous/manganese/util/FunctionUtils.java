@@ -89,7 +89,7 @@ public final class FunctionUtils {
         final var children = context.children;
         if (children.size() == 1) {
             final var text = children.getFirst().getText();
-            final var op = Operator.findByText(text);
+            final var op = Operator.findByText(text, true);
             if (op.isPresent()) {
                 return Identifier.parse(op.get().getFunctionName());
             }
@@ -107,11 +107,11 @@ public final class FunctionUtils {
         return context.functionParamList().functionParam().stream()
             .map(FerrousParser.FunctionParamContext::type)
             .filter(type -> type != null && !type.getText().equals(TokenUtils.getLiteral(FerrousLexer.KW_VAARGS)))
-            .map(type -> TypeUtils.parseType(compiler, compileContext, scopeStack, type))
+            .map(type -> Types.parse(compiler, compileContext, scopeStack, type))
             .peek(type -> {
-                //if(type == BuiltinType.VOID) {
-                //    compileContext.reportError(compileContext.makeError());
-                //} TODO: ...
+                if(type == BuiltinType.VOID) {
+                    compileContext.reportError(type.getTokenSlice().getFirstToken(), CompileErrorCode.E4002);
+                }
             })
             .toList();
         // @formatter:on
@@ -123,7 +123,7 @@ public final class FunctionUtils {
         // @formatter:off
         final var returnType = type == null
             ? BuiltinType.VOID
-            : Objects.requireNonNull(TypeUtils.parseType(compiler, compileContext, scopeStack, type));
+            : Objects.requireNonNull(Types.parse(compiler, compileContext, scopeStack, type));
         // @formatter:on
         final var isVarArg = context.functionParamList().vaFunctionParam() != null;
         final var paramTypes = parseParameterTypes(compiler, compileContext, scopeStack, context);

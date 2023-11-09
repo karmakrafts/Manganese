@@ -46,11 +46,14 @@ public enum CompileErrorCode {
     // Semantic errors
     E4000("The given calling convention does not exist", CompileStatus.SEMANTIC_ERROR),
     E4001("The given element cannot be accessed from this scope", CompileStatus.SEMANTIC_ERROR),
-    E4002("A parameter cannot have the type void", CompileStatus.SEMANTIC_ERROR),
+    E4002("A parameter cannot have the kind void", CompileStatus.SEMANTIC_ERROR),
     E4003("The given function is already defined in the same scope", CompileStatus.SEMANTIC_ERROR),
     E4004("Function that is not virtual, abstract or extern has no body", CompileStatus.SEMANTIC_ERROR),
     E4005("Function never returns", CompileStatus.SEMANTIC_ERROR),
     E4006("Typeless variable requires explicit initialization", CompileStatus.SEMANTIC_ERROR),
+    E4007("Function does not exist", CompileStatus.SEMANTIC_ERROR),
+    E4008("Subscript operator requires at least one argument", CompileStatus.SEMANTIC_ERROR),
+    E4009("Cannot resolve function with the given parameter types", CompileStatus.SEMANTIC_ERROR),
     // Translation errors
     E5000("Could not find function during translation", CompileStatus.TRANSLATION_ERROR),
     E5001("Unknown unary operator", CompileStatus.TRANSLATION_ERROR),

@@ -15,8 +15,8 @@
 
 package io.karma.ferrous.manganese.ocm.expr;
 
-import io.karma.ferrous.manganese.ocm.BlockBuilder;
-import io.karma.ferrous.manganese.ocm.BlockContext;
+import io.karma.ferrous.manganese.ocm.ir.IRBuilder;
+import io.karma.ferrous.manganese.ocm.ir.IRContext;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.ocm.type.BuiltinType;
 import io.karma.ferrous.manganese.ocm.type.Type;
@@ -49,27 +49,27 @@ public final class UnaryExpression implements Expression {
         this.tokenSlice = tokenSlice;
     }
 
-    private long emitPreIncrement(final long value, final BlockBuilder builder) {
+    private long emitPreIncrement(final long value, final IRBuilder builder) {
         return value;
     }
 
-    private long emitIncrement(final long value, final BlockBuilder builder) {
+    private long emitIncrement(final long value, final IRBuilder builder) {
         return value;
     }
 
-    private long emitPreDecrement(final long value, final BlockBuilder builder) {
+    private long emitPreDecrement(final long value, final IRBuilder builder) {
         return value;
     }
 
-    private long emitDecrement(final long value, final BlockBuilder builder) {
+    private long emitDecrement(final long value, final IRBuilder builder) {
         return value;
     }
 
-    private long emitPreInverseAssign(final long value, final BlockBuilder builder) {
+    private long emitPreInverseAssign(final long value, final IRBuilder builder) {
         return value;
     }
 
-    private long emitInverseAssign(final long value, final BlockBuilder builder) {
+    private long emitInverseAssign(final long value, final IRBuilder builder) {
         return value;
     }
 
@@ -93,7 +93,7 @@ public final class UnaryExpression implements Expression {
     }
 
     @Override
-    public long emit(final TargetMachine targetMachine, final BlockContext blockContext) {
+    public long emit(final TargetMachine targetMachine, final IRContext blockContext) {
         final var builder = blockContext.getCurrentOrCreate();
         final var type = value.getType();
         if (!(type instanceof BuiltinType builtinType)) {
@@ -101,9 +101,9 @@ public final class UnaryExpression implements Expression {
         }
         final var address = value.emit(targetMachine, blockContext);
         return switch(op) { // @formatter:off
-            case MINUS          -> builtinType.isFloatType() ? builder.fneg(address) : builder.neg(address);
-            case PLUS           -> builtinType.isFloatType() ? builder.fneg(address) : builder.neg(address);
+            case MINUS, PLUS    -> builtinType.isFloatType() ? builder.fneg(address) : builder.neg(address);
             case INV            -> builder.xor(address, LLVMConstInt(type.materialize(targetMachine), -1, false));
+            case NOT            -> builder.xor(address, LLVMConstInt(type.materialize(targetMachine), 1, false));
             case PRE_INC        -> emitPreIncrement(address, builder);
             case INC            -> emitIncrement(address, builder);
             case PRE_DEC        -> emitPreDecrement(address, builder);

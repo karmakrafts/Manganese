@@ -13,16 +13,16 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.ocm;
+package io.karma.ferrous.manganese.ocm.function;
 
 import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.module.Module;
+import io.karma.ferrous.manganese.ocm.NameProvider;
+import io.karma.ferrous.manganese.ocm.Parameter;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.ocm.scope.Scoped;
 import io.karma.ferrous.manganese.ocm.statement.Statement;
 import io.karma.ferrous.manganese.ocm.type.FunctionType;
-import io.karma.ferrous.manganese.ocm.type.Type;
-import io.karma.ferrous.manganese.ocm.type.Types;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.CallingConvention;
 import io.karma.ferrous.manganese.util.Identifier;
@@ -33,7 +33,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 import static org.lwjgl.llvm.LLVMCore.*;
 import static org.lwjgl.system.MemoryUtil.NULL;
@@ -47,8 +46,6 @@ public final class Function implements NameProvider, Scoped {
     private final Identifier name;
     private final CallingConvention callConv;
     private final boolean isExtern;
-    private final boolean isVarArg;
-    private final Type returnType;
     private final Parameter[] parameters;
     private final TokenSlice tokenSlice;
     private final FunctionType type;
@@ -56,22 +53,14 @@ public final class Function implements NameProvider, Scoped {
     private Scope enclosingScope;
     private long materializedPrototype;
 
-    public Function(final Identifier name, final CallingConvention callConv, final boolean isExtern,
-                    final boolean isVarArg, final Type returnType, final TokenSlice tokenSlice,
-                    final Parameter... params) {
+    public Function(final Identifier name, final CallingConvention callConv, final FunctionType type,
+                    final boolean isExtern, final TokenSlice tokenSlice, final Parameter... params) {
         this.name = name;
         this.callConv = callConv;
         this.isExtern = isExtern;
-        this.isVarArg = isVarArg;
-        this.returnType = returnType;
+        this.type = type;
         this.tokenSlice = tokenSlice;
         this.parameters = params;
-
-        final var paramTypes = Arrays.stream(parameters).map(Parameter::getType).collect(Collectors.toList());
-        type = Types.function(returnType, paramTypes, isVarArg, type -> {
-            type.setEnclosingScope(getEnclosingScope());
-            return type;
-        }, tokenSlice);
     }
 
     public void createBody(final Statement... statements) {
@@ -166,6 +155,6 @@ public final class Function implements NameProvider, Scoped {
 
     @Override
     public String toString() {
-        return String.format("%s %s(%s)", returnType, name, Arrays.toString(parameters));
+        return String.format("%s %s(%s)", type, name, Arrays.toString(parameters));
     }
 }

@@ -15,18 +15,20 @@
 
 package io.karma.ferrous.manganese.ocm.expr;
 
-import io.karma.ferrous.manganese.ocm.BlockContext;
+import io.karma.ferrous.manganese.ocm.ir.IRContext;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.ocm.type.Type;
+import io.karma.ferrous.manganese.ocm.type.Types;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.TokenSlice;
-import io.karma.ferrous.manganese.util.TypeUtils;
 import io.karma.kommons.lazy.Lazy;
 import io.karma.kommons.tuple.Pair;
 import org.apiguardian.api.API;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
+
+import static org.lwjgl.system.MemoryUtil.NULL;
 
 /**
  * @author Alexander Hinze
@@ -45,7 +47,7 @@ public final class IfExpression implements Expression {
         }
         this.branches = branches;
         // @formatter:off
-        type = new Lazy<>(() -> TypeUtils.findCommonType(branches.stream()
+        type = new Lazy<>(() -> Types.findCommonType(branches.stream()
             .map(pair -> pair.getRight().getType())
             .toArray(Type[]::new)));
         // @formatter:on
@@ -77,13 +79,13 @@ public final class IfExpression implements Expression {
     }
 
     @Override
-    public long emit(final TargetMachine targetMachine, final BlockContext blockContext) {
+    public long emit(final TargetMachine targetMachine, final IRContext blockContext) {
         for (final var branch : branches) {
             final var statements = branch.getRight().getStatements();
             for (final var statement : statements) {
                 statement.emit(targetMachine, blockContext); // Ignore result here
             }
         }
-        return 0L; // Return value ref to result register
+        return NULL; // Return value ref to result register
     }
 }

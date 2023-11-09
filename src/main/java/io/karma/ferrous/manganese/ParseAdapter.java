@@ -18,7 +18,7 @@ package io.karma.ferrous.manganese;
 import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.CompileErrorCode;
 import io.karma.ferrous.manganese.compiler.Compiler;
-import io.karma.ferrous.manganese.ocm.Function;
+import io.karma.ferrous.manganese.ocm.function.Function;
 import io.karma.ferrous.manganese.ocm.scope.DefaultScope;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.ocm.scope.ScopeStack;
@@ -98,6 +98,12 @@ public abstract class ParseAdapter implements FerrousParserListener {
 
     // @formatter:off
     @Override
+    public void enterPrimary(PrimaryContext primaryContext) {}
+
+    @Override
+    public void exitPrimary(PrimaryContext primaryContext) {}
+
+    @Override
     public void enterDestructureStatement(DestructureStatementContext destructureStatementContext) {}
 
     @Override
@@ -168,12 +174,6 @@ public abstract class ParseAdapter implements FerrousParserListener {
 
     @Override
     public void exitLambdaExpr(LambdaExprContext lambdaExprContext) {}
-
-    @Override
-    public void enterRefIdent(RefIdentContext refIdentContext) {}
-
-    @Override
-    public void exitRefIdent(RefIdentContext refIdentContext) {}
 
     @Override
     public void enterTupleType(TupleTypeContext tupleTypeContext) {}
@@ -653,10 +653,10 @@ public abstract class ParseAdapter implements FerrousParserListener {
     public void exitFunctionBody(FunctionBodyContext functionBodyContext) {}
 
     @Override
-    public void enterLetExpr(LetExprContext variableContext) {}
+    public void enterLetStatement(LetStatementContext variableContext) {}
 
     @Override
-    public void exitLetExpr(LetExprContext variableContext) {}
+    public void exitLetStatement(LetStatementContext variableContext) {}
 
     @Override
     public void enterInlineFunctionBody(InlineFunctionBodyContext inlineFunctionBodyContext) {}
@@ -693,12 +693,6 @@ public abstract class ParseAdapter implements FerrousParserListener {
 
     @Override
     public void exitExpr(ExprContext exprContext) {}
-
-    @Override
-    public void enterAssignmentExpr(AssignmentExprContext assignmentExprContext) {}
-
-    @Override
-    public void exitAssignmentExpr(AssignmentExprContext assignmentExprContext) {}
 
     @Override
     public void enterAlignofExpr(AlignofExprContext alignofExprContext) {}
@@ -765,66 +759,6 @@ public abstract class ParseAdapter implements FerrousParserListener {
 
     @Override
     public void exitStackInitExpr(StackInitExprContext stackInitExprContext) {}
-
-    @Override
-    public void enterCallExpr(CallExprContext callExprContext) {}
-
-    @Override
-    public void exitCallExpr(CallExprContext callExprContext) {}
-
-    @Override
-    public void enterIncrementExpr(IncrementExprContext incrementExprContext) {}
-
-    @Override
-    public void exitIncrementExpr(IncrementExprContext incrementExprContext) {}
-
-    @Override
-    public void enterDecrementExpr(DecrementExprContext decrementExprContext) {}
-
-    @Override
-    public void exitDecrementExpr(DecrementExprContext decrementExprContext) {}
-
-    @Override
-    public void enterRef(RefContext refContext) {}
-
-    @Override
-    public void exitRef(RefContext refContext) {}
-
-    @Override
-    public void enterThisRef(ThisRefContext thisRefContext) {}
-
-    @Override
-    public void exitThisRef(ThisRefContext thisRefContext) {}
-
-    @Override
-    public void enterSimpleRef(SimpleRefContext simpleRefContext) {}
-
-    @Override
-    public void exitSimpleRef(SimpleRefContext simpleRefContext) {}
-
-    @Override
-    public void enterBinaryRefOp(BinaryRefOpContext binaryRefOpContext) {}
-
-    @Override
-    public void exitBinaryRefOp(BinaryRefOpContext binaryRefOpContext) {}
-
-    @Override
-    public void enterSpecialRef(SpecialRefContext specialRefContext) {}
-
-    @Override
-    public void exitSpecialRef(SpecialRefContext specialRefContext) {}
-
-    @Override
-    public void enterUnaryRefOp(UnaryRefOpContext unaryRefOpContext) {}
-
-    @Override
-    public void exitUnaryRefOp(UnaryRefOpContext unaryRefOpContext) {}
-
-    @Override
-    public void enterMethodRef(MethodRefContext methodRefContext) {}
-
-    @Override
-    public void exitMethodRef(MethodRefContext methodRefContext) {}
 
     @Override
     public void enterGenericParamList(GenericParamListContext genericParamListContext) {}

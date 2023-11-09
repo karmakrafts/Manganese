@@ -15,7 +15,7 @@
 
 package io.karma.ferrous.manganese.ocm.expr;
 
-import io.karma.ferrous.manganese.ocm.BlockContext;
+import io.karma.ferrous.manganese.ocm.ir.IRContext;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.ocm.type.BuiltinType;
 import io.karma.ferrous.manganese.ocm.type.Type;
@@ -80,7 +80,7 @@ public final class BinaryExpression implements Expression {
     }
 
     @Override
-    public long emit(final TargetMachine targetMachine, final BlockContext blockContext) {
+    public long emit(final TargetMachine targetMachine, final IRContext blockContext) {
         final var builder = blockContext.getCurrentOrCreate();
         final var lhsType = this.lhs.getType();
         if (!(lhsType instanceof BuiltinType builtinType)) {
@@ -116,7 +116,7 @@ public final class BinaryExpression implements Expression {
 
     @Override
     public Type getType() {
-        return lhs.getType(); // We always use the type of the left hand side expression
+        return lhs.getType(); // We always use the kind of the left hand side expression
     }
 
     @Override

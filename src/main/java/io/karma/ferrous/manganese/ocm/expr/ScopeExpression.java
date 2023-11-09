@@ -15,15 +15,15 @@
 
 package io.karma.ferrous.manganese.ocm.expr;
 
-import io.karma.ferrous.manganese.ocm.BlockContext;
+import io.karma.ferrous.manganese.ocm.ir.IRContext;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.ocm.statement.ReturnStatement;
 import io.karma.ferrous.manganese.ocm.statement.Statement;
 import io.karma.ferrous.manganese.ocm.type.BuiltinType;
 import io.karma.ferrous.manganese.ocm.type.Type;
+import io.karma.ferrous.manganese.ocm.type.Types;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.TokenSlice;
-import io.karma.ferrous.manganese.util.TypeUtils;
 import io.karma.kommons.lazy.Lazy;
 import org.apiguardian.api.API;
 import org.jetbrains.annotations.Nullable;
@@ -62,7 +62,7 @@ public final class ScopeExpression implements Expression {
             }
             types.add(type);
         }
-        return types.isEmpty() ? BuiltinType.VOID : TypeUtils.findCommonType(types.toArray(Type[]::new));
+        return types.isEmpty() ? BuiltinType.VOID : Types.findCommonType(types.toArray(Type[]::new));
     }
 
     // Scoped
@@ -90,7 +90,7 @@ public final class ScopeExpression implements Expression {
     }
 
     @Override
-    public long emit(final TargetMachine targetMachine, final BlockContext blockContext) {
+    public long emit(final TargetMachine targetMachine, final IRContext blockContext) {
         for (final var statement : statements) {
             statement.emit(targetMachine, blockContext);
         }

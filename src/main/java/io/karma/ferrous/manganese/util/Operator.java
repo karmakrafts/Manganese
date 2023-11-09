@@ -77,7 +77,12 @@ public enum Operator {
     PRE_INC         (FerrousLexer.OP_INCREMENT,         "op.inc.pre",           false,  true ),
     INC             (FerrousLexer.OP_INCREMENT,         "op.inc",               false,  true ),
     PRE_DEC         (FerrousLexer.OP_DECREMENT,         "op.dec.pre",           false,  true ),
-    DEC             (FerrousLexer.OP_DECREMENT,         "op.dec",               false,  true )
+    DEC             (FerrousLexer.OP_DECREMENT,         "op.dec",               false,  true ),
+    NOT             (FerrousLexer.OP_NOT,               "op.not",               true,   false),
+    DEREF           (FerrousLexer.ASTERISK,             "op.deref",             true,   false),
+    SAFE_DEREF      (FerrousLexer.OP_SAFE_DEREF,        "op.deref.safe",        true,   false),
+    PTR_REF         (FerrousLexer.ARROW,                "op.ptrref",            false,  true ),
+    SAFE_PTR_REF    (FerrousLexer.OP_SAFE_PTR_REF,      "op.ptrref.safe",       false,  true )
     ;
     // @formatter:on
 
@@ -93,8 +98,8 @@ public enum Operator {
         this.isBinary = isBinary;
     }
 
-    public static Optional<Operator> findByText(final String text) {
-        return Arrays.stream(values()).filter(op -> op.text.equals(text)).findFirst();
+    public static Optional<Operator> findByText(final String text, final boolean allowBinary) {
+        return Arrays.stream(values()).filter(op -> op.text.equals(text) && op.isBinary == allowBinary).findFirst();
     }
 
     public boolean isUnary() {

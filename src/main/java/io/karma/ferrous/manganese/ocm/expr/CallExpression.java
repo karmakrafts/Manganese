@@ -15,8 +15,8 @@
 
 package io.karma.ferrous.manganese.ocm.expr;
 
-import io.karma.ferrous.manganese.ocm.BlockContext;
-import io.karma.ferrous.manganese.ocm.Function;
+import io.karma.ferrous.manganese.ocm.function.Function;
+import io.karma.ferrous.manganese.ocm.ir.IRContext;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.target.TargetMachine;
@@ -68,7 +68,7 @@ public final class CallExpression implements Expression {
     }
 
     @Override
-    public long emit(final TargetMachine targetMachine, final BlockContext blockContext) {
+    public long emit(final TargetMachine targetMachine, final IRContext blockContext) {
         final var builder = blockContext.getCurrentOrCreate();
         final var args = Arrays.stream(this.args).mapToLong(expr -> expr.emit(targetMachine, blockContext)).toArray();
         return builder.call(function, args);

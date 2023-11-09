@@ -19,15 +19,21 @@ import io.karma.ferrous.manganese.ParseAdapter;
 import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.CompileErrorCode;
 import io.karma.ferrous.manganese.compiler.Compiler;
-import io.karma.ferrous.manganese.ocm.Function;
+import io.karma.ferrous.manganese.ocm.function.Function;
+import io.karma.ferrous.manganese.ocm.statement.LetStatement;
 import io.karma.ferrous.manganese.ocm.statement.ReturnStatement;
 import io.karma.ferrous.manganese.ocm.statement.Statement;
 import io.karma.ferrous.manganese.ocm.type.BuiltinType;
+import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.TokenSlice;
 import io.karma.ferrous.vanadium.FerrousParser.FunctionBodyContext;
+import io.karma.kommons.lazy.Lazy;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.LinkedHashMap;
 
 /**
  * @author Alexander Hinze
@@ -36,6 +42,7 @@ import org.apiguardian.api.API.Status;
 @API(status = Status.INTERNAL)
 public final class FunctionParser extends ParseAdapter {
     private final Function function;
+    private final Lazy<LinkedHashMap<Identifier, LetStatement>> locals = new Lazy<>(LinkedHashMap::new);
 
     public FunctionParser(final Compiler compiler, final CompileContext compileContext, final Function function) {
         super(compiler, compileContext);
@@ -47,7 +54,12 @@ public final class FunctionParser extends ParseAdapter {
         if (function.getBody() != null) {
             return;
         }
-        final var parser = new FunctionBodyParser(compiler, compileContext, function.getType());
+        final var parser = new StatementParser(compiler,
+            compileContext,
+            function.getType(),
+            locals,
+            function.rebuildScopeStack(),
+            function);
         ParseTreeWalker.DEFAULT.walk(parser, context);
         function.createBody(parser.getStatements().toArray(Statement[]::new));
         super.enterFunctionBody(context);
@@ -80,5 +92,9 @@ public final class FunctionParser extends ParseAdapter {
 
     public Function getFunction() {
         return function;
+    }
+
+    public @Nullable LinkedHashMap<Identifier, LetStatement> getLocals() {
+        return locals.get();
     }
 }

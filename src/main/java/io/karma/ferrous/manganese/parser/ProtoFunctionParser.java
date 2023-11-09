@@ -18,8 +18,8 @@ package io.karma.ferrous.manganese.parser;
 import io.karma.ferrous.manganese.ParseAdapter;
 import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.Compiler;
-import io.karma.ferrous.manganese.ocm.Function;
 import io.karma.ferrous.manganese.ocm.Parameter;
+import io.karma.ferrous.manganese.ocm.function.Function;
 import io.karma.ferrous.manganese.ocm.scope.ScopeStack;
 import io.karma.ferrous.manganese.util.FunctionUtils;
 import io.karma.ferrous.manganese.util.TokenSlice;
@@ -70,9 +70,8 @@ public final class ProtoFunctionParser extends ParseAdapter {
         }
         function = capturedScopeStack.applyEnclosingScopes(new Function(name,
             callConv,
+            type,
             isExtern,
-            type.isVarArg(),
-            type.getReturnType(),
             tokenSlice,
             params));
         super.enterProtoFunction(context);

@@ -13,27 +13,26 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.ocm.statement;
+package io.karma.ferrous.manganese.parser;
 
-import io.karma.ferrous.manganese.ocm.ir.IRContext;
-import io.karma.ferrous.manganese.ocm.scope.Scoped;
-import io.karma.ferrous.manganese.target.TargetMachine;
-import io.karma.ferrous.manganese.util.TokenSlice;
+import io.karma.ferrous.manganese.ParseAdapter;
+import io.karma.ferrous.manganese.compiler.CompileContext;
+import io.karma.ferrous.manganese.compiler.Compiler;
+import org.apiguardian.api.API;
 
 /**
  * @author Alexander Hinze
- * @since 22/10/2023
+ * @since 08/11/2023
  */
-public interface Statement extends Scoped {
-    TokenSlice getTokenSlice();
+@API(status = API.Status.INTERNAL)
+public final class ReferenceParser extends ParseAdapter {
+    private Object reference;
 
-    long emit(final TargetMachine targetMachine, final IRContext blockContext);
-
-    default boolean returnsFromCurrentScope() {
-        return false;
+    public ReferenceParser(final Compiler compiler, final CompileContext compileContext) {
+        super(compiler, compileContext);
     }
 
-    default boolean breaksCurrentScope() {
-        return false;
+    public Object getReference() {
+        return reference;
     }
 }

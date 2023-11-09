@@ -120,7 +120,7 @@ final class Main {
                 .ofType(String.class)
                 .defaultsTo(Objects.requireNonNull(LLVMGetHostCPUFeatures()));
             final var relocOpt = parser.accepts("Tr", Ansi.ansi()
-                    .a("The type of code relocation used by the linker. ")
+                    .a("The kind of code relocation used by the linker. ")
                     .fg(Ansi.Color.CYAN)
                     .a("List with ?")
                     .a(Ansi.Attribute.RESET)
@@ -128,7 +128,7 @@ final class Main {
                 .withOptionalArg()
                 .ofType(String.class)
                 .defaultsTo(Relocation.DYN_NO_PIC.getName());
-            final var cpuOpt = parser.accepts("Tc", "The type of processor to compile for. Depends on the given target architecture.")
+            final var cpuOpt = parser.accepts("Tc", "The kind of processor to compile for. Depends on the given target architecture.")
                 .withOptionalArg()
                 .ofType(String.class)
                 .defaultsTo("");
@@ -143,7 +143,7 @@ final class Main {
                 .defaultsTo(OptimizationLevel.DEFAULT.getName());
             // Link options
             final var linkerTypeOpt = parser.accepts("LT", Ansi.ansi()
-                    .a("The type of linker to use when creating the target binary. ")
+                    .a("The kind of linker to use when creating the target binary. ")
                     .fg(Ansi.Color.CYAN)
                     .a("List with ?")
                     .a(Ansi.Attribute.RESET)
@@ -152,7 +152,7 @@ final class Main {
                 .ofType(String.class)
                 .defaultsTo(Platform.getHostPlatform().getDefaultLinkerType().getName());
             final var linkModelOpt = parser.accepts("Lm", Ansi.ansi()
-                    .a("The type of link model to use while linking. ")
+                    .a("The kind of link model to use while linking. ")
                     .fg(Ansi.Color.CYAN)
                     .a("List with ?")
                     .a(Ansi.Attribute.RESET)
@@ -161,7 +161,7 @@ final class Main {
                 .ofType(String.class)
                 .defaultsTo(LinkModel.FULL.getName());
             final var linkTargetTypeOpt = parser.accepts("Lt", Ansi.ansi()
-                    .a("The type of target to create when linking. ")
+                    .a("The kind of target to create when linking. ")
                     .fg(Ansi.Color.CYAN)
                     .a("List with ?")
                     .a(Ansi.Attribute.RESET)

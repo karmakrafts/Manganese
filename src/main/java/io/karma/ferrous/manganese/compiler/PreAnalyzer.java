@@ -18,9 +18,9 @@ package io.karma.ferrous.manganese.compiler;
 import io.karma.ferrous.manganese.ParseAdapter;
 import io.karma.ferrous.manganese.module.Module;
 import io.karma.ferrous.manganese.ocm.Field;
-import io.karma.ferrous.manganese.ocm.Function;
 import io.karma.ferrous.manganese.ocm.access.AccessKind;
 import io.karma.ferrous.manganese.ocm.access.ScopedAccess;
+import io.karma.ferrous.manganese.ocm.function.Function;
 import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.ocm.type.*;
@@ -85,7 +85,7 @@ public final class PreAnalyzer extends ParseAdapter {
                 fieldTypeName = fieldNode.getValue().getQualifiedName();
                 if (resolved.contains(fieldTypeName)) {
                     buffer.fgBright(Color.GREEN).a('C').fgBright(Color.CYAN);
-                    continue; // Prevent multiple passes over the same type
+                    continue; // Prevent multiple passes over the same kind
                 }
                 typesToResolve.push(Pair.of(childNode, fieldNode));
                 resolved.add(fieldTypeName);
@@ -108,7 +108,7 @@ public final class PreAnalyzer extends ParseAdapter {
                     return false;
                 }
                 backingTypeName = typeNode.getValue().getQualifiedName();
-                if (!resolved.contains(backingTypeName)) { // Prevent multiple passes over the same type
+                if (!resolved.contains(backingTypeName)) { // Prevent multiple passes over the same kind
                     typesToResolve.push(Pair.of(childNode, typeNode));
                     resolved.add(backingTypeName);
                     buffer.a('R');
@@ -121,7 +121,7 @@ public final class PreAnalyzer extends ParseAdapter {
 
         parentNode.addDependency(childNode);
         buffer.a('D').fg(Color.CYAN).a(" > ").a(childType);
-        Logger.INSTANCE.debugln("Resolved type graph: %s", buffer.toString());
+        Logger.INSTANCE.debugln("Resolved kind graph: %s", buffer.toString());
 
         return true;
     }
@@ -164,8 +164,8 @@ public final class PreAnalyzer extends ParseAdapter {
         if (checkIsTypeAlreadyDefined(identContext)) {
             return;
         }
-        final var type = TypeUtils.parseType(compiler, compileContext, scopeStack, context.type());
-        final var genericParams = TypeUtils.getGenericParams(compiler,
+        final var type = Types.parse(compiler, compileContext, scopeStack, context.type());
+        final var genericParams = Types.getGenericParams(compiler,
             compileContext,
             scopeStack,
             context.genericParamList()).toArray(GenericParameter[]::new);
@@ -184,7 +184,7 @@ public final class PreAnalyzer extends ParseAdapter {
         if (checkIsTypeAlreadyDefined(identContext)) {
             return;
         }
-        final var genericParams = TypeUtils.getGenericParams(compiler,
+        final var genericParams = Types.getGenericParams(compiler,
             compileContext,
             scopeStack,
             context.genericParamList()).toArray(GenericParameter[]::new);
@@ -198,7 +198,7 @@ public final class PreAnalyzer extends ParseAdapter {
         if (checkIsTypeAlreadyDefined(identContext)) {
             return;
         }
-        final var genericParams = TypeUtils.getGenericParams(compiler,
+        final var genericParams = Types.getGenericParams(compiler,
             compileContext,
             scopeStack,
             context.genericParamList()).toArray(GenericParameter[]::new);
@@ -212,7 +212,7 @@ public final class PreAnalyzer extends ParseAdapter {
         if (checkIsTypeAlreadyDefined(identContext)) {
             return;
         }
-        final var genericParams = TypeUtils.getGenericParams(compiler,
+        final var genericParams = Types.getGenericParams(compiler,
             compileContext,
             scopeStack,
             context.genericParamList()).toArray(GenericParameter[]::new);
@@ -236,7 +236,7 @@ public final class PreAnalyzer extends ParseAdapter {
         if (checkIsTypeAlreadyDefined(identContext)) {
             return;
         }
-        final var genericParams = TypeUtils.getGenericParams(compiler,
+        final var genericParams = Types.getGenericParams(compiler,
             compileContext,
             scopeStack,
             context.genericParamList()).toArray(GenericParameter[]::new);
@@ -343,12 +343,12 @@ public final class PreAnalyzer extends ParseAdapter {
                 continue;
             }
             final var fieldTypeName = namedType.getQualifiedName();
-            Logger.INSTANCE.debugln("Found incomplete field type '%s' in '%s'", fieldTypeName, scopeName);
+            Logger.INSTANCE.debugln("Found incomplete field kind '%s' in '%s'", fieldTypeName, scopeName);
             final var completeType = findCompleteTypeInScope(fieldTypeName, scopeName);
             if (completeType == null) {
                 return false;
             }
-            Logger.INSTANCE.debugln("  > Resolved to complete type '%s'", completeType);
+            Logger.INSTANCE.debugln("  > Resolved to complete kind '%s'", completeType);
             type.setFieldType(i, completeType.derive(fieldType.getAttributes()));
         }
         Profiler.INSTANCE.pop();
@@ -382,11 +382,11 @@ public final class PreAnalyzer extends ParseAdapter {
                 continue; // Don't need to waste time on doing nothing..
             }
             if (!udt.isComplete()) {
-                Logger.INSTANCE.errorln("Cannot materialize type '%s' as it is incomplete", udt.getQualifiedName());
+                Logger.INSTANCE.errorln("Cannot materialize kind '%s' as it is incomplete", udt.getQualifiedName());
                 continue;
             }
             final var address = udt.materialize(compiler.getTargetMachine());
-            Logger.INSTANCE.debugln("Materialized type %s at 0x%08X", udt.getQualifiedName(), address);
+            Logger.INSTANCE.debugln("Materialized kind %s at 0x%08X", udt.getQualifiedName(), address);
         }
         Profiler.INSTANCE.pop();
     }
@@ -421,7 +421,7 @@ public final class PreAnalyzer extends ParseAdapter {
             rootNode.addDependency(node);
         }
 
-        Logger.INSTANCE.debugln("Reordering %d type entries", udts.size());
+        Logger.INSTANCE.debugln("Reordering %d kind entries", udts.size());
         final var sortedNodes = new TopoSorter<>(rootNode).sort(ArrayList::new);
         final var sortedMap = new LinkedHashMap<Identifier, NamedType>();
 
@@ -451,7 +451,7 @@ public final class PreAnalyzer extends ParseAdapter {
         final var udt = new UDT(kind, type, fields, tokenSlice);
         udts.put(type.getQualifiedName(), udt);
 
-        Logger.INSTANCE.debugln("Captured field layout for type '%s'", type.getQualifiedName());
+        Logger.INSTANCE.debugln("Captured field layout for kind '%s'", type.getQualifiedName());
     }
 
     private void resolveTypeAccess() {
@@ -482,7 +482,7 @@ public final class PreAnalyzer extends ParseAdapter {
                         continue;
                     }
                     types[i] = completeType;
-                    Logger.INSTANCE.debugln("Resolved scoped access type '%s'", completeType);
+                    Logger.INSTANCE.debugln("Resolved scoped access kind '%s'", completeType);
                 }
             }
         }
@@ -544,7 +544,7 @@ public final class PreAnalyzer extends ParseAdapter {
 
     // TODO: implement matching against C-variadic functions
     public @Nullable Function findFunctionInScope(final Identifier name, final Identifier scopeName,
-                                                  final @Nullable Type returnType, final Type... paramTypes) {
+                                                  final Type... paramTypes) {
         try {
             Profiler.INSTANCE.push();
             final var overloadSet = ScopeUtils.findInScope(functions, name, scopeName);
@@ -553,8 +553,7 @@ public final class PreAnalyzer extends ParseAdapter {
             }
             final var types = overloadSet.keySet();
             for (final var type : types) {
-                if ((returnType != null && !type.getReturnType().equals(returnType)) || !Arrays.equals(type.getParamTypes(),
-                    paramTypes)) {
+                if (!Arrays.equals(type.getParamTypes(), paramTypes)) {
                     continue;
                 }
                 return overloadSet.get(type);
@@ -568,7 +567,11 @@ public final class PreAnalyzer extends ParseAdapter {
 
     public @Nullable Function findFunctionInScope(final Identifier name, final Identifier scopeName,
                                                   final FunctionType type) {
-        return findFunctionInScope(name, scopeName, type.getReturnType(), type.getParamTypes());
+        return findFunctionInScope(name, scopeName, type.getParamTypes());
+    }
+
+    public boolean functionExistsInScope(final Identifier name, final Identifier scopeName) {
+        return ScopeUtils.findInScope(functions, name, scopeName) != null;
     }
 
     private static final class DummyType implements NamedType {
@@ -596,7 +599,7 @@ public final class PreAnalyzer extends ParseAdapter {
 
         @Override
         public long materialize(final TargetMachine machine) {
-            throw new UnsupportedOperationException("Dummy type cannot be materialized");
+            throw new UnsupportedOperationException("Dummy kind cannot be materialized");
         }
 
         @Override

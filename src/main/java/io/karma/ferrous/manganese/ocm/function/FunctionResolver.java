@@ -13,27 +13,16 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.ocm.statement;
+package io.karma.ferrous.manganese.ocm.function;
 
-import io.karma.ferrous.manganese.ocm.ir.IRContext;
-import io.karma.ferrous.manganese.ocm.scope.Scoped;
-import io.karma.ferrous.manganese.target.TargetMachine;
-import io.karma.ferrous.manganese.util.TokenSlice;
+import io.karma.ferrous.manganese.ocm.type.Type;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * @author Alexander Hinze
- * @since 22/10/2023
+ * @since 08/11/2023
  */
-public interface Statement extends Scoped {
-    TokenSlice getTokenSlice();
-
-    long emit(final TargetMachine targetMachine, final IRContext blockContext);
-
-    default boolean returnsFromCurrentScope() {
-        return false;
-    }
-
-    default boolean breaksCurrentScope() {
-        return false;
-    }
+@FunctionalInterface
+public interface FunctionResolver {
+    @Nullable Function resolve(final Type[] paramTypes);
 }

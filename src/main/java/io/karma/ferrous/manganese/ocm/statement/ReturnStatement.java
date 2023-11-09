@@ -15,9 +15,9 @@
 
 package io.karma.ferrous.manganese.ocm.statement;
 
-import io.karma.ferrous.manganese.ocm.BlockContext;
 import io.karma.ferrous.manganese.ocm.constant.VoidConstant;
 import io.karma.ferrous.manganese.ocm.expr.Expression;
+import io.karma.ferrous.manganese.ocm.ir.IRContext;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.ocm.type.BuiltinType;
 import io.karma.ferrous.manganese.target.TargetMachine;
@@ -66,7 +66,7 @@ public final class ReturnStatement implements Statement {
     }
 
     @Override
-    public long emit(final TargetMachine targetMachine, final BlockContext blockContext) {
+    public long emit(final TargetMachine targetMachine, final IRContext blockContext) {
         final var builder = blockContext.getCurrentOrCreate();
         final var type = value.getType();
         if (type.isImaginary()) {

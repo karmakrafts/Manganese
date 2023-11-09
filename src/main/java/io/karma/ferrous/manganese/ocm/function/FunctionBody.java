@@ -13,19 +13,22 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.ocm;
+package io.karma.ferrous.manganese.ocm.function;
 
 import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.module.Module;
+import io.karma.ferrous.manganese.ocm.ir.IRBuilder;
+import io.karma.ferrous.manganese.ocm.ir.IRContext;
+import io.karma.ferrous.manganese.ocm.statement.LetStatement;
 import io.karma.ferrous.manganese.ocm.statement.Statement;
 import io.karma.ferrous.manganese.target.TargetMachine;
+import io.karma.ferrous.manganese.util.Identifier;
+import io.karma.kommons.tuple.Pair;
 import org.apiguardian.api.API;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Stack;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.lwjgl.llvm.LLVMCore.LLVMAppendBasicBlockInContext;
 
@@ -46,12 +49,22 @@ public final class FunctionBody {
         return statements;
     }
 
+    private Map<Identifier, LetStatement> findLocals() { // @formatter:off
+        return statements.stream()
+            .filter(LetStatement.class::isInstance)
+            .map(statement -> {
+                final var let = (LetStatement)statement;
+                return Pair.of(let.getName(), let);
+            })
+            .collect(Collectors.toMap(Pair::getLeft, Pair::getRight));
+    } // @formatter:on
+
     public void append(final CompileContext compileContext, final Function function, final Module module,
                        final TargetMachine targetMachine) {
         if (isAppended) {
             return;
         }
-        final var context = new BlockContextImpl(compileContext, module, targetMachine, function);
+        final var context = new IRContextImpl(compileContext, module, targetMachine, function);
         for (final var statement : statements) {
             statement.emit(targetMachine, context);
         }
@@ -59,16 +72,16 @@ public final class FunctionBody {
         isAppended = true;
     }
 
-    private static final class BlockContextImpl implements BlockContext {
+    private static final class IRContextImpl implements IRContext {
         private final CompileContext compileContext;
         private final Module module;
         private final TargetMachine targetMachine;
         private final Function function;
-        private final HashMap<String, BlockBuilder> builders = new HashMap<>();
-        private final Stack<BlockBuilder> stack = new Stack<>();
+        private final HashMap<String, IRBuilder> builders = new HashMap<>();
+        private final Stack<IRBuilder> stack = new Stack<>();
 
-        public BlockContextImpl(final CompileContext compileContext, final Module module,
-                                final TargetMachine targetMachine, final Function function) {
+        public IRContextImpl(final CompileContext compileContext, final Module module,
+                             final TargetMachine targetMachine, final Function function) {
             this.compileContext = compileContext;
             this.module = module;
             this.targetMachine = targetMachine;
@@ -76,16 +89,16 @@ public final class FunctionBody {
         }
 
         public void dispose() {
-            builders.values().forEach(BlockBuilder::dispose);
+            builders.values().forEach(IRBuilder::dispose);
         }
 
         @Override
-        public void pushCurrent(final BlockBuilder builder) {
+        public void pushCurrent(final IRBuilder builder) {
             stack.push(builder);
         }
 
         @Override
-        public BlockBuilder popCurrent() {
+        public IRBuilder popCurrent() {
             return stack.pop();
         }
 
@@ -95,12 +108,17 @@ public final class FunctionBody {
         }
 
         @Override
+        public Module getModule() {
+            return module;
+        }
+
+        @Override
         public Function getFunction() {
             return function;
         }
 
         @Override
-        public @Nullable BlockBuilder getCurrent() {
+        public @Nullable IRBuilder getCurrent() {
             if (stack.isEmpty()) {
                 return null;
             }
@@ -108,7 +126,7 @@ public final class FunctionBody {
         }
 
         @Override
-        public @Nullable BlockBuilder getLast() {
+        public @Nullable IRBuilder getLast() {
             if (stack.size() < 2) {
                 return null;
             }
@@ -116,12 +134,12 @@ public final class FunctionBody {
         }
 
         @Override
-        public BlockBuilder getOrCreate(final String name) {
+        public IRBuilder getOrCreate(final String name) {
             final var builder = builders.computeIfAbsent(name, n -> {
                 final var fnAddress = function.materializePrototype(module, targetMachine);
                 final var context = module.getContext();
                 final var blockAddress = LLVMAppendBasicBlockInContext(context, fnAddress, name);
-                return new BlockBuilder(this, module, targetMachine, blockAddress, context);
+                return new IRBuilder(this, module, targetMachine, blockAddress, context);
             });
             stack.push(builder);
             return builder;

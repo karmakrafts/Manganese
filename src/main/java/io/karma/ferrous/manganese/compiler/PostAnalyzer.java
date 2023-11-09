@@ -16,10 +16,18 @@
 package io.karma.ferrous.manganese.compiler;
 
 import io.karma.ferrous.manganese.ParseAdapter;
+import io.karma.ferrous.manganese.ocm.function.Function;
+import io.karma.ferrous.manganese.ocm.statement.LetStatement;
 import io.karma.ferrous.manganese.parser.FunctionParser;
+import io.karma.ferrous.manganese.util.Identifier;
+import io.karma.ferrous.manganese.util.ScopeUtils;
 import io.karma.ferrous.vanadium.FerrousParser.FunctionContext;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import org.apiguardian.api.API;
+
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * @author Alexander Hinze
@@ -27,6 +35,9 @@ import org.apiguardian.api.API;
  */
 @API(status = API.Status.INTERNAL)
 public final class PostAnalyzer extends ParseAdapter {
+    private final LinkedHashMap<Function, LinkedHashMap<Identifier, LetStatement>> locals = new LinkedHashMap<>();
+    private FunctionParser functionParser;
+
     public PostAnalyzer(final Compiler compiler, final CompileContext compileContext) {
         super(compiler, compileContext);
     }
@@ -41,8 +52,28 @@ public final class PostAnalyzer extends ParseAdapter {
         if (bodyContext == null) {
             return; // TODO: handle arrow functions
         }
-        final var parser = new FunctionParser(compiler, compileContext, function);
-        ParseTreeWalker.DEFAULT.walk(parser, bodyContext);
+        functionParser = new FunctionParser(compiler, compileContext, function);
+        ParseTreeWalker.DEFAULT.walk(functionParser, bodyContext);
+        locals.put(function, functionParser.getLocals());
         super.enterFunction(context);
+    }
+
+    public Map<Identifier, LetStatement> getLocalsFor(final Function function) {
+        if (functionParser.getFunction() == function) {
+            final var map = functionParser.getLocals();
+            if (map != null) {
+                return map;
+            }
+            return Collections.emptyMap();
+        }
+        final var map = locals.get(function);
+        if (map != null) {
+            return map;
+        }
+        return Collections.emptyMap();
+    }
+
+    public LetStatement findLocalIn(final Function function, final Identifier name, final Identifier scopeName) {
+        return ScopeUtils.findInScope(getLocalsFor(function), name, scopeName);
     }
 }

@@ -62,16 +62,16 @@ public interface Type extends Scoped {
     }
 
     /**
-     * @param type The type to check against.
-     * @return True if the given type may be assigned or
-     * implicitly casted to this type. False otherwise.
+     * @param type The kind to check against.
+     * @return True if the given kind may be assigned or
+     * implicitly casted to this kind. False otherwise.
      */
     default boolean canAccept(final Type type) {
         return false;
     }
 
     /**
-     * @return True if this type is imaginary and cannot be materialized
+     * @return True if this kind is imaginary and cannot be materialized
      * into a runtime structure.
      */
     default boolean isImaginary() {
@@ -79,23 +79,23 @@ public interface Type extends Scoped {
     }
 
     /**
-     * @return True if this type is aliased and refers to another
-     * type or alias.
+     * @return True if this kind is aliased and refers to another
+     * kind or alias.
      */
     default boolean isAliased() {
         return false;
     }
 
     /**
-     * @return True if this is a builtin type.
+     * @return True if this is a builtin kind.
      */
     default boolean isBuiltin() {
         return getBaseType().isBuiltin();
     }
 
     /**
-     * @return True if this is a complete type.
-     * False if this type is incomplete and missing and associated data layout.
+     * @return True if this is a complete kind.
+     * False if this kind is incomplete and missing and associated data layout.
      */
     default boolean isComplete() {
         return getBaseType().isComplete();

@@ -13,9 +13,10 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.ocm;
+package io.karma.ferrous.manganese.ocm.ir;
 
 import io.karma.ferrous.manganese.module.Module;
+import io.karma.ferrous.manganese.ocm.function.Function;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import org.apiguardian.api.API;
 import org.lwjgl.system.MemoryStack;
@@ -28,16 +29,16 @@ import static org.lwjgl.system.MemoryUtil.NULL;
  * @since 05/11/2023
  */
 @API(status = API.Status.INTERNAL)
-public final class BlockBuilder {
-    private final BlockContext blockContext;
+public final class IRBuilder {
+    private final IRContext blockContext;
     private final Module module;
     private final TargetMachine targetMachine;
     private final long blockAddress;
     private final long address;
     private boolean isDisposed = false;
 
-    public BlockBuilder(final BlockContext blockContext, final Module module, final TargetMachine targetMachine,
-                        final long blockAddress, final long context) {
+    public IRBuilder(final IRContext blockContext, final Module module, final TargetMachine targetMachine,
+                     final long blockAddress, final long context) {
         this.blockContext = blockContext;
         this.module = module;
         this.targetMachine = targetMachine;
@@ -54,20 +55,20 @@ public final class BlockBuilder {
 
     // Memory
 
-    public long alloca(final long type) {
-        return LLVMBuildAlloca(address, type, "");
+    public Allocation alloca(final long type) {
+        return new Allocation(AllocationKind.STACK, LLVMBuildAlloca(address, type, ""));
     }
 
-    public long arrayAlloca(final long type, final long value) {
-        return LLVMBuildArrayAlloca(address, type, value, "");
+    public Allocation arrayAlloca(final long type, final long value) {
+        return new Allocation(AllocationKind.STACK_ARRAY, LLVMBuildArrayAlloca(address, type, value, ""));
     }
 
-    public long malloc(final long type) {
-        return LLVMBuildMalloc(address, type, "");
+    public Allocation malloc(final long type) {
+        return new Allocation(AllocationKind.HEAP, LLVMBuildMalloc(address, type, ""));
     }
 
-    public long arrayMalloc(final long type, final long value) {
-        return LLVMBuildArrayMalloc(address, type, value, "");
+    public Allocation arrayMalloc(final long type, final long value) {
+        return new Allocation(AllocationKind.HEAP_ARRAY, LLVMBuildArrayMalloc(address, type, value, ""));
     }
 
     public long free(final long ptr) {
@@ -96,6 +97,16 @@ public final class BlockBuilder {
 
     public long store(final long value, final long ptr) {
         return LLVMBuildStore(address, value, ptr);
+    }
+
+    // Conversions
+
+    public long intToPtr(final long type, final long value) {
+        return LLVMBuildIntToPtr(address, value, type, "");
+    }
+
+    public long ptrToInt(final long type, final long value) {
+        return LLVMBuildPtrToInt(address, value, type, "");
     }
 
     // Strings

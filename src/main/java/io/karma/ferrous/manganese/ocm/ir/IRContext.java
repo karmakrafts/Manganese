@@ -13,9 +13,11 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.ocm;
+package io.karma.ferrous.manganese.ocm.ir;
 
 import io.karma.ferrous.manganese.compiler.CompileContext;
+import io.karma.ferrous.manganese.module.Module;
+import io.karma.ferrous.manganese.ocm.function.Function;
 import org.apiguardian.api.API;
 import org.jetbrains.annotations.Nullable;
 
@@ -24,24 +26,26 @@ import org.jetbrains.annotations.Nullable;
  * @since 06/11/2023
  */
 @API(status = API.Status.INTERNAL)
-public interface BlockContext {
+public interface IRContext {
     String DEFAULT_BLOCK = "";
+
+    Module getModule();
 
     CompileContext getCompileContext();
 
     Function getFunction();
 
-    @Nullable BlockBuilder getCurrent();
+    @Nullable IRBuilder getCurrent();
 
-    @Nullable BlockBuilder getLast();
+    @Nullable IRBuilder getLast();
 
-    BlockBuilder getOrCreate(final String name);
+    IRBuilder getOrCreate(final String name);
 
-    void pushCurrent(final BlockBuilder builder);
+    void pushCurrent(final IRBuilder builder);
 
-    BlockBuilder popCurrent();
+    IRBuilder popCurrent();
 
-    default BlockBuilder getCurrentOrCreate(final String name) {
+    default IRBuilder getCurrentOrCreate(final String name) {
         var current = getCurrent();
         if (current != null) {
             return current;
@@ -49,7 +53,7 @@ public interface BlockContext {
         return getOrCreate(name);
     }
 
-    default BlockBuilder getCurrentOrCreate() {
+    default IRBuilder getCurrentOrCreate() {
         var current = getCurrent();
         if (current != null) {
             return current;

@@ -14,7 +14,7 @@
  */
 
 import io.karma.ferrous.manganese.ocm.type.BuiltinType;
-import io.karma.ferrous.manganese.util.TypeUtils;
+import io.karma.ferrous.manganese.ocm.type.Types;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -27,7 +27,7 @@ import org.junit.jupiter.api.TestInstance;
 public final class TestTypeUtils extends AbstractTest {
     @Test
     void testFindCommonType() {
-        Assertions.assertNull(TypeUtils.findCommonType());
-        Assertions.assertEquals(TypeUtils.findCommonType(BuiltinType.I32), BuiltinType.I32);
+        Assertions.assertNull(Types.findCommonType());
+        Assertions.assertEquals(Types.findCommonType(BuiltinType.I32), BuiltinType.I32);
     }
 }

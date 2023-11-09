@@ -19,6 +19,7 @@ import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.CompileErrorCode;
 import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.expr.Expression;
+import io.karma.ferrous.manganese.ocm.scope.ScopeStack;
 import io.karma.ferrous.manganese.parser.ExpressionParser;
 import io.karma.ferrous.vanadium.FerrousParser.ExprListContext;
 import org.antlr.v4.runtime.tree.ParseTree;
@@ -38,7 +39,9 @@ public final class ExpressionUtils {
     // @formatter:on
 
     public static List<Expression> parseExpressions(final Compiler compiler, final CompileContext compileContext,
-                                                    final @Nullable ExprListContext context) {
+                                                    final ScopeStack scopeStack,
+                                                    final @Nullable ExprListContext context,
+                                                    final @Nullable Object parent) {
         if (context == null) {
             return Collections.emptyList();
         }
@@ -49,7 +52,7 @@ public final class ExpressionUtils {
         // @formatter:off
         return contexts.stream()
             .map(exprContext -> {
-                final var expression = parseExpression(compiler, compileContext, exprContext);
+                final var expression = parseExpression(compiler, compileContext, scopeStack, exprContext, parent);
                 if(expression == null) {
                     compileContext.reportError(exprContext.start, CompileErrorCode.E2001);
                 }
@@ -60,11 +63,12 @@ public final class ExpressionUtils {
     }
 
     public static @Nullable Expression parseExpression(final Compiler compiler, final CompileContext compileContext,
-                                                       final @Nullable ParseTree context) {
+                                                       final ScopeStack scopeStack, final @Nullable ParseTree context,
+                                                       final @Nullable Object parent) {
         if (context == null) {
             return null;
         }
-        final var parser = new ExpressionParser(compiler, compileContext);
+        final var parser = new ExpressionParser(compiler, compileContext, scopeStack, parent);
         ParseTreeWalker.DEFAULT.walk(parser, context);
         return parser.getExpression();
     }

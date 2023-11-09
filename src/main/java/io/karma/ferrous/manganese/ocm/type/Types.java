@@ -15,16 +15,23 @@
 
 package io.karma.ferrous.manganese.ocm.type;
 
+import io.karma.ferrous.manganese.compiler.CompileContext;
+import io.karma.ferrous.manganese.compiler.Compiler;
+import io.karma.ferrous.manganese.ocm.constant.TypeConstant;
+import io.karma.ferrous.manganese.ocm.generic.GenericConstraint;
 import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
+import io.karma.ferrous.manganese.ocm.scope.ScopeStack;
+import io.karma.ferrous.manganese.parser.GenericExpressionParser;
+import io.karma.ferrous.manganese.parser.TypeParser;
 import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.TokenSlice;
+import io.karma.ferrous.vanadium.FerrousParser;
+import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Function;
 
 /**
@@ -110,5 +117,78 @@ public final class Types {
                                             final Function<IncompleteType, IncompleteType> callback,
                                             final TokenSlice tokenSlice) {
         return cached(callback.apply(new IncompleteType(name, tokenSlice)));
+    }
+
+    public static @Nullable Type findCommonType(final Type... types) {
+        final var numTypes = types.length;
+        return switch(numTypes) { // @formatter:off
+            case 0  -> null;
+            case 1  -> types[0];
+            default -> {
+                Type result = null;
+                for(var i = 0; i < numTypes; i++) {
+                    final var baseType = types[i];
+                    for(var j = 0; j < numTypes; j++) {
+                        if(i == j) {
+                            continue; // If we are at the same index, skip this iteration
+                        }
+                        final var type = types[j];
+                        if(!baseType.canAccept(type)) {
+                            result = null; // Reset result if kind was not compatible
+                            continue;
+                        }
+                        result = baseType;
+                    }
+                }
+                yield result;
+            }
+        }; // @formatter:on
+    }
+
+    public static List<GenericParameter> getGenericParams(final Compiler compiler, final CompileContext compileContext,
+                                                          final ScopeStack scopeStack,
+                                                          final @Nullable FerrousParser.GenericParamListContext context) {
+        if (context == null) {
+            return Collections.emptyList();
+        }
+        final var params = context.genericParam();
+        if (params == null || params.isEmpty()) {
+            return Collections.emptyList();
+        }
+        final var result = new ArrayList<GenericParameter>();
+        for (final var param : params) {
+            final var name = Identifier.parse(param.ident());
+            final var expr = param.genericExpr();
+            final var defaultType = parse(compiler, compileContext, scopeStack, param.type());
+            var constraints = GenericConstraint.TRUE;
+            if (expr != null) {
+                final var parser = new GenericExpressionParser(compiler, compileContext);
+                ParseTreeWalker.DEFAULT.walk(parser, expr);
+                constraints = parser.getConstraints();
+            }
+            result.add(new GenericParameter(name.toString(),
+                constraints,
+                new TypeConstant(defaultType, TokenSlice.from(compileContext, param))));
+        }
+        return result;
+    }
+
+    public static List<Type> parse(final Compiler compiler, final CompileContext compileContext,
+                                   final ScopeStack scopeStack, final @Nullable FerrousParser.TypeListContext context) {
+        if (context == null) {
+            return Collections.emptyList();
+        }
+        // @formatter:off
+        return context.type().stream()
+            .map(ctx -> parse(compiler, compileContext, scopeStack, ctx))
+            .toList();
+        // @formatter:on
+    }
+
+    public static Type parse(final Compiler compiler, final CompileContext compileContext, final ScopeStack scopeStack,
+                             final FerrousParser.TypeContext context) {
+        final TypeParser unit = new TypeParser(compiler, compileContext, scopeStack);
+        ParseTreeWalker.DEFAULT.walk(unit, context);
+        return unit.getType();
     }
 }

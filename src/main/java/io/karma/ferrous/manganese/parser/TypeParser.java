@@ -75,7 +75,7 @@ public final class TypeParser extends ParseAdapter {
     @Override
     public void enterIdent(final IdentContext context) {
         if (baseType != null) {
-            return; // Qualified ident contains these, so if type exists, skip
+            return; // Qualified ident contains these, so if kind exists, skip
         }
         final var name = Identifier.parse(context);
         final var type = compileContext.getPreAnalyzer().findCompleteTypeInScope(name,
@@ -103,37 +103,37 @@ public final class TypeParser extends ParseAdapter {
 
     @Override
     public void enterMiscType(final MiscTypeContext context) {
-        parsePrimitiveType(context, "Unknown miscellaneous type");
+        parsePrimitiveType(context, "Unknown miscellaneous kind");
         super.enterMiscType(context);
     }
 
     @Override
     public void enterSintType(final SintTypeContext context) {
-        parsePrimitiveType(context, "Unknown signed integer type");
+        parsePrimitiveType(context, "Unknown signed integer kind");
         super.enterSintType(context);
     }
 
     @Override
     public void enterUintType(final UintTypeContext context) {
-        parsePrimitiveType(context, "Unknown unsigned integer type");
+        parsePrimitiveType(context, "Unknown unsigned integer kind");
         super.enterUintType(context);
     }
 
     @Override
     public void enterFloatType(final FloatTypeContext context) {
-        parsePrimitiveType(context, "Unknown floating point type");
+        parsePrimitiveType(context, "Unknown floating point kind");
         super.enterFloatType(context);
     }
 
     private void parsePrimitiveType(final ParserRuleContext context, final String errorMessage) {
         final var text = context.getText();
         if (baseType != null) {
-            Logger.INSTANCE.warnln("Base type was already parsed");
+            Logger.INSTANCE.warnln("Base kind was already parsed");
             return;
         }
         final var type = Types.builtin(Identifier.parse(text));
         if (type.isEmpty()) {
-            Logger.INSTANCE.errorln("Could not parse primitive type '%s'", text);
+            Logger.INSTANCE.errorln("Could not parse primitive kind '%s'", text);
             return;
         }
         baseType = type.get();
