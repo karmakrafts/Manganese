@@ -17,6 +17,7 @@ package io.karma.ferrous.manganese.ocm.expr;
 
 import io.karma.ferrous.manganese.ocm.ir.IRContext;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
+import io.karma.ferrous.manganese.ocm.statement.LetStatement;
 import io.karma.ferrous.manganese.ocm.type.BuiltinType;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.target.TargetMachine;
@@ -25,6 +26,8 @@ import io.karma.ferrous.manganese.util.TokenSlice;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
+
+import static org.lwjgl.system.MemoryUtil.NULL;
 
 /**
  * @author Alexander Hinze
@@ -36,6 +39,7 @@ public final class BinaryExpression implements Expression {
     private final Expression rhs;
     private final TokenSlice tokenSlice;
     private Scope enclosingScope;
+    private boolean isResultDiscarded;
 
     public BinaryExpression(final Operator op, final Expression lhs, final Expression rhs,
                             final TokenSlice tokenSlice) {
@@ -75,6 +79,16 @@ public final class BinaryExpression implements Expression {
     // Expression
 
     @Override
+    public boolean isResultDiscarded() {
+        return isResultDiscarded;
+    }
+
+    @Override
+    public void setResultDiscarded(final boolean isResultDiscarded) {
+        this.isResultDiscarded = isResultDiscarded;
+    }
+
+    @Override
     public TokenSlice getTokenSlice() {
         return tokenSlice;
     }
@@ -82,9 +96,29 @@ public final class BinaryExpression implements Expression {
     @Override
     public long emit(final TargetMachine targetMachine, final IRContext irContext) {
         final var builder = irContext.getCurrentOrCreate();
-        final var lhsType = this.lhs.getType();
+        if (op == Operator.ASSIGN) {
+            if (!(lhs instanceof ReferenceExpression refExpr)) {
+                return NULL;
+            }
+            return switch (refExpr.getReference()) {
+                case LetStatement stmnt -> {
+                    stmnt.setValue(rhs); // Update contained expression reference
+                    final var address = stmnt.getMutableAddress();
+                    builder.store(rhs.emit(targetMachine, irContext), address);
+                    if (isResultDiscarded) {
+                        yield NULL;
+                    }
+                    yield stmnt.emit(targetMachine, irContext);
+                }
+                default -> NULL;
+            };
+        }
+        if (!(lhs instanceof Expression lhsExpr)) {
+            return NULL;
+        }
+        final var lhsType = lhsExpr.getType();
         if (!(lhsType instanceof BuiltinType builtinType)) {
-            return 0L; // TODO: implement user defined operator calls
+            return NULL; // TODO: implement user defined operator calls
         }
         final var lhs = this.lhs.emit(targetMachine, irContext);
         final var rhs = this.rhs.emit(targetMachine, irContext);
@@ -121,7 +155,7 @@ public final class BinaryExpression implements Expression {
 
     @Override
     public Type getType() {
-        return lhs.getType(); // We always use the kind of the left hand side expression
+        return lhs.getType(); // TODO: add type resolution for overloaded operator function calls
     }
 
     @Override

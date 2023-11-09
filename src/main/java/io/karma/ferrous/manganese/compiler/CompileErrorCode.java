@@ -55,6 +55,7 @@ public enum CompileErrorCode {
     E4008("Subscript operator requires at least one argument", CompileStatus.SEMANTIC_ERROR),
     E4009("Cannot resolve function with the given parameter types", CompileStatus.SEMANTIC_ERROR),
     E4010("Immutable variable cannot be uninitialized", CompileStatus.SEMANTIC_ERROR),
+    E4011("Immutable variable cannot be reassigned", CompileStatus.SEMANTIC_ERROR),
     // Translation errors
     E5000("Could not find function during translation", CompileStatus.TRANSLATION_ERROR),
     E5001("Unknown unary operator", CompileStatus.TRANSLATION_ERROR),

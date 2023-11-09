@@ -25,6 +25,7 @@ import io.karma.ferrous.manganese.ocm.function.Function;
 import io.karma.ferrous.manganese.ocm.function.FunctionReference;
 import io.karma.ferrous.manganese.ocm.function.FunctionResolver;
 import io.karma.ferrous.manganese.ocm.scope.ScopeStack;
+import io.karma.ferrous.manganese.ocm.statement.LetStatement;
 import io.karma.ferrous.manganese.ocm.type.BuiltinType;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.util.*;
@@ -137,6 +138,19 @@ public final class ExpressionParser extends ParseAdapter {
         if (rhs == null) {
             compileContext.reportError(context.start, CompileErrorCode.E2001);
             return null;
+        }
+        // Various checks for assignments
+        if (op.get() == Operator.ASSIGN && lhs instanceof ReferenceExpression refExpr) {
+            switch (refExpr.getReference()) {
+                case LetStatement stmnt -> {
+                    if (!stmnt.isMutable()) {
+                        compileContext.reportError(context.start, CompileErrorCode.E4011);
+                        return null;
+                    }
+                }
+                default -> {
+                }
+            }
         }
         return new BinaryExpression(op.get(), lhs, rhs, TokenSlice.from(compileContext, context));
     }

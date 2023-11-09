@@ -68,16 +68,17 @@ public final class LetStatement implements Statement, NameProvider {
         this(name, value.getType(), value, isMutable, isInitialized, storageMods, tokenSlice);
     }
 
+    public Type getType() {
+        return type;
+    }
+
     public Expression getValue() {
         return value;
     }
 
     public void setValue(final Expression value) {
         this.value = value;
-    }
-
-    public void setHasChanged(boolean hasChanged) {
-        this.hasChanged = hasChanged;
+        hasChanged = true;
     }
 
     public boolean hasChanged() {

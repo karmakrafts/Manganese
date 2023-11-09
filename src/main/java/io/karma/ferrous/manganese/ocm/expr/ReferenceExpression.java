@@ -84,7 +84,7 @@ public final class ReferenceExpression implements Expression {
             case FunctionReference funRef -> Objects.requireNonNull(funRef.resolve()).getType();
             case Function function        -> function.getType();
             case Field field              -> field.getType();
-            case LetStatement expr        -> expr.getValue().getType();
+            case LetStatement expr        -> expr.getType();
             default                       -> throw new IllegalStateException("Unknown reference kind");
         }; // @formatter:on
     }
