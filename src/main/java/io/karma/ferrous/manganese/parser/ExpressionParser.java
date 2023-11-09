@@ -186,7 +186,9 @@ public final class ExpressionParser extends ParseAdapter {
             compileContext.reportError(refExpr.getTokenSlice().getFirstToken(), CompileErrorCode.E4009);
             return null;
         }
-        return new CallExpression(function, TokenSlice.from(compileContext, exprContext), args.toArray(Expression[]::new));
+        return new CallExpression(function,
+            TokenSlice.from(compileContext, exprContext),
+            args.toArray(Expression[]::new));
     }
 
     private @Nullable CallExpression parseNamedArgCallExpr(final List<ParseTree> children) {
