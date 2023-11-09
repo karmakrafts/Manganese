@@ -68,16 +68,16 @@ public final class LetStatement implements Statement, NameProvider {
         return value;
     }
 
+    public void setValue(final @Nullable Expression value) {
+        this.value = value;
+    }
+
     public void setHasChanged(boolean hasChanged) {
         this.hasChanged = hasChanged;
     }
 
     public boolean hasChanged() {
         return hasChanged;
-    }
-
-    public void setValue(final @Nullable Expression value) {
-        this.value = value;
     }
 
     public boolean isMutable() {
