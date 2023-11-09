@@ -60,28 +60,8 @@ public final class Field implements NameProvider, AccessProvider, Scoped, ValueS
     // Value storage
 
     @Override
-    public long getImmutableAddress() {
-        return 0;
-    }
-
-    @Override
-    public long getMutableAddress() {
-        return 0;
-    }
-
-    @Override
-    public void notifyChange() {
-        hasChanged = true;
-    }
-
-    @Override
     public @Nullable Expression getValue() {
         return null;
-    }
-
-    @Override
-    public void setValue(@Nullable Expression value) {
-
     }
 
     @Override
@@ -90,7 +70,7 @@ public final class Field implements NameProvider, AccessProvider, Scoped, ValueS
     }
 
     @Override
-    public long storeInto(final long value, final TargetMachine targetMachine, final IRContext irContext) {
+    public long storeInto(final Expression exprValue, final long value, final TargetMachine targetMachine, final IRContext irContext) {
         return 0;
     }
 

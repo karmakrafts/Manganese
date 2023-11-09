@@ -85,39 +85,26 @@ public final class LetStatement implements Statement, NameProvider, ValueStorage
     }
 
     @Override
-    public void notifyChange() {
-        hasChanged = true;
-    }
-
-    @Override
     public long loadFrom(final TargetMachine targetMachine, final IRContext irContext) {
-        if (isMutable) { // If we are a mutable variable, load from stack memory
-            if (!hasChanged) {
-                return immutableAddress; // Optimize until we have been modified to avoid loads
-            }
+        if (isMutable && hasChanged) { // If we are a mutable variable, load from stack memory
             return irContext.getCurrentOrCreate().load(type.materialize(targetMachine), mutableAddress);
         }
         return immutableAddress;
     }
 
     @Override
-    public long storeInto(final long value, final TargetMachine targetMachine, final IRContext irContext) {
+    public long storeInto(final Expression exprValue, final long value, final TargetMachine targetMachine, final IRContext irContext) {
         if (!isMutable) {
             throw new IllegalStateException("Cannot store into immutable variable");
         }
-        notifyChange();
+        this.value = exprValue;
+        hasChanged = true;
         return irContext.getCurrentOrCreate().store(value, mutableAddress);
     }
 
     @Override
     public Expression getValue() {
         return value;
-    }
-
-    @Override
-    public void setValue(final Expression value) {
-        this.value = value;
-        notifyChange();
     }
 
     @Override
@@ -128,16 +115,6 @@ public final class LetStatement implements Statement, NameProvider, ValueStorage
     @Override
     public boolean hasChanged() {
         return hasChanged;
-    }
-
-    @Override
-    public long getMutableAddress() {
-        return mutableAddress;
-    }
-
-    @Override
-    public long getImmutableAddress() {
-        return immutableAddress;
     }
 
     // NameProvider

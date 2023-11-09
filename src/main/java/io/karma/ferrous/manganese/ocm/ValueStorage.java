@@ -30,8 +30,6 @@ import org.jetbrains.annotations.Nullable;
 public interface ValueStorage {
     @Nullable Expression getValue();
 
-    void setValue(final @Nullable Expression value);
-
     default @Nullable Type getType() {
         final var value = getValue();
         if (value == null) {
@@ -40,17 +38,16 @@ public interface ValueStorage {
         return value.getType();
     }
 
-    long getImmutableAddress();
-
-    long getMutableAddress();
-
-    void notifyChange();
-
     boolean isMutable();
 
     boolean hasChanged();
 
     long loadFrom(final TargetMachine targetMachine, final IRContext irContext);
 
-    long storeInto(final long value, final TargetMachine targetMachine, final IRContext irContext);
+    long storeInto(final Expression exprValue, final long value, final TargetMachine targetMachine,
+                   final IRContext irContext);
+
+    default long storeInto(final Expression value, final TargetMachine targetMachine, final IRContext irContext) {
+        return storeInto(value, value.emit(targetMachine, irContext), targetMachine, irContext);
+    }
 }

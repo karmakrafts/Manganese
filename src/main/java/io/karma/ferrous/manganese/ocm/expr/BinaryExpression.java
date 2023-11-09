@@ -100,8 +100,7 @@ public final class BinaryExpression implements Expression {
         }
         return switch (refExpr.getReference()) {
             case ValueStorage storage -> {
-                storage.storeInto(rhs.emit(targetMachine, irContext), targetMachine, irContext);
-                storage.setValue(rhs);
+                storage.storeInto(rhs, targetMachine, irContext);
                 if (isResultDiscarded) {
                     yield NULL;
                 }
@@ -119,15 +118,11 @@ public final class BinaryExpression implements Expression {
         return switch (lhsRef.getReference()) {
             case ValueStorage lhsStorage -> switch (rhsRef.getReference()) {
                 case ValueStorage rhsStorage -> {
-                    // Swap expression references
-                    final var lhsValue = lhsStorage.getValue();
-                    lhsStorage.setValue(rhsStorage.getValue());
-                    rhsStorage.setValue(lhsValue);
-                    // Emit two loads and two stores to swap values in stack memory
                     final var rhsAddress = rhsStorage.loadFrom(targetMachine, irContext);
                     final var lhsAddress = lhsStorage.loadFrom(targetMachine, irContext);
-                    lhsStorage.storeInto(rhsAddress, targetMachine, irContext);
-                    rhsStorage.storeInto(lhsAddress, targetMachine, irContext);
+                    final var oldValue = lhsStorage.getValue();
+                    lhsStorage.storeInto(rhsStorage.getValue(), targetMachine, irContext);
+                    rhsStorage.storeInto(oldValue, lhsAddress, targetMachine, irContext);
                     yield rhsAddress;
                 }
                 default -> NULL;
