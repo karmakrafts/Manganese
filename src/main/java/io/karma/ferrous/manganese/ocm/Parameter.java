@@ -52,6 +52,8 @@ public final class Parameter implements NameProvider {
         return defaultValue;
     }
 
+    // NameProvider
+
     @Override
     public Identifier getName() {
         return name;

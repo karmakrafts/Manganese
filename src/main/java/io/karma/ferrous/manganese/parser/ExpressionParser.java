@@ -19,13 +19,13 @@ import io.karma.ferrous.manganese.ParseAdapter;
 import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.CompileErrorCode;
 import io.karma.ferrous.manganese.compiler.Compiler;
+import io.karma.ferrous.manganese.ocm.ValueStorage;
 import io.karma.ferrous.manganese.ocm.constant.*;
 import io.karma.ferrous.manganese.ocm.expr.*;
 import io.karma.ferrous.manganese.ocm.function.Function;
 import io.karma.ferrous.manganese.ocm.function.FunctionReference;
 import io.karma.ferrous.manganese.ocm.function.FunctionResolver;
 import io.karma.ferrous.manganese.ocm.scope.ScopeStack;
-import io.karma.ferrous.manganese.ocm.statement.LetStatement;
 import io.karma.ferrous.manganese.ocm.type.BuiltinType;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.util.*;
@@ -125,8 +125,8 @@ public final class ExpressionParser extends ParseAdapter {
             return null;
         }
         final var opText = opContextOpt.get().getText();
-        final var op = Operator.findByText(opText, true);
-        if (op.isEmpty()) {
+        final var opOpt = Operator.findByText(opText, true);
+        if (opOpt.isEmpty()) {
             compileContext.reportError(context.start, opText, CompileErrorCode.E5002);
             return null;
         }
@@ -140,20 +140,31 @@ public final class ExpressionParser extends ParseAdapter {
             compileContext.reportError(context.start, CompileErrorCode.E2001);
             return null;
         }
-        // Various checks for assignments
-        if (op.get() == Operator.ASSIGN && lhs instanceof ReferenceExpression refExpr) {
-            switch (refExpr.getReference()) {
-                case LetStatement stmnt -> {
-                    if (!stmnt.isMutable()) {
+        // Various checks for assignments and swaps
+        final var op = opOpt.get();
+        if (op.isAssignment() && lhs instanceof ReferenceExpression lhsRef) {
+            switch (lhsRef.getReference()) {
+                case ValueStorage lhsStorage -> {
+                    if (!lhsStorage.isMutable()) {
                         compileContext.reportError(context.start, CompileErrorCode.E4011);
                         return null;
+                    }
+                    if (op == Operator.SWAP) {
+                        if (!(rhs instanceof ReferenceExpression rhsRef) || !(rhsRef.getReference() instanceof ValueStorage rhsStorage)) {
+                            compileContext.reportError(context.start, CompileErrorCode.E4012);
+                            return null;
+                        }
+                        if (!rhsStorage.isMutable()) {
+                            compileContext.reportError(context.start, CompileErrorCode.E4011);
+                            return null;
+                        }
                     }
                 }
                 default -> {
                 }
             }
         }
-        return new BinaryExpression(op.get(), lhs, rhs, TokenSlice.from(compileContext, context));
+        return new BinaryExpression(opOpt.get(), lhs, rhs, TokenSlice.from(compileContext, context));
     }
 
     private @Nullable CallExpression parseCallExpr(final ExprContext exprContext,

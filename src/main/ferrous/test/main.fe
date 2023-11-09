@@ -7,9 +7,9 @@ fun test(value: i32): i32 {
 }
 
 fun main(num_args: i32, args: **i8): i32 {
-    let mut x = test(num_args)
-    x = x * x << 1 >> 2
-    let mut y = x
-    y = y * (y + 1)
+    let mut x = 100
+    let mut y = 200
+    x <-> y
+    y = x - 80
     return y
 }

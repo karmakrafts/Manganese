@@ -17,9 +17,12 @@ package io.karma.ferrous.manganese.ocm;
 
 import io.karma.ferrous.manganese.ocm.access.Access;
 import io.karma.ferrous.manganese.ocm.access.AccessProvider;
+import io.karma.ferrous.manganese.ocm.expr.Expression;
+import io.karma.ferrous.manganese.ocm.ir.IRContext;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.ocm.scope.Scoped;
 import io.karma.ferrous.manganese.ocm.type.Type;
+import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.TokenSlice;
 import org.apiguardian.api.API;
@@ -31,12 +34,13 @@ import org.jetbrains.annotations.Nullable;
  * @since 15/10/2023
  */
 @API(status = Status.INTERNAL)
-public final class Field implements NameProvider, AccessProvider, Scoped {
+public final class Field implements NameProvider, AccessProvider, Scoped, ValueStorage {
     private final Identifier name;
     private final Type type;
     private final Access access;
     private final TokenSlice tokenSlice;
     private Scope enclosingScope;
+    private boolean hasChanged;
 
     public Field(final Identifier name, final Type type, final Access access, final TokenSlice tokenSlice) {
         this.name = name;
@@ -51,6 +55,53 @@ public final class Field implements NameProvider, AccessProvider, Scoped {
 
     public TokenSlice getTokenSlice() {
         return tokenSlice;
+    }
+
+    // Value storage
+
+    @Override
+    public long getImmutableAddress() {
+        return 0;
+    }
+
+    @Override
+    public long getMutableAddress() {
+        return 0;
+    }
+
+    @Override
+    public void notifyChange() {
+        hasChanged = true;
+    }
+
+    @Override
+    public @Nullable Expression getValue() {
+        return null;
+    }
+
+    @Override
+    public void setValue(@Nullable Expression value) {
+
+    }
+
+    @Override
+    public long loadFrom(final TargetMachine targetMachine, final IRContext irContext) {
+        return 0;
+    }
+
+    @Override
+    public long storeInto(final long value, final TargetMachine targetMachine, final IRContext irContext) {
+        return 0;
+    }
+
+    @Override
+    public boolean isMutable() {
+        return false;
+    }
+
+    @Override
+    public boolean hasChanged() {
+        return hasChanged;
     }
 
     // AccessProvider

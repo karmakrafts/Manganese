@@ -17,6 +17,7 @@ package io.karma.ferrous.manganese.ocm.expr;
 
 import io.karma.ferrous.manganese.ocm.Field;
 import io.karma.ferrous.manganese.ocm.Parameter;
+import io.karma.ferrous.manganese.ocm.ValueStorage;
 import io.karma.ferrous.manganese.ocm.function.Function;
 import io.karma.ferrous.manganese.ocm.function.FunctionReference;
 import io.karma.ferrous.manganese.ocm.ir.IRContext;
@@ -84,8 +85,7 @@ public final class ReferenceExpression implements Expression {
         return switch (reference) { // @formatter:off
             case FunctionReference funRef -> Objects.requireNonNull(funRef.resolve()).getType();
             case Function function        -> function.getType();
-            case Field field              -> field.getType();
-            case LetStatement expr        -> expr.getType();
+            case ValueStorage storage     -> Objects.requireNonNull(storage.getType());
             case Parameter param          -> param.getType();
             default                       -> throw new IllegalStateException("Unknown reference kind");
         }; // @formatter:on
@@ -111,16 +111,7 @@ public final class ReferenceExpression implements Expression {
                 final var fnAddress = function.materializePrototype(irContext.getModule(), targetMachine);
                 yield builder.intToPtr(typeAddress, fnAddress);
             }
-            case LetStatement statement -> {
-                if (statement.isMutable()) { // If we are a mutable variable, load from stack memory
-                    if (!statement.hasChanged()) {
-                        yield statement.getImmutableAddress(); // Optimize until we have been modified to avoid loads
-                    }
-                    yield builder.load(statement.getValue().getType().materialize(targetMachine),
-                        statement.getMutableAddress());
-                }
-                yield statement.getImmutableAddress();
-            }
+            case ValueStorage storage -> storage.loadFrom(targetMachine, irContext);
             case Parameter param -> irContext.getParameter(param.getName());
             // TODO: implement field references
             default -> throw new IllegalStateException("Unknown reference kind");

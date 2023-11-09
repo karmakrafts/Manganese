@@ -16,6 +16,7 @@
 package io.karma.ferrous.manganese.ocm.statement;
 
 import io.karma.ferrous.manganese.ocm.NameProvider;
+import io.karma.ferrous.manganese.ocm.ValueStorage;
 import io.karma.ferrous.manganese.ocm.expr.Expression;
 import io.karma.ferrous.manganese.ocm.ir.IRContext;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
@@ -37,7 +38,7 @@ import static org.lwjgl.system.MemoryUtil.NULL;
  * @since 08/11/2023
  */
 @API(status = API.Status.INTERNAL)
-public final class LetStatement implements Statement, NameProvider {
+public final class LetStatement implements Statement, NameProvider, ValueStorage {
     private final Identifier name;
     private final Type type;
     private final boolean isMutable;
@@ -68,27 +69,6 @@ public final class LetStatement implements Statement, NameProvider {
         this(name, value.getType(), value, isMutable, isInitialized, storageMods, tokenSlice);
     }
 
-    public Type getType() {
-        return type;
-    }
-
-    public Expression getValue() {
-        return value;
-    }
-
-    public void setValue(final Expression value) {
-        this.value = value;
-        hasChanged = true;
-    }
-
-    public boolean hasChanged() {
-        return hasChanged;
-    }
-
-    public boolean isMutable() {
-        return isMutable;
-    }
-
     public boolean isInitialized() {
         return isInitialized;
     }
@@ -97,10 +77,65 @@ public final class LetStatement implements Statement, NameProvider {
         return storageMods;
     }
 
+    // ValueStorage
+
+    @Override
+    public Type getType() {
+        return type;
+    }
+
+    @Override
+    public void notifyChange() {
+        hasChanged = true;
+    }
+
+    @Override
+    public long loadFrom(final TargetMachine targetMachine, final IRContext irContext) {
+        if (isMutable) { // If we are a mutable variable, load from stack memory
+            if (!hasChanged) {
+                return immutableAddress; // Optimize until we have been modified to avoid loads
+            }
+            return irContext.getCurrentOrCreate().load(type.materialize(targetMachine), mutableAddress);
+        }
+        return immutableAddress;
+    }
+
+    @Override
+    public long storeInto(final long value, final TargetMachine targetMachine, final IRContext irContext) {
+        if (!isMutable) {
+            throw new IllegalStateException("Cannot store into immutable variable");
+        }
+        notifyChange();
+        return irContext.getCurrentOrCreate().store(value, mutableAddress);
+    }
+
+    @Override
+    public Expression getValue() {
+        return value;
+    }
+
+    @Override
+    public void setValue(final Expression value) {
+        this.value = value;
+        notifyChange();
+    }
+
+    @Override
+    public boolean isMutable() {
+        return isMutable;
+    }
+
+    @Override
+    public boolean hasChanged() {
+        return hasChanged;
+    }
+
+    @Override
     public long getMutableAddress() {
         return mutableAddress;
     }
 
+    @Override
     public long getImmutableAddress() {
         return immutableAddress;
     }

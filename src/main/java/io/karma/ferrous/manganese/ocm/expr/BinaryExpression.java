@@ -15,10 +15,10 @@
 
 package io.karma.ferrous.manganese.ocm.expr;
 
+import io.karma.ferrous.manganese.ocm.ValueStorage;
 import io.karma.ferrous.manganese.ocm.ir.IRBuilder;
 import io.karma.ferrous.manganese.ocm.ir.IRContext;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
-import io.karma.ferrous.manganese.ocm.statement.LetStatement;
 import io.karma.ferrous.manganese.ocm.type.BuiltinType;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.target.TargetMachine;
@@ -95,20 +95,43 @@ public final class BinaryExpression implements Expression {
     }
 
     private long emitAssignment(final TargetMachine targetMachine, final IRContext irContext) {
-        final var builder = irContext.getCurrentOrCreate();
         if (!(lhs instanceof ReferenceExpression refExpr)) {
             return NULL;
         }
         return switch (refExpr.getReference()) {
-            case LetStatement stmnt -> {
-                stmnt.setValue(rhs); // Update contained expression reference
-                final var address = stmnt.getMutableAddress();
-                builder.store(rhs.emit(targetMachine, irContext), address);
+            case ValueStorage storage -> {
+                storage.storeInto(rhs.emit(targetMachine, irContext), targetMachine, irContext);
+                storage.setValue(rhs);
                 if (isResultDiscarded) {
                     yield NULL;
                 }
-                yield stmnt.emit(targetMachine, irContext);
+                yield storage.loadFrom(targetMachine, irContext);
             }
+            default -> NULL;
+        };
+    }
+
+    private long emitSwap(final TargetMachine targetMachine, final IRContext irContext) {
+        if (!(lhs instanceof ReferenceExpression lhsRef) || !(rhs instanceof ReferenceExpression rhsRef)) {
+            return NULL;
+        }
+        final var builder = irContext.getCurrentOrCreate();
+        return switch (lhsRef.getReference()) {
+            case ValueStorage lhsStorage -> switch (rhsRef.getReference()) {
+                case ValueStorage rhsStorage -> {
+                    // Swap expression references
+                    final var lhsValue = lhsStorage.getValue();
+                    lhsStorage.setValue(rhsStorage.getValue());
+                    rhsStorage.setValue(lhsValue);
+                    // Emit two loads and two stores to swap values in stack memory
+                    final var rhsAddress = rhsStorage.loadFrom(targetMachine, irContext);
+                    final var lhsAddress = lhsStorage.loadFrom(targetMachine, irContext);
+                    lhsStorage.storeInto(rhsAddress, targetMachine, irContext);
+                    rhsStorage.storeInto(lhsAddress, targetMachine, irContext);
+                    yield rhsAddress;
+                }
+                default -> NULL;
+            };
             default -> NULL;
         };
     }
@@ -164,6 +187,9 @@ public final class BinaryExpression implements Expression {
     public long emit(final TargetMachine targetMachine, final IRContext irContext) {
         if (op == Operator.ASSIGN) {
             return emitAssignment(targetMachine, irContext);
+        }
+        if (op == Operator.SWAP) {
+            return emitSwap(targetMachine, irContext);
         }
         if (!(lhs instanceof Expression lhsExpr)) {
             return NULL;
