@@ -26,7 +26,6 @@ import io.karma.ferrous.manganese.util.Operator;
 import io.karma.ferrous.manganese.util.TokenSlice;
 import org.jetbrains.annotations.Nullable;
 
-import java.sql.Ref;
 import java.util.Objects;
 
 import static org.lwjgl.system.MemoryUtil.NULL;
@@ -135,7 +134,7 @@ public final class BinaryExpression implements Expression {
     }
 
     private boolean needsLoadDedup() {
-        if(!(lhs instanceof ReferenceExpression lhsRef) || !(rhs instanceof ReferenceExpression rhsRef)) {
+        if (!(lhs instanceof ReferenceExpression lhsRef) || !(rhs instanceof ReferenceExpression rhsRef)) {
             return false;
         }
         return lhsRef.getReference() == rhsRef.getReference();
