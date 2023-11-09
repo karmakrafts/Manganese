@@ -18,7 +18,6 @@ package io.karma.ferrous.manganese.ocm.expr;
 import io.karma.ferrous.manganese.ocm.Field;
 import io.karma.ferrous.manganese.ocm.function.Function;
 import io.karma.ferrous.manganese.ocm.function.FunctionReference;
-import io.karma.ferrous.manganese.ocm.function.FunctionResolver;
 import io.karma.ferrous.manganese.ocm.ir.IRContext;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.ocm.statement.LetStatement;
@@ -38,13 +37,13 @@ import java.util.Objects;
 @API(status = API.Status.INTERNAL)
 public final class ReferenceExpression implements Expression {
     private final Object reference;
-    private final boolean isWrite;
     private final TokenSlice tokenSlice;
     private Scope enclosingScope;
+    private boolean isWrite;
 
     /**
      * @param reference  The reference to a {@link Function},
-     *                   {@link FunctionResolver}, {@link Field} or {@link LetStatement}.
+     *                   {@link FunctionReference}, {@link Field} or {@link LetStatement}.
      * @param tokenSlice The token slice which defines this reference.
      */
     public ReferenceExpression(final Object reference, final boolean isWrite, final TokenSlice tokenSlice) {
@@ -55,6 +54,10 @@ public final class ReferenceExpression implements Expression {
 
     public Object getReference() {
         return reference;
+    }
+
+    public void setIsWrite(final boolean isWrite) {
+        this.isWrite = isWrite;
     }
 
     public boolean isWrite() {
@@ -92,26 +95,29 @@ public final class ReferenceExpression implements Expression {
     }
 
     @Override
-    public long emit(final TargetMachine targetMachine, final IRContext blockContext) {
-        final var builder = blockContext.getCurrentOrCreate();
+    public long emit(final TargetMachine targetMachine, final IRContext irContext) {
+        final var builder = irContext.getCurrentOrCreate();
         return switch (reference) {
             case FunctionReference funRef -> {
                 final var function = Objects.requireNonNull(funRef.resolve());
                 final var typeAddress = function.getType().derive(TypeAttribute.POINTER).materialize(targetMachine);
-                final var fnAddress = function.materializePrototype(blockContext.getModule(), targetMachine);
+                final var fnAddress = function.materializePrototype(irContext.getModule(), targetMachine);
                 yield builder.intToPtr(typeAddress, fnAddress);
             }
             case Function function -> {
                 final var typeAddress = function.getType().derive(TypeAttribute.POINTER).materialize(targetMachine);
-                final var fnAddress = function.materializePrototype(blockContext.getModule(), targetMachine);
+                final var fnAddress = function.materializePrototype(irContext.getModule(), targetMachine);
                 yield builder.intToPtr(typeAddress, fnAddress);
             }
             case LetStatement statement -> {
-                final var alloc = Objects.requireNonNull(statement.getAllocation());
                 if (statement.isMutable()) { // If we are a mutable variable, load from stack memory
-                    yield builder.load(statement.getValue().getType().materialize(targetMachine), alloc.address());
+                    if (!statement.hasChanged()) {
+                        yield statement.getImmutableAddress(); // Optimize until we have been modified to avoid loads
+                    }
+                    yield builder.load(statement.getValue().getType().materialize(targetMachine),
+                        statement.getMutableAddress());
                 }
-                yield alloc.address();
+                yield statement.getImmutableAddress();
             }
             // TODO: implement field references
             default -> throw new IllegalStateException("Unknown reference kind");

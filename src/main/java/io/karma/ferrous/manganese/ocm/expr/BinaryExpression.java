@@ -80,14 +80,14 @@ public final class BinaryExpression implements Expression {
     }
 
     @Override
-    public long emit(final TargetMachine targetMachine, final IRContext blockContext) {
-        final var builder = blockContext.getCurrentOrCreate();
+    public long emit(final TargetMachine targetMachine, final IRContext irContext) {
+        final var builder = irContext.getCurrentOrCreate();
         final var lhsType = this.lhs.getType();
         if (!(lhsType instanceof BuiltinType builtinType)) {
             return 0L; // TODO: implement user defined operator calls
         }
-        final var lhs = this.lhs.emit(targetMachine, blockContext);
-        final var rhs = this.rhs.emit(targetMachine, blockContext);
+        final var lhs = this.lhs.emit(targetMachine, irContext);
+        final var rhs = this.rhs.emit(targetMachine, irContext);
         return switch (op) { // @formatter:off
             case PLUS  -> builtinType.isFloatType() ? builder.fadd(lhs, rhs) : builder.add(lhs, rhs);
             case MINUS -> builtinType.isFloatType() ? builder.fsub(lhs, rhs) : builder.sub(lhs, rhs);

@@ -79,11 +79,11 @@ public final class IfExpression implements Expression {
     }
 
     @Override
-    public long emit(final TargetMachine targetMachine, final IRContext blockContext) {
+    public long emit(final TargetMachine targetMachine, final IRContext irContext) {
         for (final var branch : branches) {
             final var statements = branch.getRight().getStatements();
             for (final var statement : statements) {
-                statement.emit(targetMachine, blockContext); // Ignore result here
+                statement.emit(targetMachine, irContext); // Ignore result here
             }
         }
         return NULL; // Return value ref to result register

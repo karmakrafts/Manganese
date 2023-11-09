@@ -71,7 +71,7 @@ public final class RealConstant implements Constant {
     }
 
     @Override
-    public long emit(final TargetMachine targetMachine, final IRContext blockContext) {
+    public long emit(final TargetMachine targetMachine, final IRContext irContext) {
         return LLVMCore.LLVMConstReal(type.materialize(targetMachine), value);
     }
 }

@@ -90,9 +90,9 @@ public final class ScopeExpression implements Expression {
     }
 
     @Override
-    public long emit(final TargetMachine targetMachine, final IRContext blockContext) {
+    public long emit(final TargetMachine targetMachine, final IRContext irContext) {
         for (final var statement : statements) {
-            statement.emit(targetMachine, blockContext);
+            statement.emit(targetMachine, irContext);
         }
         return 0;
     }

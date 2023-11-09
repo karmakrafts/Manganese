@@ -62,7 +62,7 @@ public final class StringConstant implements Constant {
     }
 
     @Override
-    public long emit(final TargetMachine targetMachine, final IRContext blockContext) {
-        return blockContext.getCurrentOrCreate().strPtr(value);
+    public long emit(final TargetMachine targetMachine, final IRContext irContext) {
+        return irContext.getCurrentOrCreate().strPtr(value);
     }
 }

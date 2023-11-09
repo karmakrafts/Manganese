@@ -70,7 +70,7 @@ public final class BoolConstant implements Constant {
     }
 
     @Override
-    public long emit(final TargetMachine targetMachine, final IRContext blockContext) {
+    public long emit(final TargetMachine targetMachine, final IRContext irContext) {
         return LLVMCore.LLVMConstInt(getType().materialize(targetMachine), value ? 1 : 0, false);
     }
 }

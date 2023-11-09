@@ -27,7 +27,7 @@ import io.karma.ferrous.manganese.util.TokenSlice;
 public interface Statement extends Scoped {
     TokenSlice getTokenSlice();
 
-    long emit(final TargetMachine targetMachine, final IRContext blockContext);
+    long emit(final TargetMachine targetMachine, final IRContext irContext);
 
     default boolean returnsFromCurrentScope() {
         return false;

@@ -66,8 +66,8 @@ public final class ReturnStatement implements Statement {
     }
 
     @Override
-    public long emit(final TargetMachine targetMachine, final IRContext blockContext) {
-        final var builder = blockContext.getCurrentOrCreate();
+    public long emit(final TargetMachine targetMachine, final IRContext irContext) {
+        final var builder = irContext.getCurrentOrCreate();
         final var type = value.getType();
         if (type.isImaginary()) {
             return 0L; // We don't emit anything for imaginary types
@@ -75,7 +75,7 @@ public final class ReturnStatement implements Statement {
         if (type == BuiltinType.VOID) {
             return builder.ret();
         }
-        return builder.ret(value.emit(targetMachine, blockContext));
+        return builder.ret(value.emit(targetMachine, irContext));
     }
 
     @Override

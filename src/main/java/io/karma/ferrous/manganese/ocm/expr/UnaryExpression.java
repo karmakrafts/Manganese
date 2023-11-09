@@ -93,13 +93,13 @@ public final class UnaryExpression implements Expression {
     }
 
     @Override
-    public long emit(final TargetMachine targetMachine, final IRContext blockContext) {
-        final var builder = blockContext.getCurrentOrCreate();
+    public long emit(final TargetMachine targetMachine, final IRContext irContext) {
+        final var builder = irContext.getCurrentOrCreate();
         final var type = value.getType();
         if (!(type instanceof BuiltinType builtinType)) {
             return NULL; // TODO: implement user defined operator calls
         }
-        final var address = value.emit(targetMachine, blockContext);
+        final var address = value.emit(targetMachine, irContext);
         return switch(op) { // @formatter:off
             case MINUS, PLUS    -> builtinType.isFloatType() ? builder.fneg(address) : builder.neg(address);
             case INV            -> builder.xor(address, LLVMConstInt(type.materialize(targetMachine), -1, false));

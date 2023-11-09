@@ -68,9 +68,9 @@ public final class CallExpression implements Expression {
     }
 
     @Override
-    public long emit(final TargetMachine targetMachine, final IRContext blockContext) {
-        final var builder = blockContext.getCurrentOrCreate();
-        final var args = Arrays.stream(this.args).mapToLong(expr -> expr.emit(targetMachine, blockContext)).toArray();
+    public long emit(final TargetMachine targetMachine, final IRContext irContext) {
+        final var builder = irContext.getCurrentOrCreate();
+        final var args = Arrays.stream(this.args).mapToLong(expr -> expr.emit(targetMachine, irContext)).toArray();
         return builder.call(function, args);
     }
 }

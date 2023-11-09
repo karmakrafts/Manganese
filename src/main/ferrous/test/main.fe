@@ -9,5 +9,7 @@ fun test(): i32 {
 }
 
 fun main(num_args: i32, args: **i8): i32 {
-    return ~(~test() + 1)
+    let mut y = test()
+    let mut x = test()
+    return ~(~(x * y / 2) + 2)
 }

@@ -63,7 +63,7 @@ public final class ExpressionConstant implements Constant {
     }
 
     @Override
-    public long emit(final TargetMachine targetMachine, final IRContext blockContext) {
-        return value.emit(targetMachine, blockContext);
+    public long emit(final TargetMachine targetMachine, final IRContext irContext) {
+        return value.emit(targetMachine, irContext);
     }
 }

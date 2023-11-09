@@ -57,7 +57,7 @@ public final class IndexExpression implements Expression {
     }
 
     @Override
-    public long emit(final TargetMachine targetMachine, final IRContext blockContext) {
+    public long emit(final TargetMachine targetMachine, final IRContext irContext) {
         return 0;
     }
 }

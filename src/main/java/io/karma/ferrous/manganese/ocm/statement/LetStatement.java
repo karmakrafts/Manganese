@@ -17,7 +17,6 @@ package io.karma.ferrous.manganese.ocm.statement;
 
 import io.karma.ferrous.manganese.ocm.NameProvider;
 import io.karma.ferrous.manganese.ocm.expr.Expression;
-import io.karma.ferrous.manganese.ocm.ir.Allocation;
 import io.karma.ferrous.manganese.ocm.ir.IRContext;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.ocm.type.Type;
@@ -46,7 +45,9 @@ public final class LetStatement implements Statement, NameProvider {
     private final TokenSlice tokenSlice;
     private Expression value;
     private Scope enclosingScope;
-    private Allocation allocation;
+    private long immutableAddress;
+    private long mutableAddress;
+    private boolean hasChanged;
 
     public LetStatement(final Identifier name, final Type type, final @Nullable Expression value,
                         final boolean isMutable, final EnumSet<StorageMod> storageMods, final TokenSlice tokenSlice) {
@@ -67,6 +68,14 @@ public final class LetStatement implements Statement, NameProvider {
         return value;
     }
 
+    public void setHasChanged(boolean hasChanged) {
+        this.hasChanged = hasChanged;
+    }
+
+    public boolean hasChanged() {
+        return hasChanged;
+    }
+
     public void setValue(final @Nullable Expression value) {
         this.value = value;
     }
@@ -79,8 +88,12 @@ public final class LetStatement implements Statement, NameProvider {
         return storageMods;
     }
 
-    public @Nullable Allocation getAllocation() {
-        return allocation;
+    public long getMutableAddress() {
+        return mutableAddress;
+    }
+
+    public long getImmutableAddress() {
+        return immutableAddress;
     }
 
     // NameProvider
@@ -110,20 +123,21 @@ public final class LetStatement implements Statement, NameProvider {
     }
 
     @Override
-    public long emit(final TargetMachine targetMachine, final IRContext blockContext) {
-        final var builder = blockContext.getCurrentOrCreate();
+    public long emit(final TargetMachine targetMachine, final IRContext irContext) {
+        final var builder = irContext.getCurrentOrCreate();
+        immutableAddress = value.emit(targetMachine, irContext);
         if (!isMutable) {
             // For immutable variables, we can optimize by inlining the result in a register
-            final var address = value.emit(targetMachine, blockContext);
-            LLVMSetValueName2(address, name.toInternalName());
-            allocation = Allocation.inRegister(address);
+            LLVMSetValueName2(immutableAddress, name.toInternalName());
             return NULL;
         }
         // For mutable variables, we allocate some stack memory
-        allocation = builder.alloca(type.materialize(targetMachine));
-        LLVMSetValueName2(allocation.address(), name.toInternalName());
+        mutableAddress = builder.alloca(type.materialize(targetMachine));
+        final var internalName = name.toInternalName();
+        LLVMSetValueName2(immutableAddress, String.format("val.%s", internalName));
+        LLVMSetValueName2(mutableAddress, String.format("adr.%s", internalName));
         if (value != null) { // Emit/store expression value
-            builder.store(value.emit(targetMachine, blockContext), allocation.address());
+            builder.store(value.emit(targetMachine, irContext), mutableAddress);
         }
         return NULL;
     }

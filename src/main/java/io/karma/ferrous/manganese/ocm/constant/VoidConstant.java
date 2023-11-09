@@ -58,7 +58,7 @@ public final class VoidConstant implements Constant {
     }
 
     @Override
-    public long emit(final TargetMachine targetMachine, final IRContext blockContext) {
+    public long emit(final TargetMachine targetMachine, final IRContext irContext) {
         return 0L;
     }
 }

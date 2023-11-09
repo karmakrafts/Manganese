@@ -55,20 +55,20 @@ public final class IRBuilder {
 
     // Memory
 
-    public Allocation alloca(final long type) {
-        return new Allocation(AllocationKind.STACK, LLVMBuildAlloca(address, type, ""));
+    public long alloca(final long type) {
+        return LLVMBuildAlloca(address, type, "");
     }
 
-    public Allocation arrayAlloca(final long type, final long value) {
-        return new Allocation(AllocationKind.STACK_ARRAY, LLVMBuildArrayAlloca(address, type, value, ""));
+    public long arrayAlloca(final long type, final long value) {
+        return LLVMBuildArrayAlloca(address, type, value, "");
     }
 
-    public Allocation malloc(final long type) {
-        return new Allocation(AllocationKind.HEAP, LLVMBuildMalloc(address, type, ""));
+    public long malloc(final long type) {
+        return LLVMBuildMalloc(address, type, "");
     }
 
-    public Allocation arrayMalloc(final long type, final long value) {
-        return new Allocation(AllocationKind.HEAP_ARRAY, LLVMBuildArrayMalloc(address, type, value, ""));
+    public long arrayMalloc(final long type, final long value) {
+        return LLVMBuildArrayMalloc(address, type, value, "");
     }
 
     public long free(final long ptr) {

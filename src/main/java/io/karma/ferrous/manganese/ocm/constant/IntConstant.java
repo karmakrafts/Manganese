@@ -71,7 +71,7 @@ public final class IntConstant implements Constant {
     }
 
     @Override
-    public long emit(final TargetMachine targetMachine, final IRContext blockContext) {
+    public long emit(final TargetMachine targetMachine, final IRContext irContext) {
         return LLVMCore.LLVMConstInt(type.materialize(targetMachine), value, false);
     }
 }
