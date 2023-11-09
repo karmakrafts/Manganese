@@ -67,12 +67,6 @@ public final class TypeParser extends ParseAdapter {
     }
 
     @Override
-    public void enterSliceType(final SliceTypeContext context) {
-        attributes.push(TypeAttribute.SLICE);
-        super.enterSliceType(context);
-    }
-
-    @Override
     public void enterIdent(final IdentContext context) {
         if (baseType != null) {
             return; // Qualified ident contains these, so if kind exists, skip

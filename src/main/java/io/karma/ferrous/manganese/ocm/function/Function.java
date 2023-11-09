@@ -94,9 +94,8 @@ public final class Function implements NameProvider, Scoped {
         if (materializedPrototype != NULL) {
             return materializedPrototype;
         }
-        final var address = LLVMAddFunction(module.getAddress(),
-            name.toInternalName(),
-            getType().materialize(targetMachine));
+        final var functionName = enclosingScope.getScopeName().join(name).toInternalName();
+        final var address = LLVMAddFunction(module.getAddress(), functionName, getType().materialize(targetMachine));
         final var numParams = parameters.length;
         for (var i = 0; i < numParams; i++) {
             LLVMSetValueName2(LLVMGetParam(address, i), parameters[i].getName().toString());

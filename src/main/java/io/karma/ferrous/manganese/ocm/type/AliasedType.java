@@ -15,6 +15,7 @@
 
 package io.karma.ferrous.manganese.ocm.type;
 
+import io.karma.ferrous.manganese.ocm.expr.Expression;
 import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.target.TargetMachine;
@@ -72,6 +73,11 @@ public final class AliasedType implements NamedType {
     // Type
 
     @Override
+    public Expression makeDefaultValue() {
+        return backingType.makeDefaultValue();
+    }
+
+    @Override
     public TokenSlice getTokenSlice() {
         return tokenSlice;
     }
@@ -104,11 +110,6 @@ public final class AliasedType implements NamedType {
     @Override
     public boolean isPointer() {
         return backingType.isPointer();
-    }
-
-    @Override
-    public boolean isSlice() {
-        return backingType.isSlice();
     }
 
     @Override

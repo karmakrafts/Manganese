@@ -15,6 +15,7 @@
 
 package io.karma.ferrous.manganese.ocm.type;
 
+import io.karma.ferrous.manganese.ocm.expr.Expression;
 import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.target.TargetMachine;
@@ -65,6 +66,11 @@ public final class IncompleteType implements NamedType {
     }
 
     // Type
+
+    @Override
+    public Expression makeDefaultValue() {
+        throw new IllegalStateException("Incomplete type does not have default value");
+    }
 
     @Override
     public TokenSlice getTokenSlice() {

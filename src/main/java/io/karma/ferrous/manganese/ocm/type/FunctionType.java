@@ -15,6 +15,7 @@
 
 package io.karma.ferrous.manganese.ocm.type;
 
+import io.karma.ferrous.manganese.ocm.expr.Expression;
 import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
 import io.karma.ferrous.manganese.ocm.scope.DefaultScope;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
@@ -98,6 +99,11 @@ public class FunctionType implements Type {
     }
 
     // Type
+
+    @Override
+    public Expression makeDefaultValue() {
+        throw new IllegalStateException("Functions don't have a default value");
+    }
 
     @Override
     public TokenSlice getTokenSlice() {

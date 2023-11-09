@@ -19,6 +19,7 @@ import io.karma.ferrous.manganese.ParseAdapter;
 import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.CompileErrorCode;
 import io.karma.ferrous.manganese.compiler.Compiler;
+import io.karma.ferrous.manganese.ocm.constant.NullConstant;
 import io.karma.ferrous.manganese.ocm.scope.ScopeStack;
 import io.karma.ferrous.manganese.ocm.statement.LetStatement;
 import io.karma.ferrous.manganese.ocm.statement.ReturnStatement;
@@ -91,81 +92,106 @@ public final class StatementParser extends ParseAdapter {
 
     @Override
     public void enterLetStatement(final LetStatementContext context) {
-        final var name = Identifier.parse(context.ident());
-        final var typeContext = context.type();
-        final var exprContext = context.expr();
-        final var isMutable = context.KW_MUT() != null;
-        final var storageMods = KitchenSink.parseStorageMods(context.storageMod());
-        Type type = null;
-        if (typeContext != null) {
-            type = Types.parse(compiler, compileContext, scopeStack, typeContext);
-            if (type == null) {
-                compileContext.reportError(typeContext.start, name.toString(), CompileErrorCode.E3002);
-                return;
+        try {
+            final var name = Identifier.parse(context.ident());
+            final var typeContext = context.type();
+            final var exprContext = context.expr();
+            final var isMutable = context.KW_MUT() != null;
+            final var storageMods = KitchenSink.parseStorageMods(context.storageMod());
+            Type type = null;
+            if (typeContext != null) {
+                type = Types.parse(compiler, compileContext, scopeStack, typeContext);
+                if (type == null) {
+                    compileContext.reportError(typeContext.start, name.toString(), CompileErrorCode.E3002);
+                    return;
+                }
+                if (context.QMK() != null) {
+                    if (!isMutable) {
+                        compileContext.reportError(context.QMK().getSymbol(), CompileErrorCode.E4010);
+                        return;
+                    }
+                    addStatement(new LetStatement(name,
+                        type,
+                        null,
+                        true,
+                        false,
+                        storageMods,
+                        TokenSlice.from(compileContext, context)));
+                    return;
+                }
+                if (exprContext == null) {
+                    addStatement(new LetStatement(name,
+                        type,
+                        type.makeDefaultValue(),
+                        isMutable,
+                        true,
+                        storageMods,
+                        TokenSlice.from(compileContext, context)));
+                    return;
+                }
             }
             if (exprContext == null) {
-                // TODO: create default-value expression from kind
-                addStatement(new LetStatement(name,
-                    type,
-                    null,
-                    isMutable,
-                    storageMods,
-                    TokenSlice.from(compileContext, context)));
+                compileContext.reportError(context.start, CompileErrorCode.E4006);
                 return;
             }
-        }
-        if (exprContext == null) {
-            compileContext.reportError(context.start, CompileErrorCode.E4006);
-            return;
-        }
-        final var expr = ExpressionUtils.parseExpression(compiler,
-            compileContext,
-            capturedScopeStack,
-            exprContext,
-            parent);
-        if (expr == null) {
-            compileContext.reportError(exprContext.start, CompileErrorCode.E2001);
-            return;
-        }
-        if (type == null) {
-            type = expr.getType(); // Deduce variable kind from expression
-        }
-        addStatement(new LetStatement(name,
-            type,
-            expr,
-            isMutable,
-            storageMods,
-            TokenSlice.from(compileContext, context)));
-        super.enterLetStatement(context);
-    }
-
-    @Override
-    public void enterReturnStatement(final ReturnStatementContext context) {
-        final var exprContext = context.expr();
-        if (exprContext != null) {
             final var expr = ExpressionUtils.parseExpression(compiler,
                 compileContext,
                 capturedScopeStack,
                 exprContext,
                 parent);
             if (expr == null) {
+                compileContext.reportError(exprContext.start, CompileErrorCode.E2001);
                 return;
             }
-            final var returnType = functionType.getReturnType();
-            final var exprType = expr.getType();
-            if (!returnType.canAccept(exprType)) {
-                final var message = KitchenSink.makeCompilerMessage(String.format("%s cannot be assigned to %s",
-                    exprType,
-                    returnType));
-                compileContext.reportError(context.start, message, CompileErrorCode.E3006);
-                return;
+            if (type == null) {
+                type = expr.getType(); // Deduce variable kind from expression
             }
-            statements.add(new ReturnStatement(expr, TokenSlice.from(compileContext, context)));
-            super.enterReturnStatement(context);
-            return;
+            if (expr instanceof NullConstant nll) {
+                nll.setContextualType(type); // Give null contextual type information about our variable
+            }
+            addStatement(new LetStatement(name,
+                type,
+                expr,
+                isMutable,
+                true,
+                storageMods,
+                TokenSlice.from(compileContext, context)));
         }
-        statements.add(new ReturnStatement(TokenSlice.from(compileContext, context)));
-        super.enterReturnStatement(context);
+        finally {
+            super.enterLetStatement(context);
+        }
+    }
+
+    @Override
+    public void enterReturnStatement(final ReturnStatementContext context) {
+        try {
+            final var exprContext = context.expr();
+            if (exprContext != null) {
+                final var expr = ExpressionUtils.parseExpression(compiler,
+                    compileContext,
+                    capturedScopeStack,
+                    exprContext,
+                    parent);
+                if (expr == null) {
+                    return;
+                }
+                final var returnType = functionType.getReturnType();
+                final var exprType = expr.getType();
+                if (!returnType.canAccept(exprType)) {
+                    final var message = KitchenSink.makeCompilerMessage(String.format("%s cannot be assigned to %s",
+                        exprType,
+                        returnType));
+                    compileContext.reportError(context.start, message, CompileErrorCode.E3006);
+                    return;
+                }
+                statements.add(new ReturnStatement(expr, TokenSlice.from(compileContext, context)));
+                return;
+            }
+            statements.add(new ReturnStatement(TokenSlice.from(compileContext, context)));
+        }
+        finally {
+            super.enterReturnStatement(context);
+        }
     }
 
     public List<Statement> getStatements() {

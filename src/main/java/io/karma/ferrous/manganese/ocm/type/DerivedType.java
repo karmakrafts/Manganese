@@ -16,6 +16,8 @@
 package io.karma.ferrous.manganese.ocm.type;
 
 import io.karma.ferrous.manganese.ocm.NameProvider;
+import io.karma.ferrous.manganese.ocm.constant.NullConstant;
+import io.karma.ferrous.manganese.ocm.expr.Expression;
 import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.target.TargetMachine;
@@ -55,21 +57,7 @@ public final class DerivedType implements NamedType {
                 type -> param.getConstraints().test(type),
                 param.getValue());
         }
-
-        // Calculate token range
-        final var baseSlice = baseType.getTokenSlice();
-        if (baseSlice != TokenSlice.EMPTY) {
-            var begin = baseSlice.begin();
-            var end = baseSlice.end();
-            for (final var attrib : attributes) {
-                begin -= attrib.getLHWidth();
-                end += attrib.getRHWidth();
-            }
-            tokenSlice = new TokenSlice(baseSlice.tokenStream(), begin, end);
-        }
-        else {
-            tokenSlice = TokenSlice.EMPTY;
-        }
+        tokenSlice = baseType.getTokenSlice();
     }
 
     // NameProvider
@@ -94,6 +82,14 @@ public final class DerivedType implements NamedType {
     }
 
     // Type
+
+    @Override
+    public Expression makeDefaultValue() {
+        //return switch(attributes[attributes.length - 1]) {
+        //    case POINTER -> new NullConstant(TokenSlice.EMPTY);
+        //}
+        return null;
+    }
 
     @Override
     public TokenSlice getTokenSlice() {

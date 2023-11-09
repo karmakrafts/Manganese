@@ -20,6 +20,7 @@ import io.karma.ferrous.manganese.module.Module;
 import io.karma.ferrous.manganese.ocm.Field;
 import io.karma.ferrous.manganese.ocm.access.AccessKind;
 import io.karma.ferrous.manganese.ocm.access.ScopedAccess;
+import io.karma.ferrous.manganese.ocm.expr.Expression;
 import io.karma.ferrous.manganese.ocm.function.Function;
 import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
@@ -583,6 +584,11 @@ public final class PreAnalyzer extends ParseAdapter {
         // @formatter:on
 
         @Override
+        public Expression makeDefaultValue() {
+            throw new UnsupportedOperationException("Dummy type does not have default value");
+        }
+
+        @Override
         public TokenSlice getTokenSlice() {
             return TokenSlice.EMPTY;
         }
@@ -599,7 +605,7 @@ public final class PreAnalyzer extends ParseAdapter {
 
         @Override
         public long materialize(final TargetMachine machine) {
-            throw new UnsupportedOperationException("Dummy kind cannot be materialized");
+            throw new UnsupportedOperationException("Dummy type cannot be materialized");
         }
 
         @Override

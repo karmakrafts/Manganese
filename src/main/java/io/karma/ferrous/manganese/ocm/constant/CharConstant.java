@@ -16,52 +16,42 @@
 package io.karma.ferrous.manganese.ocm.constant;
 
 import io.karma.ferrous.manganese.ocm.ir.IRContext;
+import io.karma.ferrous.manganese.ocm.scope.DefaultScope;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
-import io.karma.ferrous.manganese.ocm.type.NullType;
+import io.karma.ferrous.manganese.ocm.type.BuiltinType;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.TokenSlice;
 import org.apiguardian.api.API;
-import org.jetbrains.annotations.Nullable;
 import org.lwjgl.llvm.LLVMCore;
-
-import static org.lwjgl.llvm.LLVMCore.LLVMConstNull;
 
 /**
  * @author Alexander Hinze
- * @since 24/10/2023
+ * @since 09/11/2023
  */
 @API(status = API.Status.INTERNAL)
-public final class NullConstant implements Constant {
+public final class CharConstant implements Constant {
+    private final char value;
     private final TokenSlice tokenSlice;
-    private Scope enclosingScope;
-    private Type contextualType;
 
-    public NullConstant(final TokenSlice tokenSlice) {
+    public CharConstant(final char value, final TokenSlice tokenSlice) {
+        this.value = value;
         this.tokenSlice = tokenSlice;
     }
 
-    public void setContextualType(final Type contextualType) {
-        this.contextualType = contextualType;
+    @Override
+    public Type getType() {
+        return BuiltinType.CHAR;
     }
-
-    public Type getContextualType() {
-        return contextualType;
-    }
-
-    // Scoped
 
     @Override
-    public @Nullable Scope getEnclosingScope() {
-        return enclosingScope;
+    public Scope getEnclosingScope() {
+        return DefaultScope.GLOBAL;
     }
 
     @Override
     public void setEnclosingScope(final Scope enclosingScope) {
-        this.enclosingScope = enclosingScope;
     }
-
-    // Expressions
 
     @Override
     public TokenSlice getTokenSlice() {
@@ -69,12 +59,7 @@ public final class NullConstant implements Constant {
     }
 
     @Override
-    public Type getType() {
-        return NullType.INSTANCE;
-    }
-
-    @Override
     public long emit(final TargetMachine targetMachine, final IRContext irContext) {
-        return LLVMConstNull(contextualType.materialize(targetMachine));
+        return LLVMCore.LLVMConstInt(getType().materialize(targetMachine), value, false);
     }
 }

@@ -34,7 +34,7 @@ import java.util.List;
  */
 public record TokenSlice(@Nullable TokenStream tokenStream, int begin, int end) {
     public static final TokenSlice EMPTY = new TokenSlice(null, 0, 0);
-    private static final CommonToken EMPTY_TOKEN = new CommonToken(FerrousLexer.WS, "");
+    public static final CommonToken EMPTY_TOKEN = new CommonToken(FerrousLexer.WS, "");
 
     public static TokenSlice from(final CompileContext compileContext, final ParserRuleContext context) {
         return new TokenSlice(compileContext.getTokenStream(),

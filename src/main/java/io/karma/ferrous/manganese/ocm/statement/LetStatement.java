@@ -41,6 +41,7 @@ public final class LetStatement implements Statement, NameProvider {
     private final Identifier name;
     private final Type type;
     private final boolean isMutable;
+    private final boolean isInitialized;
     private final EnumSet<StorageMod> storageMods;
     private final TokenSlice tokenSlice;
     private Expression value;
@@ -49,26 +50,29 @@ public final class LetStatement implements Statement, NameProvider {
     private long mutableAddress;
     private boolean hasChanged;
 
-    public LetStatement(final Identifier name, final Type type, final @Nullable Expression value,
-                        final boolean isMutable, final EnumSet<StorageMod> storageMods, final TokenSlice tokenSlice) {
+    public LetStatement(final Identifier name, final Type type, final Expression value, final boolean isMutable,
+                        final boolean isInitialized, final EnumSet<StorageMod> storageMods,
+                        final TokenSlice tokenSlice) {
         this.name = name;
         this.type = type;
         this.value = value;
         this.isMutable = isMutable;
+        this.isInitialized = isInitialized;
         this.storageMods = storageMods;
         this.tokenSlice = tokenSlice;
     }
 
     public LetStatement(final Identifier name, final Expression value, final boolean isMutable,
-                        final EnumSet<StorageMod> storageMods, final TokenSlice tokenSlice) {
-        this(name, value.getType(), value, isMutable, storageMods, tokenSlice);
+                        final boolean isInitialized, final EnumSet<StorageMod> storageMods,
+                        final TokenSlice tokenSlice) {
+        this(name, value.getType(), value, isMutable, isInitialized, storageMods, tokenSlice);
     }
 
     public Expression getValue() {
         return value;
     }
 
-    public void setValue(final @Nullable Expression value) {
+    public void setValue(final Expression value) {
         this.value = value;
     }
 
@@ -82,6 +86,10 @@ public final class LetStatement implements Statement, NameProvider {
 
     public boolean isMutable() {
         return isMutable;
+    }
+
+    public boolean isInitialized() {
+        return isInitialized;
     }
 
     public EnumSet<StorageMod> getStorageMods() {
@@ -125,19 +133,22 @@ public final class LetStatement implements Statement, NameProvider {
     @Override
     public long emit(final TargetMachine targetMachine, final IRContext irContext) {
         final var builder = irContext.getCurrentOrCreate();
-        immutableAddress = value.emit(targetMachine, irContext);
+        final var internalName = name.toInternalName();
         if (!isMutable) {
             // For immutable variables, we can optimize by inlining the result in a register
-            LLVMSetValueName2(immutableAddress, name.toInternalName());
+            immutableAddress = value.emit(targetMachine, irContext);
+            LLVMSetValueName2(immutableAddress, internalName);
             return NULL;
         }
         // For mutable variables, we allocate some stack memory
+        if (value != null) {
+            immutableAddress = value.emit(targetMachine, irContext);
+            LLVMSetValueName2(immutableAddress, String.format("imm.%s", internalName));
+        }
         mutableAddress = builder.alloca(type.materialize(targetMachine));
-        final var internalName = name.toInternalName();
-        LLVMSetValueName2(immutableAddress, String.format("val.%s", internalName));
         LLVMSetValueName2(mutableAddress, String.format("adr.%s", internalName));
-        if (value != null) { // Emit/store expression value
-            builder.store(value.emit(targetMachine, irContext), mutableAddress);
+        if (value != null) {
+            builder.store(immutableAddress, mutableAddress);
         }
         return NULL;
     }

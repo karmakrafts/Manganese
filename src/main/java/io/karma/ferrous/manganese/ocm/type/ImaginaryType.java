@@ -15,6 +15,9 @@
 
 package io.karma.ferrous.manganese.ocm.type;
 
+import io.karma.ferrous.manganese.ocm.constant.*;
+import io.karma.ferrous.manganese.ocm.expr.EmptyExpression;
+import io.karma.ferrous.manganese.ocm.expr.Expression;
 import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
 import io.karma.ferrous.manganese.ocm.scope.DefaultScope;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
@@ -63,6 +66,18 @@ public enum ImaginaryType implements NamedType {
     }
 
     // Type
+
+    @Override
+    public Expression makeDefaultValue() {
+        return switch(this) { // @formatter:off
+            case EXPR    -> new EmptyExpression(TokenSlice.EMPTY);
+            case TYPE    -> new VoidConstant();
+            case STRING  -> new StringConstant("", TokenSlice.EMPTY);
+            case IDENT   -> new IdentConstant(Identifier.EMPTY, TokenSlice.EMPTY);
+            case TOKEN   -> new TokenConstant(TokenSlice.EMPTY_TOKEN, TokenSlice.EMPTY);
+            case LITERAL -> new LiteralConstant(new NullConstant(TokenSlice.EMPTY), TokenSlice.EMPTY);
+        }; // @formatter:on
+    }
 
     @Override
     public TokenSlice getTokenSlice() {

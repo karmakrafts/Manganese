@@ -16,6 +16,7 @@
 package io.karma.ferrous.manganese.ocm.type;
 
 import io.karma.ferrous.manganese.ocm.Field;
+import io.karma.ferrous.manganese.ocm.expr.Expression;
 import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.target.TargetMachine;
@@ -38,6 +39,11 @@ public record UDT(UDTKind kind, StructureType type, List<Field> fields, TokenSli
     }
 
     // Type
+
+    @Override
+    public Expression makeDefaultValue() {
+        return type.makeDefaultValue();
+    }
 
     @Override
     public TokenSlice getTokenSlice() {

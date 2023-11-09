@@ -48,12 +48,6 @@ public enum ScopeType {
     FOR,
     WHILE,
     DO,
-    LOOP;
+    LOOP
     // @formatter:on
-
-    private static final EnumSet<ScopeType> INVISIBLE_TYPES = EnumSet.of(GLOBAL, FILE, MODULE_FILE);
-
-    public boolean isVisible() {
-        return !INVISIBLE_TYPES.contains(this);
-    }
 }

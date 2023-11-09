@@ -15,6 +15,8 @@
 
 package io.karma.ferrous.manganese.ocm.type;
 
+import io.karma.ferrous.manganese.ocm.constant.NullConstant;
+import io.karma.ferrous.manganese.ocm.expr.Expression;
 import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
 import io.karma.ferrous.manganese.ocm.scope.DefaultScope;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
@@ -56,6 +58,11 @@ public final class NullType implements NamedType {
     // Type
 
     @Override
+    public Expression makeDefaultValue() {
+        return new NullConstant(TokenSlice.EMPTY);
+    }
+
+    @Override
     public TokenSlice getTokenSlice() {
         return TokenSlice.EMPTY;
     }
@@ -78,5 +85,12 @@ public final class NullType implements NamedType {
     @Override
     public Type getBaseType() {
         return this;
+    }
+
+    // Object
+
+    @Override
+    public String toString() {
+        return "null";
     }
 }

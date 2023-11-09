@@ -15,6 +15,8 @@
 
 package io.karma.ferrous.manganese.ocm.type;
 
+import io.karma.ferrous.manganese.ocm.constant.*;
+import io.karma.ferrous.manganese.ocm.expr.Expression;
 import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
 import io.karma.ferrous.manganese.ocm.scope.DefaultScope;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
@@ -28,6 +30,7 @@ import org.apiguardian.api.API.Status;
 import org.lwjgl.llvm.LLVMCore;
 
 import java.util.EnumSet;
+import java.util.function.Supplier;
 import java.util.function.ToLongFunction;
 
 /**
@@ -37,24 +40,24 @@ import java.util.function.ToLongFunction;
 @API(status = Status.INTERNAL)
 public enum BuiltinType implements NamedType {
     // @formatter:off
-    VOID    (FerrousLexer.KW_VOID,  target -> LLVMCore.LLVMVoidType()),
-    BOOL    (FerrousLexer.KW_BOOL,  target -> LLVMCore.LLVMInt8Type()),
-    CHAR    (FerrousLexer.KW_CHAR,  target -> LLVMCore.LLVMInt8Type()),
+    VOID    (FerrousLexer.KW_VOID,  target -> LLVMCore.LLVMVoidType(),   VoidConstant::new),
+    BOOL    (FerrousLexer.KW_BOOL,  target -> LLVMCore.LLVMInt8Type(),   () -> new BoolConstant(false, TokenSlice.EMPTY)),
+    CHAR    (FerrousLexer.KW_CHAR,  target -> LLVMCore.LLVMInt8Type(),   () -> new CharConstant(' ', TokenSlice.EMPTY)),
     // Signed types
-    I8      (FerrousLexer.KW_I8,    target -> LLVMCore.LLVMInt8Type()),
-    I16     (FerrousLexer.KW_I16,   target -> LLVMCore.LLVMInt16Type()),
-    I32     (FerrousLexer.KW_I32,   target -> LLVMCore.LLVMInt32Type()),
-    I64     (FerrousLexer.KW_I64,   target -> LLVMCore.LLVMInt64Type()),
-    ISIZE   (FerrousLexer.KW_ISIZE, BuiltinType::getSizedIntType),
+    I8      (FerrousLexer.KW_I8,    target -> LLVMCore.LLVMInt8Type(),   () -> makeDefaultInt(1, false)),
+    I16     (FerrousLexer.KW_I16,   target -> LLVMCore.LLVMInt16Type(),  () -> makeDefaultInt(2, false)),
+    I32     (FerrousLexer.KW_I32,   target -> LLVMCore.LLVMInt32Type(),  () -> makeDefaultInt(4, false)),
+    I64     (FerrousLexer.KW_I64,   target -> LLVMCore.LLVMInt64Type(),  () -> makeDefaultInt(8, false)),
+    ISIZE   (FerrousLexer.KW_ISIZE, BuiltinType::getSizedIntType,        () -> makeDefaultInt(-1, false)),
     // Unsigned types
-    U8      (FerrousLexer.KW_U8,    target -> LLVMCore.LLVMInt8Type()),
-    U16     (FerrousLexer.KW_U16,   target -> LLVMCore.LLVMInt16Type()),
-    U32     (FerrousLexer.KW_U32,   target -> LLVMCore.LLVMInt32Type()),
-    U64     (FerrousLexer.KW_U64,   target -> LLVMCore.LLVMInt64Type()),
-    USIZE   (FerrousLexer.KW_USIZE, BuiltinType::getSizedIntType),
+    U8      (FerrousLexer.KW_U8,    target -> LLVMCore.LLVMInt8Type(),   () -> makeDefaultInt(1, true)),
+    U16     (FerrousLexer.KW_U16,   target -> LLVMCore.LLVMInt16Type(),  () -> makeDefaultInt(2, true)),
+    U32     (FerrousLexer.KW_U32,   target -> LLVMCore.LLVMInt32Type(),  () -> makeDefaultInt(4, true)),
+    U64     (FerrousLexer.KW_U64,   target -> LLVMCore.LLVMInt64Type(),  () -> makeDefaultInt(8, true)),
+    USIZE   (FerrousLexer.KW_USIZE, BuiltinType::getSizedIntType,        () -> makeDefaultInt(-1, true)),
     // Floating point types
-    F32     (FerrousLexer.KW_F32,   target -> LLVMCore.LLVMFloatType()),
-    F64     (FerrousLexer.KW_F64,   target -> LLVMCore.LLVMDoubleType());
+    F32     (FerrousLexer.KW_F32,   target -> LLVMCore.LLVMFloatType(),  () -> makeDefaultReal(4)),
+    F64     (FerrousLexer.KW_F64,   target -> LLVMCore.LLVMDoubleType(), () -> makeDefaultReal(8));
     // @formatter:on
 
     public static final EnumSet<BuiltinType> SIGNED_INT_TYPES = EnumSet.of(I8, I16, I32, I64, ISIZE);
@@ -62,14 +65,37 @@ public enum BuiltinType implements NamedType {
     public static final EnumSet<BuiltinType> FLOAT_TYPES = EnumSet.of(F32, F64);
     private final Identifier name;
     private final ToLongFunction<TargetMachine> typeProvider;
+    private final Supplier<Expression> defaultProvider;
 
-    BuiltinType(final Identifier name, final ToLongFunction<TargetMachine> typeProvider) {
+    BuiltinType(final Identifier name, final ToLongFunction<TargetMachine> typeProvider,
+                final Supplier<Expression> defaultProvider) {
         this.name = name;
         this.typeProvider = typeProvider;
+        this.defaultProvider = defaultProvider;
     }
 
-    BuiltinType(final int token, final ToLongFunction<TargetMachine> typeProvider) {
-        this(new Identifier(TokenUtils.getLiteral(token)), typeProvider);
+    BuiltinType(final int token, final ToLongFunction<TargetMachine> typeProvider,
+                final Supplier<Expression> defaultProvider) {
+        this(new Identifier(TokenUtils.getLiteral(token)), typeProvider, defaultProvider);
+    }
+
+    private static Expression makeDefaultInt(final int size, final boolean isUnsigned) {
+        return switch(size) { // @formatter:off
+            case 1  -> new IntConstant(isUnsigned ? U8 : I8, 0, TokenSlice.EMPTY);
+            case 2  -> new IntConstant(isUnsigned ? U16 : I16, 0, TokenSlice.EMPTY);
+            case 4  -> new IntConstant(isUnsigned ? U32 : I32, 0, TokenSlice.EMPTY);
+            case 8  -> new IntConstant(isUnsigned ? U64 : I64, 0, TokenSlice.EMPTY);
+            case -1 -> new IntConstant(isUnsigned ? USIZE : ISIZE, 0, TokenSlice.EMPTY);
+            default -> throw new IllegalArgumentException("");
+        }; // @formatter:on
+    }
+
+    private static Expression makeDefaultReal(final int size) {
+        return switch(size) { // @formatter:off
+            case 4  -> new RealConstant(F32, 0.0, TokenSlice.EMPTY);
+            case 8  -> new RealConstant(F64, 0.0, TokenSlice.EMPTY);
+            default -> throw new IllegalArgumentException("");
+        }; // @formatter:on
     }
 
     private static long getSizedIntType(final TargetMachine machine) {
@@ -111,6 +137,11 @@ public enum BuiltinType implements NamedType {
     }
 
     // Type
+
+    @Override
+    public Expression makeDefaultValue() {
+        return defaultProvider.get();
+    }
 
     @Override
     public boolean canAccept(final Type type) {

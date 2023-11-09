@@ -15,6 +15,8 @@
 
 package io.karma.ferrous.manganese.ocm.type;
 
+import io.karma.ferrous.manganese.ocm.expr.AllocExpression;
+import io.karma.ferrous.manganese.ocm.expr.Expression;
 import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.target.TargetMachine;
@@ -56,6 +58,11 @@ public final class TupleType implements Type {
     }
 
     // Type
+
+    @Override
+    public Expression makeDefaultValue() {
+        return new AllocExpression(this, false, TokenSlice.EMPTY);
+    }
 
     @Override
     public TokenSlice getTokenSlice() {

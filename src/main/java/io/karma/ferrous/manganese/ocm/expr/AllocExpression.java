@@ -13,43 +13,49 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.ocm.constant;
+package io.karma.ferrous.manganese.ocm.expr;
 
 import io.karma.ferrous.manganese.ocm.ir.IRContext;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
-import io.karma.ferrous.manganese.ocm.type.NullType;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.TokenSlice;
 import org.apiguardian.api.API;
 import org.jetbrains.annotations.Nullable;
-import org.lwjgl.llvm.LLVMCore;
-
-import static org.lwjgl.llvm.LLVMCore.LLVMConstNull;
 
 /**
  * @author Alexander Hinze
- * @since 24/10/2023
+ * @since 09/11/2023
  */
 @API(status = API.Status.INTERNAL)
-public final class NullConstant implements Constant {
+public final class AllocExpression implements Expression {
+    private final Type type;
+    private final boolean isHeapAlloc;
+    private final Expression[] args;
     private final TokenSlice tokenSlice;
     private Scope enclosingScope;
-    private Type contextualType;
 
-    public NullConstant(final TokenSlice tokenSlice) {
+    public AllocExpression(final Type type, final boolean isHeapAlloc, final TokenSlice tokenSlice, final Expression... args) {
+        this.type = type;
+        this.isHeapAlloc = isHeapAlloc;
+        this.args = args;
         this.tokenSlice = tokenSlice;
     }
 
-    public void setContextualType(final Type contextualType) {
-        this.contextualType = contextualType;
+    public boolean isHeapAlloc() {
+        return isHeapAlloc;
     }
 
-    public Type getContextualType() {
-        return contextualType;
+    public Expression[] getArgs() {
+        return args;
     }
 
-    // Scoped
+    // Type
+
+    @Override
+    public Type getType() {
+        return type;
+    }
 
     @Override
     public @Nullable Scope getEnclosingScope() {
@@ -61,20 +67,13 @@ public final class NullConstant implements Constant {
         this.enclosingScope = enclosingScope;
     }
 
-    // Expressions
-
     @Override
     public TokenSlice getTokenSlice() {
         return tokenSlice;
     }
 
     @Override
-    public Type getType() {
-        return NullType.INSTANCE;
-    }
-
-    @Override
     public long emit(final TargetMachine targetMachine, final IRContext irContext) {
-        return LLVMConstNull(contextualType.materialize(targetMachine));
+        return 0;
     }
 }
