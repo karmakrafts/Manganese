@@ -110,6 +110,11 @@ public final class BinaryExpression implements Expression {
                 }
                 yield builder.srem(lhs, rhs);
             }
+            case AND -> builder.and(lhs, rhs);
+            case OR -> builder.or(lhs, rhs);
+            case XOR -> builder.xor(lhs, rhs);
+            case SHL -> builder.shl(lhs, rhs);
+            case SHR -> builtinType.isUnsignedInt() ? builder.lshr(lhs, rhs) : builder.ashr(lhs, rhs);
             default    -> throw new IllegalStateException("Unsupported operator");
         }; // @formatter:on
     }
