@@ -26,6 +26,7 @@ import io.karma.ferrous.manganese.util.Operator;
 import io.karma.ferrous.manganese.util.TokenSlice;
 import org.jetbrains.annotations.Nullable;
 
+import java.sql.Ref;
 import java.util.Objects;
 
 import static org.lwjgl.system.MemoryUtil.NULL;
@@ -133,11 +134,18 @@ public final class BinaryExpression implements Expression {
         return builder.srem(lhs, rhs);
     }
 
+    private boolean needsLoadDedup() {
+        if(!(lhs instanceof ReferenceExpression lhsRef) || !(rhs instanceof ReferenceExpression rhsRef)) {
+            return false;
+        }
+        return lhsRef.getReference() == rhsRef.getReference();
+    }
+
     private long emitBuiltin(final TargetMachine targetMachine, final IRContext irContext,
                              final BuiltinType builtinType) {
         final var builder = irContext.getCurrentOrCreate();
         final var lhs = this.lhs.emit(targetMachine, irContext);
-        final var rhs = this.rhs.emit(targetMachine, irContext);
+        final var rhs = needsLoadDedup() ? lhs : this.rhs.emit(targetMachine, irContext);
         return switch (op) { // @formatter:off
             case PLUS  -> builtinType.isFloatType() ? builder.fadd(lhs, rhs) : builder.add(lhs, rhs);
             case MINUS -> builtinType.isFloatType() ? builder.fsub(lhs, rhs) : builder.sub(lhs, rhs);

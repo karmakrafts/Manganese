@@ -126,4 +126,24 @@ public final class ReferenceExpression implements Expression {
             default -> throw new IllegalStateException("Unknown reference kind");
         };
     }
+
+    // Object
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(reference, isWrite);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof ReferenceExpression refExpr) {
+            return reference == refExpr.reference && isWrite == refExpr.isWrite;
+        }
+        return false;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("%s:%s", reference, isWrite);
+    }
 }

@@ -1,14 +1,15 @@
 extern fun printf(fmt: *char, args: vaargs): i32
 
 fun test(value: i32): i32 {
-    return 1 << value
+    let mut x = value
+    x = x * x
+    return 1 << x
 }
 
 fun main(num_args: i32, args: **i8): i32 {
-    let mut x = test(2)
-    x = 2
+    let mut x = test(num_args)
     x = x * x << 1 >> 2
     let mut y = x
-    y = y * y
+    y = y * (y + 1)
     return y
 }
