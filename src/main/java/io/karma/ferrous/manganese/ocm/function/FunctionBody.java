@@ -19,16 +19,15 @@ import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.module.Module;
 import io.karma.ferrous.manganese.ocm.ir.IRBuilder;
 import io.karma.ferrous.manganese.ocm.ir.IRContext;
-import io.karma.ferrous.manganese.ocm.statement.LetStatement;
 import io.karma.ferrous.manganese.ocm.statement.Statement;
 import io.karma.ferrous.manganese.target.TargetMachine;
-import io.karma.ferrous.manganese.util.Identifier;
-import io.karma.kommons.tuple.Pair;
 import org.apiguardian.api.API;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Stack;
 
 import static org.lwjgl.llvm.LLVMCore.LLVMAppendBasicBlockInContext;
 
@@ -48,16 +47,6 @@ public final class FunctionBody {
     public ArrayList<Statement> getStatements() {
         return statements;
     }
-
-    private Map<Identifier, LetStatement> findLocals() { // @formatter:off
-        return statements.stream()
-            .filter(LetStatement.class::isInstance)
-            .map(statement -> {
-                final var let = (LetStatement)statement;
-                return Pair.of(let.getName(), let);
-            })
-            .collect(Collectors.toMap(Pair::getLeft, Pair::getRight));
-    } // @formatter:on
 
     public void append(final CompileContext compileContext, final Function function, final Module module,
                        final TargetMachine targetMachine) {

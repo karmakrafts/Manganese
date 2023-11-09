@@ -93,53 +93,48 @@ public final class BinaryExpression implements Expression {
         return tokenSlice;
     }
 
-    @Override
-    public long emit(final TargetMachine targetMachine, final IRContext irContext) {
+    private long emitAssignment(final TargetMachine targetMachine, final IRContext irContext) {
         final var builder = irContext.getCurrentOrCreate();
-        if (op == Operator.ASSIGN) {
-            if (!(lhs instanceof ReferenceExpression refExpr)) {
-                return NULL;
-            }
-            return switch (refExpr.getReference()) {
-                case LetStatement stmnt -> {
-                    stmnt.setValue(rhs); // Update contained expression reference
-                    final var address = stmnt.getMutableAddress();
-                    builder.store(rhs.emit(targetMachine, irContext), address);
-                    if (isResultDiscarded) {
-                        yield NULL;
-                    }
-                    yield stmnt.emit(targetMachine, irContext);
-                }
-                default -> NULL;
-            };
-        }
-        if (!(lhs instanceof Expression lhsExpr)) {
+        if (!(lhs instanceof ReferenceExpression refExpr)) {
             return NULL;
         }
-        final var lhsType = lhsExpr.getType();
-        if (!(lhsType instanceof BuiltinType builtinType)) {
-            return NULL; // TODO: implement user defined operator calls
-        }
+        return switch (refExpr.getReference()) {
+            case LetStatement stmnt -> {
+                stmnt.setValue(rhs); // Update contained expression reference
+                final var address = stmnt.getMutableAddress();
+                builder.store(rhs.emit(targetMachine, irContext), address);
+                if (isResultDiscarded) {
+                    yield NULL;
+                }
+                yield stmnt.emit(targetMachine, irContext);
+            }
+            default -> NULL;
+        };
+    }
+
+    private long emitBuiltin(final TargetMachine targetMachine, final IRContext irContext,
+                             final BuiltinType builtinType) {
+        final var builder = irContext.getCurrentOrCreate();
         final var lhs = this.lhs.emit(targetMachine, irContext);
         final var rhs = this.rhs.emit(targetMachine, irContext);
-        return switch (op) { // @formatter:off
-            case PLUS  -> builtinType.isFloatType() ? builder.fadd(lhs, rhs) : builder.add(lhs, rhs);
+        return switch (op) {
+            case PLUS -> builtinType.isFloatType() ? builder.fadd(lhs, rhs) : builder.add(lhs, rhs);
             case MINUS -> builtinType.isFloatType() ? builder.fsub(lhs, rhs) : builder.sub(lhs, rhs);
             case TIMES -> builtinType.isFloatType() ? builder.fmul(lhs, rhs) : builder.mul(lhs, rhs);
-            case DIV   -> {
-                if(builtinType.isFloatType()) {
+            case DIV -> {
+                if (builtinType.isFloatType()) {
                     yield builder.fdiv(lhs, rhs);
                 }
-                if(builtinType.isUnsignedInt()) {
+                if (builtinType.isUnsignedInt()) {
                     yield builder.udiv(lhs, rhs);
                 }
                 yield builder.sdiv(lhs, rhs);
             }
-            case MOD   -> {
-                if(builtinType.isFloatType()) {
+            case MOD -> {
+                if (builtinType.isFloatType()) {
                     yield builder.frem(lhs, rhs);
                 }
-                if(builtinType.isUnsignedInt()) {
+                if (builtinType.isUnsignedInt()) {
                     yield builder.urem(lhs, rhs);
                 }
                 yield builder.srem(lhs, rhs);
@@ -149,8 +144,23 @@ public final class BinaryExpression implements Expression {
             case XOR -> builder.xor(lhs, rhs);
             case SHL -> builder.shl(lhs, rhs);
             case SHR -> builtinType.isUnsignedInt() ? builder.lshr(lhs, rhs) : builder.ashr(lhs, rhs);
-            default    -> throw new IllegalStateException("Unsupported operator");
-        }; // @formatter:on
+            default -> throw new IllegalStateException("Unsupported operator");
+        };
+    }
+
+    @Override
+    public long emit(final TargetMachine targetMachine, final IRContext irContext) {
+        if (op == Operator.ASSIGN) {
+            return emitAssignment(targetMachine, irContext);
+        }
+        if (!(lhs instanceof Expression lhsExpr)) {
+            return NULL;
+        }
+        final var lhsType = lhsExpr.getType();
+        if (!(lhsType instanceof BuiltinType builtinType)) {
+            return NULL; // TODO: implement user defined operator calls
+        }
+        return emitBuiltin(targetMachine, irContext, builtinType);
     }
 
     @Override
