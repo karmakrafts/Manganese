@@ -38,7 +38,6 @@ public final class FunctionBody implements Scope {
     private final Function function;
     private final ArrayList<Statement> statements;
     private boolean isAppended;
-    private Scope enclosingScope;
 
     public FunctionBody(final Function function, final Statement... statements) {
         this.function = function;
@@ -79,11 +78,11 @@ public final class FunctionBody implements Scope {
 
     @Override
     public @Nullable Scope getEnclosingScope() {
-        return enclosingScope;
+        return function.getEnclosingScope();
     }
 
     @Override
     public void setEnclosingScope(final Scope enclosingScope) {
-        this.enclosingScope = enclosingScope;
+        function.setEnclosingScope(enclosingScope);
     }
 }

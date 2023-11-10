@@ -16,10 +16,12 @@
 package io.karma.ferrous.manganese.ocm.type;
 
 import io.karma.ferrous.manganese.ocm.NameProvider;
+import org.apiguardian.api.API;
 
 /**
  * @author Alexander Hinze
  * @since 22/10/2023
  */
+@API(status = API.Status.INTERNAL)
 public interface NamedType extends Type, NameProvider {
 }

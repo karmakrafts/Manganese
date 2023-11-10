@@ -21,6 +21,7 @@ import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.TokenSlice;
+import org.apiguardian.api.API;
 
 import java.util.Objects;
 
@@ -28,6 +29,7 @@ import java.util.Objects;
  * @author Alexander Hinze
  * @since 21/10/2023
  */
+@API(status = API.Status.INTERNAL)
 public final class AliasedType implements NamedType {
     private final Identifier name;
     private final GenericParameter[] genericParams;

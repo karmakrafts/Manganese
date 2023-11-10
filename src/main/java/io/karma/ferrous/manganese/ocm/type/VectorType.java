@@ -21,6 +21,7 @@ import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.TokenSlice;
+import org.apiguardian.api.API;
 import org.lwjgl.llvm.LLVMCore;
 
 import java.util.Objects;
@@ -31,6 +32,7 @@ import static org.lwjgl.system.MemoryUtil.NULL;
  * @author Alexander Hinze
  * @since 21/10/2023
  */
+@API(status = API.Status.INTERNAL)
 public final class VectorType implements Type {
     private final Type type;
     private final int elementCount;

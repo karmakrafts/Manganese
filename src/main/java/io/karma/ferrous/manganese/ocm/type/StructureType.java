@@ -15,7 +15,7 @@
 
 package io.karma.ferrous.manganese.ocm.type;
 
-import io.karma.ferrous.manganese.ocm.expr.AllocExpression;
+import io.karma.ferrous.manganese.ocm.constant.StructConstant;
 import io.karma.ferrous.manganese.ocm.expr.Expression;
 import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
@@ -96,7 +96,8 @@ public final class StructureType implements NamedType {
 
     @Override
     public Expression makeDefaultValue() {
-        return new AllocExpression(this, false, TokenSlice.EMPTY);
+        final var values = Arrays.stream(fieldTypes).map(Type::makeDefaultValue).toArray(Expression[]::new);
+        return new StructConstant(this, TokenSlice.EMPTY, values);
     }
 
     @Override

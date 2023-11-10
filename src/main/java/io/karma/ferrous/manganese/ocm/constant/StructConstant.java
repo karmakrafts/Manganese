@@ -13,50 +13,41 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.ocm.expr;
+package io.karma.ferrous.manganese.ocm.constant;
 
+import io.karma.ferrous.manganese.ocm.expr.Expression;
 import io.karma.ferrous.manganese.ocm.ir.IRContext;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
+import io.karma.ferrous.manganese.ocm.type.StructureType;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.TokenSlice;
 import org.apiguardian.api.API;
 import org.jetbrains.annotations.Nullable;
+import org.lwjgl.system.MemoryStack;
+
+import java.util.Arrays;
+
+import static org.lwjgl.llvm.LLVMCore.LLVMConstNamedStruct;
 
 /**
  * @author Alexander Hinze
- * @since 09/11/2023
+ * @since 10/11/2023
  */
 @API(status = API.Status.INTERNAL)
-public final class AllocExpression implements Expression {
-    private final Type type;
-    private final boolean isHeapAlloc;
-    private final Expression[] args;
+public final class StructConstant implements Constant {
+    private final StructureType type;
     private final TokenSlice tokenSlice;
+    private final Expression[] values;
     private Scope enclosingScope;
 
-    public AllocExpression(final Type type, final boolean isHeapAlloc, final TokenSlice tokenSlice,
-                           final Expression... args) {
+    public StructConstant(final StructureType type, final TokenSlice tokenSlice, final Expression... values) {
         this.type = type;
-        this.isHeapAlloc = isHeapAlloc;
-        this.args = args;
         this.tokenSlice = tokenSlice;
+        this.values = values;
     }
 
-    public boolean isHeapAlloc() {
-        return isHeapAlloc;
-    }
-
-    public Expression[] getArgs() {
-        return args;
-    }
-
-    // Type
-
-    @Override
-    public Type getType() {
-        return type;
-    }
+    // Scoped
 
     @Override
     public @Nullable Scope getEnclosingScope() {
@@ -68,6 +59,13 @@ public final class AllocExpression implements Expression {
         this.enclosingScope = enclosingScope;
     }
 
+    // Constant
+
+    @Override
+    public Type getType() {
+        return type;
+    }
+
     @Override
     public TokenSlice getTokenSlice() {
         return tokenSlice;
@@ -75,10 +73,11 @@ public final class AllocExpression implements Expression {
 
     @Override
     public long emit(final TargetMachine targetMachine, final IRContext irContext) {
-        final var builder = irContext.getCurrentOrCreate();
-        if (isHeapAlloc) {
-            return builder.malloc(type.materialize(targetMachine));
+        // TODO: pass in context from module somehow, maybe pass module in function?
+        try (final var stack = MemoryStack.stackPush()) {
+            final var values = Arrays.stream(this.values).mapToLong(expr -> expr.emit(targetMachine,
+                irContext)).toArray();
+            return LLVMConstNamedStruct(type.materialize(targetMachine), stack.pointers(values));
         }
-        return builder.alloca(type.materialize(targetMachine));
     }
 }

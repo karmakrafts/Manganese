@@ -26,11 +26,13 @@ import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.TokenSlice;
 import io.karma.ferrous.manganese.util.TokenUtils;
 import io.karma.ferrous.vanadium.FerrousLexer;
+import org.apiguardian.api.API;
 
 /**
  * @author Alexander Hinze
  * @since 24/10/2023
  */
+@API(status = API.Status.INTERNAL)
 public enum ImaginaryType implements NamedType {
     // @formatter:off
     TOKEN   (FerrousLexer.KW_TOKEN),

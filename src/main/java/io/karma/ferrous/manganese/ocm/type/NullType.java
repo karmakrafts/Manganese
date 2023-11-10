@@ -25,11 +25,13 @@ import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.TokenSlice;
 import io.karma.ferrous.manganese.util.TokenUtils;
 import io.karma.ferrous.vanadium.FerrousLexer;
+import org.apiguardian.api.API;
 
 /**
  * @author Alexander Hinze
  * @since 22/10/2023
  */
+@API(status = API.Status.INTERNAL)
 public final class NullType implements NamedType {
     public static final NullType INSTANCE = new NullType();
 
