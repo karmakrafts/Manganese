@@ -15,6 +15,7 @@
 
 package io.karma.ferrous.manganese.ocm.type;
 
+import io.karma.ferrous.manganese.ocm.scope.ScopeType;
 import io.karma.ferrous.manganese.util.TokenUtils;
 import io.karma.ferrous.vanadium.FerrousLexer;
 import org.apiguardian.api.API;
@@ -30,19 +31,25 @@ import java.util.stream.Collectors;
 @API(status = Status.INTERNAL)
 public enum UDTKind {
     // @formatter:off
-    STRUCT    (FerrousLexer.KW_STRUCT),
-    CLASS     (FerrousLexer.KW_CLASS),
-    ENUM_CLASS(FerrousLexer.KW_ENUM, FerrousLexer.KW_CLASS),
-    ENUM      (FerrousLexer.KW_ENUM),
-    TRAIT     (FerrousLexer.KW_TRAIT),
-    ATTRIBUTE (FerrousLexer.KW_ATTRIB),
-    INTERFACE (FerrousLexer.KW_INTERFACE);
+    STRUCT    (ScopeType.STRUCT,     FerrousLexer.KW_STRUCT),
+    CLASS     (ScopeType.CLASS,      FerrousLexer.KW_CLASS),
+    ENUM_CLASS(ScopeType.ENUM_CLASS, FerrousLexer.KW_ENUM, FerrousLexer.KW_CLASS),
+    ENUM      (ScopeType.ENUM,       FerrousLexer.KW_ENUM),
+    TRAIT     (ScopeType.TRAIT,      FerrousLexer.KW_TRAIT),
+    ATTRIBUTE (ScopeType.ATTRIBUTE,  FerrousLexer.KW_ATTRIB),
+    INTERFACE (ScopeType.INTERFACE,  FerrousLexer.KW_INTERFACE);
     // @formatter:on
 
+    private final ScopeType scopeType;
     private final int[] tokens;
 
-    UDTKind(final int... tokens) {
+    UDTKind(final ScopeType scopeType, final int... tokens) {
+        this.scopeType = scopeType;
         this.tokens = tokens;
+    }
+
+    public ScopeType getScopeType() {
+        return scopeType;
     }
 
     public int[] getTokens() {

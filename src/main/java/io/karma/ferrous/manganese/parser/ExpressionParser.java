@@ -143,6 +143,7 @@ public final class ExpressionParser extends ParseAdapter {
         // Various checks for assignments and swaps
         final var op = opOpt.get();
         if (op.isAssignment() && lhs instanceof ReferenceExpression lhsRef) {
+            lhsRef.setIsWrite(true); // If this is a LHS reference in a binary op, we do a write
             switch (lhsRef.getReference()) {
                 case ValueStorage lhsStorage -> {
                     if (!lhsStorage.isMutable()) {

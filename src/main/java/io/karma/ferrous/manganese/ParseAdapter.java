@@ -71,6 +71,10 @@ public abstract class ParseAdapter implements FerrousParserListener {
         scopeStack.push(new DefaultScope(type, name));
     }
 
+    protected void pushScope(final Scope scope) {
+        scopeStack.push(scope);
+    }
+
     protected Scope popScope() {
         return lastScope = scopeStack.pop();
     }

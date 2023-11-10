@@ -45,7 +45,6 @@ public class TranslationUnit extends ParseAdapter {
             return; // TODO: log warning/error?
         }
         function.materialize(compileContext, module, compiler.getTargetMachine());
-        super.enterExternFunction(context);
     }
 
     @Override
@@ -55,7 +54,7 @@ public class TranslationUnit extends ParseAdapter {
             return; // TODO: log warning/error?
         }
         function.materialize(compileContext, module, compiler.getTargetMachine());
-        super.enterFunction(context);
+        pushScope(function.getBody());
     }
 
     public Module getModule() {

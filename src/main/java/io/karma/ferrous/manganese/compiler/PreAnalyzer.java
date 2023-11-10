@@ -140,7 +140,7 @@ public final class PreAnalyzer extends ParseAdapter {
         ParseTreeWalker.DEFAULT.walk(analyzer, context);
         final var function = analyzer.getFunction();
         functions.computeIfAbsent(function.getQualifiedName(), n -> new HashMap<>()).put(function.getType(), function);
-        super.enterFunction(context);
+        super.enterFunction(context); // Make sure we pick up the default scope for function prototypes
     }
 
     @Override
@@ -156,7 +156,6 @@ public final class PreAnalyzer extends ParseAdapter {
         ParseTreeWalker.DEFAULT.walk(analyzer, context);
         final var function = analyzer.getFunction();
         functions.computeIfAbsent(function.getQualifiedName(), n -> new HashMap<>()).put(function.getType(), function);
-        super.enterExternFunction(context);
     }
 
     @Override
@@ -176,7 +175,6 @@ public final class PreAnalyzer extends ParseAdapter {
             TokenSlice.from(compileContext, context),
             genericParams);
         udts.put(aliasedType.getQualifiedName(), aliasedType);
-        super.enterTypeAlias(context);
     }
 
     @Override
@@ -189,8 +187,7 @@ public final class PreAnalyzer extends ParseAdapter {
             compileContext,
             scopeStack,
             context.genericParamList()).toArray(GenericParameter[]::new);
-        analyzeFieldLayout(context, Identifier.parse(identContext), genericParams, UDTKind.ATTRIBUTE);
-        super.enterAttrib(context);
+        pushScope(analyzeFieldLayout(context, Identifier.parse(identContext), genericParams, UDTKind.ATTRIBUTE));
     }
 
     @Override
@@ -203,8 +200,7 @@ public final class PreAnalyzer extends ParseAdapter {
             compileContext,
             scopeStack,
             context.genericParamList()).toArray(GenericParameter[]::new);
-        analyzeFieldLayout(context, Identifier.parse(identContext), genericParams, UDTKind.STRUCT);
-        super.enterStruct(context);
+        pushScope(analyzeFieldLayout(context, Identifier.parse(identContext), genericParams, UDTKind.STRUCT));
     }
 
     @Override
@@ -217,8 +213,7 @@ public final class PreAnalyzer extends ParseAdapter {
             compileContext,
             scopeStack,
             context.genericParamList()).toArray(GenericParameter[]::new);
-        analyzeFieldLayout(context, Identifier.parse(identContext), genericParams, UDTKind.CLASS);
-        super.enterClass(context);
+        pushScope(analyzeFieldLayout(context, Identifier.parse(identContext), genericParams, UDTKind.CLASS));
     }
 
     @Override
@@ -227,8 +222,10 @@ public final class PreAnalyzer extends ParseAdapter {
         if (checkIsTypeAlreadyDefined(identContext)) {
             return;
         }
-        analyzeFieldLayout(context, Identifier.parse(identContext), new GenericParameter[0], UDTKind.ENUM_CLASS);
-        super.enterEnumClass(context);
+        pushScope(analyzeFieldLayout(context,
+            Identifier.parse(identContext),
+            new GenericParameter[0],
+            UDTKind.ENUM_CLASS));
     }
 
     @Override
@@ -241,8 +238,7 @@ public final class PreAnalyzer extends ParseAdapter {
             compileContext,
             scopeStack,
             context.genericParamList()).toArray(GenericParameter[]::new);
-        analyzeFieldLayout(context, Identifier.parse(identContext), genericParams, UDTKind.TRAIT);
-        super.enterTrait(context);
+        pushScope(analyzeFieldLayout(context, Identifier.parse(identContext), genericParams, UDTKind.TRAIT));
     }
 
     private boolean checkIsFunctionAlreadyDefined(final ProtoFunctionContext context) {
@@ -440,8 +436,8 @@ public final class PreAnalyzer extends ParseAdapter {
         Profiler.INSTANCE.pop();
     }
 
-    private void analyzeFieldLayout(final ParserRuleContext parent, final Identifier name,
-                                    final GenericParameter[] genericParams, final UDTKind kind) {
+    private UDT analyzeFieldLayout(final ParserRuleContext parent, final Identifier name,
+                                   final GenericParameter[] genericParams, final UDTKind kind) {
         final var layoutAnalyzer = new FieldLayoutParser(compiler, compileContext, scopeStack);
         ParseTreeWalker.DEFAULT.walk(layoutAnalyzer, parent);
 
@@ -453,6 +449,7 @@ public final class PreAnalyzer extends ParseAdapter {
         udts.put(type.getQualifiedName(), udt);
 
         Logger.INSTANCE.debugln("Captured field layout for kind '%s'", type.getQualifiedName());
+        return udt;
     }
 
     private void resolveTypeAccess() {

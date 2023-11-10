@@ -83,6 +83,5 @@ public final class FunctionBody implements Scope {
 
     @Override
     public void setEnclosingScope(final Scope enclosingScope) {
-        function.setEnclosingScope(enclosingScope);
     }
 }

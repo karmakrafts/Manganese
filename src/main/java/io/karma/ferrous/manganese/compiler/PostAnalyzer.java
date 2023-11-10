@@ -55,7 +55,7 @@ public final class PostAnalyzer extends ParseAdapter {
         functionParser = new FunctionParser(compiler, compileContext, function);
         ParseTreeWalker.DEFAULT.walk(functionParser, bodyContext);
         locals.put(function, functionParser.getLocals());
-        super.enterFunction(context);
+        pushScope(function.getBody());
     }
 
     public Map<Identifier, LetStatement> getLocalsFor(final Function function) {
