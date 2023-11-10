@@ -5,6 +5,11 @@ struct Vector2f {
     y: f32
 }
 
+fun fill(value: *Vector2f): bool {
+    let mut x: Vector2f
+    return false
+}
+
 fun test(value: i32): i32 {
     let mut x = value
     x = x * x
