@@ -67,7 +67,7 @@ public final class Function implements NameProvider, Scoped {
         if (body != null) {
             throw new IllegalStateException("Body already exists for this function");
         }
-        body = new FunctionBody(statements);
+        body = new FunctionBody(this, statements);
     }
 
     public CallingConvention getCallConv() {
@@ -108,7 +108,7 @@ public final class Function implements NameProvider, Scoped {
     public long materialize(final CompileContext compileContext, final Module module,
                             final TargetMachine targetMachine) {
         if (body != null) {
-            body.append(compileContext, this, module, targetMachine);
+            body.append(compileContext, module, targetMachine);
             return materializedPrototype; // This won't be NULL at this point
         }
         return materializePrototype(module, targetMachine);

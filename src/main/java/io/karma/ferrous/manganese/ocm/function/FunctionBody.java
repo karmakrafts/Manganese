@@ -17,46 +17,47 @@ package io.karma.ferrous.manganese.ocm.function;
 
 import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.module.Module;
-import io.karma.ferrous.manganese.ocm.ir.IRBuilder;
-import io.karma.ferrous.manganese.ocm.ir.IRContext;
+import io.karma.ferrous.manganese.ocm.ir.DefaultIRContext;
+import io.karma.ferrous.manganese.ocm.scope.Scope;
+import io.karma.ferrous.manganese.ocm.scope.ScopeType;
 import io.karma.ferrous.manganese.ocm.statement.Statement;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Identifier;
 import org.apiguardian.api.API;
 import org.jetbrains.annotations.Nullable;
-import org.lwjgl.llvm.LLVMCore;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Stack;
-
-import static org.lwjgl.llvm.LLVMCore.LLVMAppendBasicBlockInContext;
-import static org.lwjgl.system.MemoryUtil.NULL;
 
 /**
  * @author Alexander Hinze
  * @since 05/11/2023
  */
 @API(status = API.Status.INTERNAL)
-public final class FunctionBody {
+public final class FunctionBody implements Scope {
+    private final Function function;
     private final ArrayList<Statement> statements;
     private boolean isAppended;
+    private Scope enclosingScope;
 
-    public FunctionBody(final Statement... statements) {
+    public FunctionBody(final Function function, final Statement... statements) {
+        this.function = function;
         this.statements = new ArrayList<>(Arrays.asList(statements));
+    }
+
+    public Function getFunction() {
+        return function;
     }
 
     public ArrayList<Statement> getStatements() {
         return statements;
     }
 
-    public void append(final CompileContext compileContext, final Function function, final Module module,
-                       final TargetMachine targetMachine) {
+    public void append(final CompileContext compileContext, final Module module, final TargetMachine targetMachine) {
         if (isAppended) {
             return;
         }
-        final var context = new IRContextImpl(compileContext, module, targetMachine, function);
+        final var context = new DefaultIRContext(compileContext, module, targetMachine, function);
         for (final var statement : statements) {
             statement.emit(targetMachine, context);
         }
@@ -64,91 +65,25 @@ public final class FunctionBody {
         isAppended = true;
     }
 
-    private static final class IRContextImpl implements IRContext {
-        private final CompileContext compileContext;
-        private final Module module;
-        private final TargetMachine targetMachine;
-        private final Function function;
-        private final HashMap<String, IRBuilder> builders = new HashMap<>();
-        private final Stack<IRBuilder> stack = new Stack<>();
+    // Scope
 
-        public IRContextImpl(final CompileContext compileContext, final Module module,
-                             final TargetMachine targetMachine, final Function function) {
-            this.compileContext = compileContext;
-            this.module = module;
-            this.targetMachine = targetMachine;
-            this.function = function;
-        }
+    @Override
+    public Identifier getName() {
+        return function.getName();
+    }
 
-        public void dispose() {
-            builders.values().forEach(IRBuilder::dispose);
-        }
+    @Override
+    public ScopeType getType() {
+        return ScopeType.FUNCTION;
+    }
 
-        @Override
-        public long getParameter(final Identifier name) {
-            final var params = function.getParameters();
-            final var numParams = params.length;
-            final var address = function.materializePrototype(module, targetMachine);
-            for (var i = 0; i < numParams; i++) {
-                if (!params[i].getName().equals(name)) {
-                    continue;
-                }
-                return LLVMCore.LLVMGetParam(address, i);
-            }
-            return NULL;
-        }
+    @Override
+    public @Nullable Scope getEnclosingScope() {
+        return enclosingScope;
+    }
 
-        @Override
-        public void pushCurrent(final IRBuilder builder) {
-            stack.push(builder);
-        }
-
-        @Override
-        public IRBuilder popCurrent() {
-            return stack.pop();
-        }
-
-        @Override
-        public CompileContext getCompileContext() {
-            return compileContext;
-        }
-
-        @Override
-        public Module getModule() {
-            return module;
-        }
-
-        @Override
-        public Function getFunction() {
-            return function;
-        }
-
-        @Override
-        public @Nullable IRBuilder getCurrent() {
-            if (stack.isEmpty()) {
-                return null;
-            }
-            return stack.peek();
-        }
-
-        @Override
-        public @Nullable IRBuilder getLast() {
-            if (stack.size() < 2) {
-                return null;
-            }
-            return stack.get(1);
-        }
-
-        @Override
-        public IRBuilder getOrCreate(final String name) {
-            final var builder = builders.computeIfAbsent(name, n -> {
-                final var fnAddress = function.materializePrototype(module, targetMachine);
-                final var context = module.getContext();
-                final var blockAddress = LLVMAppendBasicBlockInContext(context, fnAddress, name);
-                return new IRBuilder(this, module, targetMachine, blockAddress, context);
-            });
-            stack.push(builder);
-            return builder;
-        }
+    @Override
+    public void setEnclosingScope(final Scope enclosingScope) {
+        this.enclosingScope = enclosingScope;
     }
 }

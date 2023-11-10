@@ -86,14 +86,15 @@ public final class LetStatement implements Statement, NameProvider, ValueStorage
 
     @Override
     public long loadFrom(final TargetMachine targetMachine, final IRContext irContext) {
-        if (isMutable && hasChanged) { // If we are a mutable variable, load from stack memory
+        if (isMutable && hasChanged) { // If we are a mutable variable and we are changed, load from stack memory
             return irContext.getCurrentOrCreate().load(type.materialize(targetMachine), mutableAddress);
         }
         return immutableAddress;
     }
 
     @Override
-    public long storeInto(final Expression exprValue, final long value, final TargetMachine targetMachine, final IRContext irContext) {
+    public long storeInto(final Expression exprValue, final long value, final TargetMachine targetMachine,
+                          final IRContext irContext) {
         if (!isMutable) {
             throw new IllegalStateException("Cannot store into immutable variable");
         }
@@ -148,18 +149,16 @@ public final class LetStatement implements Statement, NameProvider, ValueStorage
         final var builder = irContext.getCurrentOrCreate();
         final var internalName = name.toInternalName();
         if (!isMutable) {
-            // For immutable variables, we can optimize by inlining the result in a register
+            // For immutable variables, we can optimize by inlining the result into a register
             immutableAddress = value.emit(targetMachine, irContext);
-            LLVMSetValueName2(immutableAddress, internalName);
             return NULL;
         }
         // For mutable variables, we allocate some stack memory
         if (value != null) {
             immutableAddress = value.emit(targetMachine, irContext);
-            LLVMSetValueName2(immutableAddress, String.format("imm.%s", internalName));
         }
         mutableAddress = builder.alloca(type.materialize(targetMachine));
-        LLVMSetValueName2(mutableAddress, String.format("adr.%s", internalName));
+        LLVMSetValueName2(mutableAddress, internalName);
         if (value != null) {
             builder.store(immutableAddress, mutableAddress);
         }

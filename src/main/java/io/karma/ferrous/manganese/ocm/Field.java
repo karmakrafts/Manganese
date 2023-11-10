@@ -70,7 +70,8 @@ public final class Field implements NameProvider, AccessProvider, Scoped, ValueS
     }
 
     @Override
-    public long storeInto(final Expression exprValue, final long value, final TargetMachine targetMachine, final IRContext irContext) {
+    public long storeInto(final Expression exprValue, final long value, final TargetMachine targetMachine,
+                          final IRContext irContext) {
         return 0;
     }
 
