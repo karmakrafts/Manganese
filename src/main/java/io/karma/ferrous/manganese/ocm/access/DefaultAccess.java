@@ -64,13 +64,13 @@ public enum DefaultAccess implements Access {
 
         if (this == DefaultAccess.MODULE) {
             var currentModuleScope = capturedScopeStack.pop();
-            while (currentModuleScope.getType() != ScopeType.MODULE) {
+            while (currentModuleScope.getScopeType() != ScopeType.MODULE) {
                 currentModuleScope = capturedScopeStack.pop();
             }
 
             final var targetScopeStack = target.rebuildScopeStack();
             var targetModuleScope = targetScopeStack.pop();
-            while (targetModuleScope.getType() != ScopeType.MODULE) {
+            while (targetModuleScope.getScopeType() != ScopeType.MODULE) {
                 targetModuleScope = targetScopeStack.pop();
             }
 

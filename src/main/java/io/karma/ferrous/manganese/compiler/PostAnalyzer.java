@@ -52,9 +52,14 @@ public final class PostAnalyzer extends ParseAdapter {
         if (bodyContext == null) {
             return; // TODO: handle arrow functions
         }
+
+        super.enterFunction(context);
+
         functionParser = new FunctionParser(compiler, compileContext, function);
         ParseTreeWalker.DEFAULT.walk(functionParser, bodyContext);
         locals.put(function, functionParser.getLocals());
+
+        popScope();
         pushScope(function.getBody());
     }
 

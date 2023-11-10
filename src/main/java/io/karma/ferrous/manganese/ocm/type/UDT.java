@@ -38,7 +38,7 @@ public record UDT(UDTKind kind, StructureType type, List<Field> fields, TokenSli
     // Scope
 
     @Override
-    public ScopeType getType() {
+    public ScopeType getScopeType() {
         return kind.getScopeType();
     }
 

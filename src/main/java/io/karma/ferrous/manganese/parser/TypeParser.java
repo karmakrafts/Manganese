@@ -27,7 +27,6 @@ import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.Logger;
 import io.karma.ferrous.manganese.util.TokenSlice;
 import io.karma.ferrous.vanadium.FerrousParser.*;
-import io.karma.kommons.function.Functions;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
@@ -75,7 +74,9 @@ public final class TypeParser extends ParseAdapter {
         final var type = compileContext.getPreAnalyzer().findCompleteTypeInScope(name,
             capturedScopeStack.getScopeName());
         if (type == null) {
-            baseType = Types.incomplete(name, Functions.castingIdentity(), TokenSlice.from(compileContext, context));
+            baseType = Types.incomplete(name,
+                capturedScopeStack::applyEnclosingScopes,
+                TokenSlice.from(compileContext, context));
             return;
         }
         baseType = type;
@@ -88,7 +89,9 @@ public final class TypeParser extends ParseAdapter {
         final var type = compileContext.getPreAnalyzer().findCompleteTypeInScope(name,
             capturedScopeStack.getScopeName());
         if (type == null) {
-            baseType = Types.incomplete(name, Functions.castingIdentity(), TokenSlice.from(compileContext, context));
+            baseType = Types.incomplete(name,
+                capturedScopeStack::applyEnclosingScopes,
+                TokenSlice.from(compileContext, context));
             return;
         }
         baseType = type;

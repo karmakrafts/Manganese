@@ -25,5 +25,5 @@ import org.apiguardian.api.API.Status;
  */
 @API(status = Status.INTERNAL)
 public interface Scope extends Scoped, NameProvider {
-    ScopeType getType();
+    ScopeType getScopeType();
 }

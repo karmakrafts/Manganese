@@ -48,7 +48,7 @@ public final class IfExpression implements Expression {
         this.branches = branches;
         // @formatter:off
         type = new Lazy<>(() -> Types.findCommonType(branches.stream()
-            .map(pair -> pair.getRight().getType())
+            .map(pair -> pair.getRight().getScopeType())
             .toArray(Type[]::new)));
         // @formatter:on
         this.tokenSlice = tokenSlice;

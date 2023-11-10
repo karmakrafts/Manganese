@@ -72,7 +72,7 @@ public final class FunctionBody implements Scope {
     }
 
     @Override
-    public ScopeType getType() {
+    public ScopeType getScopeType() {
         return ScopeType.FUNCTION;
     }
 

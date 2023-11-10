@@ -53,6 +53,7 @@ import java.util.stream.Collectors;
 public final class PreAnalyzer extends ParseAdapter {
     private final LinkedHashMap<Identifier, NamedType> udts = new LinkedHashMap<>();
     private final HashMap<Identifier, HashMap<FunctionType, Function>> functions = new HashMap<>();
+    private final LinkedHashMap<Identifier, Field> fields = new LinkedHashMap<>();
 
     public PreAnalyzer(final Compiler compiler, final CompileContext compileContext) {
         super(compiler, compileContext);
@@ -187,7 +188,11 @@ public final class PreAnalyzer extends ParseAdapter {
             compileContext,
             scopeStack,
             context.genericParamList()).toArray(GenericParameter[]::new);
-        pushScope(analyzeFieldLayout(context, Identifier.parse(identContext), genericParams, UDTKind.ATTRIBUTE));
+
+        super.enterAttrib(context);
+        final var scope = analyzeFieldLayout(context, Identifier.parse(identContext), genericParams, UDTKind.ATTRIBUTE);
+        popScope();
+        pushScope(scope);
     }
 
     @Override
@@ -200,7 +205,11 @@ public final class PreAnalyzer extends ParseAdapter {
             compileContext,
             scopeStack,
             context.genericParamList()).toArray(GenericParameter[]::new);
-        pushScope(analyzeFieldLayout(context, Identifier.parse(identContext), genericParams, UDTKind.STRUCT));
+
+        super.enterStruct(context);
+        final var scope = analyzeFieldLayout(context, Identifier.parse(identContext), genericParams, UDTKind.STRUCT);
+        popScope();
+        pushScope(scope);
     }
 
     @Override
@@ -213,7 +222,11 @@ public final class PreAnalyzer extends ParseAdapter {
             compileContext,
             scopeStack,
             context.genericParamList()).toArray(GenericParameter[]::new);
-        pushScope(analyzeFieldLayout(context, Identifier.parse(identContext), genericParams, UDTKind.CLASS));
+
+        super.enterClass(context);
+        final var scope = analyzeFieldLayout(context, Identifier.parse(identContext), genericParams, UDTKind.CLASS);
+        popScope();
+        pushScope(scope);
     }
 
     @Override
@@ -222,10 +235,14 @@ public final class PreAnalyzer extends ParseAdapter {
         if (checkIsTypeAlreadyDefined(identContext)) {
             return;
         }
-        pushScope(analyzeFieldLayout(context,
+
+        super.enterEnumClass(context);
+        final var scope = analyzeFieldLayout(context,
             Identifier.parse(identContext),
             new GenericParameter[0],
-            UDTKind.ENUM_CLASS));
+            UDTKind.ENUM_CLASS);
+        popScope();
+        pushScope(scope);
     }
 
     @Override
@@ -238,7 +255,11 @@ public final class PreAnalyzer extends ParseAdapter {
             compileContext,
             scopeStack,
             context.genericParamList()).toArray(GenericParameter[]::new);
-        pushScope(analyzeFieldLayout(context, Identifier.parse(identContext), genericParams, UDTKind.TRAIT));
+
+        super.enterTrait(context);
+        final var scope = analyzeFieldLayout(context, Identifier.parse(identContext), genericParams, UDTKind.TRAIT);
+        popScope();
+        pushScope(scope);
     }
 
     private boolean checkIsFunctionAlreadyDefined(final ProtoFunctionContext context) {
@@ -448,6 +469,10 @@ public final class PreAnalyzer extends ParseAdapter {
         final var udt = new UDT(kind, type, fields, tokenSlice);
         udts.put(type.getQualifiedName(), udt);
 
+        for (final var field : fields) {
+            this.fields.put(field.getQualifiedName(), field);
+        }
+
         Logger.INSTANCE.debugln("Captured field layout for kind '%s'", type.getQualifiedName());
         return udt;
     }
@@ -570,6 +595,10 @@ public final class PreAnalyzer extends ParseAdapter {
 
     public boolean functionExistsInScope(final Identifier name, final Identifier scopeName) {
         return ScopeUtils.findInScope(functions, name, scopeName) != null;
+    }
+
+    public @Nullable Field findFieldInScope(final Identifier name, final Identifier scopeName) {
+        return ScopeUtils.findInScope(fields, name, scopeName);
     }
 
     private static final class DummyType implements NamedType {

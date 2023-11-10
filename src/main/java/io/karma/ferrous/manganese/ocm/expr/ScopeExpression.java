@@ -17,31 +17,37 @@ package io.karma.ferrous.manganese.ocm.expr;
 
 import io.karma.ferrous.manganese.ocm.ir.IRContext;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
+import io.karma.ferrous.manganese.ocm.scope.ScopeType;
 import io.karma.ferrous.manganese.ocm.statement.ReturnStatement;
 import io.karma.ferrous.manganese.ocm.statement.Statement;
 import io.karma.ferrous.manganese.ocm.type.BuiltinType;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.ocm.type.Types;
 import io.karma.ferrous.manganese.target.TargetMachine;
+import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.TokenSlice;
 import io.karma.kommons.lazy.Lazy;
 import org.apiguardian.api.API;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.UUID;
 
 /**
  * @author Alexander Hinze
  * @since 06/11/2023
  */
 @API(status = API.Status.INTERNAL)
-public final class ScopeExpression implements Expression {
+public final class ScopeExpression implements Expression, Scope {
+    private final ScopeType scopeType;
     private final Statement[] statements;
     private final Lazy<Type> type = new Lazy<>(this::findReturnType);
     private final TokenSlice tokenSlice;
+    private final UUID uuid = UUID.randomUUID();
     private Scope enclosingScope;
 
-    public ScopeExpression(final TokenSlice tokenSlice, final Statement... statements) {
+    public ScopeExpression(final ScopeType scopeType, final TokenSlice tokenSlice, final Statement... statements) {
+        this.scopeType = scopeType;
         this.statements = statements;
         this.tokenSlice = tokenSlice;
     }
@@ -63,6 +69,22 @@ public final class ScopeExpression implements Expression {
             types.add(type);
         }
         return types.isEmpty() ? BuiltinType.VOID : Types.findCommonType(types.toArray(Type[]::new));
+    }
+
+    public UUID getUUID() {
+        return uuid;
+    }
+
+    // Scope
+
+    @Override
+    public ScopeType getScopeType() {
+        return scopeType;
+    }
+
+    @Override
+    public Identifier getName() {
+        return new Identifier(String.format("scope%s", uuid));
     }
 
     // Scoped
