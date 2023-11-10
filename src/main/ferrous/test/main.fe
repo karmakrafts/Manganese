@@ -1,12 +1,14 @@
 extern fun printf(fmt: *char, args: vaargs): i32
 
-struct Vector2f {
-    x: f32
-    y: f32
+mod foo {
+    struct Vector2f {
+        x: f32
+        y: f32
+    }
 }
 
-fun fill(value: *Vector2f): bool {
-    let mut x: Vector2f
+fun fill(value: *foo::Vector2f): bool {
+    let mut x: foo::Vector2f = ?
     return false
 }
 
