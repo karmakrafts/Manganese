@@ -24,38 +24,38 @@ import static org.lwjgl.system.JNI.invokeV;
  * @author Alexander Hinze
  * @since 27/10/2023
  */
-public final class LLVMTargetAVR {
-    LLVMTargetAVR() {
+public final class TargetAVR {
+    TargetAVR() {
         throw new UnsupportedOperationException();
     }
 
     public static void LLVMInitializeAVRTargetInfo() {
-        long __functionAddress = LLVMTargetAVR.Functions.InitializeAVRTargetInfo;
+        long __functionAddress = TargetAVR.Functions.InitializeAVRTargetInfo;
         invokeV(__functionAddress);
     }
 
     public static void LLVMInitializeAVRTarget() {
-        long __functionAddress = LLVMTargetAVR.Functions.InitializeAVRTarget;
+        long __functionAddress = TargetAVR.Functions.InitializeAVRTarget;
         invokeV(__functionAddress);
     }
 
     public static void LLVMInitializeAVRTargetMC() {
-        long __functionAddress = LLVMTargetAVR.Functions.InitializeAVRTargetMC;
+        long __functionAddress = TargetAVR.Functions.InitializeAVRTargetMC;
         invokeV(__functionAddress);
     }
 
     public static void LLVMInitializeAVRAsmPrinter() {
-        long __functionAddress = LLVMTargetAVR.Functions.InitializeAVRAsmPrinter;
+        long __functionAddress = TargetAVR.Functions.InitializeAVRAsmPrinter;
         invokeV(__functionAddress);
     }
 
     public static void LLVMInitializeAVRAsmParser() {
-        long __functionAddress = LLVMTargetAVR.Functions.InitializeAVRAsmParser;
+        long __functionAddress = TargetAVR.Functions.InitializeAVRAsmParser;
         invokeV(__functionAddress);
     }
 
     public static void LLVMInitializeAVRDisassembler() {
-        long __functionAddress = LLVMTargetAVR.Functions.InitializeAVRDisassembler;
+        long __functionAddress = TargetAVR.Functions.InitializeAVRDisassembler;
         invokeV(__functionAddress);
     }
 

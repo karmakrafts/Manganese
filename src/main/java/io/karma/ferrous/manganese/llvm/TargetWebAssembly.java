@@ -24,38 +24,38 @@ import static org.lwjgl.system.JNI.invokeV;
  * @author Alexander Hinze
  * @since 27/10/2023
  */
-public final class LLVMTargetWebAssembly {
-    LLVMTargetWebAssembly() {
+public final class TargetWebAssembly {
+    TargetWebAssembly() {
         throw new UnsupportedOperationException();
     }
 
     public static void LLVMInitializeWebAssemblyTargetInfo() {
-        long __functionAddress = LLVMTargetWebAssembly.Functions.InitializeWebAssemblyTargetInfo;
+        long __functionAddress = TargetWebAssembly.Functions.InitializeWebAssemblyTargetInfo;
         invokeV(__functionAddress);
     }
 
     public static void LLVMInitializeWebAssemblyTarget() {
-        long __functionAddress = LLVMTargetWebAssembly.Functions.InitializeWebAssemblyTarget;
+        long __functionAddress = TargetWebAssembly.Functions.InitializeWebAssemblyTarget;
         invokeV(__functionAddress);
     }
 
     public static void LLVMInitializeWebAssemblyTargetMC() {
-        long __functionAddress = LLVMTargetWebAssembly.Functions.InitializeWebAssemblyTargetMC;
+        long __functionAddress = TargetWebAssembly.Functions.InitializeWebAssemblyTargetMC;
         invokeV(__functionAddress);
     }
 
     public static void LLVMInitializeWebAssemblyAsmPrinter() {
-        long __functionAddress = LLVMTargetWebAssembly.Functions.InitializeWebAssemblyAsmPrinter;
+        long __functionAddress = TargetWebAssembly.Functions.InitializeWebAssemblyAsmPrinter;
         invokeV(__functionAddress);
     }
 
     public static void LLVMInitializeWebAssemblyAsmParser() {
-        long __functionAddress = LLVMTargetWebAssembly.Functions.InitializeWebAssemblyAsmParser;
+        long __functionAddress = TargetWebAssembly.Functions.InitializeWebAssemblyAsmParser;
         invokeV(__functionAddress);
     }
 
     public static void LLVMInitializeWebAssemblyDisassembler() {
-        long __functionAddress = LLVMTargetWebAssembly.Functions.InitializeWebAssemblyDisassembler;
+        long __functionAddress = TargetWebAssembly.Functions.InitializeWebAssemblyDisassembler;
         invokeV(__functionAddress);
     }
 

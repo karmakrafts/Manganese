@@ -24,8 +24,8 @@ import static org.lwjgl.system.JNI.invokeV;
  * @author Alexander Hinze
  * @since 27/10/2023
  */
-public final class LLVMTargetARM {
-    LLVMTargetARM() {
+public final class TargetARM {
+    TargetARM() {
         throw new UnsupportedOperationException();
     }
 

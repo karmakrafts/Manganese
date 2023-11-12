@@ -24,8 +24,8 @@ import static org.lwjgl.system.JNI.invokeV;
  * @author Alexander Hinze
  * @since 27/10/2023
  */
-public final class LLVMTargetMips {
-    LLVMTargetMips() {
+public final class TargetMips {
+    TargetMips() {
         throw new UnsupportedOperationException();
     }
 

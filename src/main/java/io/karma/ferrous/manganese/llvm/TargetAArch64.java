@@ -24,8 +24,8 @@ import static org.lwjgl.system.JNI.invokeV;
  * @author Alexander Hinze
  * @since 27/10/2023
  */
-public final class LLVMTargetAArch64 {
-    LLVMTargetAArch64() {
+public final class TargetAArch64 {
+    TargetAArch64() {
         throw new UnsupportedOperationException();
     }
 
