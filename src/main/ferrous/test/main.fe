@@ -1,25 +1,30 @@
 extern fun printf(fmt: *char, args: vaargs): i32
 
 mod foo {
-    struct Vector2f {
-        x: f32
-        y: f32
+    pub struct Vector2i {
+        pub mut x: i32
+        pub mut y: i32
     }
 }
 
-fun fill(value: *foo::Vector2f): bool {
-    let mut x: foo::Vector2f = ?
-    return false
+fun test(value: i32): i32 {
+    return value << 1 * value
 }
 
-fun test(value: i32): i32 {
-    let mut x = value
-    x = x * x
-    return 1 << x
+fun fill(value: i32): i32 {
+    let mut vec: foo::Vector2i
+    let mut x = 22
+    let mut y: mut &i32 = x // Copy value of x at this point
+    y = y << (2 >> 1)
+    vec.x = y
+    vec.y = vec.x >> 1
+    return vec.x + vec.y
+}
+
+fun test2(value: &bool): &bool {
+    return value
 }
 
 fun main(num_args: i32, args: **i8): i32 {
-    let mut x = 10
-    x = x * x
-    return x
+    return fill(0)
 }
