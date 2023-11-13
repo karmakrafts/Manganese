@@ -18,18 +18,25 @@ package io.karma.ferrous.manganese.ee;
 import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.llvm.LLVMUtils;
 import io.karma.ferrous.manganese.module.Module;
+import io.karma.ferrous.manganese.ocm.expr.Expression;
 import io.karma.ferrous.manganese.ocm.function.Function;
+import io.karma.ferrous.manganese.ocm.ir.FunctionIRContext;
+import io.karma.ferrous.manganese.ocm.statement.ReturnStatement;
 import io.karma.ferrous.manganese.ocm.type.BuiltinType;
 import io.karma.ferrous.manganese.ocm.type.Type;
+import io.karma.ferrous.manganese.ocm.type.Types;
 import io.karma.ferrous.manganese.target.TargetMachine;
+import io.karma.ferrous.manganese.util.CallingConvention;
+import io.karma.ferrous.manganese.util.Identifier;
+import io.karma.kommons.function.Functions;
 import org.apiguardian.api.API;
 import org.lwjgl.system.MemoryStack;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 
 import static org.lwjgl.llvm.LLVMExecutionEngine.*;
-import static org.lwjgl.system.MemoryUtil.NULL;
 
 /**
  * @author Alexander Hinze
@@ -61,6 +68,32 @@ public final class ExecutionEngine {
         return VoidValue.INSTANCE;
     }
 
+    public BoolValue makeBool(final boolean value) {
+        final var val = new BoolValue(targetMachine, value);
+        values.add(val);
+        return val;
+    }
+
+    public boolean getBool(final GenericValue value) {
+        if (!(value instanceof BoolValue)) {
+            throw new IllegalArgumentException("Invalid value type");
+        }
+        return LLVMGenericValueToInt(value.getAddress(), true) == 1;
+    }
+
+    public CharValue makeChar(final char value) {
+        final var val = new CharValue(targetMachine, value);
+        values.add(val);
+        return val;
+    }
+
+    public char getChar(final GenericValue value) {
+        if (!(value instanceof CharValue)) {
+            throw new IllegalArgumentException("Invalid value type");
+        }
+        return (char) LLVMGenericValueToInt(value.getAddress(), true);
+    }
+
     public IntValue makeInt(final BuiltinType type, final long value) {
         final var val = new IntValue(targetMachine, type, value);
         values.add(val);
@@ -69,7 +102,7 @@ public final class ExecutionEngine {
 
     public long getInt(final GenericValue value) {
         if (!(value instanceof IntValue intValue)) {
-            return 0;
+            throw new IllegalArgumentException("Invalid value type");
         }
         return LLVMGenericValueToInt(intValue.getAddress(), intValue.isSigned());
     }
@@ -82,7 +115,7 @@ public final class ExecutionEngine {
 
     public double getReal(final GenericValue value) {
         if (!(value instanceof RealValue)) {
-            return 0;
+            throw new IllegalArgumentException("Invalid value type");
         }
         final var typeAddress = value.getType().materialize(targetMachine);
         return LLVMGenericValueToFloat(typeAddress, value.getAddress());
@@ -96,17 +129,13 @@ public final class ExecutionEngine {
 
     public long getPointer(final GenericValue value) {
         if (!(value instanceof PointerValue)) {
-            return NULL;
+            throw new IllegalArgumentException("Invalid value type");
         }
         return LLVMGenericValueToPointer(value.getAddress());
     }
 
     public GenericValue eval(final Function function, final GenericValue... args) {
         final var returnType = function.getType().getReturnType();
-        final var isBuiltin = returnType.isBuiltin();
-        if (!isBuiltin && !returnType.isPointer()) {
-            throw new IllegalArgumentException("Function return type must be builtin or pointer");
-        }
         try (final var stack = MemoryStack.stackPush()) {
             final var fnAddress = function.materialize(compileContext, module, targetMachine);
             final var argValues = Arrays.stream(args).mapToLong(GenericValue::getAddress).toArray();
@@ -115,13 +144,40 @@ public final class ExecutionEngine {
                 return switch (builtinType) {
                     case I8, I16, I32, I64, ISIZE, U8, U16, U32, U64, USIZE -> new IntValue(builtinType, returnValue);
                     case F32, F64 -> new RealValue(builtinType, returnValue);
-                    default -> throw new IllegalStateException("Unreachable");
+                    case BOOL -> new BoolValue(returnValue);
+                    case VOID -> VoidValue.INSTANCE;
+                    default -> throw new IllegalStateException("Unsupported return type");
                 };
             }
             else {
-                return new PointerValue(returnValue);
+                return new PointerValue(returnValue); // Pointers (and refs)
             }
         }
+    }
+
+    /**
+     * Wrapper around {@link #eval(Function, GenericValue...)} that creates a temporary
+     * function which gets removed from the module after evaluation. This is done to
+     * prevent another module from being allocated.
+     *
+     * @param expression The expression to evaluate.
+     * @return The result of the expression evaluation.
+     */
+    public GenericValue eval(final Expression expression) {
+        final var functionName = new Identifier(String.format("eval%s", expression.hashCode()));
+        final var tokenSlice = expression.getTokenSlice();
+        final var functionType = Types.function(expression.getType(),
+            Collections.emptyList(),
+            false,
+            Functions.castingIdentity(),
+            tokenSlice);
+        final var function = new Function(functionName, CallingConvention.CDECL, functionType, false, tokenSlice);
+        final var irContext = new FunctionIRContext(compileContext, module, targetMachine, function);
+        new ReturnStatement(expression, tokenSlice).emit(targetMachine, irContext); // Return expression as value
+        final var result = eval(function);
+        irContext.drop(); // Drop basic block appended to module
+        function.delete(); // Delete function from module
+        return result;
     }
 
     public void dispose() {

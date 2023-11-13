@@ -25,9 +25,9 @@ import org.jetbrains.annotations.Nullable;
 import org.lwjgl.llvm.LLVMCore;
 
 import java.util.HashMap;
-import java.util.Stack;
 
 import static org.lwjgl.llvm.LLVMCore.LLVMAppendBasicBlockInContext;
+import static org.lwjgl.llvm.LLVMCore.LLVMDeleteBasicBlock;
 import static org.lwjgl.system.MemoryUtil.NULL;
 
 /**
@@ -41,7 +41,7 @@ public final class DefaultIRContext implements IRContext {
     private final TargetMachine targetMachine;
     private final Function function;
     private final HashMap<String, IRBuilder> builders = new HashMap<>();
-    private final Stack<IRBuilder> stack = new Stack<>();
+    private IRBuilder currentBuilder;
 
     public DefaultIRContext(final CompileContext compileContext, final Module module, final TargetMachine targetMachine,
                             final Function function) {
@@ -70,16 +70,6 @@ public final class DefaultIRContext implements IRContext {
     }
 
     @Override
-    public void pushCurrent(final IRBuilder builder) {
-        stack.push(builder);
-    }
-
-    @Override
-    public IRBuilder popCurrent() {
-        return stack.pop();
-    }
-
-    @Override
     public CompileContext getCompileContext() {
         return compileContext;
     }
@@ -96,29 +86,29 @@ public final class DefaultIRContext implements IRContext {
 
     @Override
     public @Nullable IRBuilder getCurrent() {
-        if (stack.isEmpty()) {
-            return null;
-        }
-        return stack.peek();
-    }
-
-    @Override
-    public @Nullable IRBuilder getLast() {
-        if (stack.size() < 2) {
-            return null;
-        }
-        return stack.get(1);
+        return currentBuilder;
     }
 
     @Override
     public IRBuilder getOrCreate(final String name) {
-        final var builder = builders.computeIfAbsent(name, n -> {
+        return currentBuilder = builders.computeIfAbsent(name, n -> {
             final var fnAddress = function.materializePrototype(module, targetMachine);
             final var context = module.getContext();
             final var blockAddress = LLVMAppendBasicBlockInContext(context, fnAddress, name);
             return new IRBuilder(this, module, targetMachine, blockAddress, context);
         });
-        stack.push(builder);
-        return builder;
+    }
+
+    @Override
+    public void drop(final IRBuilder builder) {
+        LLVMDeleteBasicBlock(builder.getBlockAddress());
+        final var entries = builders.entrySet();
+        for(final var entry : entries) {
+            if(entry.getValue() != builder) {
+                continue;
+            }
+            builders.remove(entry.getKey());
+            break;
+        }
     }
 }
