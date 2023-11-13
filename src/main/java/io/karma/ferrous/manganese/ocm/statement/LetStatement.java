@@ -109,7 +109,7 @@ public final class LetStatement implements Statement, NameProvider, ValueStorage
     // FieldStorageProvider
 
     @Override
-    public Type getLoadType() {
+    public Type getType() {
         return type;
     }
 

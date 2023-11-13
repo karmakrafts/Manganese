@@ -36,20 +36,12 @@ public interface ValueStorage extends NameProvider {
 
     boolean isInitialized();
 
-    default @Nullable Type getLoadType() {
+    default @Nullable Type getType() {
         final var value = getValue();
         if (value == null) {
             return null;
         }
         return value.getType();
-    }
-
-    default @Nullable Type getStoreType() { // Handle implicit pointer for mutable vars
-        final var type = getLoadType();
-        if (type == null) {
-            return null;
-        }
-        return isMutable() ? type.derivePointer() : type;
     }
 
     boolean isMutable();
@@ -63,7 +55,7 @@ public interface ValueStorage extends NameProvider {
     @SuppressWarnings("unused")
     default long storeAddress(final @Nullable Expression exprValue, final long address,
                               final TargetMachine targetMachine, final IRContext irContext) {
-        final var type = Objects.requireNonNull(getLoadType());
+        final var type = Objects.requireNonNull(getType());
         if (!type.isReference()) {
             throw new IllegalStateException("Cannot store address into non-reference value storage");
         }
@@ -78,7 +70,7 @@ public interface ValueStorage extends NameProvider {
         }
         notifyChanged();
         final var builder = irContext.getCurrentOrCreate();
-        final var type = Objects.requireNonNull(getLoadType());
+        final var type = Objects.requireNonNull(getType());
         var address = getAddress(targetMachine, irContext);
         if (type.isReference()) { // Load in ref pointer before storing
             address = builder.load(type.materialize(targetMachine), address);
@@ -93,7 +85,7 @@ public interface ValueStorage extends NameProvider {
     default long load(final TargetMachine targetMachine, final IRContext irContext) {
         final var builder = irContext.getCurrentOrCreate();
         final var value = getAddress(targetMachine, irContext);
-        final var type = Objects.requireNonNull(getLoadType());
+        final var type = Objects.requireNonNull(getType());
         if (type.isReference()) { // Strip ref pointer
             return builder.load(type.getBaseType().materialize(targetMachine),
                 builder.load(type.materialize(targetMachine), value));

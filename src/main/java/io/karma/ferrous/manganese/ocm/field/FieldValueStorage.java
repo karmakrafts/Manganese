@@ -82,7 +82,7 @@ public final class FieldValueStorage implements ValueStorage, FieldStorageProvid
     // FieldStorageProvider
 
     @Override
-    public Type getLoadType() {
+    public Type getType() {
         return field.getType();
     }
 
@@ -116,7 +116,7 @@ public final class FieldValueStorage implements ValueStorage, FieldStorageProvid
     @Override
     public long getAddress(final TargetMachine targetMachine, final IRContext irContext) {
         final var builder = irContext.getCurrentOrCreate();
-        final var typeAddress = Objects.requireNonNull(parent.getLoadType()).materialize(targetMachine);
+        final var typeAddress = Objects.requireNonNull(parent.getType()).materialize(targetMachine);
         return builder.gep(typeAddress, parent.getAddress(targetMachine, irContext), field.getIndex());
     }
 
