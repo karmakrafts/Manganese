@@ -22,15 +22,21 @@ import io.karma.ferrous.manganese.target.TargetMachine;
 import org.apiguardian.api.API;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Objects;
+
 /**
  * @author Alexander Hinze
  * @since 09/11/2023
  */
 @API(status = API.Status.INTERNAL)
-public interface ValueStorage {
+public interface ValueStorage extends NameProvider {
     @Nullable Expression getValue();
 
-    default @Nullable Type getType() {
+    void setInitialized();
+
+    boolean isInitialized();
+
+    default @Nullable Type getLoadType() {
         final var value = getValue();
         if (value == null) {
             return null;
@@ -38,16 +44,60 @@ public interface ValueStorage {
         return value.getType();
     }
 
+    default @Nullable Type getStoreType() { // Handle implicit pointer for mutable vars
+        final var type = getLoadType();
+        if (type == null) {
+            return null;
+        }
+        return isMutable() ? type.derivePointer() : type;
+    }
+
     boolean isMutable();
+
+    void notifyChanged();
 
     boolean hasChanged();
 
-    long loadFrom(final TargetMachine targetMachine, final IRContext irContext);
+    long getAddress(final TargetMachine targetMachine, final IRContext irContext);
 
-    long storeInto(final Expression exprValue, final long value, final TargetMachine targetMachine,
-                   final IRContext irContext);
+    @SuppressWarnings("unused")
+    default long storeAddress(final @Nullable Expression exprValue, final long address,
+                              final TargetMachine targetMachine, final IRContext irContext) {
+        final var type = Objects.requireNonNull(getLoadType());
+        if (!type.isReference()) {
+            throw new IllegalStateException("Cannot store address into non-reference value storage");
+        }
+        notifyChanged();
+        return irContext.getCurrentOrCreate().store(address, getAddress(targetMachine, irContext));
+    }
 
-    default long storeInto(final Expression value, final TargetMachine targetMachine, final IRContext irContext) {
-        return storeInto(value, value.emit(targetMachine, irContext), targetMachine, irContext);
+    default long store(final @Nullable Expression exprValue, final long value, final TargetMachine targetMachine,
+                       final IRContext irContext) {
+        if (!isMutable()) {
+            throw new IllegalStateException("Cannot store into immutable value storage");
+        }
+        notifyChanged();
+        final var builder = irContext.getCurrentOrCreate();
+        final var type = Objects.requireNonNull(getLoadType());
+        var address = getAddress(targetMachine, irContext);
+        if (type.isReference()) { // Load in ref pointer before storing
+            address = builder.load(type.materialize(targetMachine), address);
+        }
+        return builder.store(value, address);
+    }
+
+    default long store(final Expression value, final TargetMachine targetMachine, final IRContext irContext) {
+        return store(value, value.emit(targetMachine, irContext), targetMachine, irContext);
+    }
+
+    default long load(final TargetMachine targetMachine, final IRContext irContext) {
+        final var builder = irContext.getCurrentOrCreate();
+        final var value = getAddress(targetMachine, irContext);
+        final var type = Objects.requireNonNull(getLoadType());
+        if (type.isReference()) { // Strip ref pointer
+            return builder.load(type.getBaseType().materialize(targetMachine),
+                builder.load(type.materialize(targetMachine), value));
+        }
+        return builder.load(type.materialize(targetMachine), value);
     }
 }

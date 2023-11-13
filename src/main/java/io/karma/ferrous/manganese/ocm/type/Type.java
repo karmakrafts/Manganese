@@ -24,8 +24,6 @@ import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Arrays;
-
 /**
  * @author Alexander Hinze
  * @since 14/10/2023
@@ -69,7 +67,10 @@ public interface Type extends Scoped {
      * implicitly casted to this type. False otherwise.
      */
     default boolean canAccept(final Type type) {
-        return false;
+        if (type.isReference()) {
+            return type.getBaseType() == this;
+        }
+        return type == this;
     }
 
     /**
@@ -104,7 +105,7 @@ public interface Type extends Scoped {
     }
 
     default Type deriveGeneric(final Expression... values) {
-        final var type = new DerivedType(this);
+        final var type = new DerivedType(this, null);
         final var params = type.getGenericParams();
         final var numParams = params.length;
         if (values.length > numParams) {
@@ -116,17 +117,31 @@ public interface Type extends Scoped {
         return Types.cached(type);
     }
 
-    default Type derive(final TypeAttribute... attributes) {
-        if (attributes.length == 0) {
-            return this;
+    default Type derive(final TypeAttribute attribute) {
+        return Types.cached(new DerivedType(this, attribute));
+    }
+
+    default Type derive(final TypeAttribute[] attributes) {
+        var result = this;
+        for (final var attrib : attributes) {
+            result = switch (attrib) {
+                case POINTER -> result.derivePointer();
+                case REFERENCE -> result.deriveReference();
+            };
         }
-        return Types.cached(new DerivedType(this, attributes));
+        return result;
+    }
+
+    default Type derivePointer() {
+        return derive(TypeAttribute.POINTER);
     }
 
     default Type derivePointer(final int depth) {
-        final var attribs = new TypeAttribute[depth];
-        Arrays.fill(attribs, TypeAttribute.POINTER);
-        return derive(attribs);
+        var result = this;
+        for (var i = 0; i < depth; i++) {
+            result = result.derivePointer();
+        }
+        return result;
     }
 
     default Type deriveReference() {

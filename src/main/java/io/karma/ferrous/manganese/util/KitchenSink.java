@@ -74,6 +74,20 @@ public final class KitchenSink {
         return false;
     }
 
+    public static boolean startsWithAssignableTypes(final List<?> objects, final Class<?>... types) {
+        final var numObjects = objects.size();
+        if (numObjects < types.length) {
+            return false;
+        }
+        for (var i = 0; i < numObjects; i++) {
+            if (!types[i].isAssignableFrom(objects.get(i).getClass())) {
+                continue;
+            }
+            return true;
+        }
+        return false;
+    }
+
     public static boolean containsAssignableTypeSequence(final List<?> objects, final Class<?>... types) {
         final var numObjects = objects.size();
         final var numTypes = types.length;

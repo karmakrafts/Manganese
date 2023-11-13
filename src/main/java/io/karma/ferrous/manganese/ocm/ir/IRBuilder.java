@@ -89,6 +89,18 @@ public final class IRBuilder {
         return LLVMBuildMemMove(address, dst, dstAlignment, src, srcAlignment, size);
     }
 
+    public long extract(final long value, final int index) {
+        return LLVMBuildExtractValue(address, value, index, "");
+    }
+
+    public long insert(final long value, final long fieldValue, final int index) {
+        return LLVMBuildInsertValue(address, value, fieldValue, index, "");
+    }
+
+    public long gep(final long type, final long ptr, final int index) {
+        return LLVMBuildStructGEP2(this.address, type, ptr, index, "");
+    }
+
     // Load/store
 
     public long load(final long type, final long ptr) {
@@ -101,12 +113,56 @@ public final class IRBuilder {
 
     // Conversions
 
+    public long sintToFloat(final long type, final long value) {
+        return LLVMBuildSIToFP(address, value, type, "");
+    }
+
+    public long uintToFloat(final long type, final long value) {
+        return LLVMBuildUIToFP(address, value, type, "");
+    }
+
+    public long floatToSint(final long type, final long value) {
+        return LLVMBuildFPToSI(address, value, type, "");
+    }
+
+    public long floatToUint(final long type, final long value) {
+        return LLVMBuildFPToUI(address, value, type, "");
+    }
+
+    public long sintCast(final long type, final long value) {
+        return LLVMBuildIntCast2(address, value, type, true, "");
+    }
+
+    public long uintCast(final long type, final long value) {
+        return LLVMBuildIntCast2(address, value, type, false, "");
+    }
+
     public long intToPtr(final long type, final long value) {
         return LLVMBuildIntToPtr(address, value, type, "");
     }
 
     public long ptrToInt(final long type, final long value) {
         return LLVMBuildPtrToInt(address, value, type, "");
+    }
+
+    public long floatTrunc(final long type, final long value) {
+        return LLVMBuildFPTrunc(address, value, type, "");
+    }
+
+    public long floatExt(final long type, final long value) {
+        return LLVMBuildFPExt(address, value, type, "");
+    }
+
+    public long trunc(final long type, final long value) {
+        return LLVMBuildTrunc(address, value, type, "");
+    }
+
+    public long sext(final long type, final long value) {
+        return LLVMBuildSExt(address, value, type, "");
+    }
+
+    public long zext(final long type, final long value) {
+        return LLVMBuildZExt(address, value, type, "");
     }
 
     // Strings
@@ -207,7 +263,17 @@ public final class IRBuilder {
 
     // Control flow
 
-    public long jump(final String name) {
+    public long indirectBr(final long condition, final long destAddresses, final int numDests) {
+        return LLVMBuildIndirectBr(address, destAddresses, numDests);
+    }
+
+    public long condBr(final long condition, final String trueLabel, final String falseLabel) {
+        final var trueAddress = blockContext.getOrCreate(trueLabel).blockAddress;
+        final var falseAddress = blockContext.getOrCreate(falseLabel).blockAddress;
+        return LLVMBuildCondBr(address, condition, trueAddress, falseAddress);
+    }
+
+    public long br(final String name) {
         return LLVMBuildBr(address, blockContext.getOrCreate(name).blockAddress);
     }
 
@@ -225,6 +291,10 @@ public final class IRBuilder {
 
     public long ret() {
         return LLVMBuildRetVoid(address);
+    }
+
+    public long unreachable() {
+        return LLVMBuildUnreachable(address);
     }
 
     public long getAddress() {

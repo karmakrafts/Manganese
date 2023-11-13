@@ -16,6 +16,7 @@
 package io.karma.ferrous.manganese.ocm.expr;
 
 import io.karma.ferrous.manganese.ocm.ValueStorage;
+import io.karma.ferrous.manganese.ocm.field.FieldValueStorage;
 import io.karma.ferrous.manganese.ocm.ir.IRBuilder;
 import io.karma.ferrous.manganese.ocm.ir.IRContext;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
@@ -95,16 +96,17 @@ public final class BinaryExpression implements Expression {
     }
 
     private long emitAssignment(final TargetMachine targetMachine, final IRContext irContext) {
-        if (!(lhs instanceof ReferenceExpression refExpr)) {
+        if (!(lhs instanceof ReferenceExpression lhsRefExpr)) {
             return NULL;
         }
-        return switch (refExpr.getReference()) {
+        lhsRefExpr.setIsWrite(true); // This is always a write to the left side of the expression
+        return switch (lhsRefExpr.getReference()) {
             case ValueStorage storage -> {
-                storage.storeInto(rhs, targetMachine, irContext);
+                storage.store(rhs, targetMachine, irContext);
                 if (isResultDiscarded) {
-                    yield NULL;
+                    yield NULL; // Omit
                 }
-                yield storage.loadFrom(targetMachine, irContext);
+                yield storage.load(targetMachine, irContext);
             }
             default -> NULL;
         };
@@ -114,15 +116,13 @@ public final class BinaryExpression implements Expression {
         if (!(lhs instanceof ReferenceExpression lhsRef) || !(rhs instanceof ReferenceExpression rhsRef)) {
             return NULL;
         }
-        final var builder = irContext.getCurrentOrCreate();
+        lhsRef.setIsWrite(true);
+        rhsRef.setIsWrite(true);
         return switch (lhsRef.getReference()) {
             case ValueStorage lhsStorage -> switch (rhsRef.getReference()) {
                 case ValueStorage rhsStorage -> {
-                    final var rhsAddress = rhsStorage.loadFrom(targetMachine, irContext);
-                    final var lhsAddress = lhsStorage.loadFrom(targetMachine, irContext);
-                    final var oldValue = lhsStorage.getValue();
-                    lhsStorage.storeInto(rhsStorage.getValue(), targetMachine, irContext);
-                    rhsStorage.storeInto(oldValue, lhsAddress, targetMachine, irContext);
+                    final var rhsAddress = rhsStorage.getAddress(targetMachine, irContext);
+                    // TODO: re-implement this!
                     yield rhsAddress;
                 }
                 default -> NULL;
@@ -164,17 +164,17 @@ public final class BinaryExpression implements Expression {
         final var lhs = this.lhs.emit(targetMachine, irContext);
         final var rhs = needsLoadDedup() ? lhs : this.rhs.emit(targetMachine, irContext);
         return switch (op) { // @formatter:off
-            case PLUS  -> builtinType.isFloatType() ? builder.fadd(lhs, rhs) : builder.add(lhs, rhs);
-            case MINUS -> builtinType.isFloatType() ? builder.fsub(lhs, rhs) : builder.sub(lhs, rhs);
-            case TIMES -> builtinType.isFloatType() ? builder.fmul(lhs, rhs) : builder.mul(lhs, rhs);
-            case DIV   -> emitDiv(lhs, rhs, builtinType, builder);
-            case MOD   -> emitMod(lhs, rhs, builtinType, builder);
-            case AND   -> builder.and(lhs, rhs);
-            case OR    -> builder.or(lhs, rhs);
-            case XOR   -> builder.xor(lhs, rhs);
-            case SHL   -> builder.shl(lhs, rhs);
-            case SHR   -> builtinType.isUnsignedInt() ? builder.lshr(lhs, rhs) : builder.ashr(lhs, rhs);
-            default    -> throw new IllegalStateException("Unsupported operator");
+            case PLUS        -> builtinType.isFloatType() ? builder.fadd(lhs, rhs) : builder.add(lhs, rhs);
+            case MINUS       -> builtinType.isFloatType() ? builder.fsub(lhs, rhs) : builder.sub(lhs, rhs);
+            case TIMES       -> builtinType.isFloatType() ? builder.fmul(lhs, rhs) : builder.mul(lhs, rhs);
+            case DIV         -> emitDiv(lhs, rhs, builtinType, builder);
+            case MOD         -> emitMod(lhs, rhs, builtinType, builder);
+            case AND         -> builder.and(lhs, rhs);
+            case OR          -> builder.or(lhs, rhs);
+            case XOR         -> builder.xor(lhs, rhs);
+            case SHL         -> builder.shl(lhs, rhs);
+            case SHR         -> builtinType.isUnsignedInt() ? builder.lshr(lhs, rhs) : builder.ashr(lhs, rhs);
+            default          -> throw new IllegalStateException("Unsupported operator");
         }; // @formatter:on
     }
 
@@ -186,12 +186,9 @@ public final class BinaryExpression implements Expression {
         if (op == Operator.SWAP) {
             return emitSwap(targetMachine, irContext);
         }
-        if (!(lhs instanceof Expression lhsExpr)) {
-            return NULL;
-        }
-        final var lhsType = lhsExpr.getType();
-        if (!(lhsType instanceof BuiltinType builtinType)) {
-            return NULL; // TODO: implement user defined operator calls
+        final var rhsType = rhs.getType();
+        if (!(rhsType instanceof BuiltinType builtinType)) {
+            throw new UnsupportedOperationException();
         }
         return emitBuiltin(targetMachine, irContext, builtinType);
     }

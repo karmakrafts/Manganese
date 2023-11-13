@@ -144,11 +144,6 @@ public enum BuiltinType implements NamedType {
     }
 
     @Override
-    public boolean canAccept(final Type type) {
-        return type == this;
-    }
-
-    @Override
     public TokenSlice getTokenSlice() {
         return TokenSlice.EMPTY;
     }

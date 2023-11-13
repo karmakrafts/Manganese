@@ -55,14 +55,19 @@ public final class FunctionParser extends ParseAdapter {
             return;
         }
         final var scopeStack = function.rebuildScopeStack();
+        final var type = function.getType();
         final var parser = new StatementParser(compiler,
             compileContext,
-            function.getType(),
+            type.getReturnType(),
             locals,
             scopeStack,
             function);
         ParseTreeWalker.DEFAULT.walk(parser, context);
-        function.createBody(parser.getStatements().toArray(Statement[]::new));
+        final var statements = parser.getStatements();
+        function.createBody(statements.toArray(Statement[]::new));
+        for (final var statement : statements) {
+            statement.setEnclosingScope(function.getBody());
+        }
         super.enterFunctionBody(context);
     }
 

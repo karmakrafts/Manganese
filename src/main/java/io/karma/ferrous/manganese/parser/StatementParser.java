@@ -24,7 +24,6 @@ import io.karma.ferrous.manganese.ocm.scope.ScopeStack;
 import io.karma.ferrous.manganese.ocm.statement.LetStatement;
 import io.karma.ferrous.manganese.ocm.statement.ReturnStatement;
 import io.karma.ferrous.manganese.ocm.statement.Statement;
-import io.karma.ferrous.manganese.ocm.type.FunctionType;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.ocm.type.Types;
 import io.karma.ferrous.manganese.util.ExpressionUtils;
@@ -48,17 +47,17 @@ import java.util.List;
  */
 @API(status = API.Status.INTERNAL)
 public final class StatementParser extends ParseAdapter {
-    private final FunctionType functionType;
+    private final Type returnType;
     private final ArrayList<Statement> statements = new ArrayList<>();
     private final Lazy<LinkedHashMap<Identifier, LetStatement>> locals;
     private final ScopeStack capturedScopeStack;
     private final Object parent;
 
-    public StatementParser(final Compiler compiler, final CompileContext compileContext,
-                           final FunctionType functionType, final Lazy<LinkedHashMap<Identifier, LetStatement>> locals,
+    public StatementParser(final Compiler compiler, final CompileContext compileContext, final Type returnType,
+                           final Lazy<LinkedHashMap<Identifier, LetStatement>> locals,
                            final ScopeStack capturedScopeStack, final Object parent) {
         super(compiler, compileContext);
-        this.functionType = functionType;
+        this.returnType = returnType;
         this.locals = locals;
         this.capturedScopeStack = capturedScopeStack;
         this.parent = parent;
@@ -101,8 +100,8 @@ public final class StatementParser extends ParseAdapter {
             Type type = null;
             if (typeContext != null) {
                 type = Types.parse(compiler, compileContext, scopeStack, typeContext);
-                if (type == null) {
-                    compileContext.reportError(typeContext.start, name.toString(), CompileErrorCode.E3002);
+                if (type == null || !type.isComplete()) {
+                    compileContext.reportError(typeContext.start, CompileErrorCode.E3002);
                     return;
                 }
                 if (context.QMK() != null) {
@@ -175,7 +174,6 @@ public final class StatementParser extends ParseAdapter {
                 if (expr == null) {
                     return;
                 }
-                final var returnType = functionType.getReturnType();
                 final var exprType = expr.getType();
                 if (!returnType.canAccept(exprType)) {
                     final var message = KitchenSink.makeCompilerMessage(String.format("%s cannot be assigned to %s",

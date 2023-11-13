@@ -35,16 +35,17 @@ import static org.lwjgl.system.MemoryUtil.NULL;
  * @since 10/11/2023
  */
 @API(status = API.Status.INTERNAL)
-public final class DefaultIRContext implements IRContext {
+public final class FunctionIRContext implements IRContext {
     private final CompileContext compileContext;
     private final Module module;
     private final TargetMachine targetMachine;
     private final Function function;
     private final HashMap<String, IRBuilder> builders = new HashMap<>();
     private IRBuilder currentBuilder;
+    private boolean isDropped;
 
-    public DefaultIRContext(final CompileContext compileContext, final Module module, final TargetMachine targetMachine,
-                            final Function function) {
+    public FunctionIRContext(final CompileContext compileContext, final Module module,
+                             final TargetMachine targetMachine, final Function function) {
         this.compileContext = compileContext;
         this.module = module;
         this.targetMachine = targetMachine;
@@ -61,7 +62,8 @@ public final class DefaultIRContext implements IRContext {
         final var numParams = params.length;
         final var address = function.materializePrototype(module, targetMachine);
         for (var i = 0; i < numParams; i++) {
-            if (!params[i].getName().equals(name)) {
+            final var param = params[i];
+            if (!param.getName().equals(name)) {
                 continue;
             }
             return LLVMCore.LLVMGetParam(address, i);
@@ -80,11 +82,6 @@ public final class DefaultIRContext implements IRContext {
     }
 
     @Override
-    public Function getFunction() {
-        return function;
-    }
-
-    @Override
     public @Nullable IRBuilder getCurrent() {
         return currentBuilder;
     }
@@ -100,15 +97,13 @@ public final class DefaultIRContext implements IRContext {
     }
 
     @Override
-    public void drop(final IRBuilder builder) {
-        LLVMDeleteBasicBlock(builder.getBlockAddress());
-        final var entries = builders.entrySet();
-        for(final var entry : entries) {
-            if(entry.getValue() != builder) {
-                continue;
-            }
-            builders.remove(entry.getKey());
-            break;
+    public void drop() {
+        if (isDropped) {
+            return;
         }
+        for (final var builder : builders.values()) {
+            LLVMDeleteBasicBlock(builder.getBlockAddress());
+        }
+        isDropped = true;
     }
 }

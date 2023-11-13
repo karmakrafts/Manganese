@@ -40,8 +40,7 @@ public final class ExpressionUtils {
 
     public static List<Expression> parseExpressions(final Compiler compiler, final CompileContext compileContext,
                                                     final ScopeStack scopeStack,
-                                                    final @Nullable ExprListContext context,
-                                                    final @Nullable Object parent) {
+                                                    final @Nullable ExprListContext context, final Object parent) {
         if (context == null) {
             return Collections.emptyList();
         }
@@ -64,7 +63,7 @@ public final class ExpressionUtils {
 
     public static @Nullable Expression parseExpression(final Compiler compiler, final CompileContext compileContext,
                                                        final ScopeStack scopeStack, final @Nullable ParseTree context,
-                                                       final @Nullable Object parent) {
+                                                       final Object parent) {
         if (context == null) {
             return null;
         }

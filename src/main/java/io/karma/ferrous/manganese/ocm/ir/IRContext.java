@@ -17,7 +17,6 @@ package io.karma.ferrous.manganese.ocm.ir;
 
 import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.module.Module;
-import io.karma.ferrous.manganese.ocm.function.Function;
 import io.karma.ferrous.manganese.util.Identifier;
 import org.apiguardian.api.API;
 import org.jetbrains.annotations.Nullable;
@@ -36,25 +35,11 @@ public interface IRContext {
 
     CompileContext getCompileContext();
 
-    Function getFunction();
-
     @Nullable IRBuilder getCurrent();
-
-    @Nullable IRBuilder getLast();
 
     IRBuilder getOrCreate(final String name);
 
-    void pushCurrent(final IRBuilder builder);
-
-    IRBuilder popCurrent();
-
-    default IRBuilder getCurrentOrCreate(final String name) {
-        var current = getCurrent();
-        if (current != null) {
-            return current;
-        }
-        return getOrCreate(name);
-    }
+    void drop();
 
     default IRBuilder getCurrentOrCreate() {
         var current = getCurrent();

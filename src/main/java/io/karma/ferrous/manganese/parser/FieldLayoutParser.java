@@ -18,7 +18,7 @@ package io.karma.ferrous.manganese.parser;
 import io.karma.ferrous.manganese.ParseAdapter;
 import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.Compiler;
-import io.karma.ferrous.manganese.ocm.Field;
+import io.karma.ferrous.manganese.ocm.field.Field;
 import io.karma.ferrous.manganese.ocm.scope.ScopeStack;
 import io.karma.ferrous.manganese.ocm.type.Types;
 import io.karma.ferrous.manganese.util.Identifier;
@@ -66,11 +66,14 @@ public final class FieldLayoutParser extends ParseAdapter {
         if (isOutOfScope()) {
             return;
         }
-        final var name = Identifier.parse(context.ident());
-        final var type = Types.parse(compiler, compileContext, capturedScopeStack, context.type());
-        fields.add(new Field(name,
-            type,
+        fields.add(new Field(fields.size(),
+            Identifier.parse(context.ident()),
+            Types.parse(compiler, compileContext, capturedScopeStack, context.type()),
             KitchenSink.parseAccess(compiler, compileContext, scopeStack, context.accessMod()),
+            KitchenSink.parseStorageMods(context.storageMod()),
+            context.KW_MUT() != null,
+            context.KW_STATIC() != null,
+            capturedScopeStack.peek().getScopeType().isGlobal(),
             TokenSlice.from(compileContext, context)));
         super.enterField(context);
     }

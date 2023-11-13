@@ -46,7 +46,7 @@ public enum CompileErrorCode {
     // Semantic errors
     E4000("The given calling convention does not exist", CompileStatus.SEMANTIC_ERROR),
     E4001("The given element cannot be accessed from this scope", CompileStatus.SEMANTIC_ERROR),
-    E4002("A parameter cannot have the kind void", CompileStatus.SEMANTIC_ERROR),
+    E4002("A parameter cannot have the type void", CompileStatus.SEMANTIC_ERROR),
     E4003("The given function is already defined in the same scope", CompileStatus.SEMANTIC_ERROR),
     E4004("Function that is not virtual, abstract or extern has no body", CompileStatus.SEMANTIC_ERROR),
     E4005("Function never returns", CompileStatus.SEMANTIC_ERROR),
@@ -57,10 +57,11 @@ public enum CompileErrorCode {
     E4010("Immutable variable cannot be uninitialized", CompileStatus.SEMANTIC_ERROR),
     E4011("Immutable variable cannot be reassigned", CompileStatus.SEMANTIC_ERROR),
     E4012("Right hand side of swap expression must be a reference to a mutable value", CompileStatus.SEMANTIC_ERROR),
+    E4013("Unary operator is not applicable in this context", CompileStatus.SEMANTIC_ERROR),
+    E4014("Binary operator is not applicable in this context", CompileStatus.SEMANTIC_ERROR),
+    E4015("Expression cannot be evaluated in a const context", CompileStatus.SEMANTIC_ERROR),
     // Translation errors
     E5000("Could not find function during translation", CompileStatus.TRANSLATION_ERROR),
-    E5001("Unknown unary operator", CompileStatus.TRANSLATION_ERROR),
-    E5002("Unknown binary operator", CompileStatus.TRANSLATION_ERROR),
     // Link errors
     E6000("Could not find linker command", CompileStatus.LINK_ERROR),
     E6001("Could not spawn linker process", CompileStatus.LINK_ERROR),
@@ -72,6 +73,8 @@ public enum CompileErrorCode {
     E6007("Could not find dynamic linker binary", CompileStatus.LINK_ERROR),
     E6008("Link target doesn't support system runtime", CompileStatus.LINK_ERROR),
     E6009("Could not find CRT object while linking", CompileStatus.LINK_ERROR),
+    // Panic
+    E7000("Panic occurred during compilation", CompileStatus.PANIC),
     // Unknown error
     E9999("Encountered an unhandled error", CompileStatus.UNKNOWN_ERROR)
     // @formatter:on

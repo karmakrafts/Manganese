@@ -16,6 +16,7 @@
 package io.karma.ferrous.manganese.ocm.type;
 
 import io.karma.ferrous.manganese.ocm.NameProvider;
+import io.karma.ferrous.manganese.ocm.constant.NullConstant;
 import io.karma.ferrous.manganese.ocm.expr.Expression;
 import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
@@ -24,10 +25,10 @@ import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.TokenSlice;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
+import org.jetbrains.annotations.Nullable;
 import org.lwjgl.llvm.LLVMCore;
 import org.lwjgl.system.MemoryUtil;
 
-import java.util.Arrays;
 import java.util.Objects;
 
 /**
@@ -37,14 +38,14 @@ import java.util.Objects;
 @API(status = Status.INTERNAL)
 public final class DerivedType implements NamedType {
     private final Type baseType;
-    private final TypeAttribute[] attributes;
+    private final @Nullable TypeAttribute attribute;
     private final GenericParameter[] genericParams;
     private final TokenSlice tokenSlice;
     private long materializedType = MemoryUtil.NULL;
 
-    DerivedType(final Type baseType, final TypeAttribute... attributes) {
+    DerivedType(final Type baseType, final @Nullable TypeAttribute attribute) {
         this.baseType = baseType;
-        this.attributes = attributes;
+        this.attribute = attribute;
 
         // Deep-copy generic parameters
         final var params = baseType.getGenericParams();
@@ -83,11 +84,21 @@ public final class DerivedType implements NamedType {
     // Type
 
     @Override
+    public boolean canAccept(final Type type) {
+        if (type instanceof DerivedType derivedType) {
+            return baseType == derivedType.baseType && attribute == derivedType.attribute;
+        }
+        return NamedType.super.canAccept(type);
+    }
+
+    @Override
     public Expression makeDefaultValue() {
-        //return switch(attributes[attributes.length - 1]) {
-        //    case POINTER -> new NullConstant(TokenSlice.EMPTY);
-        //}
-        return null;
+        if (isPointer() || isReference()) {
+            final var value = new NullConstant(TokenSlice.EMPTY);
+            value.setContextualType(baseType);
+            return value;
+        }
+        return baseType.makeDefaultValue();
     }
 
     @Override
@@ -110,40 +121,43 @@ public final class DerivedType implements NamedType {
         if (materializedType != MemoryUtil.NULL) {
             return materializedType;
         }
-        materializedType = baseType.materialize(machine);
-        for (var i = 0; i < attributes.length; i++) {
-            materializedType = LLVMCore.LLVMPointerType(materializedType, 0);
-        }
-        return materializedType;
+        return materializedType = LLVMCore.LLVMPointerType(baseType.materialize(machine), 0);
     }
 
     @Override
     public TypeAttribute[] getAttributes() {
-        return attributes;
+        final var baseAttribs = baseType.getAttributes();
+        if (attribute == null) {
+            return baseAttribs;
+        }
+        final var numBaseAttribs = baseAttribs.length;
+        final var attribs = new TypeAttribute[numBaseAttribs + 1];
+        System.arraycopy(baseAttribs, 0, attribs, 0, numBaseAttribs);
+        attribs[numBaseAttribs] = attribute;
+        return attribs;
     }
 
     // Object
 
     @Override
     public int hashCode() {
-        return Objects.hash(baseType, Arrays.hashCode(attributes));
+        return Objects.hash(baseType, attribute);
     }
 
     @Override
     public boolean equals(final Object obj) {
         if (obj instanceof DerivedType type) { // @formatter:off
             return baseType.equals(type.baseType)
-                && Arrays.equals(attributes, type.attributes);
+                && attribute == type.attribute;
         } // @formatter:on
         return false;
     }
 
     @Override
     public String toString() {
-        var result = baseType.toString();
-        for (final var attrib : attributes) {
-            result = attrib.format(result);
+        if (attribute == null) {
+            return baseType.toString();
         }
-        return result;
+        return attribute.format(baseType.toString());
     }
 }

@@ -73,6 +73,10 @@ public final class StructureType implements NamedType {
         return Arrays.asList(fieldTypes);
     }
 
+    public long getMaterializedType() {
+        return materializedType;
+    }
+
     // NameProvider
 
     @Override
@@ -173,6 +177,8 @@ public final class StructureType implements NamedType {
 
     @Override
     public String toString() {
-        return String.format("%s:%b:%s", getQualifiedName(), isPacked, Arrays.toString(fieldTypes));
+        return String.format("%s{%s}",
+            getQualifiedName(),
+            String.join(", ", Arrays.stream(fieldTypes).map(Type::toString).toArray(String[]::new)));
     }
 }

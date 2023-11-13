@@ -15,39 +15,19 @@
 
 package io.karma.ferrous.manganese.ocm.function;
 
-import io.karma.ferrous.manganese.ocm.type.Type;
 import org.apiguardian.api.API;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * @author Alexander Hinze
- * @since 09/11/2023
+ * @since 10/11/2023
  */
+@FunctionalInterface
 @API(status = API.Status.INTERNAL)
-public final class FunctionReference {
-    private final FunctionResolver resolver;
-    private Type[] contextualParamTypes;
-
-    public FunctionReference(final FunctionResolver resolver) {
-        this.resolver = resolver;
+public interface FunctionReference {
+    static FunctionReference of(final Function function) {
+        return () -> function;
     }
 
-    public @Nullable Function resolve() {
-        if (contextualParamTypes == null) {
-            throw new IllegalStateException("Cannot resolve function without contextual type information");
-        }
-        return resolver.resolve(contextualParamTypes);
-    }
-
-    public Type[] getContextualParamTypes() {
-        return contextualParamTypes;
-    }
-
-    public void setContextualParamTypes(Type... contextualParamTypes) {
-        this.contextualParamTypes = contextualParamTypes;
-    }
-
-    public FunctionResolver getResolver() {
-        return resolver;
-    }
+    @Nullable Function get();
 }

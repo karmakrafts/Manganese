@@ -15,10 +15,9 @@
 
 package io.karma.ferrous.manganese.ocm.expr;
 
-import io.karma.ferrous.manganese.ocm.Field;
 import io.karma.ferrous.manganese.ocm.Parameter;
 import io.karma.ferrous.manganese.ocm.ValueStorage;
-import io.karma.ferrous.manganese.ocm.function.Function;
+import io.karma.ferrous.manganese.ocm.field.Field;
 import io.karma.ferrous.manganese.ocm.function.FunctionReference;
 import io.karma.ferrous.manganese.ocm.ir.IRContext;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
@@ -44,8 +43,7 @@ public final class ReferenceExpression implements Expression {
     private boolean isWrite;
 
     /**
-     * @param reference  The reference to a {@link Function},
-     *                   {@link FunctionReference}, {@link Field} or {@link LetStatement}.
+     * @param reference  The reference to a {@link FunctionReference}, {@link Field} or {@link LetStatement}.
      * @param tokenSlice The token slice which defines this reference.
      */
     public ReferenceExpression(final Object reference, final boolean isWrite, final TokenSlice tokenSlice) {
@@ -60,10 +58,6 @@ public final class ReferenceExpression implements Expression {
 
     public void setIsWrite(final boolean isWrite) {
         this.isWrite = isWrite;
-    }
-
-    public boolean isWrite() {
-        return isWrite;
     }
 
     // Scoped
@@ -83,9 +77,8 @@ public final class ReferenceExpression implements Expression {
     @Override
     public Type getType() {
         return switch (reference) { // @formatter:off
-            case FunctionReference funRef -> Objects.requireNonNull(funRef.resolve()).getType();
-            case Function function        -> function.getType();
-            case ValueStorage storage     -> Objects.requireNonNull(storage.getType());
+            case FunctionReference funRef -> Objects.requireNonNull(funRef.get()).getType();
+            case ValueStorage storage     -> storage.getLoadType();
             case Parameter param          -> param.getType();
             default                       -> throw new IllegalStateException("Unknown reference kind");
         }; // @formatter:on
@@ -101,19 +94,14 @@ public final class ReferenceExpression implements Expression {
         final var builder = irContext.getCurrentOrCreate();
         return switch (reference) {
             case FunctionReference funRef -> {
-                final var function = Objects.requireNonNull(funRef.resolve());
-                final var typeAddress = function.getType().derive(TypeAttribute.POINTER).materialize(targetMachine);
+                final var function = Objects.requireNonNull(funRef.get());
+                final var typeAddress = getType().derive(TypeAttribute.POINTER).materialize(targetMachine);
                 final var fnAddress = function.materializePrototype(irContext.getModule(), targetMachine);
                 yield builder.intToPtr(typeAddress, fnAddress);
             }
-            case Function function -> {
-                final var typeAddress = function.getType().derive(TypeAttribute.POINTER).materialize(targetMachine);
-                final var fnAddress = function.materializePrototype(irContext.getModule(), targetMachine);
-                yield builder.intToPtr(typeAddress, fnAddress);
-            }
-            case ValueStorage storage -> storage.loadFrom(targetMachine, irContext);
+            case ValueStorage storage ->
+                isWrite ? storage.getAddress(targetMachine, irContext) : storage.load(targetMachine, irContext);
             case Parameter param -> irContext.getParameter(param.getName());
-            // TODO: implement field references
             default -> throw new IllegalStateException("Unknown reference kind");
         };
     }

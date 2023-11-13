@@ -17,7 +17,7 @@ package io.karma.ferrous.manganese.ocm.function;
 
 import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.module.Module;
-import io.karma.ferrous.manganese.ocm.ir.DefaultIRContext;
+import io.karma.ferrous.manganese.ocm.ir.FunctionIRContext;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.ocm.scope.ScopeType;
 import io.karma.ferrous.manganese.ocm.statement.Statement;
@@ -56,7 +56,7 @@ public final class FunctionBody implements Scope {
         if (isAppended) {
             return;
         }
-        final var context = new DefaultIRContext(compileContext, module, targetMachine, function);
+        final var context = new FunctionIRContext(compileContext, module, targetMachine, function);
         for (final var statement : statements) {
             statement.emit(targetMachine, context);
         }

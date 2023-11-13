@@ -15,8 +15,8 @@
 
 package io.karma.ferrous.manganese.ocm.type;
 
-import io.karma.ferrous.manganese.ocm.Field;
 import io.karma.ferrous.manganese.ocm.expr.Expression;
+import io.karma.ferrous.manganese.ocm.field.Field;
 import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.ocm.scope.ScopeType;
@@ -35,6 +35,7 @@ import java.util.Objects;
 @API(status = API.Status.INTERNAL)
 public record UDT(UDTKind kind, StructureType type, List<Field> fields, TokenSlice tokenSlice)
     implements NamedType, Scope {
+
     // Scope
 
     @Override

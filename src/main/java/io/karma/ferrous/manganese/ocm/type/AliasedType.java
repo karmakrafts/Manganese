@@ -75,6 +75,11 @@ public final class AliasedType implements NamedType {
     // Type
 
     @Override
+    public boolean canAccept(final Type type) {
+        return backingType.canAccept(type);
+    }
+
+    @Override
     public Expression makeDefaultValue() {
         return backingType.makeDefaultValue();
     }

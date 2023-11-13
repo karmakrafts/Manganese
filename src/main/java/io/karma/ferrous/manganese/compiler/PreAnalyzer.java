@@ -17,10 +17,10 @@ package io.karma.ferrous.manganese.compiler;
 
 import io.karma.ferrous.manganese.ParseAdapter;
 import io.karma.ferrous.manganese.module.Module;
-import io.karma.ferrous.manganese.ocm.Field;
 import io.karma.ferrous.manganese.ocm.access.AccessKind;
 import io.karma.ferrous.manganese.ocm.access.ScopedAccess;
 import io.karma.ferrous.manganese.ocm.expr.Expression;
+import io.karma.ferrous.manganese.ocm.field.Field;
 import io.karma.ferrous.manganese.ocm.function.Function;
 import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
@@ -53,7 +53,7 @@ import java.util.stream.Collectors;
 public final class PreAnalyzer extends ParseAdapter {
     private final LinkedHashMap<Identifier, NamedType> udts = new LinkedHashMap<>();
     private final HashMap<Identifier, HashMap<FunctionType, Function>> functions = new HashMap<>();
-    private final LinkedHashMap<Identifier, Field> fields = new LinkedHashMap<>();
+    private final LinkedHashMap<Identifier, Field> globalFields = new LinkedHashMap<>();
 
     public PreAnalyzer(final Compiler compiler, final CompileContext compileContext) {
         super(compiler, compileContext);
@@ -469,10 +469,6 @@ public final class PreAnalyzer extends ParseAdapter {
         final var udt = new UDT(kind, type, fields, tokenSlice);
         udts.put(type.getQualifiedName(), udt);
 
-        for (final var field : fields) {
-            this.fields.put(field.getQualifiedName(), field);
-        }
-
         Logger.INSTANCE.debugln("Captured field layout for kind '%s'", type.getQualifiedName());
         return udt;
     }
@@ -597,8 +593,8 @@ public final class PreAnalyzer extends ParseAdapter {
         return ScopeUtils.findInScope(functions, name, scopeName) != null;
     }
 
-    public @Nullable Field findFieldInScope(final Identifier name, final Identifier scopeName) {
-        return ScopeUtils.findInScope(fields, name, scopeName);
+    public @Nullable Field findGlobalFieldInScope(final Identifier name, final Identifier scopeName) {
+        return ScopeUtils.findInScope(globalFields, name, scopeName);
     }
 
     private static final class DummyType implements NamedType {

@@ -15,6 +15,7 @@
 
 package io.karma.ferrous.manganese.ocm.statement;
 
+import io.karma.ferrous.manganese.compiler.CompileErrorCode;
 import io.karma.ferrous.manganese.ocm.expr.Expression;
 import io.karma.ferrous.manganese.ocm.ir.IRContext;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
@@ -22,6 +23,8 @@ import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.TokenSlice;
 import org.apiguardian.api.API;
 import org.jetbrains.annotations.Nullable;
+
+import static org.lwjgl.system.MemoryUtil.NULL;
 
 /**
  * @author Alexander Hinze
@@ -67,6 +70,15 @@ public final class PanicStatement implements Statement {
 
     @Override
     public long emit(final TargetMachine targetMachine, final IRContext irContext) {
+        final var builder = irContext.getCompileContext();
+        if (isConst) {
+            if (!value.isConst()) {
+                builder.reportError(value.getTokenSlice().getFirstToken(), CompileErrorCode.E4015);
+                return NULL;
+            }
+            builder.reportError(value.getTokenSlice().getFirstToken(), CompileErrorCode.E7000);
+            return NULL;
+        }
         return 0;
     }
 }

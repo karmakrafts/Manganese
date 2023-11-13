@@ -25,27 +25,37 @@ import org.apiguardian.api.API.Status;
 @API(status = Status.INTERNAL)
 public enum ScopeType {
     // @formatter:off
-    GLOBAL,
-    FILE,
-    MODULE_FILE,
-    MODULE,
-    STRUCT,
-    CLASS,
-    ENUM_CLASS,
-    ENUM,
-    TRAIT,
-    ATTRIBUTE,
-    INTERFACE,
-    CONSTRUCTOR,
-    DESTRUCTOR,
-    FUNCTION,
-    IF,
-    ELSE_IF,
-    ELSE,
-    WHEN,
-    FOR,
-    WHILE,
-    DO,
-    LOOP
+    GLOBAL      (true),
+    FILE        (true),
+    MODULE_FILE (true),
+    MODULE      (true),
+    STRUCT      (false),
+    CLASS       (false),
+    ENUM_CLASS  (false),
+    ENUM        (false),
+    TRAIT       (false),
+    ATTRIBUTE   (false),
+    INTERFACE   (false),
+    CONSTRUCTOR (false),
+    DESTRUCTOR  (false),
+    FUNCTION    (false),
+    IF          (false),
+    ELSE_IF     (false),
+    ELSE        (false),
+    WHEN        (false),
+    FOR         (false),
+    WHILE       (false),
+    DO          (false),
+    LOOP        (false);
     // @formatter:on
+
+    private final boolean isGlobal;
+
+    ScopeType(final boolean isGlobal) {
+        this.isGlobal = isGlobal;
+    }
+
+    public boolean isGlobal() {
+        return isGlobal;
+    }
 }

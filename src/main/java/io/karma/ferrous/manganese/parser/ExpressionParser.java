@@ -22,10 +22,13 @@ import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.ValueStorage;
 import io.karma.ferrous.manganese.ocm.constant.*;
 import io.karma.ferrous.manganese.ocm.expr.*;
+import io.karma.ferrous.manganese.ocm.field.FieldStorageProvider;
 import io.karma.ferrous.manganese.ocm.function.Function;
 import io.karma.ferrous.manganese.ocm.function.FunctionReference;
 import io.karma.ferrous.manganese.ocm.function.FunctionResolver;
+import io.karma.ferrous.manganese.ocm.function.UnresolvedFunctionReference;
 import io.karma.ferrous.manganese.ocm.scope.ScopeStack;
+import io.karma.ferrous.manganese.ocm.scope.Scoped;
 import io.karma.ferrous.manganese.ocm.type.BuiltinType;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.util.*;
@@ -34,6 +37,7 @@ import io.karma.ferrous.vanadium.FerrousParser.*;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
+import org.antlr.v4.runtime.tree.TerminalNodeImpl;
 import org.apiguardian.api.API;
 import org.jetbrains.annotations.Nullable;
 
@@ -49,15 +53,17 @@ public final class ExpressionParser extends ParseAdapter {
     private final ScopeStack capturedScopeStack;
     private final Object parent;
     private Expression expression;
+    private boolean isAtEnd;
 
     public ExpressionParser(final Compiler compiler, final CompileContext compileContext,
-                            final ScopeStack capturedScopeStack, final @Nullable Object parent) {
+                            final ScopeStack capturedScopeStack, final Object parent) {
         super(compiler, compileContext);
         this.capturedScopeStack = capturedScopeStack;
         this.parent = parent;
     }
 
     private void setExpression(final ParserRuleContext context, final @Nullable Expression expression) {
+        isAtEnd = true;
         if (expression == null) {
             compileContext.reportError(context.start, CompileErrorCode.E2001);
             return;
@@ -94,9 +100,9 @@ public final class ExpressionParser extends ParseAdapter {
         }
         final var opContext = opContextOpt.get();
         final var opText = opContext.getText();
-        final var opOpt = Operator.findByText(opText, false);
+        final var opOpt = Operator.findByText(opText, false, false);
         if (opOpt.isEmpty()) {
-            compileContext.reportError(context.start, opText, CompileErrorCode.E5001);
+            compileContext.reportError(context.start, opText, CompileErrorCode.E4013);
             return null;
         }
         var op = opOpt.get();
@@ -114,7 +120,7 @@ public final class ExpressionParser extends ParseAdapter {
             return null;
         }
         return new UnaryExpression(op,
-            ExpressionUtils.parseExpression(compiler, compileContext, scopeStack, exprOpt.get(), parent),
+            ExpressionUtils.parseExpression(compiler, compileContext, scopeStack, exprOpt.get(), false),
             TokenSlice.from(compileContext, context));
     }
 
@@ -125,9 +131,9 @@ public final class ExpressionParser extends ParseAdapter {
             return null;
         }
         final var opText = opContextOpt.get().getText();
-        final var opOpt = Operator.findByText(opText, true);
+        final var opOpt = Operator.findByText(opText, true, false);
         if (opOpt.isEmpty()) {
-            compileContext.reportError(context.start, opText, CompileErrorCode.E5002);
+            compileContext.reportError(context.start, opText, CompileErrorCode.E4014);
             return null;
         }
         final var lhs = ExpressionUtils.parseExpression(compiler, compileContext, scopeStack, children.get(0), parent);
@@ -188,12 +194,14 @@ public final class ExpressionParser extends ParseAdapter {
             capturedScopeStack,
             argsContext,
             parent);
-        final var ref = refExpr.getReference();
-        if (!(ref instanceof FunctionReference funRef)) {
-            return null;
-        }
-        funRef.setContextualParamTypes(args.stream().map(Expression::getType).toArray(Type[]::new));
-        final var function = funRef.resolve();
+        final var function = switch (refExpr.getReference()) {
+            case UnresolvedFunctionReference unresolvedRef -> {
+                unresolvedRef.setContextualParamTypes(args.stream().map(Expression::getType).toArray(Type[]::new));
+                yield unresolvedRef.get();
+            }
+            case FunctionReference ref -> ref.get();
+            default -> throw new IllegalStateException("Unsupported reference type");
+        };
         if (function == null) {
             compileContext.reportError(refExpr.getTokenSlice().getFirstToken(), CompileErrorCode.E4009);
             return null;
@@ -219,55 +227,79 @@ public final class ExpressionParser extends ParseAdapter {
         return null;
     }
 
-    private @Nullable ReferenceExpression parseReference(final ParserRuleContext context) {
+    private @Nullable ReferenceExpression parseReference(final ParserRuleContext context, final Object parent) {
+        if (!(parent instanceof Scoped scoped)) {
+            return null;
+        }
+        final var scopeName = scoped.getScopeName();
         final var name = Identifier.parse(context);
+        Logger.INSTANCE.debugln("Looking for reference to %s", name);
         if (parent instanceof Function function) {
             final var param = Arrays.stream(function.getParameters()).filter(p -> p.getName().equals(name)).findFirst();
             if (param.isPresent()) {
                 return new ReferenceExpression(param.get(), false, TokenSlice.from(compileContext, context));
             }
-            final var local = compileContext.getPostAnalyzer().findLocalIn(function,
-                name,
-                capturedScopeStack.getScopeName());
+            final var local = compileContext.getPostAnalyzer().findLocalIn(function, name, scopeName);
             if (local != null) {
                 return new ReferenceExpression(local, false, TokenSlice.from(compileContext, context));
             }
         }
-        // TODO: implement parsing of field references
+        if (parent instanceof ReferenceExpression parentRef) {
+            if (parentRef.getReference() instanceof FieldStorageProvider provider) {
+                final var storage = provider.getFieldValue(name);
+                if (storage != null) {
+                    return new ReferenceExpression(storage, false, TokenSlice.from(compileContext, context));
+                }
+            }
+        }
         final var preAnalyzer = compileContext.getPreAnalyzer();
-        if (!preAnalyzer.functionExistsInScope(name, capturedScopeStack.getScopeName())) {
+        if (!preAnalyzer.functionExistsInScope(name, scopeName)) {
             compileContext.reportError(context.start, CompileErrorCode.E4007);
             return null;
         }
-        final FunctionResolver resolver = paramTypes -> preAnalyzer.findFunctionInScope(name,
-            capturedScopeStack.getScopeName(),
-            paramTypes);
-        return new ReferenceExpression(new FunctionReference(resolver),
+        final FunctionResolver resolver = paramTypes -> preAnalyzer.findFunctionInScope(name, scopeName, paramTypes);
+        return new ReferenceExpression(new UnresolvedFunctionReference(resolver),
             false,
             TokenSlice.from(compileContext, context));
     }
 
-    @Override
-    public void enterQualifiedIdent(final QualifiedIdentContext context) {
-        if (expression != null) {
-            return;
+    private @Nullable ReferenceExpression parseBinaryReference(final ParserRuleContext context,
+                                                               final List<ParseTree> children) {
+        final var expr = ExpressionUtils.parseExpression(compiler,
+            compileContext,
+            capturedScopeStack,
+            children.get(0),
+            parent);
+        if (expr == null) {
+            return null;
         }
-        setExpression(context, parseReference(context));
-        super.enterQualifiedIdent(context);
+        final var opContext = children.get(1);
+        final var opOpt = Operator.findByText(opContext.getText(), true, true);
+        if (opOpt.isEmpty()) {
+            return null;
+        }
+        return parseReference((IdentContext) children.get(2), expr);
     }
 
     @Override
     public void enterIdent(final IdentContext context) {
-        if (expression != null) {
+        if (isAtEnd) {
             return;
         }
-        setExpression(context, parseReference(context));
-        super.enterIdent(context);
+        setExpression(context, parseReference(context, parent));
+    }
+
+    @Override
+    public void enterQualifiedIdent(final QualifiedIdentContext context) {
+        if (isAtEnd) {
+            return;
+        }
+        setExpression(context, parseReference(context, parent));
     }
 
     @Override
     public void enterExpr(final ExprContext context) {
-        if (expression != null) {
+        if (isAtEnd) {
             return;
         }
         try {
@@ -278,13 +310,23 @@ public final class ExpressionParser extends ParseAdapter {
                 return;
             }
             if (numChildren >= 3) {
-                // Binary expressions
-                if (numChildren == 3 && KitchenSink.areTypesAssignable(children,
-                    ExprContext.class,
-                    TerminalNode.class,
-                    ExprContext.class)) {
-                    setExpression(context, parseBinaryExpression(context, children));
-                    return;
+                if (numChildren == 3) {
+                    // Binary expressions
+                    if (KitchenSink.areTypesAssignable(children,
+                        ExprContext.class,
+                        TerminalNodeImpl.class,
+                        ExprContext.class)) {
+                        setExpression(context, parseBinaryExpression(context, children));
+                        return;
+                    }
+                    // References
+                    if (KitchenSink.areTypesAssignable(children,
+                        ExprContext.class,
+                        TerminalNodeImpl.class,
+                        IdentContext.class)) {
+                        setExpression(context, parseBinaryReference(context, children));
+                        return;
+                    }
                 }
                 if (children.get(0) instanceof ExprContext exprContext) {
                     final var expr = ExpressionUtils.parseExpression(compiler,
@@ -298,18 +340,18 @@ public final class ExpressionParser extends ParseAdapter {
                     }
                     // Call with named arguments
                     if (KitchenSink.containsAssignableTypeSequence(children,
-                        TerminalNode.class,
+                        TerminalNodeImpl.class,
                         NamedExprListContext.class,
-                        TerminalNode.class)) {
+                        TerminalNodeImpl.class)) {
                         setExpression(context, parseNamedArgCallExpr(children));
                         return;
                     }
                     // Call with sequential arguments or indexing
                     if (KitchenSink.containsAssignableTypeSequence(children,
-                        TerminalNode.class,
+                        TerminalNodeImpl.class,
                         ExprListContext.class,
-                        TerminalNode.class)) {
-                        final var openParen = children.stream().filter(TerminalNode.class::isInstance).findFirst().orElseThrow();
+                        TerminalNodeImpl.class)) {
+                        final var openParen = children.stream().filter(TerminalNodeImpl.class::isInstance).findFirst().orElseThrow();
                         // We know it is a function call because of regular parens
                         if (openParen.getText().equals(TokenUtils.getLiteral(FerrousLexer.L_PAREN))) {
                             setExpression(context, parseCallExpr(exprContext, context.exprList(), children));
@@ -320,8 +362,10 @@ public final class ExpressionParser extends ParseAdapter {
                         return;
                     }
                     // Call without arguments
-                    if (KitchenSink.containsAssignableTypeSequence(children, TerminalNode.class, TerminalNode.class)) {
-                        final var openParen = children.stream().filter(TerminalNode.class::isInstance).findFirst().orElseThrow();
+                    if (KitchenSink.containsAssignableTypeSequence(children,
+                        TerminalNodeImpl.class,
+                        TerminalNodeImpl.class)) {
+                        final var openParen = children.stream().filter(TerminalNodeImpl.class::isInstance).findFirst().orElseThrow();
                         if (!openParen.getText().equals(TokenUtils.getLiteral(FerrousLexer.L_PAREN))) {
                             compileContext.reportError(context.start, CompileErrorCode.E4008);
                             return;
@@ -338,7 +382,7 @@ public final class ExpressionParser extends ParseAdapter {
 
     @Override
     public void enterSintLiteral(final SintLiteralContext context) {
-        if (expression != null) {
+        if (isAtEnd) {
             return;
         }
         try {
@@ -374,7 +418,7 @@ public final class ExpressionParser extends ParseAdapter {
 
     @Override
     public void enterUintLiteral(final UintLiteralContext context) {
-        if (expression != null) {
+        if (isAtEnd) {
             return;
         }
         try {
@@ -410,7 +454,7 @@ public final class ExpressionParser extends ParseAdapter {
 
     @Override
     public void enterFloatLiteral(final FloatLiteralContext context) {
-        if (expression != null) {
+        if (isAtEnd) {
             return;
         }
         try {
@@ -431,7 +475,7 @@ public final class ExpressionParser extends ParseAdapter {
 
     @Override
     public void enterBoolLiteral(final BoolLiteralContext context) {
-        if (expression != null) {
+        if (isAtEnd) {
             return;
         }
         setExpression(context, new BoolConstant(context.KW_TRUE() != null, TokenSlice.from(compileContext, context)));
@@ -440,7 +484,7 @@ public final class ExpressionParser extends ParseAdapter {
 
     @Override
     public void enterLiteral(final LiteralContext context) {
-        if (expression != null) {
+        if (isAtEnd) {
             return;
         }
         if (context.KW_NULL() != null) {
@@ -451,7 +495,7 @@ public final class ExpressionParser extends ParseAdapter {
 
     @Override
     public void enterSimpleStringLiteral(final SimpleStringLiteralContext context) {
-        if (expression != null) {
+        if (isAtEnd) {
             return;
         }
         setExpression(context, parseStringConstant(context));
@@ -460,7 +504,7 @@ public final class ExpressionParser extends ParseAdapter {
 
     @Override
     public void enterMultilineStringLiteral(final MultilineStringLiteralContext context) {
-        if (expression != null) {
+        if (isAtEnd) {
             return;
         }
         setExpression(context, parseStringConstant(context));

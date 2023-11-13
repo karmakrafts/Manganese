@@ -15,19 +15,16 @@
 
 package io.karma.ferrous.manganese.ocm.statement;
 
-import io.karma.ferrous.manganese.ocm.ir.IRContext;
+import io.karma.ferrous.manganese.ocm.ir.IREmitter;
 import io.karma.ferrous.manganese.ocm.scope.Scoped;
-import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.TokenSlice;
 
 /**
  * @author Alexander Hinze
  * @since 22/10/2023
  */
-public interface Statement extends Scoped {
+public interface Statement extends IREmitter, Scoped {
     TokenSlice getTokenSlice();
-
-    long emit(final TargetMachine targetMachine, final IRContext irContext);
 
     default boolean returnsFromCurrentScope() {
         return false;
