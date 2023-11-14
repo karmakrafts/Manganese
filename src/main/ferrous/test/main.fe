@@ -1,4 +1,4 @@
-extern fun printf(fmt: *char, args: vaargs): i32
+extern fun printf(fmt: *char, ...): i32
 
 mod foo {
     pub struct Value {

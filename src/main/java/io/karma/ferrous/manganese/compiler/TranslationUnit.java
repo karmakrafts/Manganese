@@ -17,8 +17,7 @@ package io.karma.ferrous.manganese.compiler;
 
 import io.karma.ferrous.manganese.ParseAdapter;
 import io.karma.ferrous.manganese.module.Module;
-import io.karma.ferrous.vanadium.FerrousParser.ExternFunctionContext;
-import io.karma.ferrous.vanadium.FerrousParser.FunctionContext;
+import io.karma.ferrous.vanadium.FerrousParser.ProtoFunctionContext;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 
@@ -39,22 +38,17 @@ public class TranslationUnit extends ParseAdapter {
     }
 
     @Override
-    public void enterExternFunction(final ExternFunctionContext context) {
-        final var function = getFunction(context.protoFunction());
+    public void enterProtoFunction(final ProtoFunctionContext context) {
+        final var function = getFunction(context);
         if (function == null) {
-            return; // TODO: log warning/error?
+            compileContext.reportError(context.functionIdent().start, CompileErrorCode.E5000);
+            return;
         }
         function.materialize(compileContext, module, compiler.getTargetMachine());
-    }
-
-    @Override
-    public void enterFunction(final FunctionContext context) {
-        final var function = getFunction(context.protoFunction());
-        if (function == null) {
-            return; // TODO: log warning/error?
+        final var body = function.getBody();
+        if(body != null) {
+            pushScope(body);
         }
-        function.materialize(compileContext, module, compiler.getTargetMachine());
-        pushScope(function.getBody());
     }
 
     public Module getModule() {

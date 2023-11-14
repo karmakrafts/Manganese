@@ -83,11 +83,7 @@ public abstract class ParseAdapter implements FerrousParserListener {
         final var name = FunctionUtils.parseFunctionName(context.functionIdent());
         final var scopeName = scopeStack.getScopeName();
         final var type = FunctionUtils.parseFunctionType(compiler, compileContext, scopeStack, context);
-        final var function = compileContext.getPreAnalyzer().findFunctionInScope(name, scopeName, type);
-        if (function == null) {
-            compileContext.reportError(KitchenSink.makeCompilerMessage(name.toString()), CompileErrorCode.E5000);
-        }
-        return function;
+        return compileContext.getPreAnalyzer().findFunctionInScope(name, scopeName, type);
     }
 
     protected @Nullable Type getType(final IdentContext context) {
@@ -168,10 +164,10 @@ public abstract class ParseAdapter implements FerrousParserListener {
     public void exitTypeAlias(TypeAliasContext typeAliasContext) {}
 
     @Override
-    public void enterVaFunctionParam(VaFunctionParamContext vaFunctionParamContext) {}
+    public void enterOperator(OperatorContext operatorContext) {}
 
     @Override
-    public void exitVaFunctionParam(VaFunctionParamContext vaFunctionParamContext) {}
+    public void exitOperator(OperatorContext operatorContext) {}
 
     @Override
     public void enterLambdaExpr(LambdaExprContext lambdaExprContext) {}
@@ -643,12 +639,6 @@ public abstract class ParseAdapter implements FerrousParserListener {
 
     @Override
     public void exitFunctionIdent(FunctionIdentContext functionIdentContext) {}
-
-    @Override
-    public void enterExternFunction(ExternFunctionContext externFunctionContext) {}
-
-    @Override
-    public void exitExternFunction(ExternFunctionContext externFunctionContext) {}
 
     @Override
     public void enterFunctionBody(FunctionBodyContext functionBodyContext) {}

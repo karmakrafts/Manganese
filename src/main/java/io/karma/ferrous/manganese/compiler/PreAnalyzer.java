@@ -17,6 +17,7 @@ package io.karma.ferrous.manganese.compiler;
 
 import io.karma.ferrous.manganese.ParseAdapter;
 import io.karma.ferrous.manganese.module.Module;
+import io.karma.ferrous.manganese.ocm.Parameter;
 import io.karma.ferrous.manganese.ocm.access.AccessKind;
 import io.karma.ferrous.manganese.ocm.access.ScopedAccess;
 import io.karma.ferrous.manganese.ocm.expr.Expression;
@@ -26,7 +27,6 @@ import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.ocm.type.*;
 import io.karma.ferrous.manganese.parser.FieldLayoutParser;
-import io.karma.ferrous.manganese.parser.ProtoFunctionParser;
 import io.karma.ferrous.manganese.profiler.Profiler;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.*;
@@ -129,34 +129,31 @@ public final class PreAnalyzer extends ParseAdapter {
     }
 
     @Override
-    public void enterFunction(final FunctionContext context) {
-        if (checkIsFunctionAlreadyDefined(context.protoFunction())) {
+    public void enterProtoFunction(final ProtoFunctionContext context) {
+        if (checkIsFunctionAlreadyDefined(context)) {
             return;
         }
-        final var analyzer = new ProtoFunctionParser(compiler,
-            compileContext,
-            scopeStack,
-            false,
-            TokenSlice.from(compileContext, context));
-        ParseTreeWalker.DEFAULT.walk(analyzer, context);
-        final var function = analyzer.getFunction();
-        functions.computeIfAbsent(function.getQualifiedName(), n -> new HashMap<>()).put(function.getType(), function);
-        super.enterFunction(context); // Make sure we pick up the default scope for function prototypes
-    }
-
-    @Override
-    public void enterExternFunction(final ExternFunctionContext context) {
-        if (checkIsFunctionAlreadyDefined(context.protoFunction())) {
-            return;
+        final var name = FunctionUtils.parseFunctionName(context.functionIdent());
+        final var callConv = FunctionUtils.parseCallingConvention(compileContext, context);
+        final var type = FunctionUtils.parseFunctionType(compiler, compileContext, scopeStack, context);
+        final var paramNames = FunctionUtils.parseParameterNames(context);
+        final var paramTypes = type.getParamTypes();
+        final var numParams = paramTypes.length;
+        if (numParams != paramNames.length) {
+            throw new IllegalStateException("Invalid function parser state");
         }
-        final var analyzer = new ProtoFunctionParser(compiler,
-            compileContext,
-            scopeStack,
-            true,
-            TokenSlice.from(compileContext, context));
-        ParseTreeWalker.DEFAULT.walk(analyzer, context);
-        final var function = analyzer.getFunction();
+        final var params = new Parameter[numParams];
+        for (var i = 0; i < numParams; i++) {
+            params[i] = new Parameter(paramNames[i], paramTypes[i], null);
+        }
+        final var function = scopeStack.applyEnclosingScopes(new Function(name,
+            callConv,
+            type,
+            context.KW_EXTERN() != null,
+            TokenSlice.from(compileContext, context),
+            params));
         functions.computeIfAbsent(function.getQualifiedName(), n -> new HashMap<>()).put(function.getType(), function);
+        super.enterProtoFunction(context); // Make sure we pick up the default scope for function prototypes
     }
 
     @Override

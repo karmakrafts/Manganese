@@ -54,15 +54,10 @@ public final class FunctionUtils {
             return new Identifier[0];
         }
         // @formatter:off
-        final var names = params.stream()
+        return params.stream()
             .map(param -> Identifier.parse(param.ident()))
-            .collect(Collectors.toCollection(ArrayList::new));
+            .collect(Collectors.toCollection(ArrayList::new)).toArray(Identifier[]::new);
         // @formatter:on
-        final var vaParam = paramList.vaFunctionParam();
-        if (vaParam != null) {
-            names.add(Identifier.parse(vaParam.ident()));
-        }
-        return names.toArray(Identifier[]::new);
     }
 
     public static CallingConvention parseCallingConvention(final CompileContext compileContext,
@@ -103,10 +98,14 @@ public final class FunctionUtils {
         if (context == null) {
             return Collections.emptyList();
         }
+        final var paramList = context.functionParamList();
+        if (paramList == null) {
+            return Collections.emptyList();
+        }
         // @formatter:off
-        return context.functionParamList().functionParam().stream()
+        return paramList.functionParam().stream()
             .map(FerrousParser.FunctionParamContext::type)
-            .filter(type -> type != null && !type.getText().equals(TokenUtils.getLiteral(FerrousLexer.KW_VAARGS)))
+            .filter(type -> type != null && !type.getText().equals(TokenUtils.getLiteral(FerrousLexer.TRIPLE_DOT)))
             .map(type -> Types.parse(compiler, compileContext, scopeStack, type))
             .peek(type -> {
                 if(type == BuiltinType.VOID) {
@@ -125,7 +124,8 @@ public final class FunctionUtils {
             ? BuiltinType.VOID
             : Objects.requireNonNull(Types.parse(compiler, compileContext, scopeStack, type));
         // @formatter:on
-        final var isVarArg = context.functionParamList().vaFunctionParam() != null;
+        final var paramList = context.functionParamList();
+        final var isVarArg = paramList != null && paramList.TRIPLE_DOT() != null;
         final var paramTypes = parseParameterTypes(compiler, compileContext, scopeStack, context);
         return Types.function(returnType,
             paramTypes,
