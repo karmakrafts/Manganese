@@ -46,7 +46,7 @@ public class TranslationUnit extends ParseAdapter {
         }
         function.materialize(compileContext, module, compiler.getTargetMachine());
         final var body = function.getBody();
-        if(body != null) {
+        if (body != null) {
             pushScope(body);
         }
     }
