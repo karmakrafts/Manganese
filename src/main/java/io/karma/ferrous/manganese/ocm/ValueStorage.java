@@ -32,6 +32,10 @@ import java.util.Objects;
 public interface ValueStorage extends NameProvider {
     @Nullable Expression getValue();
 
+    default @Nullable ValueStorage getParent() {
+        return null;
+    }
+
     void setInitialized();
 
     boolean isInitialized();
@@ -45,6 +49,21 @@ public interface ValueStorage extends NameProvider {
     }
 
     boolean isMutable();
+
+    default boolean isRootMutable() {
+        var current = getParent();
+        while (current != null) {
+            final var next = current.getParent();
+            if (next == null) {
+                break;
+            }
+            current = next;
+        }
+        if (current == null) {
+            return isMutable();
+        }
+        return current.isRootMutable();
+    }
 
     void notifyChanged();
 

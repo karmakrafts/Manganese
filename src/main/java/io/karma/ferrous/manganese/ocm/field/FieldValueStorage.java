@@ -133,4 +133,13 @@ public final class FieldValueStorage implements ValueStorage, FieldStorageProvid
         this.value = exprValue;
         return FieldStorageProvider.super.store(exprValue, value, targetMachine, irContext);
     }
+
+    @Override
+    public long load(final TargetMachine targetMachine, final IRContext irContext) {
+        if (!isRootMutable()) {
+            final var parentValue = parent.load(targetMachine, irContext);
+            return irContext.getCurrentOrCreate().extract(parentValue, field.getIndex());
+        }
+        return FieldStorageProvider.super.load(targetMachine, irContext);
+    }
 }

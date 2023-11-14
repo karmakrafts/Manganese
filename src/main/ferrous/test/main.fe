@@ -6,8 +6,8 @@ mod foo {
     }
 
     pub struct Vector2i {
-        pub mut x: Value
-        pub mut y: Value
+        pub x: Value
+        pub y: Value
     }
 }
 
@@ -22,8 +22,8 @@ fun fill(value: i32): i32 {
     y = y << (2 >> 1)
     vec.x.x = y
     vec.y.x = vec.x.x >> 1
-    let mut vec2 = vec
-    return +-(vec.x.x + vec.y.x)
+    let vec2 = vec
+    return +-(vec2.x.x + vec2.y.x) + value
 }
 
 fun test2(value: &bool): &bool {
@@ -31,5 +31,5 @@ fun test2(value: &bool): &bool {
 }
 
 fun main(num_args: i32, args: **i8): i32 {
-    return fill(0)
+    return fill(num_args)
 }

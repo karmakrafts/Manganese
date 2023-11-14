@@ -169,6 +169,11 @@ public final class LetStatement implements Statement, NameProvider, ValueStorage
     }
 
     @Override
+    public boolean isRootMutable() {
+        return isMutable;
+    }
+
+    @Override
     public boolean isMutable() {
         return isMutable;
     }
@@ -212,6 +217,7 @@ public final class LetStatement implements Statement, NameProvider, ValueStorage
         if (!isMutable) {
             // For immutable variables, we can optimize by inlining the result into a register
             immutableAddress = value.emit(targetMachine, irContext);
+            LLVMSetValueName2(immutableAddress, internalName);
             return NULL;
         }
         if (mutableAddress == NULL) {
