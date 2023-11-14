@@ -18,7 +18,7 @@ fun test(value: i32): i32 {
 fun fill(value: i32): i32 {
     let mut vec: foo::Vector2i
     let mut x = 22
-    let mut y: mut &i32 = x // Copy value of x at this point
+    let mut y: mut &i32 = x
     y = y << (2 >> 1)
     vec.x.x = y
     vec.y.x = vec.x.x >> 1
