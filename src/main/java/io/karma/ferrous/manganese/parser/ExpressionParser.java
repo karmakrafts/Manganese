@@ -100,7 +100,7 @@ public final class ExpressionParser extends ParseAdapter {
         }
         final var opContext = opContextOpt.get();
         final var opText = opContext.getText();
-        final var opOpt = Operator.findByText(opText, false, false);
+        final var opOpt = Operator.findByText(opText);
         if (opOpt.isEmpty()) {
             compileContext.reportError(context.start, opText, CompileErrorCode.E4013);
             return null;
@@ -119,9 +119,16 @@ public final class ExpressionParser extends ParseAdapter {
             compileContext.reportError(context.start, CompileErrorCode.E2001);
             return null;
         }
-        return new UnaryExpression(op,
-            ExpressionUtils.parseExpression(compiler, compileContext, scopeStack, exprOpt.get(), false),
-            TokenSlice.from(compileContext, context));
+        final var expr = ExpressionUtils.parseExpression(compiler,
+            compileContext,
+            capturedScopeStack,
+            exprOpt.get(),
+            parent);
+        if (expr == null) {
+            compileContext.reportError(context.start, CompileErrorCode.E2001);
+            return null;
+        }
+        return new UnaryExpression(op, expr, TokenSlice.from(compileContext, context));
     }
 
     private @Nullable BinaryExpression parseBinaryExpression(final ExprContext context,
@@ -131,17 +138,25 @@ public final class ExpressionParser extends ParseAdapter {
             return null;
         }
         final var opText = opContextOpt.get().getText();
-        final var opOpt = Operator.findByText(opText, true, false);
+        final var opOpt = Operator.findByText(opText);
         if (opOpt.isEmpty()) {
             compileContext.reportError(context.start, opText, CompileErrorCode.E4014);
             return null;
         }
-        final var lhs = ExpressionUtils.parseExpression(compiler, compileContext, scopeStack, children.get(0), parent);
+        final var lhs = ExpressionUtils.parseExpression(compiler,
+            compileContext,
+            capturedScopeStack,
+            children.get(0),
+            parent);
         if (lhs == null) {
             compileContext.reportError(context.start, CompileErrorCode.E2001);
             return null;
         }
-        final var rhs = ExpressionUtils.parseExpression(compiler, compileContext, scopeStack, children.get(2), parent);
+        final var rhs = ExpressionUtils.parseExpression(compiler,
+            compileContext,
+            capturedScopeStack,
+            children.get(2),
+            parent);
         if (rhs == null) {
             compileContext.reportError(context.start, CompileErrorCode.E2001);
             return null;
@@ -274,7 +289,7 @@ public final class ExpressionParser extends ParseAdapter {
             return null;
         }
         final var opContext = children.get(1);
-        final var opOpt = Operator.findByText(opContext.getText(), true, true);
+        final var opOpt = Operator.findByText(opContext.getText());
         if (opOpt.isEmpty()) {
             return null;
         }

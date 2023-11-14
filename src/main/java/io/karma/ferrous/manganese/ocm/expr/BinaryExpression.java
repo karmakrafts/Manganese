@@ -185,7 +185,10 @@ public final class BinaryExpression implements Expression {
         if (op == Operator.SWAP) {
             return emitSwap(targetMachine, irContext);
         }
-        final var rhsType = rhs.getType();
+        var rhsType = rhs.getType();
+        if (rhsType != null && rhsType.isReference()) {
+            rhsType = rhsType.getBaseType();
+        }
         if (!(rhsType instanceof BuiltinType builtinType)) {
             throw new UnsupportedOperationException();
         }

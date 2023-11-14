@@ -1,9 +1,13 @@
 extern fun printf(fmt: *char, args: vaargs): i32
 
 mod foo {
-    pub struct Vector2i {
+    pub struct Value {
         pub mut x: i32
-        pub mut y: i32
+    }
+
+    pub struct Vector2i {
+        pub mut x: Value
+        pub mut y: Value
     }
 }
 
@@ -16,9 +20,10 @@ fun fill(value: i32): i32 {
     let mut x = 22
     let mut y: mut &i32 = x // Copy value of x at this point
     y = y << (2 >> 1)
-    vec.x = y
-    vec.y = vec.x >> 1
-    return vec.x + vec.y
+    vec.x.x = y
+    vec.y.x = vec.x.x >> 1
+    let mut vec2 = vec
+    return +-(vec.x.x + vec.y.x)
 }
 
 fun test2(value: &bool): &bool {

@@ -78,7 +78,7 @@ public final class ReferenceExpression implements Expression {
     public Type getType() {
         return switch (reference) { // @formatter:off
             case FunctionReference funRef -> Objects.requireNonNull(funRef.get()).getType();
-            case ValueStorage storage     -> storage.getType();
+            case ValueStorage storage     -> Objects.requireNonNull(storage.getType());
             case Parameter param          -> param.getType();
             default                       -> throw new IllegalStateException("Unknown reference kind");
         }; // @formatter:on

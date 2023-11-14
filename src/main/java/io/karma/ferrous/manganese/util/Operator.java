@@ -30,7 +30,7 @@ import java.util.Optional;
 public enum Operator {
     // @formatter:off
     // Arithmetics
-    PLUS            (FerrousLexer.OP_PLUS,              "op.plus",              false,  true,  false, false),
+    PLUS            (FerrousLexer.OP_PLUS,              "op.plus",              true,   true,  false, false),
     MINUS           (FerrousLexer.OP_MINUS,             "op.minus",             true,   true,  false, false),
     TIMES           (FerrousLexer.ASTERISK,             "op.times",             false,  true,  false, false),
     DIV             (FerrousLexer.OP_DIV,               "op.div",               false,  true,  false, false),
@@ -104,8 +104,8 @@ public enum Operator {
         this.isReference = isReference;
     }
 
-    public static Optional<Operator> findByText(final String text, final boolean isBinary, final boolean isReference) {
-        return Arrays.stream(values()).filter(op -> op.text.equals(text) && op.isBinary == isBinary && op.isReference == isReference).findFirst();
+    public static Optional<Operator> findByText(final String text) {
+        return Arrays.stream(values()).filter(op -> op.text.equals(text)).findFirst();
     }
 
     public boolean isUnary() {

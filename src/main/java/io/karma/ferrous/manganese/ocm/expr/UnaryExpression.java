@@ -49,6 +49,16 @@ public final class UnaryExpression implements Expression {
         this.tokenSlice = tokenSlice;
     }
 
+    private long emitNegate(final long address, final TargetMachine targetMachine, final IRContext irContext,
+                            final BuiltinType type) {
+        final var builder = irContext.getCurrentOrCreate();
+        final var zero = type.makeDefaultValue().emit(targetMachine, irContext);
+        if (type.isFloatType()) {
+            return builder.fsub(zero, address);
+        }
+        return builder.sub(zero, address);
+    }
+
     private long emitPreIncrement(final long value, final IRBuilder builder) {
         return value;
     }
@@ -95,13 +105,16 @@ public final class UnaryExpression implements Expression {
     @Override
     public long emit(final TargetMachine targetMachine, final IRContext irContext) {
         final var builder = irContext.getCurrentOrCreate();
-        final var type = value.getType();
+        var type = value.getType();
+        if (type.isReference()) {
+            type = type.getBaseType();
+        }
         if (!(type instanceof BuiltinType builtinType)) {
             return NULL; // TODO: implement user defined operator calls
         }
         final var address = value.emit(targetMachine, irContext);
         return switch(op) { // @formatter:off
-            case MINUS, PLUS    -> builtinType.isFloatType() ? builder.fneg(address) : builder.neg(address);
+            case MINUS, PLUS    -> emitNegate(address, targetMachine, irContext, builtinType);
             case INV            -> builder.xor(address, LLVMConstInt(type.materialize(targetMachine), -1, false));
             case NOT            -> builder.xor(address, LLVMConstInt(type.materialize(targetMachine), 1, false));
             case PRE_INC        -> emitPreIncrement(address, builder);

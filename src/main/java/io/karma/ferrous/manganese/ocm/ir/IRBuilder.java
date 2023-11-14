@@ -205,10 +205,6 @@ public final class IRBuilder {
         return LLVMBuildURem(address, lhs, rhs, "");
     }
 
-    public long neg(final long value) {
-        return LLVMBuildNeg(address, value, "");
-    }
-
     // Bitwise operations
 
     public long and(final long lhs, final long rhs) {
@@ -255,10 +251,6 @@ public final class IRBuilder {
 
     public long frem(final long lhs, final long rhs) {
         return LLVMBuildFRem(address, lhs, rhs, "");
-    }
-
-    public long fneg(final long value) {
-        return LLVMBuildFNeg(address, value, "");
     }
 
     // Control flow

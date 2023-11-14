@@ -89,7 +89,7 @@ public final class FunctionUtils {
         final var children = context.children;
         if (children.size() == 1) {
             final var text = children.getFirst().getText();
-            final var op = Operator.findByText(text, true, true);
+            final var op = Operator.findByText(text);
             if (op.isPresent()) {
                 return Identifier.parse(op.get().getFunctionName());
             }
