@@ -15,13 +15,10 @@
 
 package io.karma.ferrous.manganese.compiler.pass;
 
-import io.karma.ferrous.manganese.ParseAdapter;
 import io.karma.ferrous.manganese.compiler.CompileContext;
-import io.karma.ferrous.manganese.compiler.CompileErrorCode;
 import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.module.Module;
 import io.karma.ferrous.manganese.profiler.Profiler;
-import io.karma.ferrous.vanadium.FerrousParser.ProtoFunctionContext;
 import org.apiguardian.api.API;
 
 import java.util.concurrent.ExecutorService;
@@ -36,30 +33,14 @@ public final class EmitPass implements CompilePass {
     public void run(final Compiler compiler, final CompileContext compileContext, final Module module,
                     final ExecutorService executor) {
         Profiler.INSTANCE.push();
-        compileContext.walkParseTree(new ParseListenerImpl(compiler, compileContext, module));
+        final var moduleData = compileContext.getOrCreateModuleData();
+        final var overloadSets = moduleData.getFunctions().values();
+        for (final var overloadSet : overloadSets) {
+            final var functions = overloadSet.values();
+            for (final var function : functions) {
+                function.materialize(compileContext, module, compiler.getTargetMachine());
+            }
+        }
         Profiler.INSTANCE.pop();
-    }
-
-    private static final class ParseListenerImpl extends ParseAdapter {
-        private final Module module;
-
-        public ParseListenerImpl(final Compiler compiler, final CompileContext compileContext, final Module module) {
-            super(compiler, compileContext);
-            this.module = module;
-        }
-
-        @Override
-        public void enterProtoFunction(final ProtoFunctionContext context) {
-            final var function = getFunction(context);
-            if (function == null) {
-                compileContext.reportError(context.functionIdent().start, CompileErrorCode.E5000);
-                return;
-            }
-            function.materialize(compileContext, module, compiler.getTargetMachine());
-            final var body = function.getBody();
-            if (body != null) {
-                pushScope(body);
-            }
-        }
     }
 }
