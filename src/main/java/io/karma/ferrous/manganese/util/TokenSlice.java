@@ -37,14 +37,14 @@ public record TokenSlice(@Nullable TokenStream tokenStream, int begin, int end) 
     public static final CommonToken EMPTY_TOKEN = new CommonToken(FerrousLexer.WS, "");
 
     public static TokenSlice from(final CompileContext compileContext, final ParserRuleContext context) {
-        return new TokenSlice(compileContext.getTokenStream(),
+        return new TokenSlice(compileContext.getOrCreateModuleData().getTokenStream(),
             context.start.getTokenIndex(),
             context.stop.getTokenIndex());
     }
 
     public static TokenSlice from(final CompileContext compileContext, final TerminalNode terminalNode) {
         final var index = terminalNode.getSymbol().getTokenIndex();
-        return new TokenSlice(compileContext.getTokenStream(), index, index);
+        return new TokenSlice(compileContext.getOrCreateModuleData().getTokenStream(), index, index);
     }
 
     public Token findTokenOrFirst(final String text) {

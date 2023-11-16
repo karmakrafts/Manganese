@@ -101,11 +101,12 @@ public final class BinaryExpression implements Expression {
         lhsRefExpr.setIsWrite(true); // This is always a write to the left side of the expression
         return switch (lhsRefExpr.getReference()) {
             case ValueStorage storage -> {
-                storage.store(rhs, targetMachine, irContext);
-                if (isResultDiscarded) {
-                    yield NULL; // Omit
-                }
-                yield storage.load(targetMachine, irContext);
+                //storage.store(rhs, targetMachine, irContext);
+                //if (isResultDiscarded) {
+                //    yield NULL; // Omit
+                //}
+                //yield storage.load(targetMachine, irContext);
+                yield NULL;
             }
             default -> NULL;
         };
@@ -185,11 +186,11 @@ public final class BinaryExpression implements Expression {
         if (op == Operator.SWAP) {
             return emitSwap(targetMachine, irContext);
         }
-        var rhsType = rhs.getType();
-        if (rhsType != null && rhsType.isReference()) {
-            rhsType = rhsType.getBaseType();
+        var lhsType = lhs.getType();
+        if (lhsType != null && lhsType.isReference()) {
+            lhsType = lhsType.getBaseType();
         }
-        if (!(rhsType instanceof BuiltinType builtinType)) {
+        if (!(lhsType instanceof BuiltinType builtinType)) {
             throw new UnsupportedOperationException();
         }
         return emitBuiltin(targetMachine, irContext, builtinType);

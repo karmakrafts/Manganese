@@ -56,11 +56,11 @@ public final class FunctionBody implements Scope {
         if (isAppended) {
             return;
         }
-        final var context = new FunctionIRContext(compileContext, module, targetMachine, function);
-        for (final var statement : statements) {
-            statement.emit(targetMachine, context);
+        try (final var context = new FunctionIRContext(compileContext, module, targetMachine, function)) {
+            for (final var statement : statements) {
+                statement.emit(targetMachine, context);
+            }
         }
-        context.dispose();
         isAppended = true;
     }
 

@@ -18,9 +18,7 @@ package io.karma.ferrous.manganese.ocm.statement;
 import io.karma.ferrous.manganese.ocm.NameProvider;
 import io.karma.ferrous.manganese.ocm.ValueStorage;
 import io.karma.ferrous.manganese.ocm.expr.Expression;
-import io.karma.ferrous.manganese.ocm.expr.ReferenceExpression;
-import io.karma.ferrous.manganese.ocm.field.FieldStorageProvider;
-import io.karma.ferrous.manganese.ocm.field.FieldValueStorage;
+import io.karma.ferrous.manganese.ocm.field.FieldStorage;
 import io.karma.ferrous.manganese.ocm.ir.IRContext;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.ocm.type.Type;
@@ -44,15 +42,15 @@ import static org.lwjgl.system.MemoryUtil.NULL;
  * @since 08/11/2023
  */
 @API(status = API.Status.INTERNAL)
-public final class LetStatement implements Statement, NameProvider, ValueStorage, FieldStorageProvider {
+public final class LetStatement implements Statement, NameProvider, ValueStorage {
     private final Identifier name;
     private final Type type;
     private final boolean isMutable;
     private final EnumSet<StorageMod> storageMods;
     private final TokenSlice tokenSlice;
-    private final List<FieldValueStorage> fieldValues;
+    private final List<FieldStorage> fieldValues;
+    private final Expression value;
     private boolean isInitialized;
-    private Expression value;
     private Scope enclosingScope;
     private long immutableAddress;
     private long mutableAddress;
@@ -69,7 +67,7 @@ public final class LetStatement implements Statement, NameProvider, ValueStorage
         this.storageMods = storageMods;
         this.tokenSlice = tokenSlice;
         if (type instanceof UDT udt) {
-            fieldValues = udt.fields().stream().map(f -> new FieldValueStorage(f, this)).toList();
+            fieldValues = udt.fields().stream().map(f -> new FieldStorage(f, this)).toList();
         }
         else {
             fieldValues = Collections.emptyList();
@@ -106,7 +104,7 @@ public final class LetStatement implements Statement, NameProvider, ValueStorage
         return isInitialized;
     }
 
-    // FieldStorageProvider
+    // ValueStorage
 
     @Override
     public Type getType() {
@@ -114,52 +112,12 @@ public final class LetStatement implements Statement, NameProvider, ValueStorage
     }
 
     @Override
-    public @Nullable FieldStorageProvider getParent() {
-        return null;
-    }
-
-    @Override
-    public List<FieldValueStorage> getFieldValues() {
-        return fieldValues;
-    }
-
-    // ValueStorage
-
-    @Override
     public long getAddress(final TargetMachine targetMachine, final IRContext irContext) {
-        final var builder = irContext.getCurrentOrCreate();
-        if (!isMutable) { // Allocate dynamically on the stack if needed
-            final var address = builder.alloca(type.materialize(targetMachine));
-            builder.store(immutableAddress, address);
-            return address;
-        }
         return mutableAddress;
     }
 
     @Override
-    public long storeAddress(final @Nullable Expression exprValue, final long address,
-                             final TargetMachine targetMachine, final IRContext irContext) {
-        this.value = exprValue;
-        return FieldStorageProvider.super.storeAddress(exprValue, address, targetMachine, irContext);
-    }
-
-    @Override
-    public long store(final @Nullable Expression exprValue, final long value, final TargetMachine targetMachine,
-                      final IRContext irContext) {
-        this.value = exprValue;
-        return FieldStorageProvider.super.store(exprValue, value, targetMachine, irContext);
-    }
-
-    @Override
-    public long load(final TargetMachine targetMachine, final IRContext irContext) {
-        if (!isMutable) { // If we are immutable, we can inline from register
-            return immutableAddress;
-        }
-        return FieldStorageProvider.super.load(targetMachine, irContext);
-    }
-
-    @Override
-    public void notifyChanged() {
+    public void notifyMutation() {
         hasChanged = true;
     }
 
@@ -179,7 +137,7 @@ public final class LetStatement implements Statement, NameProvider, ValueStorage
     }
 
     @Override
-    public boolean hasChanged() {
+    public boolean isMutated() {
         return hasChanged;
     }
 
@@ -205,33 +163,21 @@ public final class LetStatement implements Statement, NameProvider, ValueStorage
     // Statement
 
     @Override
-
     public TokenSlice getTokenSlice() {
         return tokenSlice;
     }
 
     @Override
     public long emit(final TargetMachine targetMachine, final IRContext irContext) {
-        final var builder = irContext.getCurrentOrCreate();
         final var internalName = name.toInternalName();
-        if (!isMutable) {
-            // For immutable variables, we can optimize by inlining the result into a register
+        if (value != null) {
             immutableAddress = value.emit(targetMachine, irContext);
+        }
+        if (!isMutable) {
             LLVMSetValueName2(immutableAddress, internalName);
             return NULL;
         }
-        if (mutableAddress == NULL) {
-            mutableAddress = builder.alloca(type.materialize(targetMachine));
-        }
-        LLVMSetValueName2(mutableAddress, internalName);
-        if (value != null) {
-            if (type.isReference() && value instanceof ReferenceExpression ref && ref.getReference() instanceof ValueStorage refStorage) {
-                storeAddress(value, refStorage.getAddress(targetMachine, irContext), targetMachine, irContext);
-            }
-            else {
-                store(value, targetMachine, irContext);
-            }
-        }
+        init(targetMachine, irContext);
         return NULL;
     }
 }

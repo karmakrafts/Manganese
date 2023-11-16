@@ -13,16 +13,25 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.compiler;
+package io.karma.ferrous.manganese.parser;
 
+import io.karma.ferrous.manganese.ParseAdapter;
+import io.karma.ferrous.manganese.compiler.CompileContext;
+import io.karma.ferrous.manganese.compiler.Compiler;
+import io.karma.ferrous.manganese.ocm.field.Field;
 import org.apiguardian.api.API;
-import org.apiguardian.api.API.Status;
+
+import java.util.ArrayList;
 
 /**
  * @author Alexander Hinze
- * @since 14/10/2023
+ * @since 16/11/2023
  */
-@API(status = Status.STABLE)
-public enum CompilePass {
-    NONE, TOKENIZE, PARSE, ANALYZE, PROCESS, COMPILE, LINK
+@API(status = API.Status.INTERNAL)
+public final class GlobalFieldParser extends ParseAdapter {
+    private final ArrayList<Field> fields = new ArrayList<>();
+
+    public GlobalFieldParser(final Compiler compiler, final CompileContext compileContext) {
+        super(compiler, compileContext);
+    }
 }

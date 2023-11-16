@@ -57,6 +57,11 @@ public final class FunctionIRContext implements IRContext {
     }
 
     @Override
+    public void close() {
+        dispose();
+    }
+
+    @Override
     public long getParameter(final Identifier name) {
         final var params = function.getParameters();
         final var numParams = params.length;

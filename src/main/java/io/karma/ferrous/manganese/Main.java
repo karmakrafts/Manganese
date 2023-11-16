@@ -49,14 +49,6 @@ import static org.lwjgl.llvm.LLVMTargetMachine.LLVMGetHostCPUFeatures;
  */
 @API(status = Status.INTERNAL)
 final class Main {
-    private static <E extends Enum<E>> void printAvailableValues(final Class<E> type, final String message) {
-        Logger.INSTANCE.infoln(message);
-        final var values = type.getEnumConstants();
-        for (final var value : values) {
-            Logger.INSTANCE.infoln("  - %s", value);
-        }
-    }
-
     public static void main(final String[] args) {
         Manganese.init();
         var status = CompileStatus.SUCCESS;
@@ -188,33 +180,33 @@ final class Main {
                     return;
                 }
                 if (options.has(targetOpt)) {
-                    printAvailableValues(Architecture.class, "Available architectures:");
-                    printAvailableValues(Platform.class, "Available platforms:");
-                    printAvailableValues(ABI.class, "Available ABIs:");
+                    KitchenSink.printAvailableValues(Architecture.class, "Available architectures:");
+                    KitchenSink.printAvailableValues(Platform.class, "Available platforms:");
+                    KitchenSink.printAvailableValues(ABI.class, "Available ABIs:");
                     return;
                 }
                 if (options.has(linkTargetTypeOpt)) {
-                    printAvailableValues(LinkTargetType.class, "Available link target types:");
+                    KitchenSink.printAvailableValues(LinkTargetType.class, "Available link target types:");
                     return;
                 }
                 if (options.has(linkModelOpt)) {
-                    printAvailableValues(LinkModel.class, "Available link models:");
+                    KitchenSink.printAvailableValues(LinkModel.class, "Available link models:");
                     return;
                 }
                 if (options.has(linkerTypeOpt)) {
-                    printAvailableValues(LinkerType.class, "Available linker types:");
+                    KitchenSink.printAvailableValues(LinkerType.class, "Available linker types:");
                     return;
                 }
                 if (options.has(optimizationOpt)) {
-                    printAvailableValues(OptimizationLevel.class, "Available optimization levels:");
+                    KitchenSink.printAvailableValues(OptimizationLevel.class, "Available optimization levels:");
                     return;
                 }
                 if (options.has(codeModelOpt)) {
-                    printAvailableValues(CodeModel.class, "Available code models:");
+                    KitchenSink.printAvailableValues(CodeModel.class, "Available code models:");
                     return;
                 }
                 if (options.has(relocOpt)) {
-                    printAvailableValues(Relocation.class, "Available relocation types:");
+                    KitchenSink.printAvailableValues(Relocation.class, "Available relocation types:");
                     return;
                 }
                 parser.formatHelpWith(new BuiltinHelpFormatter(120, 8));
@@ -287,15 +279,14 @@ final class Main {
                 : Path.of(KitchenSink.getRawFileName(in));
             // @formatter:on
 
-            final var context = new CompileContext();
-            final var result = compiler.compile(in, out, context, linkModel.get(), linkTargetType.get());
-            context.dispose();
-            targetMachine.dispose();
-            status = status.worse(result.status());
-
-            final var errors = result.errors();
-            Collections.sort(errors);
-            errors.forEach(error -> error.print(System.out));
+            try (final var context = new CompileContext()) {
+                final var result = compiler.compile(in, out, context, linkModel.get(), linkTargetType.get());
+                targetMachine.dispose();
+                status = status.worse(result.status());
+                final var errors = result.errors();
+                Collections.sort(errors);
+                errors.forEach(error -> error.print(System.out));
+            }
 
             if (options.has(profilerOpt)) {
                 System.out.printf("\n%s\n", Profiler.INSTANCE.renderSections());

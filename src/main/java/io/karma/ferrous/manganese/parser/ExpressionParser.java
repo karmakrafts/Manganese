@@ -22,7 +22,6 @@ import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.ValueStorage;
 import io.karma.ferrous.manganese.ocm.constant.*;
 import io.karma.ferrous.manganese.ocm.expr.*;
-import io.karma.ferrous.manganese.ocm.field.FieldStorageProvider;
 import io.karma.ferrous.manganese.ocm.function.Function;
 import io.karma.ferrous.manganese.ocm.function.FunctionReference;
 import io.karma.ferrous.manganese.ocm.function.FunctionResolver;
@@ -246,6 +245,7 @@ public final class ExpressionParser extends ParseAdapter {
         if (!(parent instanceof Scoped scoped)) {
             return null;
         }
+        final var moduleData = compileContext.getOrCreateModuleData();
         final var scopeName = scoped.getScopeName();
         final var name = Identifier.parse(context);
         Logger.INSTANCE.debugln("Looking for reference to %s", name);
@@ -254,25 +254,25 @@ public final class ExpressionParser extends ParseAdapter {
             if (param.isPresent()) {
                 return new ReferenceExpression(param.get(), false, TokenSlice.from(compileContext, context));
             }
-            final var local = compileContext.getPostAnalyzer().findLocalIn(function, name, scopeName);
+            final var local = moduleData.findLocalIn(function, name, scopeName);
             if (local != null) {
                 return new ReferenceExpression(local, false, TokenSlice.from(compileContext, context));
             }
         }
         if (parent instanceof ReferenceExpression parentRef) {
-            if (parentRef.getReference() instanceof FieldStorageProvider provider) {
-                final var storage = provider.getFieldValue(name);
-                if (storage != null) {
-                    return new ReferenceExpression(storage, false, TokenSlice.from(compileContext, context));
-                }
-            }
+            // FIXME: FIXMEEEE
+            //if (parentRef.getReference() instanceof FieldStorageProvider provider) {
+            //    final var storage = provider.getFieldValue(name);
+            //    if (storage != null) {
+            //        return new ReferenceExpression(storage, false, TokenSlice.from(compileContext, context));
+            //    }
+            //}
         }
-        final var preAnalyzer = compileContext.getPreAnalyzer();
-        if (!preAnalyzer.functionExistsInScope(name, scopeName)) {
+        if (!moduleData.functionExists(name, scopeName)) {
             compileContext.reportError(context.start, CompileErrorCode.E4007);
             return null;
         }
-        final FunctionResolver resolver = paramTypes -> preAnalyzer.findFunctionInScope(name, scopeName, paramTypes);
+        final FunctionResolver resolver = paramTypes -> moduleData.findFunction(name, scopeName, paramTypes);
         return new ReferenceExpression(new UnresolvedFunctionReference(resolver),
             false,
             TokenSlice.from(compileContext, context));
@@ -518,12 +518,21 @@ public final class ExpressionParser extends ParseAdapter {
     }
 
     @Override
-    public void enterMultilineStringLiteral(final MultilineStringLiteralContext context) {
+    public void enterMlStringLiteral(final MlStringLiteralContext context) {
         if (isAtEnd) {
             return;
         }
         setExpression(context, parseStringConstant(context));
-        super.enterMultilineStringLiteral(context);
+        super.enterMlStringLiteral(context);
+    }
+
+    @Override
+    public void enterCmlStringLiteral(final CmlStringLiteralContext context) {
+        if (isAtEnd) {
+            return;
+        }
+        setExpression(context, parseStringConstant(context));
+        super.enterCmlStringLiteral(context);
     }
 
     public @Nullable Expression getExpression() {

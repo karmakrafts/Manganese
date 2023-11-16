@@ -15,14 +15,13 @@
 
 package io.karma.ferrous.manganese.compiler;
 
+import io.karma.ferrous.manganese.compiler.pass.CompilePass;
 import io.karma.ferrous.manganese.module.Module;
 import io.karma.ferrous.manganese.module.ModuleData;
 import io.karma.ferrous.manganese.util.TokenUtils;
-import io.karma.ferrous.vanadium.FerrousLexer;
-import io.karma.ferrous.vanadium.FerrousParser;
-import io.karma.ferrous.vanadium.FerrousParser.FileContext;
-import org.antlr.v4.runtime.BufferedTokenStream;
 import org.antlr.v4.runtime.Token;
+import org.antlr.v4.runtime.tree.ParseTreeListener;
+import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 import org.jetbrains.annotations.Nullable;
@@ -32,22 +31,19 @@ import java.util.ArrayList;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * @author Alexander Hinze
  * @since 19/10/2023
  */
 @API(status = Status.STABLE)
-public final class CompileContext {
+public final class CompileContext implements AutoCloseable {
     private final ConcurrentLinkedQueue<CompileError> errors = new ConcurrentLinkedQueue<>();
     private final ConcurrentHashMap<String, Module> modules = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, ModuleData> moduleData = new ConcurrentHashMap<>();
-    private final ThreadLocal<CompilePass> pass = ThreadLocal.withInitial(() -> CompilePass.NONE);
-    private final ThreadLocal<String> currentModuleName = ThreadLocal.withInitial(String::new);
-    private final ThreadLocal<Path> currentSourceFile = ThreadLocal.withInitial(() -> null);
-    private final AtomicInteger status = new AtomicInteger(CompileStatus.SUCCESS.ordinal());
+    private final AtomicReference<CompileStatus> status = new AtomicReference<>(CompileStatus.SUCCESS);
+    private final ThreadLocal<ThreadLocals> threadLocals = ThreadLocal.withInitial(ThreadLocals::new);
 
     public void addModule(final Module module) {
         modules.put(module.getName(), module);
@@ -57,16 +53,12 @@ public final class CompileContext {
         return modules.get(name);
     }
 
-    private ModuleData getOrCreateModuleData(final String name) {
+    public ModuleData getOrCreateModuleData(final String name) {
         return moduleData.computeIfAbsent(name, ModuleData::new);
     }
 
-    private ModuleData getOrCreateModuleData() {
+    public ModuleData getOrCreateModuleData() {
         return getOrCreateModuleData(Objects.requireNonNull(getCurrentModuleName()));
-    }
-
-    private <T> T getModuleComponent(final Function<ModuleData, T> selector) {
-        return selector.apply(getOrCreateModuleData());
     }
 
     public CompileResult makeResult() {
@@ -83,7 +75,7 @@ public final class CompileContext {
 
     public CompileError makeError(final Token token, final CompileErrorCode errorCode) {
         return new CompileError(token,
-            TokenUtils.getLineTokens(getTokenStream(), token),
+            TokenUtils.getLineTokens(getOrCreateModuleData().getTokenStream(), token),
             getCurrentPass(),
             null,
             getCurrentSourceFile(),
@@ -92,7 +84,7 @@ public final class CompileContext {
 
     public CompileError makeError(final Token token, final String text, final CompileErrorCode errorCode) {
         return new CompileError(token,
-            TokenUtils.getLineTokens(getTokenStream(), token),
+            TokenUtils.getLineTokens(getOrCreateModuleData().getTokenStream(), token),
             getCurrentPass(),
             text,
             getCurrentSourceFile(),
@@ -116,7 +108,7 @@ public final class CompileContext {
     }
 
     public void addError(final CompileError error) {
-        final var tokenStream = getTokenStream();
+        final var tokenStream = getOrCreateModuleData().getTokenStream();
         if (tokenStream != null && tokenStream.size() == 0) {
             tokenStream.fill();
         }
@@ -127,92 +119,40 @@ public final class CompileContext {
         setCurrentStatus(getCurrentStatus().worse(error.getStatus()));
     }
 
-    public CompilePass getCurrentPass() {
-        return pass.get();
+    public @Nullable CompilePass getCurrentPass() {
+        return threadLocals.get().currentPass;
     }
 
     public void setCurrentPass(final CompilePass currentPass) {
-        pass.set(currentPass);
+        threadLocals.get().currentPass = currentPass;
     }
 
     public CompileStatus getCurrentStatus() {
-        return CompileStatus.values()[status.get()];
+        return status.get();
     }
 
     public void setCurrentStatus(final CompileStatus status) {
-        this.status.set(status.ordinal());
+        this.status.set(status);
     }
 
     public @Nullable String getCurrentModuleName() {
-        return currentModuleName.get();
+        return threadLocals.get().currentModuleName;
     }
 
     void setCurrentModuleName(final @Nullable String currentName) {
-        currentModuleName.set(currentName);
+        threadLocals.get().currentModuleName = currentName;
     }
 
     public @Nullable Path getCurrentSourceFile() {
-        return currentSourceFile.get();
+        return threadLocals.get().currentSourceFile;
     }
 
     void setCurrentSourceFile(final @Nullable Path currentSourceFile) {
-        this.currentSourceFile.set(currentSourceFile);
+        threadLocals.get().currentSourceFile = currentSourceFile;
     }
 
-    public FerrousLexer getLexer() {
-        return getModuleComponent(ModuleData::getLexer);
-    }
-
-    void setLexer(final FerrousLexer lexer) {
-        getOrCreateModuleData().setLexer(lexer);
-    }
-
-    public BufferedTokenStream getTokenStream() {
-        return getModuleComponent(ModuleData::getTokenStream);
-    }
-
-    void setTokenStream(final BufferedTokenStream tokenStream) {
-        getOrCreateModuleData().setTokenStream(tokenStream);
-    }
-
-    public FerrousParser getParser() {
-        return getModuleComponent(ModuleData::getParser);
-    }
-
-    void setParser(final FerrousParser parser) {
-        getOrCreateModuleData().setParser(parser);
-    }
-
-    public FileContext getFileContext() {
-        return getModuleComponent(ModuleData::getFileContext);
-    }
-
-    void setFileContext(final FileContext fileContext) {
-        getOrCreateModuleData().setFileContext(fileContext);
-    }
-
-    public PreAnalyzer getPreAnalyzer() {
-        return getModuleComponent(ModuleData::getPreAnalyzer);
-    }
-
-    void setPreAnalyzer(final PreAnalyzer preAnalyzer) {
-        getOrCreateModuleData().setPreAnalyzer(preAnalyzer);
-    }
-
-    public PostAnalyzer getPostAnalyzer() {
-        return getModuleComponent(ModuleData::getPostAnalyzer);
-    }
-
-    void setPostAnalyzer(final PostAnalyzer postAnalyzer) {
-        getOrCreateModuleData().setPostAnalyzer(postAnalyzer);
-    }
-
-    public TranslationUnit getTranslationUnit() {
-        return getModuleComponent(ModuleData::getTranslationUnit);
-    }
-
-    void setTranslationUnit(final TranslationUnit translationUnit) {
-        getOrCreateModuleData().setTranslationUnit(translationUnit);
+    public void walkParseTree(final ParseTreeListener listener) {
+        ParseTreeWalker.DEFAULT.walk(listener, getOrCreateModuleData().getFileContext());
     }
 
     public void dispose() {
@@ -220,5 +160,16 @@ public final class CompileContext {
         modules.clear();
         moduleData.clear();
         errors.clear();
+    }
+
+    @Override
+    public void close() {
+        dispose();
+    }
+
+    private static final class ThreadLocals {
+        private String currentModuleName;
+        private Path currentSourceFile;
+        private CompilePass currentPass;
     }
 }

@@ -23,12 +23,14 @@ import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.TokenSlice;
+import io.karma.ferrous.manganese.util.TypeMod;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.llvm.LLVMCore;
 import org.lwjgl.system.MemoryUtil;
 
+import java.util.EnumSet;
 import java.util.Objects;
 
 /**
@@ -41,12 +43,13 @@ public final class DerivedType implements NamedType {
     private final @Nullable TypeAttribute attribute;
     private final GenericParameter[] genericParams;
     private final TokenSlice tokenSlice;
+    private final EnumSet<TypeMod> modifiers;
     private long materializedType = MemoryUtil.NULL;
 
-    DerivedType(final Type baseType, final @Nullable TypeAttribute attribute) {
+    DerivedType(final Type baseType, final @Nullable TypeAttribute attribute, final EnumSet<TypeMod> modifiers) {
         this.baseType = baseType;
         this.attribute = attribute;
-
+        this.modifiers = modifiers;
         // Deep-copy generic parameters
         final var params = baseType.getGenericParams();
         final var numParams = params.length;
@@ -84,6 +87,11 @@ public final class DerivedType implements NamedType {
     // Type
 
     @Override
+    public EnumSet<TypeMod> getModifiers() {
+        return modifiers;
+    }
+
+    @Override
     public boolean canAccept(final Type type) {
         if (type instanceof DerivedType derivedType) {
             return baseType == derivedType.baseType && attribute == derivedType.attribute;
@@ -93,7 +101,7 @@ public final class DerivedType implements NamedType {
 
     @Override
     public Expression makeDefaultValue() {
-        if (isPointer() || isReference()) {
+        if (isPointer()) {
             final var value = new NullConstant(TokenSlice.EMPTY);
             value.setContextualType(baseType);
             return value;

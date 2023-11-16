@@ -25,6 +25,7 @@ import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.ocm.type.Types;
 import io.karma.ferrous.vanadium.FerrousParser.AccessModContext;
 import io.karma.ferrous.vanadium.FerrousParser.StorageModContext;
+import io.karma.kommons.util.ArrayUtils;
 import io.karma.kommons.util.SystemInfo;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
@@ -39,6 +40,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.function.IntFunction;
 
 /**
  * @author Alexander Hinze
@@ -103,6 +105,19 @@ public final class KitchenSink {
             return true;
         }
         return false;
+    }
+
+    public static <E extends Enum<E>> void printAvailableValues(final Class<E> type, final String message) {
+        Logger.INSTANCE.infoln(message);
+        final var values = type.getEnumConstants();
+        for (final var value : values) {
+            Logger.INSTANCE.infoln("  - %s", value);
+        }
+    }
+
+    public static <E extends Enum<E>> EnumSet<E> of(final IntFunction<E[]> arrayFactory, final E... values) {
+        final var remaining = ArrayUtils.slice(values, 1, values.length - 1, arrayFactory);
+        return EnumSet.of(values[0], remaining);
     }
 
     public static <E extends Enum<E>> EnumSet<E> allExcept(final Class<E> type, final E... excluded) {

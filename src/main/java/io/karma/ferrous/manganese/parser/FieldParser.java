@@ -36,13 +36,13 @@ import java.util.ArrayList;
  * @since 15/10/2023
  */
 @API(status = Status.INTERNAL)
-public final class FieldLayoutParser extends ParseAdapter {
+public final class FieldParser extends ParseAdapter {
     private final ArrayList<Field> fields = new ArrayList<>();
     private final ScopeStack capturedScopeStack;
     private int nestedScopes = 0;
 
-    public FieldLayoutParser(final Compiler compiler, final CompileContext compileContext,
-                             final ScopeStack capturedScopeStack) {
+    public FieldParser(final Compiler compiler, final CompileContext compileContext,
+                       final ScopeStack capturedScopeStack) {
         super(compiler, compileContext);
         this.capturedScopeStack = capturedScopeStack;
     }

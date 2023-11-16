@@ -42,13 +42,12 @@ public record ScopedAccess(TokenSlice tokenSlice, Type... types) implements Acce
     public <T extends Scoped & NameProvider> boolean hasAccess(final Compiler compiler,
                                                                final CompileContext compileContext,
                                                                final ScopeStack scopeStack, final T target) {
-        var type = compileContext.getPreAnalyzer().findTypeInScope(target.getQualifiedName(), target.getScopeName());
+        var type = compileContext.getOrCreateModuleData().findType(target.getQualifiedName(), target.getScopeName());
         for (Type allowedType : types) {
             if (type == allowedType) {
                 return true;
             }
         }
-
         compileContext.reportError(CompileErrorCode.E4001);
         return false;
     }

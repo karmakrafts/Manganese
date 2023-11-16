@@ -15,9 +15,11 @@
 
 package io.karma.ferrous.manganese.compiler;
 
+import io.karma.ferrous.manganese.compiler.pass.*;
 import io.karma.ferrous.manganese.linker.LinkModel;
 import io.karma.ferrous.manganese.linker.LinkTargetType;
 import io.karma.ferrous.manganese.linker.Linker;
+import io.karma.ferrous.manganese.module.Module;
 import io.karma.ferrous.manganese.profiler.Profiler;
 import io.karma.ferrous.manganese.target.FileType;
 import io.karma.ferrous.manganese.target.TargetMachine;
@@ -30,12 +32,12 @@ import io.karma.kommons.function.Functions;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.atn.ATNConfigSet;
 import org.antlr.v4.runtime.dfa.DFA;
-import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 import org.fusesource.jansi.Ansi;
 import org.fusesource.jansi.Ansi.Attribute;
 import org.fusesource.jansi.Ansi.Color;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.nio.channels.Channels;
@@ -44,9 +46,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.BitSet;
-import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -66,6 +67,7 @@ public final class Compiler {
     private final TargetMachine targetMachine;
     private final Linker linker;
     private final ExecutorService executorService;
+    private final ArrayList<CompilePass> passes = new ArrayList<>();
 
     private boolean tokenView = false;
     private boolean extendedTokenView = false;
@@ -83,20 +85,73 @@ public final class Compiler {
                 executorService.shutdownNow().forEach(Runnable::run);
             }
         })));
+        addDefaultPasses();
     }
 
-    public void tokenizeAndParse(final String name, final ReadableByteChannel in, final CompileContext context) {
+    public ArrayList<CompilePass> getPasses() {
+        return new ArrayList<>(passes); // Always copy
+    }
+
+    @SuppressWarnings("unchecked")
+    public <P extends CompilePass> P getPass(final Class<P> type) {
+        for (final var pass : passes) {
+            if (!pass.getClass().equals(type)) {
+                continue;
+            }
+            return (P) pass;
+        }
+        throw new IllegalStateException("No such compile pass");
+    }
+
+    public boolean addPass(final CompilePass pass) {
+        if (passes.contains(pass)) {
+            return false;
+        }
+        passes.add(pass);
+        return true;
+    }
+
+    public boolean addPassBefore(final Class<? extends CompilePass> beforeType, final CompilePass pass) {
+        for (final var toCompare : passes) {
+            if (!toCompare.getClass().equals(beforeType)) {
+                continue;
+            }
+            passes.add(Math.max(0, passes.indexOf(toCompare) - 1), pass);
+            return true;
+        }
+        return false;
+    }
+
+    public boolean addPassAfter(final Class<? extends CompilePass> afterType, final CompilePass pass) {
+        for (final var toCompare : passes) {
+            if (!toCompare.getClass().equals(afterType)) {
+                continue;
+            }
+            passes.add(passes.indexOf(toCompare), pass);
+            return true;
+        }
+        return false;
+    }
+
+    private void addDefaultPasses() {
+        passes.add(new TypeDiscoveryPass());
+        passes.add(new TypeResolutionPass());
+        passes.add(new FunctionDeclarationPass());
+        passes.add(new FunctionDefinitionPass());
+        passes.add(new EmitPass());
+    }
+
+    private void tokenizeAndParse(final String name, final ReadableByteChannel in, final CompileContext context) {
         try {
             context.setCurrentModuleName(name);
-
+            final var moduleData = context.getOrCreateModuleData();
             // Tokenize
-            context.setCurrentPass(CompilePass.TOKENIZE);
             Profiler.INSTANCE.push("Tokenize");
             final var lexer = new FerrousLexer(CharStreams.fromChannel(in, StandardCharsets.UTF_8));
-            context.setLexer(lexer);
+            moduleData.setLexer(lexer);
             final var tokenStream = new CommonTokenStream(lexer);
             tokenStream.fill();
-            context.setTokenStream(tokenStream);
+            moduleData.setTokenStream(tokenStream);
             Profiler.INSTANCE.pop();
             if (tokenView) {
                 System.out.printf("\n%s\n",
@@ -106,84 +161,30 @@ public final class Compiler {
                         tokenStream.getTokens()));
             }
             // Parse
-            context.setCurrentPass(CompilePass.PARSE);
             final var parser = new FerrousParser(tokenStream);
             parser.removeErrorListeners(); // Remove default error listener
             parser.addErrorListener(new ErrorListener(context));
-            context.setParser(parser);
+            moduleData.setParser(parser);
             Profiler.INSTANCE.push("Parse");
-            context.setFileContext(parser.file());
+            moduleData.setFileContext(parser.file());
             Profiler.INSTANCE.pop();
-
-            context.setCurrentPass(CompilePass.NONE);
         }
         catch (IOException error) {
-            context.setCurrentPass(CompilePass.NONE);
             context.reportError(CompileErrorCode.E0002);
         }
     }
 
-    public void analyzeAndProcess(final String name, final CompileContext context) {
-        final var fileContext = Objects.requireNonNull(context.getFileContext());
+    public Module compile(final String name, final @Nullable Path sourcePath, final CompileContext context) {
         context.setCurrentModuleName(name);
-        context.setCurrentPass(CompilePass.ANALYZE);
-
-        final var preAnalyzer = new PreAnalyzer(this, context);
-        context.setPreAnalyzer(preAnalyzer);
-        Profiler.INSTANCE.push("PreAnalyzer");
-        ParseTreeWalker.DEFAULT.walk(preAnalyzer, fileContext);
-        preAnalyzer.preProcess();
-        Profiler.INSTANCE.pop();
-
-        final var postAnalyzer = new PostAnalyzer(this, context);
-        context.setPostAnalyzer(postAnalyzer);
-        Profiler.INSTANCE.push("PostAnalyzer");
-        ParseTreeWalker.DEFAULT.walk(postAnalyzer, fileContext);
-        Profiler.INSTANCE.pop();
-
-        final var tokenStream = Objects.requireNonNull(context.getTokenStream());
-        final var tokens = tokenStream.getTokens();
-
-        context.setCurrentPass(CompilePass.PROCESS);
-        Profiler.INSTANCE.push("Process Tokens");
-        processTokens(tokens);
-        Profiler.INSTANCE.pop();
-
-        final var newTokenStream = new CommonTokenStream(new ListTokenSource(tokens));
-        newTokenStream.fill();
-        context.setTokenStream(newTokenStream);
-
-        final var parser = Objects.requireNonNull(context.getParser());
-        parser.setTokenStream(newTokenStream);
-        parser.reset();
-        parser.removeErrorListeners();
-        context.setFileContext(parser.file());
-    }
-
-    public void compile(final String name, final String sourceName, final CompileContext context) {
-        context.setCurrentModuleName(name);
-
-        context.setCurrentPass(CompilePass.COMPILE);
-        final var translationUnit = new TranslationUnit(this, context);
-        Profiler.INSTANCE.push("Translate");
-        ParseTreeWalker.DEFAULT.walk(translationUnit, context.getFileContext()); // Walk the entire AST with the TU
-        context.setTranslationUnit(translationUnit);
-        Profiler.INSTANCE.pop();
-
-        final var module = Objects.requireNonNull(context.getTranslationUnit()).getModule();
-        module.setSourceFileName(sourceName);
-        final var verificationStatus = module.verify();
-        if (verificationStatus != null) {
-            context.reportError(verificationStatus, CompileErrorCode.E0002);
-            return;
+        context.setCurrentSourceFile(sourcePath);
+        final var module = targetMachine.createModule(name);
+        for (final var pass : passes) {
+            Logger.INSTANCE.debugln("Invoking pass %s", pass.getClass());
+            context.setCurrentPass(pass);
+            pass.run(this, context, module, executorService);
+            context.setCurrentPass(null);
         }
-
-        if (disassemble) {
-            Logger.INSTANCE.infoln("\n%s", module.disassembleBitcode());
-        }
-
-        context.addModule(module);
-        context.setCurrentPass(CompilePass.NONE);
+        return module;
     }
 
     public CompileResult compile(final Path in, final Path out, final CompileContext context, final LinkModel linkModel,
@@ -226,7 +227,6 @@ public final class Compiler {
                 Logger.INSTANCE.debugln("Input: %s (Thread %d)", file, Thread.currentThread().threadId());
                 try (final var stream = Files.newInputStream(file); final var channel = Channels.newChannel(stream)) {
                     tokenizeAndParse(rawFileName, channel, context);
-                    analyzeAndProcess(rawFileName, context);
                 }
                 catch (IOException error) {
                     context.reportError(CompileErrorCode.E0003);
@@ -242,8 +242,8 @@ public final class Compiler {
         }
 
         final var moduleName = KitchenSink.getRawFileName(in);
-        final var module = targetMachine.createModule(moduleName);
-        module.setSourceFileName(String.format("%s.o", moduleName));
+        final var projectModule = targetMachine.createModule(moduleName);
+        projectModule.setSourceFileName(String.format("%s.o", moduleName));
 
         for (var i = 0; i < numFiles; ++i) {
             final var file = inputFiles.get(i);
@@ -262,31 +262,18 @@ public final class Compiler {
             // @formatter:on
             final var rawFileName = KitchenSink.getRawFileName(file);
 
-            compile(rawFileName, file.getFileName().toString(), context);
-            final var compiledModule = context.getModule(rawFileName);
-            if (compiledModule == null) {
-                continue; // Can occur if an error occurs
-            }
-            context.setCurrentPass(CompilePass.LINK);
-            module.linkIn(compiledModule);
-            context.setCurrentPass(CompilePass.NONE);
-
+            projectModule.linkIn(compile(rawFileName, file, context));
             context.setCurrentSourceFile(null);
         }
 
-        final var globalModule = Objects.requireNonNull(Functions.tryGet(() -> targetMachine.loadEmbeddedModule("global",
-            LLVMGetGlobalContext())));
-        module.linkIn(globalModule);
-        globalModule.dispose();
-
         if (disassemble) {
-            Logger.INSTANCE.infoln("Linked disassembly:\n\n%s", module.disassembleBitcode());
-            Logger.INSTANCE.infoln("Native disassembly:\n\n%s", module.disassembleAssembly(targetMachine));
+            Logger.INSTANCE.infoln("Linked disassembly:\n\n%s", projectModule.disassembleBitcode());
+            Logger.INSTANCE.infoln("Native disassembly:\n\n%s", projectModule.disassembleAssembly(targetMachine));
         }
 
         final var objectFile = out.getParent().resolve(String.format("%s.o", KitchenSink.getRawFileName(out)));
-        module.generateAssembly(targetMachine, FileType.OBJECT, objectFile);
-        module.dispose();
+        projectModule.generateAssembly(targetMachine, FileType.OBJECT, objectFile);
+        projectModule.dispose();
 
         // @formatter:off
         Logger.INSTANCE.infoln(Ansi.ansi()
@@ -328,10 +315,6 @@ public final class Compiler {
 
     public Linker getLinker() {
         return linker;
-    }
-
-    private void processTokens(final List<Token> tokens) {
-        // TODO: implement here
     }
 
     private final class ErrorListener implements ANTLRErrorListener {

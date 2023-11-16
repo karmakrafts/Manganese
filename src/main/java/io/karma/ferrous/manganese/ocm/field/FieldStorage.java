@@ -34,23 +34,23 @@ import java.util.Objects;
  * @since 10/11/2023
  */
 @API(status = API.Status.INTERNAL)
-public final class FieldValueStorage implements ValueStorage, FieldStorageProvider {
+public final class FieldStorage implements ValueStorage {
     private final Field field;
-    private final FieldStorageProvider parent;
-    private final List<FieldValueStorage> fieldValues;
+    private final ValueStorage parent;
+    private final List<FieldStorage> fieldValues;
     private Expression value;
     private boolean hasChanged;
     private boolean isInitialized;
 
-    public FieldValueStorage(final Field field, final FieldStorageProvider parent) {
+    public FieldStorage(final Field field, final @Nullable ValueStorage parent) {
         this.field = field;
         this.parent = parent;
-        isInitialized = parent.isInitialized();
+        isInitialized = parent != null && parent.isInitialized();
         if (isInitialized) {
             value = field.getType().makeDefaultValue();
         }
         if (field.getType() instanceof UDT udt) {
-            fieldValues = udt.fields().stream().map(f -> new FieldValueStorage(f, this)).toList();
+            fieldValues = udt.fields().stream().map(f -> new FieldStorage(f, this)).toList();
         }
         else {
             fieldValues = Collections.emptyList();
@@ -75,26 +75,19 @@ public final class FieldValueStorage implements ValueStorage, FieldStorageProvid
     }
 
     @Override
-    public FieldStorageProvider getParent() {
+    public @Nullable ValueStorage getParent() {
         return parent;
     }
-
-    // FieldStorageProvider
 
     @Override
     public Type getType() {
         return field.getType();
     }
 
-    @Override
-    public List<FieldValueStorage> getFieldValues() {
-        return fieldValues;
-    }
-
     // ValueStorage
 
     @Override
-    public void notifyChanged() {
+    public void notifyMutation() {
         hasChanged = true;
     }
 
@@ -109,37 +102,15 @@ public final class FieldValueStorage implements ValueStorage, FieldStorageProvid
     }
 
     @Override
-    public boolean hasChanged() {
+    public boolean isMutated() {
         return hasChanged;
     }
 
     @Override
     public long getAddress(final TargetMachine targetMachine, final IRContext irContext) {
         final var builder = irContext.getCurrentOrCreate();
-        final var typeAddress = Objects.requireNonNull(parent.getType()).materialize(targetMachine);
+        final var type = parent.getType();
+        final var typeAddress = Objects.requireNonNull(type).materialize(targetMachine);
         return builder.gep(typeAddress, parent.getAddress(targetMachine, irContext), field.getIndex());
-    }
-
-    @Override
-    public long storeAddress(final @Nullable Expression exprValue, final long address,
-                             final TargetMachine targetMachine, final IRContext irContext) {
-        this.value = exprValue;
-        return FieldStorageProvider.super.storeAddress(exprValue, address, targetMachine, irContext);
-    }
-
-    @Override
-    public long store(final @Nullable Expression exprValue, final long value, final TargetMachine targetMachine,
-                      final IRContext irContext) {
-        this.value = exprValue;
-        return FieldStorageProvider.super.store(exprValue, value, targetMachine, irContext);
-    }
-
-    @Override
-    public long load(final TargetMachine targetMachine, final IRContext irContext) {
-        if (!isRootMutable()) {
-            final var parentValue = parent.load(targetMachine, irContext);
-            return irContext.getCurrentOrCreate().extract(parentValue, field.getIndex());
-        }
-        return FieldStorageProvider.super.load(targetMachine, irContext);
     }
 }

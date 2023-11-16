@@ -1,32 +1,29 @@
-extern fun printf(fmt: *char, ...): i32
+pub extern fun printf(fmt: *char, ...): i32
 
-mod foo {
+pub mod foo {
     pub struct Value {
         pub mut x: i32
     }
 
     pub struct Vector2i {
-        pub x: Value
-        pub y: Value
+        pub mut x: Value
+        pub mut y: Value
     }
 }
 
-fun test(value: i32): i32 {
+@noreturn pub fun foobar() {
+    unreachable
+}
+
+pub fun test(value: i32): i32 {
     return value << 1 * value
 }
 
-fun fill(value: i32): i32 {
-    let mut vec: foo::Vector2i
-    let mut x = 22
-    let mut y: mut &i32 = x
-    y = y << (2 >> 1)
-    vec.x.x = y
-    vec.y.x = vec.x.x >> 1
-    let vec2 = vec
-    return +-(vec2.x.x + vec2.y.x) + value
+pub fun fill(value: i32): i32 {
+    return value
 }
 
-fun test2(value: &bool): &bool {
+pub fun test2(value: &bool): &bool {
     return value
 }
 

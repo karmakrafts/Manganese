@@ -20,6 +20,7 @@ import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.CompileErrorCode;
 import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.constant.NullConstant;
+import io.karma.ferrous.manganese.ocm.function.Function;
 import io.karma.ferrous.manganese.ocm.scope.ScopeStack;
 import io.karma.ferrous.manganese.ocm.statement.LetStatement;
 import io.karma.ferrous.manganese.ocm.statement.ReturnStatement;
@@ -33,12 +34,10 @@ import io.karma.ferrous.manganese.util.TokenSlice;
 import io.karma.ferrous.vanadium.FerrousParser.LetStatementContext;
 import io.karma.ferrous.vanadium.FerrousParser.ReturnStatementContext;
 import io.karma.ferrous.vanadium.FerrousParser.StatementContext;
-import io.karma.kommons.lazy.Lazy;
 import org.apiguardian.api.API;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
 
 /**
@@ -49,23 +48,20 @@ import java.util.List;
 public final class StatementParser extends ParseAdapter {
     private final Type returnType;
     private final ArrayList<Statement> statements = new ArrayList<>();
-    private final Lazy<LinkedHashMap<Identifier, LetStatement>> locals;
     private final ScopeStack capturedScopeStack;
     private final Object parent;
 
     public StatementParser(final Compiler compiler, final CompileContext compileContext, final Type returnType,
-                           final Lazy<LinkedHashMap<Identifier, LetStatement>> locals,
                            final ScopeStack capturedScopeStack, final Object parent) {
         super(compiler, compileContext);
         this.returnType = returnType;
-        this.locals = locals;
         this.capturedScopeStack = capturedScopeStack;
         this.parent = parent;
     }
 
     private void addStatement(final Statement statement) {
-        if (statement instanceof LetStatement let) {
-            locals.getOrCreate().put(let.getQualifiedName(), let);
+        if (parent instanceof Function function && statement instanceof LetStatement let) {
+            compileContext.getOrCreateModuleData().getLocalsFor(function).put(let.getQualifiedName(), let);
         }
         statements.add(statement);
     }

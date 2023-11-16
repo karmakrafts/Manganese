@@ -29,17 +29,17 @@ import static org.lwjgl.system.MemoryUtil.NULL;
  * @since 05/11/2023
  */
 @API(status = API.Status.INTERNAL)
-public final class IRBuilder {
-    private final IRContext blockContext;
+public final class IRBuilder implements AutoCloseable {
+    private final IRContext irContext;
     private final Module module;
     private final TargetMachine targetMachine;
     private final long blockAddress;
     private final long address;
     private boolean isDisposed = false;
 
-    public IRBuilder(final IRContext blockContext, final Module module, final TargetMachine targetMachine,
+    public IRBuilder(final IRContext irContext, final Module module, final TargetMachine targetMachine,
                      final long blockAddress, final long context) {
-        this.blockContext = blockContext;
+        this.irContext = irContext;
         this.module = module;
         this.targetMachine = targetMachine;
         if (blockAddress == NULL || context == NULL) {
@@ -260,18 +260,22 @@ public final class IRBuilder {
     }
 
     public long condBr(final long condition, final String trueLabel, final String falseLabel) {
-        final var trueAddress = blockContext.getOrCreate(trueLabel).blockAddress;
-        final var falseAddress = blockContext.getOrCreate(falseLabel).blockAddress;
+        final var trueAddress = irContext.getOrCreate(trueLabel).blockAddress;
+        final var falseAddress = irContext.getOrCreate(falseLabel).blockAddress;
         return LLVMBuildCondBr(address, condition, trueAddress, falseAddress);
     }
 
     public long br(final String name) {
-        return LLVMBuildBr(address, blockContext.getOrCreate(name).blockAddress);
+        return LLVMBuildBr(address, irContext.getOrCreate(name).blockAddress);
+    }
+
+    public PhiBuilder phi(final long type) {
+        return new PhiBuilder(irContext, LLVMBuildPhi(address, type, ""));
     }
 
     public long call(final Function function, final long... args) {
         try (final var stack = MemoryStack.stackPush()) {
-            final var fnAddress = function.materialize(blockContext.getCompileContext(), module, targetMachine);
+            final var fnAddress = function.materialize(irContext.getCompileContext(), module, targetMachine);
             final var typeAddress = function.getType().materialize(targetMachine);
             return LLVMBuildCall2(address, typeAddress, fnAddress, stack.pointers(args), "");
         }
@@ -303,5 +307,10 @@ public final class IRBuilder {
         }
         LLVMDisposeBuilder(address);
         isDisposed = true;
+    }
+
+    @Override
+    public void close() {
+        dispose();
     }
 }

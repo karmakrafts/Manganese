@@ -99,8 +99,8 @@ public final class ReferenceExpression implements Expression {
                 final var fnAddress = function.materializePrototype(irContext.getModule(), targetMachine);
                 yield builder.intToPtr(typeAddress, fnAddress);
             }
-            case ValueStorage storage ->
-                isWrite ? storage.getAddress(targetMachine, irContext) : storage.load(targetMachine, irContext);
+            //case ValueStorage storage -> FIXME: FIXMEEEEEEEEEEEEEEE
+            //    isWrite ? storage.getAddress(targetMachine, irContext) : storage.load(targetMachine, irContext);
             case Parameter param -> irContext.getParameter(param.getName());
             default -> throw new IllegalStateException("Unknown reference kind");
         };

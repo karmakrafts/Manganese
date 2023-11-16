@@ -81,20 +81,26 @@ public abstract class ParseAdapter implements FerrousParserListener {
         final var name = FunctionUtils.parseFunctionName(context.functionIdent());
         final var scopeName = scopeStack.getScopeName();
         final var type = FunctionUtils.parseFunctionType(compiler, compileContext, scopeStack, context);
-        return compileContext.getPreAnalyzer().findFunctionInScope(name, scopeName, type);
+        return compileContext.getOrCreateModuleData().findFunction(name, scopeName, type);
     }
 
     protected @Nullable Type getType(final IdentContext context) {
-        return compileContext.getPreAnalyzer().findCompleteTypeInScope(Identifier.parse(context),
+        return compileContext.getOrCreateModuleData().findCompleteType(Identifier.parse(context),
             scopeStack.getScopeName());
     }
 
     protected @Nullable Type getType(final QualifiedIdentContext context) {
-        return compileContext.getPreAnalyzer().findCompleteTypeInScope(Identifier.parse(context),
+        return compileContext.getOrCreateModuleData().findCompleteType(Identifier.parse(context),
             scopeStack.getScopeName());
     }
 
     // @formatter:off
+    @Override
+    public void enterStructBody(StructBodyContext structBodyContext) {}
+
+    @Override
+    public void exitStructBody(StructBodyContext structBodyContext) {}
+
     @Override
     public void enterPrimary(PrimaryContext primaryContext) {}
 
@@ -289,22 +295,6 @@ public abstract class ParseAdapter implements FerrousParserListener {
     public void exitEnumClass(EnumClassContext context) {
         popScope();
     }
-
-    @Override
-    public void enterClass(ClassContext context) {
-        pushScope(ScopeType.CLASS, Identifier.parse(context.ident()));
-    }
-
-    @Override
-    public void exitClass(ClassContext context) {
-        popScope();
-    }
-
-    @Override
-    public void enterClassBody(ClassBodyContext classBodyContext) {}
-
-    @Override
-    public void exitClassBody(ClassBodyContext classBodyContext) {}
 
     @Override
     public void enterEnumBody(EnumBodyContext enumBodyContext) {}
@@ -837,10 +827,16 @@ public abstract class ParseAdapter implements FerrousParserListener {
     public void exitSimpleStringLiteral(SimpleStringLiteralContext simpleStringLiteralContext) {}
 
     @Override
-    public void enterMultilineStringLiteral(MultilineStringLiteralContext multilineStringLiteralContext) {}
+    public void enterMlStringLiteral(MlStringLiteralContext multilineStringLiteralContext) {}
 
     @Override
-    public void exitMultilineStringLiteral(MultilineStringLiteralContext multilineStringLiteralContext) {}
+    public void exitMlStringLiteral(MlStringLiteralContext multilineStringLiteralContext) {}
+
+    @Override
+    public void enterCmlStringLiteral(CmlStringLiteralContext cmlStringLiteralContext) {}
+
+    @Override
+    public void exitCmlStringLiteral(CmlStringLiteralContext cmlStringLiteralContext) {}
 
     @Override
     public void enterAccessMod(AccessModContext accessModContext) {}

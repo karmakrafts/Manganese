@@ -15,15 +15,25 @@
 
 package io.karma.ferrous.manganese.module;
 
-import io.karma.ferrous.manganese.compiler.PostAnalyzer;
-import io.karma.ferrous.manganese.compiler.PreAnalyzer;
-import io.karma.ferrous.manganese.compiler.TranslationUnit;
+import io.karma.ferrous.manganese.ocm.field.Field;
+import io.karma.ferrous.manganese.ocm.function.Function;
+import io.karma.ferrous.manganese.ocm.statement.LetStatement;
+import io.karma.ferrous.manganese.ocm.type.AliasedType;
+import io.karma.ferrous.manganese.ocm.type.FunctionType;
+import io.karma.ferrous.manganese.ocm.type.NamedType;
+import io.karma.ferrous.manganese.ocm.type.Type;
+import io.karma.ferrous.manganese.profiler.Profiler;
+import io.karma.ferrous.manganese.util.Identifier;
+import io.karma.ferrous.manganese.util.ScopeUtils;
 import io.karma.ferrous.vanadium.FerrousLexer;
 import io.karma.ferrous.vanadium.FerrousParser;
 import io.karma.ferrous.vanadium.FerrousParser.FileContext;
 import org.antlr.v4.runtime.BufferedTokenStream;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.*;
 
 /**
  * @author Alexander Hinze
@@ -32,10 +42,12 @@ import org.apiguardian.api.API.Status;
 @API(status = Status.STABLE)
 public final class ModuleData {
     private final String name;
+    // Non-synchronized data
+    private final LinkedHashMap<Identifier, NamedType> namedTypes = new LinkedHashMap<>();
+    private final HashMap<Identifier, HashMap<FunctionType, Function>> functions = new HashMap<>();
+    private final LinkedHashMap<Function, LinkedHashMap<Identifier, LetStatement>> locals = new LinkedHashMap<>();
+    private final LinkedHashMap<Identifier, Field> globalFields = new LinkedHashMap<>();
     private BufferedTokenStream tokenStream;
-    private PreAnalyzer preAnalyzer;
-    private PostAnalyzer postAnalyzer;
-    private TranslationUnit translationUnit;
     private FileContext fileContext;
     private FerrousLexer lexer;
     private FerrousParser parser;
@@ -51,15 +63,6 @@ public final class ModuleData {
     @API(status = Status.INTERNAL)
     public synchronized void setLexer(final FerrousLexer lexer) {
         this.lexer = lexer;
-    }
-
-    public synchronized PostAnalyzer getPostAnalyzer() {
-        return postAnalyzer;
-    }
-
-    @API(status = Status.INTERNAL)
-    public synchronized void setPostAnalyzer(final PostAnalyzer analyzer) {
-        postAnalyzer = analyzer;
     }
 
     public synchronized FerrousParser getParser() {
@@ -89,29 +92,109 @@ public final class ModuleData {
         this.tokenStream = tokenStream;
     }
 
-    public synchronized PreAnalyzer getPreAnalyzer() {
-        return preAnalyzer;
-    }
-
-    @API(status = Status.INTERNAL)
-    public synchronized void setPreAnalyzer(final PreAnalyzer preAnalyzer) {
-        this.preAnalyzer = preAnalyzer;
-    }
-
-    public synchronized TranslationUnit getTranslationUnit() {
-        return translationUnit;
-    }
-
-    @API(status = Status.INTERNAL)
-    public synchronized void setTranslationUnit(final TranslationUnit translationUnit) {
-        this.translationUnit = translationUnit;
-    }
-
     public String getName() {
         return name;
     }
 
-    public void dispose() {
-        translationUnit.dispose();
+    // Non-synchronized data
+
+    public LinkedHashMap<Identifier, NamedType> getNamedTypes() {
+        return namedTypes;
+    }
+
+    public HashMap<Identifier, HashMap<FunctionType, Function>> getFunctions() {
+        return functions;
+    }
+
+    public LinkedHashMap<Identifier, Field> getGlobalFields() {
+        return globalFields;
+    }
+
+    public LinkedHashMap<Function, LinkedHashMap<Identifier, LetStatement>> getLocals() {
+        return locals;
+    }
+
+    public @Nullable Type findCompleteType(final Identifier name, final Identifier scopeName) {
+        Profiler.INSTANCE.push();
+        Type type = ScopeUtils.findInScope(namedTypes, name, scopeName);
+        if (type == null) {
+            return null;
+        }
+        while (type instanceof AliasedType alias) {
+            type = alias.getBackingType();
+        }
+        if (!type.isComplete()) {
+            if (!(type instanceof NamedType namedType)) {
+                return null;
+            }
+            final var typeName = namedType.getQualifiedName();
+            type = ScopeUtils.findInScope(namedTypes, typeName, scopeName);
+        }
+        Profiler.INSTANCE.pop();
+        return type;
+    }
+
+    public @Nullable Type findCompleteType(final NamedType type) {
+        if (type.isComplete()) {
+            return type;
+        }
+        return findCompleteType(type.getName(), type.getScopeName());
+    }
+
+    public @Nullable Type findType(final Identifier name, final Identifier scopeName) {
+        try {
+            Profiler.INSTANCE.push();
+            return ScopeUtils.findInScope(namedTypes, name, scopeName);
+        }
+        finally {
+            Profiler.INSTANCE.pop();
+        }
+    }
+
+    // TODO: implement matching against C-variadic functions
+    public @Nullable Function findFunction(final Identifier name, final Identifier scopeName,
+                                           final Type... paramTypes) {
+        try {
+            Profiler.INSTANCE.push();
+            final var overloadSet = ScopeUtils.findInScope(functions, name, scopeName);
+            if (overloadSet == null) {
+                return null;
+            }
+            final var types = overloadSet.keySet();
+            for (final var type : types) {
+                if (!Arrays.equals(type.getParamTypes(), paramTypes)) {
+                    continue;
+                }
+                return overloadSet.get(type);
+            }
+            return null;
+        }
+        finally {
+            Profiler.INSTANCE.pop();
+        }
+    }
+
+    public @Nullable Function findFunction(final Identifier name, final Identifier scopeName, final FunctionType type) {
+        return findFunction(name, scopeName, type.getParamTypes());
+    }
+
+    public boolean functionExists(final Identifier name, final Identifier scopeName) {
+        return ScopeUtils.findInScope(functions, name, scopeName) != null;
+    }
+
+    public @Nullable Field findGlobalFieldInScope(final Identifier name, final Identifier scopeName) {
+        return ScopeUtils.findInScope(globalFields, name, scopeName);
+    }
+
+    public Map<Identifier, LetStatement> getLocalsFor(final Function function) {
+        final var map = locals.get(function);
+        if (map != null) {
+            return map;
+        }
+        return Collections.emptyMap();
+    }
+
+    public LetStatement findLocalIn(final Function function, final Identifier name, final Identifier scopeName) {
+        return ScopeUtils.findInScope(getLocalsFor(function), name, scopeName);
     }
 }

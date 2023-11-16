@@ -13,56 +13,65 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.ocm;
+package io.karma.ferrous.manganese.ocm.field;
 
+import io.karma.ferrous.manganese.ocm.ValueStorage;
 import io.karma.ferrous.manganese.ocm.expr.Expression;
 import io.karma.ferrous.manganese.ocm.ir.IRContext;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.target.TargetMachine;
+import io.karma.ferrous.manganese.util.Identifier;
 import org.apiguardian.api.API;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * @author Alexander Hinze
- * @since 09/11/2023
+ * @since 16/11/2023
  */
 @API(status = API.Status.INTERNAL)
-public interface ValueStorage extends NameProvider {
-    @Nullable Expression getValue();
-
-    default @Nullable ValueStorage getParent() {
+public final class GlobalFieldStorage implements ValueStorage {
+    @Override
+    public Identifier getName() {
         return null;
     }
 
-    void setInitialized();
-
-    boolean isInitialized();
-
-    boolean isMutable();
-
-    boolean isMutated();
-
-    void notifyMutation();
-
-    Type getType();
-
-    default boolean isRootMutable() {
-        var current = getParent();
-        while (current != null) {
-            final var next = current.getParent();
-            if (next == null) {
-                break;
-            }
-            current = next;
-        }
-        if (current == null) {
-            return isMutable();
-        }
-        return current.isRootMutable();
+    @Override
+    public @Nullable Expression getValue() {
+        return null;
     }
 
-    long getAddress(final TargetMachine targetMachine, final IRContext irContext);
+    @Override
+    public void setInitialized() {
 
-    default void init(final TargetMachine targetMachine, final IRContext irContext) {
+    }
+
+    @Override
+    public boolean isInitialized() {
+        return false;
+    }
+
+    @Override
+    public boolean isMutable() {
+        return false;
+    }
+
+    @Override
+    public boolean isMutated() {
+        return false;
+    }
+
+    @Override
+    public void notifyMutation() {
+
+    }
+
+    @Override
+    public Type getType() {
+        return null;
+    }
+
+    @Override
+    public long getAddress(TargetMachine targetMachine, IRContext irContext) {
+        return 0;
     }
 }

@@ -19,10 +19,14 @@ import io.karma.ferrous.manganese.ocm.expr.Expression;
 import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
 import io.karma.ferrous.manganese.ocm.scope.Scoped;
 import io.karma.ferrous.manganese.target.TargetMachine;
+import io.karma.ferrous.manganese.util.KitchenSink;
 import io.karma.ferrous.manganese.util.TokenSlice;
+import io.karma.ferrous.manganese.util.TypeMod;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.EnumSet;
 
 /**
  * @author Alexander Hinze
@@ -41,6 +45,10 @@ public interface Type extends Scoped {
     TokenSlice getTokenSlice();
 
     GenericParameter[] getGenericParams();
+
+    default EnumSet<TypeMod> getModifiers() {
+        return getBaseType().getModifiers();
+    }
 
     default @Nullable GenericParameter getGenericParam(final String name) {
         final var params = getGenericParams();
@@ -104,8 +112,12 @@ public interface Type extends Scoped {
         return getBaseType().isComplete();
     }
 
+    default Type deriveWithMods(final TypeMod... modifiers) {
+        return Types.cached(new DerivedType(this, null, KitchenSink.of(TypeMod[]::new, modifiers)));
+    }
+
     default Type deriveGeneric(final Expression... values) {
-        final var type = new DerivedType(this, null);
+        final var type = new DerivedType(this, null, EnumSet.noneOf(TypeMod.class));
         final var params = type.getGenericParams();
         final var numParams = params.length;
         if (values.length > numParams) {
@@ -118,7 +130,7 @@ public interface Type extends Scoped {
     }
 
     default Type derive(final TypeAttribute attribute) {
-        return Types.cached(new DerivedType(this, attribute));
+        return Types.cached(new DerivedType(this, attribute, EnumSet.noneOf(TypeMod.class)));
     }
 
     default Type derive(final TypeAttribute[] attributes) {

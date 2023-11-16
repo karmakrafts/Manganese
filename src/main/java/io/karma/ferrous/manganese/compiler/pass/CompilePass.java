@@ -13,39 +13,22 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.ocm.ir;
+package io.karma.ferrous.manganese.compiler.pass;
 
 import io.karma.ferrous.manganese.compiler.CompileContext;
+import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.module.Module;
-import io.karma.ferrous.manganese.util.Identifier;
 import org.apiguardian.api.API;
-import org.jetbrains.annotations.Nullable;
+
+import java.util.concurrent.ExecutorService;
 
 /**
  * @author Alexander Hinze
- * @since 06/11/2023
+ * @since 16/11/2023
  */
+@FunctionalInterface
 @API(status = API.Status.INTERNAL)
-public interface IRContext extends AutoCloseable {
-    String DEFAULT_BLOCK = "";
-
-    long getParameter(final Identifier name);
-
-    Module getModule();
-
-    CompileContext getCompileContext();
-
-    @Nullable IRBuilder getCurrent();
-
-    IRBuilder getOrCreate(final String name);
-
-    void drop();
-
-    default IRBuilder getCurrentOrCreate() {
-        var current = getCurrent();
-        if (current != null) {
-            return current;
-        }
-        return getOrCreate(DEFAULT_BLOCK);
-    }
+public interface CompilePass {
+    void run(final Compiler compiler, final CompileContext compileContext, final Module module,
+             final ExecutorService executor);
 }

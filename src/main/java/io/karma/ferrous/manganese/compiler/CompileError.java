@@ -15,6 +15,7 @@
 
 package io.karma.ferrous.manganese.compiler;
 
+import io.karma.ferrous.manganese.compiler.pass.CompilePass;
 import io.karma.ferrous.vanadium.FerrousLexer;
 import org.antlr.v4.runtime.Token;
 import org.apiguardian.api.API;
@@ -35,7 +36,7 @@ import java.util.List;
  */
 @API(status = Status.STABLE)
 public record CompileError(@Nullable Token token, @Nullable List<Token> lineTokens, @Nullable CompilePass pass,
-                           @Nullable String text, @Nullable Path sourceFile, CompileErrorCode errorCode)
+                           @Nullable String text, @Nullable Path sourceFile, @Nullable CompileErrorCode errorCode)
     implements Comparable<CompileError> {
     private static void handleTokenColor(final Token token, final Ansi buffer) {
         final var tokenType = token.getType();
@@ -120,10 +121,6 @@ public record CompileError(@Nullable Token token, @Nullable List<Token> lineToke
 
     public @Nullable CompileStatus getStatus() {
         return errorCode.getStatus();
-    }
-
-    public @Nullable CompilePass getPass() {
-        return pass;
     }
 
     public @Nullable Token getToken() {
