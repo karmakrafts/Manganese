@@ -22,7 +22,6 @@ import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.module.Module;
 import io.karma.ferrous.manganese.ocm.field.Field;
 import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
-import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.ocm.type.Types;
 import io.karma.ferrous.manganese.ocm.type.UDT;
 import io.karma.ferrous.manganese.ocm.type.UDTKind;
@@ -37,6 +36,8 @@ import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import org.apiguardian.api.API;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 
 /**
@@ -68,13 +69,13 @@ public final class TypeDiscoveryPass implements CompilePass {
             final var genericParams = Types.getGenericParams(compiler,
                 compileContext,
                 scopeStack,
-                context.genericParamList()).toArray(GenericParameter[]::new);
+                context.genericParamList());
             final var aliasedType = Types.aliased(Identifier.parse(identContext),
                 type,
                 scopeStack::applyEnclosingScopes,
                 TokenSlice.from(compileContext, context),
                 genericParams);
-            compileContext.getOrCreateModuleData().getNamedTypes().put(aliasedType.getQualifiedName(), aliasedType);
+            compileContext.getOrCreateModuleData().getTypes().put(aliasedType.getQualifiedName(), aliasedType);
         }
 
         @Override
@@ -86,7 +87,7 @@ public final class TypeDiscoveryPass implements CompilePass {
             final var genericParams = Types.getGenericParams(compiler,
                 compileContext,
                 scopeStack,
-                context.genericParamList()).toArray(GenericParameter[]::new);
+                context.genericParamList());
 
             super.enterAttrib(context);
             final var scope = analyzeFieldLayout(context,
@@ -106,7 +107,7 @@ public final class TypeDiscoveryPass implements CompilePass {
             final var genericParams = Types.getGenericParams(compiler,
                 compileContext,
                 scopeStack,
-                context.genericParamList()).toArray(GenericParameter[]::new);
+                context.genericParamList());
 
             super.enterStruct(context);
             final var scope = analyzeFieldLayout(context,
@@ -127,7 +128,7 @@ public final class TypeDiscoveryPass implements CompilePass {
             super.enterEnumClass(context);
             final var scope = analyzeFieldLayout(context,
                 Identifier.parse(identContext),
-                new GenericParameter[0],
+                Collections.emptyList(),
                 UDTKind.ENUM_CLASS);
             popScope();
             pushScope(scope);
@@ -142,7 +143,7 @@ public final class TypeDiscoveryPass implements CompilePass {
             final var genericParams = Types.getGenericParams(compiler,
                 compileContext,
                 scopeStack,
-                context.genericParamList()).toArray(GenericParameter[]::new);
+                context.genericParamList());
 
             super.enterTrait(context);
             final var scope = analyzeFieldLayout(context, Identifier.parse(identContext), genericParams, UDTKind.TRAIT);
@@ -152,7 +153,7 @@ public final class TypeDiscoveryPass implements CompilePass {
 
         private boolean checkIsTypeAlreadyDefined(final IdentContext identContext) {
             final var name = Identifier.parse(identContext);
-            final var type = compileContext.getOrCreateModuleData().getNamedTypes().get(name);
+            final var type = compileContext.getOrCreateModuleData().getTypes().get(name);
             if (type != null) {
                 final var message = KitchenSink.makeCompilerMessage(String.format("Type '%s' is already defined",
                     name));
@@ -163,12 +164,12 @@ public final class TypeDiscoveryPass implements CompilePass {
         }
 
         private UDT analyzeFieldLayout(final ParserRuleContext parent, final Identifier name,
-                                       final GenericParameter[] genericParams, final UDTKind kind) {
+                                       final List<GenericParameter> genericParams, final UDTKind kind) {
             final var layoutAnalyzer = new FieldParser(compiler, compileContext, scopeStack);
             ParseTreeWalker.DEFAULT.walk(layoutAnalyzer, parent);
 
             final var fields = layoutAnalyzer.getFields();
-            final var fieldTypes = fields.stream().map(Field::getType).toArray(Type[]::new);
+            final var fieldTypes = fields.stream().map(Field::getType).toList();
             final var tokenSlice = TokenSlice.from(compileContext, parent);
             final var type = Types.structure(name,
                 scopeStack::applyEnclosingScopes,
@@ -176,7 +177,7 @@ public final class TypeDiscoveryPass implements CompilePass {
                 tokenSlice,
                 fieldTypes);
             final var udt = new UDT(kind, type, fields, tokenSlice);
-            compileContext.getOrCreateModuleData().getNamedTypes().put(type.getQualifiedName(), udt);
+            compileContext.getOrCreateModuleData().getTypes().put(type.getQualifiedName(), udt);
 
             Logger.INSTANCE.debugln("Captured field layout for kind '%s'", type.getQualifiedName());
             return udt;

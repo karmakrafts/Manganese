@@ -18,9 +18,6 @@ package io.karma.ferrous.manganese.util;
 import io.karma.ferrous.vanadium.FerrousLexer;
 import org.apiguardian.api.API;
 
-import java.util.Arrays;
-import java.util.Optional;
-
 /**
  * @author Alexander Hinze
  * @since 15/11/2023
@@ -37,10 +34,6 @@ public enum TypeMod {
 
     TypeMod(final int token) {
         text = TokenUtils.getLiteral(token);
-    }
-
-    public static Optional<TypeMod> byText(final String text) {
-        return Arrays.stream(values()).filter(mod -> mod.text.equals(text)).findFirst();
     }
 
     public String getText() {

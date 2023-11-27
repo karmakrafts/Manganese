@@ -275,7 +275,7 @@ public final class IRBuilder implements AutoCloseable {
 
     public long call(final Function function, final long... args) {
         try (final var stack = MemoryStack.stackPush()) {
-            final var fnAddress = function.materialize(irContext.getCompileContext(), module, targetMachine);
+            final var fnAddress = function.emit(irContext.getCompileContext(), module, targetMachine);
             final var typeAddress = function.getType().materialize(targetMachine);
             return LLVMBuildCall2(address, typeAddress, fnAddress, stack.pointers(args), "");
         }

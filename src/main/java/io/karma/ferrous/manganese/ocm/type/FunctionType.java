@@ -16,10 +16,10 @@
 package io.karma.ferrous.manganese.ocm.type;
 
 import io.karma.ferrous.manganese.ocm.expr.Expression;
-import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
 import io.karma.ferrous.manganese.ocm.scope.DefaultScope;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.target.TargetMachine;
+import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.TokenSlice;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
@@ -28,7 +28,7 @@ import org.lwjgl.llvm.LLVMCore;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 
-import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -38,12 +38,13 @@ import java.util.Objects;
 @API(status = Status.INTERNAL)
 public class FunctionType implements Type {
     private final Type returnType;
-    private final Type[] paramTypes;
+    private final List<Type> paramTypes;
     private final boolean isVarArg;
     private final TokenSlice tokenSlice;
     private long materializedType = MemoryUtil.NULL;
 
-    FunctionType(final Type returnType, final boolean isVarArg, final TokenSlice tokenSlice, final Type... paramTypes) {
+    FunctionType(final Type returnType, final boolean isVarArg, final TokenSlice tokenSlice,
+                 final List<Type> paramTypes) {
         this.returnType = returnType;
         this.paramTypes = paramTypes;
         this.isVarArg = isVarArg;
@@ -58,7 +59,7 @@ public class FunctionType implements Type {
         return returnType;
     }
 
-    public Type[] getParamTypes() {
+    public List<Type> getParamTypes() {
         return paramTypes;
     }
 
@@ -72,9 +73,9 @@ public class FunctionType implements Type {
         }
 
         builder.append('(');
-        final var numParams = paramTypes.length;
+        final var numParams = paramTypes.size();
         for (var i = 0; i < numParams; i++) {
-            builder.append(paramTypes[i]);
+            builder.append(paramTypes.get(i));
             if (i < numParams - 1) {
                 builder.append(", ");
             }
@@ -101,6 +102,11 @@ public class FunctionType implements Type {
     // Type
 
     @Override
+    public Identifier getName() {
+        return Identifier.EMPTY; // TODO: this should probably be changed..
+    }
+
+    @Override
     public Expression makeDefaultValue() {
         throw new IllegalStateException("Functions don't have a default value");
     }
@@ -108,11 +114,6 @@ public class FunctionType implements Type {
     @Override
     public TokenSlice getTokenSlice() {
         return tokenSlice;
-    }
-
-    @Override
-    public GenericParameter[] getGenericParams() {
-        return new GenericParameter[0];
     }
 
     @Override
@@ -137,28 +138,23 @@ public class FunctionType implements Type {
         }
         try (final var stack = MemoryStack.stackPush()) {
             final var returnType = this.returnType.materialize(machine);
-            final var paramTypes = Arrays.stream(this.paramTypes).mapToLong(type -> type.materialize(machine)).toArray();
+            final var paramTypes = this.paramTypes.stream().mapToLong(type -> type.materialize(machine)).toArray();
             return materializedType = LLVMCore.LLVMFunctionType(returnType, stack.pointers(paramTypes), isVarArg);
         }
-    }
-
-    @Override
-    public TypeAttribute[] getAttributes() {
-        return new TypeAttribute[0];
     }
 
     // Object
 
     @Override
     public int hashCode() {
-        return Objects.hash(returnType, Arrays.hashCode(paramTypes), isVarArg);
+        return Objects.hash(returnType, paramTypes, isVarArg);
     }
 
     @Override
     public boolean equals(Object obj) {
         if(obj instanceof FunctionType type) { // @formatter:off
             return returnType.equals(type.returnType)
-                && Arrays.equals(paramTypes, type.paramTypes)
+                && paramTypes.equals(type.paramTypes)
                 && isVarArg == type.isVarArg;
         } // @formatter:on
         return false;

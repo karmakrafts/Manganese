@@ -45,6 +45,7 @@ public final class FunctionParser extends ParseAdapter {
     @Override
     public void enterFunctionBody(final FunctionBodyContext context) {
         if (function.getBody() != null) {
+            super.enterFunctionBody(context);
             return;
         }
         final var scopeStack = function.rebuildScopeStack();
@@ -63,6 +64,7 @@ public final class FunctionParser extends ParseAdapter {
     public void exitFunctionBody(final FunctionBodyContext context) {
         final var body = function.getBody();
         if (body == null) {
+            super.exitFunctionBody(context);
             return;
         }
         final var statements = body.getStatements();

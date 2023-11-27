@@ -18,7 +18,7 @@ package io.karma.ferrous.manganese.ocm.access;
 import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.CompileErrorCode;
 import io.karma.ferrous.manganese.compiler.Compiler;
-import io.karma.ferrous.manganese.ocm.NameProvider;
+import io.karma.ferrous.manganese.ocm.Named;
 import io.karma.ferrous.manganese.ocm.scope.ScopeStack;
 import io.karma.ferrous.manganese.ocm.scope.ScopeType;
 import io.karma.ferrous.manganese.ocm.scope.Scoped;
@@ -51,9 +51,8 @@ public enum DefaultAccess implements Access {
     }
 
     @Override
-    public <T extends Scoped & NameProvider> boolean hasAccess(final Compiler compiler,
-                                                               final CompileContext compileContext,
-                                                               final ScopeStack scopeStack, final T target) {
+    public <T extends Scoped & Named> boolean hasAccess(final Compiler compiler, final CompileContext compileContext,
+                                                        final ScopeStack scopeStack, final T target) {
         final var capturedScopeStack = new ScopeStack(scopeStack);
         final var targetScope = target.getEnclosingScope();
         final var currentScope = scopeStack.peek();

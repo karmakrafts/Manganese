@@ -15,30 +15,36 @@
 
 package io.karma.ferrous.manganese.util;
 
-import io.karma.ferrous.vanadium.FerrousParser;
+import io.karma.ferrous.manganese.ocm.type.Type;
 import org.apiguardian.api.API;
 
-import java.util.EnumSet;
-import java.util.List;
+import java.util.Arrays;
+import java.util.Collection;
 
 /**
  * @author Alexander Hinze
- * @since 08/11/2023
+ * @since 27/11/2023
  */
 @API(status = API.Status.INTERNAL)
-public enum StorageMod {
-    CONST, TLS;
+public final class Mangler {
+    // @formatter:off
+    private Mangler() {}
+    // @formatter:on
 
-    public static EnumSet<StorageMod> parse(final List<FerrousParser.StorageModContext> contexts) {
-        final var mods = EnumSet.noneOf(StorageMod.class);
-        for (final var context : contexts) {
-            if (context.KW_CONST() != null) {
-                mods.add(CONST);
+    public static String mangleSequence(final Collection<Type> types) {
+        final var builder = new StringBuilder();
+        for (final var type : types) {
+            final var typeName = type.getMangledName();
+            if (type.isBuiltin()) {
+                builder.append('\'').append(typeName);
+                continue;
             }
-            if (context.KW_TLS() != null) {
-                mods.add(TLS);
-            }
+            builder.append('@').append(typeName);
         }
-        return mods;
+        return builder.toString();
+    }
+
+    public static String mangleSequence(final Type... types) {
+        return mangleSequence(Arrays.asList(types));
     }
 }

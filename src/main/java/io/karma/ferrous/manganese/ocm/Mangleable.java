@@ -15,24 +15,15 @@
 
 package io.karma.ferrous.manganese.ocm;
 
-import io.karma.ferrous.manganese.ocm.scope.Scoped;
-import io.karma.ferrous.manganese.util.Identifier;
 import org.apiguardian.api.API;
-import org.apiguardian.api.API.Status;
 
 /**
  * @author Alexander Hinze
- * @since 16/10/2023
+ * @since 27/11/2023
  */
-@API(status = Status.INTERNAL)
-public interface NameProvider {
-    Identifier getName();
-
-    default Identifier getQualifiedName() {
-        final var name = getName();
-        if (this instanceof Scoped scoped) {
-            return scoped.getScopeName().join(name);
-        }
-        return name;
+@API(status = API.Status.INTERNAL)
+public interface Mangleable extends Named {
+    default String getMangledName() {
+        return getQualifiedName().toInternalName();
     }
 }

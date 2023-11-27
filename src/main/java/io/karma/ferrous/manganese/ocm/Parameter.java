@@ -29,7 +29,7 @@ import java.util.Objects;
  * @since 16/10/2023
  */
 @API(status = Status.INTERNAL)
-public final class Parameter implements NameProvider {
+public final class Parameter implements Named {
     private final Identifier name;
     private final Expression defaultValue;
     private Type type;

@@ -15,68 +15,68 @@
 
 package io.karma.ferrous.manganese.ocm.type;
 
-import io.karma.ferrous.manganese.ocm.constant.NullConstant;
 import io.karma.ferrous.manganese.ocm.expr.Expression;
-import io.karma.ferrous.manganese.ocm.scope.DefaultScope;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Identifier;
-import io.karma.ferrous.manganese.util.TokenSlice;
-import io.karma.ferrous.manganese.util.TokenUtils;
-import io.karma.ferrous.vanadium.FerrousLexer;
+import io.karma.ferrous.manganese.util.Mangler;
 import org.apiguardian.api.API;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.List;
 
 /**
  * @author Alexander Hinze
- * @since 22/10/2023
+ * @since 27/11/2023
  */
 @API(status = API.Status.INTERNAL)
-public final class NullType implements Type {
-    public static final NullType INSTANCE = new NullType();
+public final class MonomorphizedType implements Type {
+    private final Type baseType;
+    private final List<Type> genericTypes;
+    private Scope enclosingScope;
 
-    // @formatter:off
-    private NullType() {}
-    // @formatter:on
+    MonomorphizedType(final Type baseType, final List<Type> genericTypes) {
+        this.baseType = baseType;
+        this.genericTypes = genericTypes;
+    }
 
-    // NameProvider
+    @Override
+    public String getMangledName() {
+        return String.format("%s<%s>", getQualifiedName().toInternalName(), Mangler.mangleSequence(genericTypes));
+    }
 
     @Override
     public Identifier getName() {
-        return new Identifier(TokenUtils.getLiteral(FerrousLexer.KW_NULL));
+        return baseType.getName();
     }
 
-    // Scoped
-
     @Override
-    public Scope getEnclosingScope() {
-        return DefaultScope.GLOBAL;
+    public @Nullable Scope getEnclosingScope() {
+        return enclosingScope;
     }
 
     @Override
     public void setEnclosingScope(final Scope enclosingScope) {
-    }
-
-    // Type
-
-    @Override
-    public Expression makeDefaultValue() {
-        return new NullConstant(TokenSlice.EMPTY);
+        this.enclosingScope = enclosingScope;
     }
 
     @Override
     public long materialize(final TargetMachine machine) {
-        return BuiltinType.VOID.derive(TypeAttribute.POINTER).materialize(machine);
+        return 0L;
     }
 
     @Override
     public Type getBaseType() {
-        return this;
+        return baseType;
     }
 
-    // Object
+    @Override
+    public Expression makeDefaultValue() {
+        return null;
+    }
 
     @Override
-    public String toString() {
-        return "null";
+    public Type monomorphize(final List<Type> genericTypes) {
+        throw new UnsupportedOperationException("Type is already monomorphized");
     }
 }

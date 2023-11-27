@@ -26,6 +26,8 @@ import org.apiguardian.api.API.Status;
 import org.lwjgl.llvm.LLVMCore;
 import org.lwjgl.system.MemoryUtil;
 
+import java.util.List;
+
 import static org.lwjgl.llvm.LLVMCore.LLVMGetGlobalContext;
 
 /**
@@ -33,14 +35,14 @@ import static org.lwjgl.llvm.LLVMCore.LLVMGetGlobalContext;
  * @since 15/10/2023
  */
 @API(status = Status.INTERNAL)
-public final class IncompleteType implements NamedType {
+public final class IncompleteType implements Type {
     private final Identifier name;
     private final TokenSlice tokenSlice;
-    private final GenericParameter[] genericParams;
+    private final List<GenericParameter> genericParams;
     private long materializedType = MemoryUtil.NULL;
     private Scope enclosingType;
 
-    IncompleteType(final Identifier name, final TokenSlice tokenSlice, final GenericParameter... genericParams) {
+    IncompleteType(final Identifier name, final TokenSlice tokenSlice, final List<GenericParameter> genericParams) {
         this.name = name;
         this.tokenSlice = tokenSlice;
         this.genericParams = genericParams;
@@ -68,6 +70,11 @@ public final class IncompleteType implements NamedType {
     // Type
 
     @Override
+    public List<GenericParameter> getGenericParams() {
+        return genericParams;
+    }
+
+    @Override
     public Expression makeDefaultValue() {
         throw new IllegalStateException("Incomplete type does not have default value");
     }
@@ -75,11 +82,6 @@ public final class IncompleteType implements NamedType {
     @Override
     public TokenSlice getTokenSlice() {
         return tokenSlice;
-    }
-
-    @Override
-    public GenericParameter[] getGenericParams() {
-        return genericParams;
     }
 
     @Override
@@ -99,11 +101,6 @@ public final class IncompleteType implements NamedType {
         }
         final var name = getQualifiedName().toInternalName();
         return materializedType = LLVMCore.LLVMStructCreateNamed(LLVMGetGlobalContext(), name);
-    }
-
-    @Override
-    public TypeAttribute[] getAttributes() {
-        return new TypeAttribute[0];
     }
 
     @Override

@@ -67,72 +67,74 @@ public final class Types {
             .findFirst();
     } // @formatter:on
 
-    public static FunctionType function(final Type returnType, final List<? extends Type> paramTypes,
-                                        final boolean isVarArg, final Function<FunctionType, FunctionType> callback,
+    public static FunctionType function(final Type returnType, final List<Type> paramTypes, final boolean isVarArg,
+                                        final Function<FunctionType, FunctionType> callback,
                                         final TokenSlice tokenSlice) {
-        return cached(callback.apply(new FunctionType(returnType,
-            isVarArg,
-            tokenSlice,
-            paramTypes.toArray(Type[]::new))));
+        return cached(callback.apply(new FunctionType(returnType, isVarArg, tokenSlice, paramTypes)));
     }
 
     public static NamedFunctionType namedFunction(final Identifier name, final Type returnType,
-                                                  final List<? extends Type> paramTypes, final boolean isVarArg,
+                                                  final List<Type> paramTypes, final boolean isVarArg,
                                                   final Function<NamedFunctionType, NamedFunctionType> callback,
                                                   final TokenSlice tokenSlice) {
-        final var params = paramTypes.toArray(Type[]::new);
-        return cached(callback.apply(new NamedFunctionType(name, returnType, isVarArg, tokenSlice, params)));
+        return cached(callback.apply(new NamedFunctionType(name, returnType, isVarArg, tokenSlice, paramTypes)));
     }
 
     public static StructureType structure(final Identifier name, final boolean isPacked,
                                           final Function<StructureType, StructureType> callback,
-                                          final GenericParameter[] genericParams, final TokenSlice tokenSlice,
-                                          final Type... fieldTypes) {
+                                          final List<GenericParameter> genericParams, final TokenSlice tokenSlice,
+                                          final List<Type> fieldTypes) {
         return cached(callback.apply(new StructureType(name, isPacked, genericParams, tokenSlice, fieldTypes)));
     }
 
     public static StructureType structure(final Identifier name, final Function<StructureType, StructureType> callback,
-                                          final GenericParameter[] genericParams, final TokenSlice tokenSlice,
-                                          final Type... fieldTypes) {
+                                          final List<GenericParameter> genericParams, final TokenSlice tokenSlice,
+                                          final List<Type> fieldTypes) {
         return structure(name, false, callback, genericParams, tokenSlice, fieldTypes);
     }
 
     public static AliasedType aliased(final Identifier name, final Type backingType,
                                       final Function<AliasedType, AliasedType> callback, final TokenSlice tokenSlice,
-                                      final GenericParameter... genericParams) {
+                                      final List<GenericParameter> genericParams) {
         return cached(callback.apply(new AliasedType(name, backingType, tokenSlice, genericParams)));
     }
 
     public static TupleType tuple(final Function<TupleType, TupleType> callback, final TokenSlice tokenSlice,
-                                  final Type... types) {
+                                  final List<Type> types) {
         return cached(callback.apply(new TupleType(tokenSlice, types)));
     }
 
     public static VectorType vector(final Type type, final int elementCount,
-                                    final Function<VectorType, VectorType> callback, final TokenSlice tokenSlice) {
-        return cached(callback.apply(new VectorType(type, elementCount, tokenSlice)));
+                                    final Function<VectorType, VectorType> callback, final TokenSlice tokenSlice,
+                                    final List<GenericParameter> genericParameters) {
+        return cached(callback.apply(new VectorType(type, elementCount, tokenSlice, genericParameters)));
     }
 
     public static IncompleteType incomplete(final Identifier name,
                                             final Function<IncompleteType, IncompleteType> callback,
-                                            final TokenSlice tokenSlice) {
-        return cached(callback.apply(new IncompleteType(name, tokenSlice)));
+                                            final TokenSlice tokenSlice,
+                                            final List<GenericParameter> genericParameters) {
+        return cached(callback.apply(new IncompleteType(name, tokenSlice, genericParameters)));
     }
 
     public static @Nullable Type findCommonType(final Type... types) {
-        final var numTypes = types.length;
+        return findCommonType(Arrays.asList(types));
+    }
+
+    public static @Nullable Type findCommonType(final List<Type> types) {
+        final var numTypes = types.size();
         return switch(numTypes) { // @formatter:off
             case 0  -> null;
-            case 1  -> types[0];
+            case 1  -> types.getFirst();
             default -> {
                 Type result = null;
                 for(var i = 0; i < numTypes; i++) {
-                    final var baseType = types[i];
+                    final var baseType = types.get(i);
                     for(var j = 0; j < numTypes; j++) {
                         if(i == j) {
                             continue; // If we are at the same index, skip this iteration
                         }
-                        final var type = types[j];
+                        final var type = types.get(j);
                         if(!baseType.canAccept(type)) {
                             result = null; // Reset result if kind was not compatible
                             continue;
@@ -166,7 +168,7 @@ public final class Types {
                 ParseTreeWalker.DEFAULT.walk(parser, expr);
                 constraints = parser.getConstraints();
             }
-            result.add(new GenericParameter(name.toString(),
+            result.add(new GenericParameter(name,
                 constraints,
                 new TypeConstant(defaultType, TokenSlice.from(compileContext, param))));
         }

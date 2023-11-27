@@ -17,21 +17,24 @@ package io.karma.ferrous.manganese.ocm.function;
 
 import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.module.Module;
-import io.karma.ferrous.manganese.ocm.NameProvider;
+import io.karma.ferrous.manganese.ocm.Mangleable;
 import io.karma.ferrous.manganese.ocm.Parameter;
+import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.ocm.scope.Scoped;
 import io.karma.ferrous.manganese.ocm.statement.Statement;
 import io.karma.ferrous.manganese.ocm.type.FunctionType;
+import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.CallingConvention;
 import io.karma.ferrous.manganese.util.Identifier;
+import io.karma.ferrous.manganese.util.Mangler;
 import io.karma.ferrous.manganese.util.TokenSlice;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 
 import static org.lwjgl.llvm.LLVMCore.*;
@@ -42,25 +45,30 @@ import static org.lwjgl.system.MemoryUtil.NULL;
  * @since 14/10/2023
  */
 @API(status = Status.INTERNAL)
-public final class Function implements NameProvider, Scoped {
-    private final Identifier name;
-    private final CallingConvention callConv;
-    private final boolean isExtern;
-    private final Parameter[] parameters;
-    private final TokenSlice tokenSlice;
-    private final FunctionType type;
-    private FunctionBody body;
-    private Scope enclosingScope;
-    private long materializedPrototype;
+public class Function implements Scoped, Mangleable {
+    protected final Identifier name;
+    protected final CallingConvention callConv;
+    protected final boolean isExtern;
+    protected final boolean shouldMangle;
+    protected final List<Parameter> parameters;
+    protected final List<GenericParameter> genericParams;
+    protected final TokenSlice tokenSlice;
+    protected final FunctionType type;
+    protected FunctionBody body;
+    protected Scope enclosingScope;
+    protected long materializedPrototype;
 
     public Function(final Identifier name, final CallingConvention callConv, final FunctionType type,
-                    final boolean isExtern, final TokenSlice tokenSlice, final Parameter... params) {
+                    final boolean isExtern, final boolean shouldMangle, final TokenSlice tokenSlice,
+                    final List<Parameter> params, final List<GenericParameter> genericParams) {
         this.name = name;
         this.callConv = callConv;
         this.isExtern = isExtern;
+        this.shouldMangle = shouldMangle;
         this.type = type;
         this.tokenSlice = tokenSlice;
         this.parameters = params;
+        this.genericParams = genericParams;
     }
 
     public void createBody(final Statement... statements) {
@@ -78,6 +86,10 @@ public final class Function implements NameProvider, Scoped {
         return isExtern;
     }
 
+    public boolean shouldMangle() {
+        return shouldMangle;
+    }
+
     public @Nullable FunctionBody getBody() {
         return body;
     }
@@ -86,32 +98,38 @@ public final class Function implements NameProvider, Scoped {
         return type;
     }
 
-    public Parameter[] getParameters() {
+    public TokenSlice getTokenSlice() {
+        return tokenSlice;
+    }
+
+    public List<Parameter> getParameters() {
         return parameters;
     }
 
-    public long materializePrototype(final Module module, final TargetMachine targetMachine) {
+    public List<GenericParameter> getGenericParameters() {
+        return genericParams;
+    }
+
+    public long materialize(final Module module, final TargetMachine targetMachine) {
         if (materializedPrototype != NULL) {
             return materializedPrototype;
         }
-        final var functionName = getScopeName().join(name).toInternalName();
-        final var address = LLVMAddFunction(module.getAddress(), functionName, type.materialize(targetMachine));
-        final var numParams = parameters.length;
+        final var address = LLVMAddFunction(module.getAddress(), getMangledName(), type.materialize(targetMachine));
+        final var numParams = parameters.size();
         for (var i = 0; i < numParams; i++) {
-            LLVMSetValueName2(LLVMGetParam(address, i), parameters[i].getName().toString());
+            LLVMSetValueName2(LLVMGetParam(address, i), parameters.get(i).getName().toString());
         }
         LLVMSetLinkage(address, isExtern ? LLVMExternalLinkage : 0);
         LLVMSetFunctionCallConv(address, callConv.getLLVMValue(targetMachine));
         return materializedPrototype = address;
     }
 
-    public long materialize(final CompileContext compileContext, final Module module,
-                            final TargetMachine targetMachine) {
+    public long emit(final CompileContext compileContext, final Module module, final TargetMachine targetMachine) {
         if (body != null) {
             body.append(compileContext, module, targetMachine);
             return materializedPrototype; // This won't be NULL at this point
         }
-        return materializePrototype(module, targetMachine);
+        return materialize(module, targetMachine);
     }
 
     public void delete() {
@@ -120,6 +138,19 @@ public final class Function implements NameProvider, Scoped {
         }
         LLVMDeleteFunction(materializedPrototype);
         materializedPrototype = NULL;
+    }
+
+    public MonomorphizedFunction monomorphize(final List<Type> genericTypes) {
+        return new MonomorphizedFunction(this, genericTypes);
+    }
+
+    // Mangleable
+
+    @Override
+    public String getMangledName() {
+        return String.format("%s(%s)",
+            getQualifiedName().toInternalName(),
+            Mangler.mangleSequence(parameters.stream().map(Parameter::getType).toList()));
     }
 
     // NameProvider
@@ -162,6 +193,6 @@ public final class Function implements NameProvider, Scoped {
 
     @Override
     public String toString() {
-        return String.format("%s %s(%s)", type, name, Arrays.toString(parameters));
+        return String.format("%s %s(%s)", type, name, parameters);
     }
 }

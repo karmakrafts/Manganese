@@ -54,9 +54,8 @@ public final class TypeResolutionPass implements CompilePass {
     }
 
     private boolean addTypesToGraph(final CompileContext compileContext,
-                                    final ArrayDeque<Pair<TopoNode<NamedType>, TopoNode<NamedType>>> typesToResolve,
-                                    final Map<Identifier, TopoNode<NamedType>> nodes,
-                                    final HashSet<Identifier> resolved) {
+                                    final ArrayDeque<Pair<TopoNode<Type>, TopoNode<Type>>> typesToResolve,
+                                    final Map<Identifier, TopoNode<Type>> nodes, final HashSet<Identifier> resolved) {
         final var buffer = Ansi.ansi().fgBright(Ansi.Color.CYAN);
         final var pair = typesToResolve.pop();
 
@@ -69,10 +68,10 @@ public final class TypeResolutionPass implements CompilePass {
             final var fields = udt.fields();
             for (final var field : fields) {
                 final var fieldType = field.getType();
-                if (fieldType.isBuiltin() || fieldType.isComplete() || !(fieldType instanceof NamedType namedType)) {
+                if (fieldType.isBuiltin() || fieldType.isComplete()) {
                     continue; // Skip all types which are complete to save time
                 }
-                var fieldTypeName = namedType.getQualifiedName();
+                var fieldTypeName = fieldType.getQualifiedName();
                 final var fieldNode = ScopeUtils.findInScope(nodes, fieldTypeName, childType.getScopeName());
                 if (fieldNode == null) {
                     final var token = field.getTokenSlice().findTokenOrFirst(fieldTypeName.toString());
@@ -94,11 +93,7 @@ public final class TypeResolutionPass implements CompilePass {
             buffer.fgBright(Ansi.Color.MAGENTA).a('A').fgBright(Ansi.Color.CYAN);
             if (!alias.isBuiltin() && !alias.isComplete()) {
                 final var backingType = alias.getBackingType();
-                if (!(backingType instanceof NamedType namedType)) {
-                    // TODO: report error?
-                    return false;
-                }
-                var backingTypeName = namedType.getQualifiedName();
+                var backingTypeName = backingType.getQualifiedName();
                 final var typeNode = ScopeUtils.findInScope(nodes, backingTypeName, childType.getScopeName());
                 if (typeNode == null) {
                     compileContext.reportError(backingTypeName.toString(), CompileErrorCode.E3004);
@@ -132,10 +127,7 @@ public final class TypeResolutionPass implements CompilePass {
                 currentType = aliasedType.getBackingType();
                 continue;
             }
-            if (!(currentType instanceof NamedType namedType)) {
-                return false;
-            }
-            final var currentTypeName = namedType.getQualifiedName();
+            final var currentTypeName = currentType.getQualifiedName();
             final var completeType = compileContext.getOrCreateModuleData().findCompleteType(currentTypeName,
                 scopeName);
             if (completeType == null) {
@@ -155,10 +147,10 @@ public final class TypeResolutionPass implements CompilePass {
         final var numFields = fieldTypes.size();
         for (var i = 0; i < numFields; i++) {
             final var fieldType = fieldTypes.get(i);
-            if (fieldType.isBuiltin() || fieldType.isComplete() || !(fieldType instanceof NamedType namedType)) {
+            if (fieldType.isBuiltin() || fieldType.isComplete()) {
                 continue;
             }
-            final var fieldTypeName = namedType.getQualifiedName();
+            final var fieldTypeName = fieldType.getQualifiedName();
             Logger.INSTANCE.debugln("Found incomplete field kind '%s' in '%s'", fieldTypeName, scopeName);
             final var completeType = compileContext.getOrCreateModuleData().findCompleteType(fieldTypeName, scopeName);
             if (completeType == null) {
@@ -173,7 +165,7 @@ public final class TypeResolutionPass implements CompilePass {
 
     private void resolveTypes(final CompileContext compileContext) {
         Profiler.INSTANCE.push();
-        final var types = compileContext.getOrCreateModuleData().getNamedTypes().values();
+        final var types = compileContext.getOrCreateModuleData().getTypes().values();
         for (final var udt : types) {
             final var scopeName = udt.getScopeName();
             if (udt.isAliased() && udt instanceof AliasedType alias) {
@@ -193,7 +185,7 @@ public final class TypeResolutionPass implements CompilePass {
 
     private void materializeTypes(final Compiler compiler, final CompileContext compileContext) {
         Profiler.INSTANCE.push();
-        final var namedTypes = compileContext.getOrCreateModuleData().getNamedTypes().values();
+        final var namedTypes = compileContext.getOrCreateModuleData().getTypes().values();
         for (final var type : namedTypes) {
             if (type.isAliased()) {
                 continue; // Don't need to waste time on doing nothing..
@@ -210,8 +202,8 @@ public final class TypeResolutionPass implements CompilePass {
 
     private void sortTypes(final CompileContext compileContext) {
         Profiler.INSTANCE.push();
-        final var rootNode = new TopoNode<NamedType>(DummyType.INSTANCE);
-        final var namedTypes = compileContext.getOrCreateModuleData().getNamedTypes();
+        final var rootNode = new TopoNode<Type>(DummyType.INSTANCE);
+        final var namedTypes = compileContext.getOrCreateModuleData().getTypes();
         // @formatter:off
         final var nodes = namedTypes.entrySet()
             .stream()
@@ -219,7 +211,7 @@ public final class TypeResolutionPass implements CompilePass {
             .collect(Collectors.toMap(Pair::getLeft, Pair::getRight));
         // @formatter:on
 
-        final var queue = new ArrayDeque<Pair<TopoNode<NamedType>, TopoNode<NamedType>>>(); // <parent_node, child_node>
+        final var queue = new ArrayDeque<Pair<TopoNode<Type>, TopoNode<Type>>>(); // <parent_node, child_node>
         final var resolved = new HashSet<Identifier>();
 
         outer:
@@ -241,7 +233,7 @@ public final class TypeResolutionPass implements CompilePass {
 
         Logger.INSTANCE.debugln("Reordering %d kind entries", namedTypes.size());
         final var sortedNodes = new TopoSorter<>(rootNode).sort(ArrayList::new);
-        final var sortedMap = new LinkedHashMap<Identifier, NamedType>();
+        final var sortedMap = new LinkedHashMap<Identifier, Type>();
 
         for (final var node : sortedNodes) {
             final var type = node.getValue();
@@ -260,7 +252,7 @@ public final class TypeResolutionPass implements CompilePass {
     private void resolveTypeAccess(final CompileContext compileContext) {
         Profiler.INSTANCE.push();
         final var moduleData = compileContext.getOrCreateModuleData();
-        final var namedTypes = moduleData.getNamedTypes().values();
+        final var namedTypes = moduleData.getTypes().values();
         for (final var udt : namedTypes) {
             if (!(udt instanceof UDT actualUdt)) {
                 continue; // Skip any non-UDTs
@@ -276,12 +268,12 @@ public final class TypeResolutionPass implements CompilePass {
                 final var numTypes = types.length;
                 for (var i = 0; i < numTypes; i++) {
                     var type = types[i];
-                    if (type.isComplete() || !(type instanceof NamedType namedType)) {
+                    if (type.isComplete()) {
                         continue;
                     }
-                    final var completeType = moduleData.findCompleteType(namedType);
+                    final var completeType = moduleData.findCompleteType(type);
                     if (completeType == null) {
-                        final var token = scopedAccess.tokenSlice().findTokenOrFirst(namedType.getQualifiedName().toString());
+                        final var token = scopedAccess.tokenSlice().findTokenOrFirst(type.getQualifiedName().toString());
                         compileContext.reportError(token, CompileErrorCode.E3002);
                         continue;
                     }

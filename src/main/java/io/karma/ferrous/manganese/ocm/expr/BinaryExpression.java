@@ -164,17 +164,17 @@ public final class BinaryExpression implements Expression {
         final var lhs = this.lhs.emit(targetMachine, irContext);
         final var rhs = needsLoadDedup() ? lhs : this.rhs.emit(targetMachine, irContext);
         return switch (op) { // @formatter:off
-            case PLUS        -> builtinType.isFloatType() ? builder.fadd(lhs, rhs) : builder.add(lhs, rhs);
-            case MINUS       -> builtinType.isFloatType() ? builder.fsub(lhs, rhs) : builder.sub(lhs, rhs);
-            case TIMES       -> builtinType.isFloatType() ? builder.fmul(lhs, rhs) : builder.mul(lhs, rhs);
-            case DIV         -> emitDiv(lhs, rhs, builtinType, builder);
-            case MOD         -> emitMod(lhs, rhs, builtinType, builder);
-            case AND         -> builder.and(lhs, rhs);
-            case OR          -> builder.or(lhs, rhs);
-            case XOR         -> builder.xor(lhs, rhs);
-            case SHL         -> builder.shl(lhs, rhs);
-            case SHR         -> builtinType.isUnsignedInt() ? builder.lshr(lhs, rhs) : builder.ashr(lhs, rhs);
-            default          -> throw new IllegalStateException("Unsupported operator");
+            case PLUS  -> builtinType.isFloatType() ? builder.fadd(lhs, rhs) : builder.add(lhs, rhs);
+            case MINUS -> builtinType.isFloatType() ? builder.fsub(lhs, rhs) : builder.sub(lhs, rhs);
+            case TIMES -> builtinType.isFloatType() ? builder.fmul(lhs, rhs) : builder.mul(lhs, rhs);
+            case DIV   -> emitDiv(lhs, rhs, builtinType, builder);
+            case MOD   -> emitMod(lhs, rhs, builtinType, builder);
+            case AND   -> builder.and(lhs, rhs);
+            case OR    -> builder.or(lhs, rhs);
+            case XOR   -> builder.xor(lhs, rhs);
+            case SHL   -> builder.shl(lhs, rhs);
+            case SHR   -> builtinType.isUnsignedInt() ? builder.lshr(lhs, rhs) : builder.ashr(lhs, rhs);
+            default    -> throw new IllegalStateException("Unsupported operator");
         }; // @formatter:on
     }
 

@@ -15,9 +15,9 @@
 
 package io.karma.ferrous.manganese.ocm.type;
 
+import io.karma.ferrous.manganese.ocm.Mangleable;
 import io.karma.ferrous.manganese.ocm.constant.*;
 import io.karma.ferrous.manganese.ocm.expr.Expression;
-import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
 import io.karma.ferrous.manganese.ocm.scope.DefaultScope;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.target.TargetMachine;
@@ -38,45 +38,44 @@ import java.util.function.ToLongFunction;
  * @since 13/10/2023
  */
 @API(status = Status.INTERNAL)
-public enum BuiltinType implements NamedType {
+public enum BuiltinType implements Type, Mangleable {
     // @formatter:off
-    VOID    (FerrousLexer.KW_VOID,  target -> LLVMCore.LLVMVoidType(),   VoidConstant::new),
-    BOOL    (FerrousLexer.KW_BOOL,  target -> LLVMCore.LLVMInt8Type(),   () -> new BoolConstant(false, TokenSlice.EMPTY)),
-    CHAR    (FerrousLexer.KW_CHAR,  target -> LLVMCore.LLVMInt8Type(),   () -> new CharConstant(' ', TokenSlice.EMPTY)),
-    // Signed types
-    I8      (FerrousLexer.KW_I8,    target -> LLVMCore.LLVMInt8Type(),   () -> makeDefaultInt(1, false)),
-    I16     (FerrousLexer.KW_I16,   target -> LLVMCore.LLVMInt16Type(),  () -> makeDefaultInt(2, false)),
-    I32     (FerrousLexer.KW_I32,   target -> LLVMCore.LLVMInt32Type(),  () -> makeDefaultInt(4, false)),
-    I64     (FerrousLexer.KW_I64,   target -> LLVMCore.LLVMInt64Type(),  () -> makeDefaultInt(8, false)),
-    ISIZE   (FerrousLexer.KW_ISIZE, BuiltinType::getSizedIntType,        () -> makeDefaultInt(-1, false)),
-    // Unsigned types
-    U8      (FerrousLexer.KW_U8,    target -> LLVMCore.LLVMInt8Type(),   () -> makeDefaultInt(1, true)),
-    U16     (FerrousLexer.KW_U16,   target -> LLVMCore.LLVMInt16Type(),  () -> makeDefaultInt(2, true)),
-    U32     (FerrousLexer.KW_U32,   target -> LLVMCore.LLVMInt32Type(),  () -> makeDefaultInt(4, true)),
-    U64     (FerrousLexer.KW_U64,   target -> LLVMCore.LLVMInt64Type(),  () -> makeDefaultInt(8, true)),
-    USIZE   (FerrousLexer.KW_USIZE, BuiltinType::getSizedIntType,        () -> makeDefaultInt(-1, true)),
-    // Floating point types
-    F32     (FerrousLexer.KW_F32,   target -> LLVMCore.LLVMFloatType(),  () -> makeDefaultReal(4)),
-    F64     (FerrousLexer.KW_F64,   target -> LLVMCore.LLVMDoubleType(), () -> makeDefaultReal(8));
+    VOID    (FerrousLexer.KW_VOID,  "V",  target -> LLVMCore.LLVMVoidType(),   VoidConstant::new),
+    BOOL    (FerrousLexer.KW_BOOL,  "T",  target -> LLVMCore.LLVMInt8Type(),   () -> new BoolConstant(false, TokenSlice.EMPTY)),
+    CHAR    (FerrousLexer.KW_CHAR,  "C",  target -> LLVMCore.LLVMInt8Type(),   () -> new CharConstant(' ', TokenSlice.EMPTY)),
+    I8      (FerrousLexer.KW_I8,    "sB", target -> LLVMCore.LLVMInt8Type(),   () -> makeDefaultInt(1, false)),
+    I16     (FerrousLexer.KW_I16,   "sS", target -> LLVMCore.LLVMInt16Type(),  () -> makeDefaultInt(2, false)),
+    I32     (FerrousLexer.KW_I32,   "sI", target -> LLVMCore.LLVMInt32Type(),  () -> makeDefaultInt(4, false)),
+    I64     (FerrousLexer.KW_I64,   "sL", target -> LLVMCore.LLVMInt64Type(),  () -> makeDefaultInt(8, false)),
+    ISIZE   (FerrousLexer.KW_ISIZE, "sZ", BuiltinType::getSizedIntType,        () -> makeDefaultInt(-1, false)),
+    U8      (FerrousLexer.KW_U8,    "uB", target -> LLVMCore.LLVMInt8Type(),   () -> makeDefaultInt(1, true)),
+    U16     (FerrousLexer.KW_U16,   "uS", target -> LLVMCore.LLVMInt16Type(),  () -> makeDefaultInt(2, true)),
+    U32     (FerrousLexer.KW_U32,   "uI", target -> LLVMCore.LLVMInt32Type(),  () -> makeDefaultInt(4, true)),
+    U64     (FerrousLexer.KW_U64,   "uL", target -> LLVMCore.LLVMInt64Type(),  () -> makeDefaultInt(8, true)),
+    USIZE   (FerrousLexer.KW_USIZE, "uZ", BuiltinType::getSizedIntType,        () -> makeDefaultInt(-1, true)),
+    F32     (FerrousLexer.KW_F32,   "F",  target -> LLVMCore.LLVMFloatType(),  () -> makeDefaultReal(4)),
+    F64     (FerrousLexer.KW_F64,   "D",  target -> LLVMCore.LLVMDoubleType(), () -> makeDefaultReal(8));
     // @formatter:on
 
     public static final EnumSet<BuiltinType> SIGNED_INT_TYPES = EnumSet.of(I8, I16, I32, I64, ISIZE);
     public static final EnumSet<BuiltinType> UNSIGNED_INT_TYPES = EnumSet.of(U8, U16, U32, U64, USIZE);
     public static final EnumSet<BuiltinType> FLOAT_TYPES = EnumSet.of(F32, F64);
     private final Identifier name;
+    private final String mangledName;
     private final ToLongFunction<TargetMachine> typeProvider;
     private final Supplier<Expression> defaultProvider;
 
-    BuiltinType(final Identifier name, final ToLongFunction<TargetMachine> typeProvider,
+    BuiltinType(final Identifier name, final String mangledName, final ToLongFunction<TargetMachine> typeProvider,
                 final Supplier<Expression> defaultProvider) {
         this.name = name;
+        this.mangledName = mangledName;
         this.typeProvider = typeProvider;
         this.defaultProvider = defaultProvider;
     }
 
-    BuiltinType(final int token, final ToLongFunction<TargetMachine> typeProvider,
+    BuiltinType(final int token, final String mangledName, final ToLongFunction<TargetMachine> typeProvider,
                 final Supplier<Expression> defaultProvider) {
-        this(new Identifier(TokenUtils.getLiteral(token)), typeProvider, defaultProvider);
+        this(new Identifier(TokenUtils.getLiteral(token)), mangledName, typeProvider, defaultProvider);
     }
 
     private static Expression makeDefaultInt(final int size, final boolean isUnsigned) {
@@ -86,7 +85,7 @@ public enum BuiltinType implements NamedType {
             case 4  -> new IntConstant(isUnsigned ? U32 : I32, 0, TokenSlice.EMPTY);
             case 8  -> new IntConstant(isUnsigned ? U64 : I64, 0, TokenSlice.EMPTY);
             case -1 -> new IntConstant(isUnsigned ? USIZE : ISIZE, 0, TokenSlice.EMPTY);
-            default -> throw new IllegalArgumentException("");
+            default -> throw new IllegalArgumentException("Unsupported integer type");
         }; // @formatter:on
     }
 
@@ -94,7 +93,7 @@ public enum BuiltinType implements NamedType {
         return switch(size) { // @formatter:off
             case 4  -> new RealConstant(F32, 0.0, TokenSlice.EMPTY);
             case 8  -> new RealConstant(F64, 0.0, TokenSlice.EMPTY);
-            default -> throw new IllegalArgumentException("");
+            default -> throw new IllegalArgumentException("Unsupported integer type");
         }; // @formatter:on
     }
 
@@ -116,6 +115,13 @@ public enum BuiltinType implements NamedType {
 
     public boolean isFloatType() {
         return FLOAT_TYPES.contains(this);
+    }
+
+    // Mangleable
+
+    @Override
+    public String getMangledName() {
+        return mangledName;
     }
 
     // NameProvider
@@ -144,16 +150,6 @@ public enum BuiltinType implements NamedType {
     }
 
     @Override
-    public TokenSlice getTokenSlice() {
-        return TokenSlice.EMPTY;
-    }
-
-    @Override
-    public GenericParameter[] getGenericParams() {
-        return new GenericParameter[0];
-    }
-
-    @Override
     public boolean isBuiltin() {
         return true;
     }
@@ -171,11 +167,6 @@ public enum BuiltinType implements NamedType {
     @Override
     public long materialize(final TargetMachine machine) {
         return typeProvider.applyAsLong(machine);
-    }
-
-    @Override
-    public TypeAttribute[] getAttributes() {
-        return new TypeAttribute[0];
     }
 
     // Object

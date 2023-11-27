@@ -18,7 +18,7 @@ package io.karma.ferrous.manganese.ocm.access;
 import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.CompileErrorCode;
 import io.karma.ferrous.manganese.compiler.Compiler;
-import io.karma.ferrous.manganese.ocm.NameProvider;
+import io.karma.ferrous.manganese.ocm.Named;
 import io.karma.ferrous.manganese.ocm.scope.ScopeStack;
 import io.karma.ferrous.manganese.ocm.scope.Scoped;
 import io.karma.ferrous.manganese.ocm.type.Type;
@@ -39,9 +39,8 @@ public record ScopedAccess(TokenSlice tokenSlice, Type... types) implements Acce
     }
 
     @Override
-    public <T extends Scoped & NameProvider> boolean hasAccess(final Compiler compiler,
-                                                               final CompileContext compileContext,
-                                                               final ScopeStack scopeStack, final T target) {
+    public <T extends Scoped & Named> boolean hasAccess(final Compiler compiler, final CompileContext compileContext,
+                                                        final ScopeStack scopeStack, final T target) {
         var type = compileContext.getOrCreateModuleData().findType(target.getQualifiedName(), target.getScopeName());
         for (Type allowedType : types) {
             if (type == allowedType) {

@@ -27,7 +27,7 @@ import org.jetbrains.annotations.Nullable;
  * @since 09/11/2023
  */
 @API(status = API.Status.INTERNAL)
-public interface ValueStorage extends NameProvider {
+public interface ValueStorage extends Named {
     @Nullable Expression getValue();
 
     default @Nullable ValueStorage getParent() {

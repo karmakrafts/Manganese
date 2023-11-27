@@ -15,7 +15,7 @@
 
 package io.karma.ferrous.manganese.ocm.scope;
 
-import io.karma.ferrous.manganese.ocm.NameProvider;
+import io.karma.ferrous.manganese.ocm.Named;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 
@@ -24,6 +24,6 @@ import org.apiguardian.api.API.Status;
  * @since 16/10/2023
  */
 @API(status = Status.INTERNAL)
-public interface Scope extends Scoped, NameProvider {
+public interface Scope extends Scoped, Named {
     ScopeType getScopeType();
 }

@@ -18,11 +18,13 @@ package io.karma.ferrous.manganese.parser;
 import io.karma.ferrous.manganese.ParseAdapter;
 import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.Compiler;
+import org.apiguardian.api.API;
 
 /**
  * @author Alexander Hinze
  * @since 24/10/2023
  */
+@API(status = API.Status.INTERNAL)
 public final class AttributeParser extends ParseAdapter {
     public AttributeParser(final Compiler compiler, final CompileContext compileContext) {
         super(compiler, compileContext);

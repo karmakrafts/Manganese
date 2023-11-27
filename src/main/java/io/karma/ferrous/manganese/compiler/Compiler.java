@@ -179,7 +179,7 @@ public final class Compiler {
         context.setCurrentSourceFile(sourcePath);
         final var module = targetMachine.createModule(name);
         for (final var pass : passes) {
-            Logger.INSTANCE.debugln("Invoking pass %s", pass.getClass());
+            Logger.INSTANCE.debugln("Invoking pass %s", pass.getClass().getName());
             context.setCurrentPass(pass);
             pass.run(this, context, module, executorService);
             context.setCurrentPass(null);

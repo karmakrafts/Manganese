@@ -24,7 +24,7 @@ import org.apiguardian.api.API.Status;
  * @since 16/10/2023
  */
 @API(status = Status.INTERNAL)
-public final class Attribute implements NameProvider {
+public final class Attribute implements Named {
     private final Identifier name;
     private final Parameter[] parameters;
 

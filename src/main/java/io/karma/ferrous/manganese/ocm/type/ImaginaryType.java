@@ -15,10 +15,10 @@
 
 package io.karma.ferrous.manganese.ocm.type;
 
+import io.karma.ferrous.manganese.ocm.Named;
 import io.karma.ferrous.manganese.ocm.constant.*;
 import io.karma.ferrous.manganese.ocm.expr.EmptyExpression;
 import io.karma.ferrous.manganese.ocm.expr.Expression;
-import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
 import io.karma.ferrous.manganese.ocm.scope.DefaultScope;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.target.TargetMachine;
@@ -33,7 +33,7 @@ import org.apiguardian.api.API;
  * @since 24/10/2023
  */
 @API(status = API.Status.INTERNAL)
-public enum ImaginaryType implements NamedType {
+public enum ImaginaryType implements Type, Named {
     // @formatter:off
     TOKEN   (FerrousLexer.KW_TOKEN),
     IDENT   (FerrousLexer.KW_IDENT),
@@ -82,16 +82,6 @@ public enum ImaginaryType implements NamedType {
     }
 
     @Override
-    public TokenSlice getTokenSlice() {
-        return TokenSlice.EMPTY;
-    }
-
-    @Override
-    public GenericParameter[] getGenericParams() {
-        return new GenericParameter[0];
-    }
-
-    @Override
     public boolean isImaginary() {
         return true;
     }
@@ -99,11 +89,6 @@ public enum ImaginaryType implements NamedType {
     @Override
     public long materialize(final TargetMachine machine) {
         throw new UnsupportedOperationException("Imaginary types cannot be materialized");
-    }
-
-    @Override
-    public TypeAttribute[] getAttributes() {
-        return new TypeAttribute[0];
     }
 
     @Override

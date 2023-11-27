@@ -15,12 +15,12 @@
 
 package io.karma.ferrous.manganese.module;
 
+import io.karma.ferrous.manganese.ocm.Attribute;
 import io.karma.ferrous.manganese.ocm.field.Field;
 import io.karma.ferrous.manganese.ocm.function.Function;
 import io.karma.ferrous.manganese.ocm.statement.LetStatement;
 import io.karma.ferrous.manganese.ocm.type.AliasedType;
 import io.karma.ferrous.manganese.ocm.type.FunctionType;
-import io.karma.ferrous.manganese.ocm.type.NamedType;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.profiler.Profiler;
 import io.karma.ferrous.manganese.util.Identifier;
@@ -42,15 +42,18 @@ import java.util.*;
 @API(status = Status.STABLE)
 public final class ModuleData {
     private final String name;
+    // @formatter:off
     // Non-synchronized data
-    private final LinkedHashMap<Identifier, NamedType> namedTypes = new LinkedHashMap<>();
+    private final LinkedHashMap<Identifier, Type> types = new LinkedHashMap<>();
     private final HashMap<Identifier, HashMap<FunctionType, Function>> functions = new HashMap<>();
-    private final LinkedHashMap<Function, LinkedHashMap<Identifier, LetStatement>> locals = new LinkedHashMap<>();
+    private final HashMap<Function, LinkedHashMap<Identifier, LetStatement>> locals = new HashMap<>();
     private final LinkedHashMap<Identifier, Field> globalFields = new LinkedHashMap<>();
+    private final HashMap<Identifier, Attribute> attributes = new HashMap<>();
     private BufferedTokenStream tokenStream;
     private FileContext fileContext;
     private FerrousLexer lexer;
     private FerrousParser parser;
+    // @formatter:on
 
     public ModuleData(final String name) {
         this.name = name;
@@ -98,8 +101,8 @@ public final class ModuleData {
 
     // Non-synchronized data
 
-    public LinkedHashMap<Identifier, NamedType> getNamedTypes() {
-        return namedTypes;
+    public LinkedHashMap<Identifier, Type> getTypes() {
+        return types;
     }
 
     public HashMap<Identifier, HashMap<FunctionType, Function>> getFunctions() {
@@ -110,13 +113,17 @@ public final class ModuleData {
         return globalFields;
     }
 
-    public LinkedHashMap<Function, LinkedHashMap<Identifier, LetStatement>> getLocals() {
+    public HashMap<Function, LinkedHashMap<Identifier, LetStatement>> getLocals() {
         return locals;
+    }
+
+    public HashMap<Identifier, Attribute> getAttributes() {
+        return attributes;
     }
 
     public @Nullable Type findCompleteType(final Identifier name, final Identifier scopeName) {
         Profiler.INSTANCE.push();
-        Type type = ScopeUtils.findInScope(namedTypes, name, scopeName);
+        Type type = ScopeUtils.findInScope(types, name, scopeName);
         if (type == null) {
             return null;
         }
@@ -124,17 +131,14 @@ public final class ModuleData {
             type = alias.getBackingType();
         }
         if (!type.isComplete()) {
-            if (!(type instanceof NamedType namedType)) {
-                return null;
-            }
-            final var typeName = namedType.getQualifiedName();
-            type = ScopeUtils.findInScope(namedTypes, typeName, scopeName);
+            final var typeName = type.getQualifiedName();
+            type = ScopeUtils.findInScope(types, typeName, scopeName);
         }
         Profiler.INSTANCE.pop();
         return type;
     }
 
-    public @Nullable Type findCompleteType(final NamedType type) {
+    public @Nullable Type findCompleteType(final Type type) {
         if (type.isComplete()) {
             return type;
         }
@@ -144,7 +148,7 @@ public final class ModuleData {
     public @Nullable Type findType(final Identifier name, final Identifier scopeName) {
         try {
             Profiler.INSTANCE.push();
-            return ScopeUtils.findInScope(namedTypes, name, scopeName);
+            return ScopeUtils.findInScope(types, name, scopeName);
         }
         finally {
             Profiler.INSTANCE.pop();
@@ -153,7 +157,7 @@ public final class ModuleData {
 
     // TODO: implement matching against C-variadic functions
     public @Nullable Function findFunction(final Identifier name, final Identifier scopeName,
-                                           final Type... paramTypes) {
+                                           final List<Type> paramTypes) {
         try {
             Profiler.INSTANCE.push();
             final var overloadSet = ScopeUtils.findInScope(functions, name, scopeName);
@@ -162,7 +166,7 @@ public final class ModuleData {
             }
             final var types = overloadSet.keySet();
             for (final var type : types) {
-                if (!Arrays.equals(type.getParamTypes(), paramTypes)) {
+                if (!type.getParamTypes().equals(paramTypes)) {
                     continue;
                 }
                 return overloadSet.get(type);

@@ -137,7 +137,7 @@ public final class ExecutionEngine {
     public GenericValue eval(final Function function, final GenericValue... args) {
         final var returnType = function.getType().getReturnType();
         try (final var stack = MemoryStack.stackPush()) {
-            final var fnAddress = function.materialize(compileContext, module, targetMachine);
+            final var fnAddress = function.emit(compileContext, module, targetMachine);
             final var argValues = Arrays.stream(args).mapToLong(GenericValue::getAddress).toArray();
             final var returnValue = LLVMRunFunction(address, fnAddress, stack.pointers(argValues));
             if (returnType instanceof BuiltinType builtinType) {
@@ -171,7 +171,14 @@ public final class ExecutionEngine {
             false,
             Functions.castingIdentity(),
             tokenSlice);
-        final var function = new Function(functionName, CallingConvention.CDECL, functionType, false, tokenSlice);
+        final var function = new Function(functionName,
+            CallingConvention.CDECL,
+            functionType,
+            false,
+            true,
+            tokenSlice,
+            Collections.emptyList(),
+            Collections.emptyList());
         final var irContext = new FunctionIRContext(compileContext, module, targetMachine, function);
         new ReturnStatement(expression, tokenSlice).emit(targetMachine, irContext); // Return expression as value
         final var result = eval(function);

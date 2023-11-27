@@ -68,7 +68,7 @@ public final class ScopeExpression implements Expression, Scope {
             }
             types.add(type);
         }
-        return types.isEmpty() ? BuiltinType.VOID : Types.findCommonType(types.toArray(Type[]::new));
+        return types.isEmpty() ? BuiltinType.VOID : Types.findCommonType(types);
     }
 
     public UUID getUUID() {

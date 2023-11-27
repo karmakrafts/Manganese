@@ -20,10 +20,12 @@ import io.karma.ferrous.manganese.ocm.expr.Expression;
 import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.target.TargetMachine;
+import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.TokenSlice;
 import org.apiguardian.api.API;
 import org.lwjgl.llvm.LLVMCore;
 
+import java.util.List;
 import java.util.Objects;
 
 import static org.lwjgl.system.MemoryUtil.NULL;
@@ -37,12 +39,12 @@ public final class VectorType implements Type {
     private final Type type;
     private final int elementCount;
     private final TokenSlice tokenSlice;
-    private final GenericParameter[] genericParams;
+    private final List<GenericParameter> genericParams;
     private long materializedType = NULL;
     private Scope enclosingScope;
 
     public VectorType(final Type type, final int elementCount, final TokenSlice tokenSlice,
-                      final GenericParameter... genericParams) {
+                      final List<GenericParameter> genericParams) {
         this.type = type;
         this.elementCount = elementCount;
         this.tokenSlice = tokenSlice;
@@ -57,7 +59,10 @@ public final class VectorType implements Type {
         return elementCount;
     }
 
-    // Scoped
+    @Override
+    public Identifier getName() {
+        return Identifier.EMPTY; // TODO: fix this
+    }
 
     @Override
     public Scope getEnclosingScope() {
@@ -68,8 +73,6 @@ public final class VectorType implements Type {
     public void setEnclosingScope(final Scope scope) {
         enclosingScope = scope;
     }
-
-    // Type
 
     @Override
     public Expression makeDefaultValue() {
@@ -82,7 +85,7 @@ public final class VectorType implements Type {
     }
 
     @Override
-    public GenericParameter[] getGenericParams() {
+    public List<GenericParameter> getGenericParams() {
         return genericParams;
     }
 
@@ -92,11 +95,6 @@ public final class VectorType implements Type {
             materializedType = LLVMCore.LLVMVectorType(type.materialize(machine), elementCount);
         }
         return materializedType;
-    }
-
-    @Override
-    public TypeAttribute[] getAttributes() {
-        return new TypeAttribute[0];
     }
 
     @Override

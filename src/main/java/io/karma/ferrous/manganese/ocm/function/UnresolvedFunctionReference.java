@@ -19,6 +19,8 @@ import io.karma.ferrous.manganese.ocm.type.Type;
 import org.apiguardian.api.API;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.List;
+
 /**
  * @author Alexander Hinze
  * @since 09/11/2023
@@ -26,7 +28,7 @@ import org.jetbrains.annotations.Nullable;
 @API(status = API.Status.INTERNAL)
 public final class UnresolvedFunctionReference implements FunctionReference {
     private final FunctionResolver resolver;
-    private Type[] contextualParamTypes;
+    private List<Type> contextualParamTypes;
 
     public UnresolvedFunctionReference(final FunctionResolver resolver) {
         this.resolver = resolver;
@@ -40,11 +42,11 @@ public final class UnresolvedFunctionReference implements FunctionReference {
         return resolver.resolve(contextualParamTypes);
     }
 
-    public Type[] getContextualParamTypes() {
+    public List<Type> getContextualParamTypes() {
         return contextualParamTypes;
     }
 
-    public void setContextualParamTypes(final Type... contextualParamTypes) {
+    public void setContextualParamTypes(final List<Type> contextualParamTypes) {
         this.contextualParamTypes = contextualParamTypes;
     }
 

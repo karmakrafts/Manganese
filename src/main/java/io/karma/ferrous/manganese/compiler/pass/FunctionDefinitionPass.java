@@ -50,10 +50,12 @@ public final class FunctionDefinitionPass implements CompilePass {
         public void enterFunction(final FunctionContext context) {
             final var function = getFunction(context.protoFunction());
             if (function == null) {
+                super.enterFunction(context);
                 return;
             }
             final var bodyContext = context.functionBody();
             if (bodyContext == null) {
+                super.enterFunction(context);
                 return; // TODO: handle arrow functions
             }
 

@@ -33,24 +33,16 @@ import java.util.Objects;
  * @since 21/10/2023
  */
 @API(status = API.Status.INTERNAL)
-public record UDT(UDTKind kind, StructureType type, List<Field> fields, TokenSlice tokenSlice)
-    implements NamedType, Scope {
-
-    // Scope
-
+public record UDT(UDTKind kind, StructureType type, List<Field> fields, TokenSlice tokenSlice) implements Scope, Type {
     @Override
     public ScopeType getScopeType() {
         return kind.getScopeType();
     }
 
-    // NameProvider
-
     @Override
     public Identifier getName() {
         return type.getName();
     }
-
-    // Type
 
     @Override
     public Expression makeDefaultValue() {
@@ -63,18 +55,13 @@ public record UDT(UDTKind kind, StructureType type, List<Field> fields, TokenSli
     }
 
     @Override
-    public GenericParameter[] getGenericParams() {
+    public List<GenericParameter> getGenericParams() {
         return type.getGenericParams();
     }
 
     @Override
     public long materialize(final TargetMachine machine) {
         return type.materialize(machine);
-    }
-
-    @Override
-    public TypeAttribute[] getAttributes() {
-        return new TypeAttribute[0];
     }
 
     @Override

@@ -27,10 +27,7 @@ import io.karma.ferrous.manganese.ocm.statement.ReturnStatement;
 import io.karma.ferrous.manganese.ocm.statement.Statement;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.ocm.type.Types;
-import io.karma.ferrous.manganese.util.ExpressionUtils;
-import io.karma.ferrous.manganese.util.Identifier;
-import io.karma.ferrous.manganese.util.KitchenSink;
-import io.karma.ferrous.manganese.util.TokenSlice;
+import io.karma.ferrous.manganese.util.*;
 import io.karma.ferrous.vanadium.FerrousParser.LetStatementContext;
 import io.karma.ferrous.vanadium.FerrousParser.ReturnStatementContext;
 import io.karma.ferrous.vanadium.FerrousParser.StatementContext;
@@ -92,7 +89,7 @@ public final class StatementParser extends ParseAdapter {
             final var typeContext = context.type();
             final var exprContext = context.expr();
             final var isMutable = context.KW_MUT() != null;
-            final var storageMods = KitchenSink.parseStorageMods(context.storageMod());
+            final var storageMods = StorageMod.parse(context.storageMod());
             Type type = null;
             if (typeContext != null) {
                 type = Types.parse(compiler, compileContext, scopeStack, typeContext);

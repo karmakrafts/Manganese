@@ -38,7 +38,7 @@ public final class EmitPass implements CompilePass {
         for (final var overloadSet : overloadSets) {
             final var functions = overloadSet.values();
             for (final var function : functions) {
-                function.materialize(compileContext, module, compiler.getTargetMachine());
+                function.emit(compileContext, module, compiler.getTargetMachine());
             }
         }
         Profiler.INSTANCE.pop();

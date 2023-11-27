@@ -48,8 +48,8 @@ public final class IfExpression implements Expression {
         this.branches = branches;
         // @formatter:off
         type = new Lazy<>(() -> Types.findCommonType(branches.stream()
-            .map(pair -> pair.getRight().getScopeType())
-            .toArray(Type[]::new)));
+            .map(pair -> pair.getRight().getType())
+            .toList()));
         // @formatter:on
         this.tokenSlice = tokenSlice;
     }

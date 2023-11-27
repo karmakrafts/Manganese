@@ -31,6 +31,7 @@ import org.antlr.v4.runtime.ParserRuleContext;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 
+import java.util.Collections;
 import java.util.Stack;
 
 /**
@@ -76,7 +77,8 @@ public final class TypeParser extends ParseAdapter {
         if (type == null) {
             baseType = Types.incomplete(name,
                 capturedScopeStack::applyEnclosingScopes,
-                TokenSlice.from(compileContext, context));
+                TokenSlice.from(compileContext, context),
+                Collections.emptyList());
             return;
         }
         baseType = type;
@@ -91,7 +93,8 @@ public final class TypeParser extends ParseAdapter {
         if (type == null) {
             baseType = Types.incomplete(name,
                 capturedScopeStack::applyEnclosingScopes,
-                TokenSlice.from(compileContext, context));
+                TokenSlice.from(compileContext, context),
+                Collections.emptyList());
             return;
         }
         baseType = type;
@@ -140,6 +143,6 @@ public final class TypeParser extends ParseAdapter {
         if (attributes.isEmpty()) {
             return baseType;
         }
-        return baseType.derive(attributes.toArray(TypeAttribute[]::new));
+        return baseType.derive(attributes);
     }
 }

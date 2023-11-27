@@ -17,9 +17,13 @@ package io.karma.ferrous.manganese.ocm.access;
 
 import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.Compiler;
-import io.karma.ferrous.manganese.ocm.NameProvider;
+import io.karma.ferrous.manganese.ocm.Named;
 import io.karma.ferrous.manganese.ocm.scope.ScopeStack;
 import io.karma.ferrous.manganese.ocm.scope.Scoped;
+import io.karma.ferrous.manganese.ocm.type.Type;
+import io.karma.ferrous.manganese.ocm.type.Types;
+import io.karma.ferrous.manganese.util.TokenSlice;
+import io.karma.ferrous.vanadium.FerrousParser;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 
@@ -30,8 +34,27 @@ import org.apiguardian.api.API.Status;
  */
 @API(status = Status.INTERNAL)
 public interface Access {
+    static Access parse(final Compiler compiler, final CompileContext compileContext, final ScopeStack scopeStack,
+                        final FerrousParser.AccessModContext context) {
+        if (context == null || context.KW_PUB() == null) {
+            return DefaultAccess.PRIVATE;
+        }
+        final var typeContext = context.typeList();
+        if (typeContext != null) {
+            return new ScopedAccess(TokenSlice.from(compileContext, context),
+                Types.parse(compiler, compileContext, scopeStack, typeContext).toArray(Type[]::new));
+        }
+        if (context.KW_MOD() != null) {
+            return DefaultAccess.MODULE;
+        }
+        if (context.COLON() != null) {
+            return DefaultAccess.PROTECTED;
+        }
+        return DefaultAccess.PUBLIC;
+    }
+
     AccessKind getKind();
 
-    <T extends Scoped & NameProvider> boolean hasAccess(final Compiler compiler, final CompileContext compileContext,
-                                                        final ScopeStack scopeStack, final T target);
+    <T extends Scoped & Named> boolean hasAccess(final Compiler compiler, final CompileContext compileContext,
+                                                 final ScopeStack scopeStack, final T target);
 }

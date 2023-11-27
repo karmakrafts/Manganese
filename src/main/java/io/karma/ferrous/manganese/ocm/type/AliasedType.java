@@ -23,6 +23,7 @@ import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.TokenSlice;
 import org.apiguardian.api.API;
 
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -30,15 +31,15 @@ import java.util.Objects;
  * @since 21/10/2023
  */
 @API(status = API.Status.INTERNAL)
-public final class AliasedType implements NamedType {
+public final class AliasedType implements Type {
     private final Identifier name;
-    private final GenericParameter[] genericParams;
+    private final List<GenericParameter> genericParams;
     private final TokenSlice tokenSlice;
     private Type backingType;
     private Scope enclosingScope;
 
     AliasedType(final Identifier name, final Type backingType, final TokenSlice tokenSlice,
-                final GenericParameter... genericParams) {
+                final List<GenericParameter> genericParams) {
         this.name = name;
         this.genericParams = genericParams;
         this.tokenSlice = tokenSlice;
@@ -90,7 +91,7 @@ public final class AliasedType implements NamedType {
     }
 
     @Override
-    public GenericParameter[] getGenericParams() {
+    public List<GenericParameter> getGenericParams() {
         return genericParams;
     }
 
@@ -125,7 +126,7 @@ public final class AliasedType implements NamedType {
     }
 
     @Override
-    public TypeAttribute[] getAttributes() {
+    public List<TypeAttribute> getAttributes() {
         return backingType.getAttributes();
     }
 
@@ -133,6 +134,8 @@ public final class AliasedType implements NamedType {
     public Type getBaseType() {
         return backingType.getBaseType();
     }
+
+    // Object
 
     @Override
     public int hashCode() {

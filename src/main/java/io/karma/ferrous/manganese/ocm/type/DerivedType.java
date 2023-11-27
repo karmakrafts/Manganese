@@ -15,7 +15,6 @@
 
 package io.karma.ferrous.manganese.ocm.type;
 
-import io.karma.ferrous.manganese.ocm.NameProvider;
 import io.karma.ferrous.manganese.ocm.constant.NullConstant;
 import io.karma.ferrous.manganese.ocm.expr.Expression;
 import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
@@ -26,11 +25,12 @@ import io.karma.ferrous.manganese.util.TokenSlice;
 import io.karma.ferrous.manganese.util.TypeMod;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
-import org.jetbrains.annotations.Nullable;
 import org.lwjgl.llvm.LLVMCore;
 import org.lwjgl.system.MemoryUtil;
 
+import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -38,28 +38,17 @@ import java.util.Objects;
  * @since 14/10/2023
  */
 @API(status = Status.INTERNAL)
-public final class DerivedType implements NamedType {
+public final class DerivedType implements Type {
     private final Type baseType;
-    private final @Nullable TypeAttribute attribute;
-    private final GenericParameter[] genericParams;
+    private final List<TypeAttribute> attributes;
     private final TokenSlice tokenSlice;
     private final EnumSet<TypeMod> modifiers;
     private long materializedType = MemoryUtil.NULL;
 
-    DerivedType(final Type baseType, final @Nullable TypeAttribute attribute, final EnumSet<TypeMod> modifiers) {
+    DerivedType(final Type baseType, final List<TypeAttribute> attributes, final EnumSet<TypeMod> modifiers) {
         this.baseType = baseType;
-        this.attribute = attribute;
+        this.attributes = attributes;
         this.modifiers = modifiers;
-        // Deep-copy generic parameters
-        final var params = baseType.getGenericParams();
-        final var numParams = params.length;
-        genericParams = new GenericParameter[numParams];
-        for (var i = 0; i < numParams; i++) {
-            final var param = params[i];
-            genericParams[i] = new GenericParameter(param.getName(),
-                type -> param.getConstraints().test(type),
-                param.getValue());
-        }
         tokenSlice = baseType.getTokenSlice();
     }
 
@@ -67,10 +56,7 @@ public final class DerivedType implements NamedType {
 
     @Override
     public Identifier getName() {
-        if (baseType instanceof NameProvider provider) {
-            return provider.getName();
-        }
-        return Identifier.EMPTY;
+        return baseType.getName();
     }
 
     // Scoped
@@ -94,9 +80,9 @@ public final class DerivedType implements NamedType {
     @Override
     public boolean canAccept(final Type type) {
         if (type instanceof DerivedType derivedType) {
-            return baseType == derivedType.baseType && attribute == derivedType.attribute;
+            return baseType == derivedType.baseType && attributes.equals(derivedType.attributes);
         }
-        return NamedType.super.canAccept(type);
+        return Type.super.canAccept(type);
     }
 
     @Override
@@ -115,8 +101,8 @@ public final class DerivedType implements NamedType {
     }
 
     @Override
-    public GenericParameter[] getGenericParams() {
-        return genericParams;
+    public List<GenericParameter> getGenericParams() {
+        return baseType.getGenericParams();
     }
 
     @Override
@@ -133,15 +119,9 @@ public final class DerivedType implements NamedType {
     }
 
     @Override
-    public TypeAttribute[] getAttributes() {
-        final var baseAttribs = baseType.getAttributes();
-        if (attribute == null) {
-            return baseAttribs;
-        }
-        final var numBaseAttribs = baseAttribs.length;
-        final var attribs = new TypeAttribute[numBaseAttribs + 1];
-        System.arraycopy(baseAttribs, 0, attribs, 0, numBaseAttribs);
-        attribs[numBaseAttribs] = attribute;
+    public List<TypeAttribute> getAttributes() {
+        final var attribs = new ArrayList<>(baseType.getAttributes());
+        attribs.addAll(attributes);
         return attribs;
     }
 
@@ -149,23 +129,24 @@ public final class DerivedType implements NamedType {
 
     @Override
     public int hashCode() {
-        return Objects.hash(baseType, attribute);
+        return Objects.hash(baseType, attributes);
     }
 
     @Override
     public boolean equals(final Object obj) {
         if (obj instanceof DerivedType type) { // @formatter:off
             return baseType.equals(type.baseType)
-                && attribute == type.attribute;
+                && attributes.equals(type.attributes);
         } // @formatter:on
         return false;
     }
 
     @Override
     public String toString() {
-        if (attribute == null) {
-            return baseType.toString();
+        var result = getQualifiedName().toInternalName();
+        for (final var attrib : attributes) {
+            result = attrib.format(result);
         }
-        return attribute.format(baseType.toString());
+        return result;
     }
 }

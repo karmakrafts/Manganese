@@ -29,7 +29,6 @@ import io.karma.ferrous.manganese.ocm.function.UnresolvedFunctionReference;
 import io.karma.ferrous.manganese.ocm.scope.ScopeStack;
 import io.karma.ferrous.manganese.ocm.scope.Scoped;
 import io.karma.ferrous.manganese.ocm.type.BuiltinType;
-import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.util.*;
 import io.karma.ferrous.vanadium.FerrousLexer;
 import io.karma.ferrous.vanadium.FerrousParser.*;
@@ -40,7 +39,6 @@ import org.antlr.v4.runtime.tree.TerminalNodeImpl;
 import org.apiguardian.api.API;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -210,7 +208,7 @@ public final class ExpressionParser extends ParseAdapter {
             parent);
         final var function = switch (refExpr.getReference()) {
             case UnresolvedFunctionReference unresolvedRef -> {
-                unresolvedRef.setContextualParamTypes(args.stream().map(Expression::getType).toArray(Type[]::new));
+                unresolvedRef.setContextualParamTypes(args.stream().map(Expression::getType).toList());
                 yield unresolvedRef.get();
             }
             case FunctionReference ref -> ref.get();
@@ -250,7 +248,7 @@ public final class ExpressionParser extends ParseAdapter {
         final var name = Identifier.parse(context);
         Logger.INSTANCE.debugln("Looking for reference to %s", name);
         if (parent instanceof Function function) {
-            final var param = Arrays.stream(function.getParameters()).filter(p -> p.getName().equals(name)).findFirst();
+            final var param = function.getParameters().stream().filter(p -> p.getName().equals(name)).findFirst();
             if (param.isPresent()) {
                 return new ReferenceExpression(param.get(), false, TokenSlice.from(compileContext, context));
             }

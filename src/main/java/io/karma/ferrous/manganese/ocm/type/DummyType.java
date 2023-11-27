@@ -15,12 +15,11 @@
 
 package io.karma.ferrous.manganese.ocm.type;
 
+import io.karma.ferrous.manganese.ocm.Named;
 import io.karma.ferrous.manganese.ocm.expr.Expression;
-import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Identifier;
-import io.karma.ferrous.manganese.util.TokenSlice;
 import org.apiguardian.api.API;
 import org.jetbrains.annotations.Nullable;
 
@@ -29,7 +28,7 @@ import org.jetbrains.annotations.Nullable;
  * @since 16/11/2023
  */
 @API(status = API.Status.INTERNAL)
-public final class DummyType implements NamedType {
+public final class DummyType implements Type, Named {
     public static final DummyType INSTANCE = new DummyType();
     private Scope enclosingScope;
 
@@ -43,16 +42,6 @@ public final class DummyType implements NamedType {
     }
 
     @Override
-    public TokenSlice getTokenSlice() {
-        return TokenSlice.EMPTY;
-    }
-
-    @Override
-    public GenericParameter[] getGenericParams() {
-        return new GenericParameter[0];
-    }
-
-    @Override
     public Identifier getName() {
         return Identifier.EMPTY;
     }
@@ -60,11 +49,6 @@ public final class DummyType implements NamedType {
     @Override
     public long materialize(final TargetMachine machine) {
         throw new UnsupportedOperationException("Dummy type cannot be materialized");
-    }
-
-    @Override
-    public TypeAttribute[] getAttributes() {
-        return new TypeAttribute[0];
     }
 
     @Override

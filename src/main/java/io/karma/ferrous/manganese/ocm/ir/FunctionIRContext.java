@@ -64,10 +64,10 @@ public final class FunctionIRContext implements IRContext {
     @Override
     public long getParameter(final Identifier name) {
         final var params = function.getParameters();
-        final var numParams = params.length;
-        final var address = function.materializePrototype(module, targetMachine);
+        final var numParams = params.size();
+        final var address = function.materialize(module, targetMachine);
         for (var i = 0; i < numParams; i++) {
-            final var param = params[i];
+            final var param = params.get(i);
             if (!param.getName().equals(name)) {
                 continue;
             }
@@ -94,7 +94,7 @@ public final class FunctionIRContext implements IRContext {
     @Override
     public IRBuilder getOrCreate(final String name) {
         return currentBuilder = builders.computeIfAbsent(name, n -> {
-            final var fnAddress = function.materializePrototype(module, targetMachine);
+            final var fnAddress = function.materialize(module, targetMachine);
             final var context = module.getContext();
             final var blockAddress = LLVMAppendBasicBlockInContext(context, fnAddress, name);
             return new IRBuilder(this, module, targetMachine, blockAddress, context);

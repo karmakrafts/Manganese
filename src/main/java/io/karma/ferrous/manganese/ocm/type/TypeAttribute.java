@@ -27,8 +27,8 @@ import java.util.function.Function;
 @API(status = Status.INTERNAL)
 public enum TypeAttribute {
     // @formatter:off
-    POINTER  (type -> String.format("*%s", type)),
-    REFERENCE(type -> String.format("&%s", type));
+    POINTER  (type -> String.format("%s*", type)),
+    REFERENCE(type -> String.format("%s&", type));
     // @formatter:on
 
     private final Function<String, String> formatter;

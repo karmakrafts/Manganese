@@ -15,7 +15,7 @@
 
 package io.karma.ferrous.manganese.ocm.field;
 
-import io.karma.ferrous.manganese.ocm.NameProvider;
+import io.karma.ferrous.manganese.ocm.Named;
 import io.karma.ferrous.manganese.ocm.access.Access;
 import io.karma.ferrous.manganese.ocm.access.AccessProvider;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
@@ -35,7 +35,7 @@ import java.util.EnumSet;
  * @since 15/10/2023
  */
 @API(status = Status.INTERNAL)
-public final class Field implements NameProvider, AccessProvider, Scoped {
+public final class Field implements Named, AccessProvider, Scoped {
     private final int index;
     private final Identifier name;
     private final Type type;

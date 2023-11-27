@@ -96,7 +96,7 @@ public final class ReferenceExpression implements Expression {
             case FunctionReference funRef -> {
                 final var function = Objects.requireNonNull(funRef.get());
                 final var typeAddress = getType().derive(TypeAttribute.POINTER).materialize(targetMachine);
-                final var fnAddress = function.materializePrototype(irContext.getModule(), targetMachine);
+                final var fnAddress = function.materialize(irContext.getModule(), targetMachine);
                 yield builder.intToPtr(typeAddress, fnAddress);
             }
             //case ValueStorage storage -> FIXME: FIXMEEEEEEEEEEEEEEE

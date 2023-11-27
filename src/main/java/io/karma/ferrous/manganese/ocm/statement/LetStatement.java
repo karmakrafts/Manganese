@@ -15,7 +15,7 @@
 
 package io.karma.ferrous.manganese.ocm.statement;
 
-import io.karma.ferrous.manganese.ocm.NameProvider;
+import io.karma.ferrous.manganese.ocm.Named;
 import io.karma.ferrous.manganese.ocm.ValueStorage;
 import io.karma.ferrous.manganese.ocm.expr.Expression;
 import io.karma.ferrous.manganese.ocm.field.FieldStorage;
@@ -42,7 +42,7 @@ import static org.lwjgl.system.MemoryUtil.NULL;
  * @since 08/11/2023
  */
 @API(status = API.Status.INTERNAL)
-public final class LetStatement implements Statement, NameProvider, ValueStorage {
+public final class LetStatement implements Statement, Named, ValueStorage {
     private final Identifier name;
     private final Type type;
     private final boolean isMutable;

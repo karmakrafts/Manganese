@@ -18,11 +18,12 @@ package io.karma.ferrous.manganese.parser;
 import io.karma.ferrous.manganese.ParseAdapter;
 import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.Compiler;
+import io.karma.ferrous.manganese.ocm.access.Access;
 import io.karma.ferrous.manganese.ocm.field.Field;
 import io.karma.ferrous.manganese.ocm.scope.ScopeStack;
 import io.karma.ferrous.manganese.ocm.type.Types;
 import io.karma.ferrous.manganese.util.Identifier;
-import io.karma.ferrous.manganese.util.KitchenSink;
+import io.karma.ferrous.manganese.util.StorageMod;
 import io.karma.ferrous.manganese.util.TokenSlice;
 import io.karma.ferrous.vanadium.FerrousParser.FieldContext;
 import io.karma.ferrous.vanadium.FerrousParser.UdtContext;
@@ -69,8 +70,8 @@ public final class FieldParser extends ParseAdapter {
         fields.add(new Field(fields.size(),
             Identifier.parse(context.ident()),
             Types.parse(compiler, compileContext, capturedScopeStack, context.type()),
-            KitchenSink.parseAccess(compiler, compileContext, scopeStack, context.accessMod()),
-            KitchenSink.parseStorageMods(context.storageMod()),
+            Access.parse(compiler, compileContext, scopeStack, context.accessMod()),
+            StorageMod.parse(context.storageMod()),
             context.KW_MUT() != null,
             context.KW_STATIC() != null,
             capturedScopeStack.peek().getScopeType().isGlobal(),

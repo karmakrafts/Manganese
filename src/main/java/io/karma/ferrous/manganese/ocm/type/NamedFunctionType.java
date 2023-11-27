@@ -21,6 +21,7 @@ import io.karma.ferrous.manganese.util.TokenSlice;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -28,12 +29,12 @@ import java.util.Objects;
  * @since 16/10/2023
  */
 @API(status = Status.INTERNAL)
-public final class NamedFunctionType extends FunctionType implements NamedType {
+public final class NamedFunctionType extends FunctionType implements Type {
     private final Identifier name;
     private Scope enclosingScope;
 
     NamedFunctionType(final Identifier name, final Type returnType, final boolean isVarArg, final TokenSlice tokenSlice,
-                      final Type... paramTypes) {
+                      final List<Type> paramTypes) {
         super(returnType, isVarArg, tokenSlice, paramTypes);
         this.name = name;
     }

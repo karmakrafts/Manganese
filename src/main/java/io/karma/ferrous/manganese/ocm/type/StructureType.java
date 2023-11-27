@@ -28,7 +28,6 @@ import org.lwjgl.llvm.LLVMCore;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
@@ -39,17 +38,17 @@ import static org.lwjgl.llvm.LLVMCore.LLVMGetGlobalContext;
  * @since 14/10/2023
  */
 @API(status = Status.INTERNAL)
-public final class StructureType implements NamedType {
+public final class StructureType implements Type {
     private final Identifier name;
     private final boolean isPacked;
-    private final Type[] fieldTypes;
-    private final GenericParameter[] genericParams;
+    private final List<Type> fieldTypes;
+    private final List<GenericParameter> genericParams;
     private final TokenSlice tokenSlice;
     private long materializedType = MemoryUtil.NULL;
     private Scope enclosingScope;
 
-    StructureType(final Identifier name, final boolean isPacked, final GenericParameter[] genericParams,
-                  final TokenSlice tokenSlice, final Type... fieldTypes) {
+    StructureType(final Identifier name, final boolean isPacked, final List<GenericParameter> genericParams,
+                  final TokenSlice tokenSlice, final List<Type> fieldTypes) {
         this.name = name;
         this.isPacked = isPacked;
         this.genericParams = genericParams;
@@ -62,15 +61,15 @@ public final class StructureType implements NamedType {
     }
 
     public void setFieldType(final int index, final Type type) {
-        fieldTypes[index] = type;
+        fieldTypes.set(index, type);
     }
 
     public Type getFieldType(final int index) {
-        return fieldTypes[index];
+        return fieldTypes.get(index);
     }
 
     public List<Type> getFieldTypes() {
-        return Arrays.asList(fieldTypes);
+        return fieldTypes;
     }
 
     public long getMaterializedType() {
@@ -100,7 +99,7 @@ public final class StructureType implements NamedType {
 
     @Override
     public Expression makeDefaultValue() {
-        final var values = Arrays.stream(fieldTypes).map(Type::makeDefaultValue).toArray(Expression[]::new);
+        final var values = fieldTypes.stream().map(Type::makeDefaultValue).toArray(Expression[]::new);
         return new StructConstant(this, TokenSlice.EMPTY, values);
     }
 
@@ -110,7 +109,7 @@ public final class StructureType implements NamedType {
     }
 
     @Override
-    public GenericParameter[] getGenericParams() {
+    public List<GenericParameter> getGenericParams() {
         return genericParams;
     }
 
@@ -141,10 +140,10 @@ public final class StructureType implements NamedType {
             return materializedType;
         }
         try (final var stack = MemoryStack.stackPush()) {
-            final var numFields = fieldTypes.length;
+            final var numFields = fieldTypes.size();
             final var fields = stack.callocPointer(numFields);
             for (var i = 0; i < numFields; i++) {
-                fields.put(i, fieldTypes[i].materialize(machine));
+                fields.put(i, fieldTypes.get(i).materialize(machine));
             }
             final var name = getQualifiedName().toInternalName();
             materializedType = LLVMCore.LLVMStructCreateNamed(LLVMGetGlobalContext(), name);
@@ -153,16 +152,11 @@ public final class StructureType implements NamedType {
         }
     }
 
-    @Override
-    public TypeAttribute[] getAttributes() {
-        return new TypeAttribute[0];
-    }
-
     // Object
 
     @Override
     public int hashCode() {
-        return Objects.hash(getQualifiedName(), isPacked, Arrays.hashCode(fieldTypes));
+        return Objects.hash(getQualifiedName(), isPacked, fieldTypes);
     }
 
     @Override
@@ -170,7 +164,7 @@ public final class StructureType implements NamedType {
         if(obj instanceof StructureType type) { // @formatter:off
             return getQualifiedName().equals(type.getQualifiedName())
                 && isPacked == type.isPacked
-                && Arrays.equals(fieldTypes, type.fieldTypes);
+                && fieldTypes.equals(type.fieldTypes);
         } // @formatter:on
         return false;
     }
@@ -179,6 +173,6 @@ public final class StructureType implements NamedType {
     public String toString() {
         return String.format("%s{%s}",
             getQualifiedName(),
-            String.join(", ", Arrays.stream(fieldTypes).map(Type::toString).toArray(String[]::new)));
+            String.join(", ", fieldTypes.stream().map(Type::toString).toArray(String[]::new)));
     }
 }

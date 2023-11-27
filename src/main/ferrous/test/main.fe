@@ -1,32 +1,12 @@
-pub extern fun printf(fmt: *char, ...): i32
-
-pub mod foo {
-    pub struct Value {
-        pub mut x: i32
+mod test::hello::world {
+    pub fun foobar(value: i32) {
     }
 
-    pub struct Vector2i {
-        pub mut x: Value
-        pub mut y: Value
+    pub fun foobar(value: f32): bool {
+        return false
     }
 }
 
-@noreturn pub fun foobar() {
-    unreachable
-}
-
-pub fun test(value: i32): i32 {
-    return value << 1 * value
-}
-
-pub fun fill(value: i32): i32 {
-    return value
-}
-
-pub fun test2(value: &bool): &bool {
-    return value
-}
-
-fun main(num_args: i32, args: **i8): i32 {
-    return fill(num_args)
+@nomangle fun main(num_args: i32, args: **char): i32 {
+    return 0
 }

@@ -15,6 +15,7 @@
 
 package io.karma.ferrous.manganese.ocm.type;
 
+import io.karma.ferrous.manganese.ocm.Mangleable;
 import io.karma.ferrous.manganese.ocm.expr.Expression;
 import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
 import io.karma.ferrous.manganese.ocm.scope.Scoped;
@@ -26,28 +27,41 @@ import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumSet;
+import java.util.List;
 
 /**
  * @author Alexander Hinze
  * @since 14/10/2023
  */
 @API(status = Status.INTERNAL)
-public interface Type extends Scoped {
+public interface Type extends Scoped, Mangleable {
     long materialize(final TargetMachine machine);
-
-    TypeAttribute[] getAttributes();
 
     Type getBaseType();
 
     Expression makeDefaultValue();
 
-    TokenSlice getTokenSlice();
+    default TokenSlice getTokenSlice() {
+        return TokenSlice.EMPTY;
+    }
 
-    GenericParameter[] getGenericParams();
+    default List<TypeAttribute> getAttributes() {
+        return Collections.emptyList();
+    }
+
+    default List<GenericParameter> getGenericParams() {
+        return Collections.emptyList();
+    }
 
     default EnumSet<TypeMod> getModifiers() {
         return getBaseType().getModifiers();
+    }
+
+    default Type monomorphize(final List<Type> genericTypes) {
+        return Types.cached(new MonomorphizedType(this, genericTypes));
     }
 
     default @Nullable GenericParameter getGenericParam(final String name) {
@@ -119,29 +133,26 @@ public interface Type extends Scoped {
     default Type deriveGeneric(final Expression... values) {
         final var type = new DerivedType(this, null, EnumSet.noneOf(TypeMod.class));
         final var params = type.getGenericParams();
-        final var numParams = params.length;
+        final var numParams = params.size();
         if (values.length > numParams) {
             throw new IllegalArgumentException("Invalid number of values");
         }
         for (var i = 0; i < numParams; i++) {
-            params[i].setValue(values[i]);
+            params.get(i).setValue(values[i]);
         }
         return Types.cached(type);
     }
 
     default Type derive(final TypeAttribute attribute) {
-        return Types.cached(new DerivedType(this, attribute, EnumSet.noneOf(TypeMod.class)));
+        return Types.cached(new DerivedType(this, Collections.singletonList(attribute), EnumSet.noneOf(TypeMod.class)));
     }
 
-    default Type derive(final TypeAttribute[] attributes) {
-        var result = this;
+    default Type derive(final Collection<TypeAttribute> attributes) {
+        var type = this;
         for (final var attrib : attributes) {
-            result = switch (attrib) {
-                case POINTER -> result.derivePointer();
-                case REFERENCE -> result.deriveReference();
-            };
+            type = type.derive(attrib);
         }
-        return result;
+        return type;
     }
 
     default Type derivePointer() {
@@ -162,17 +173,17 @@ public interface Type extends Scoped {
 
     default boolean isReference() {
         final var attributes = getAttributes();
-        if (attributes.length == 0) {
+        if (attributes.isEmpty()) {
             return false;
         }
-        return attributes[attributes.length - 1] == TypeAttribute.REFERENCE;
+        return attributes.getLast() == TypeAttribute.REFERENCE;
     }
 
     default boolean isPointer() {
         final var attributes = getAttributes();
-        if (attributes.length == 0) {
+        if (attributes.isEmpty()) {
             return false;
         }
-        return attributes[attributes.length - 1] == TypeAttribute.POINTER;
+        return attributes.getLast() == TypeAttribute.POINTER;
     }
 }

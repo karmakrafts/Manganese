@@ -18,11 +18,13 @@ package io.karma.ferrous.manganese.ocm.function;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.List;
+
 /**
  * @author Alexander Hinze
  * @since 08/11/2023
  */
 @FunctionalInterface
 public interface FunctionResolver {
-    @Nullable Function resolve(final Type[] paramTypes);
+    @Nullable Function resolve(final List<Type> paramTypes);
 }

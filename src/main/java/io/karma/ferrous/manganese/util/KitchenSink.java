@@ -15,18 +15,9 @@
 
 package io.karma.ferrous.manganese.util;
 
-import io.karma.ferrous.manganese.compiler.CompileContext;
-import io.karma.ferrous.manganese.compiler.Compiler;
-import io.karma.ferrous.manganese.ocm.access.Access;
-import io.karma.ferrous.manganese.ocm.access.DefaultAccess;
-import io.karma.ferrous.manganese.ocm.access.ScopedAccess;
-import io.karma.ferrous.manganese.ocm.scope.ScopeStack;
-import io.karma.ferrous.manganese.ocm.type.Type;
-import io.karma.ferrous.manganese.ocm.type.Types;
-import io.karma.ferrous.vanadium.FerrousParser.AccessModContext;
-import io.karma.ferrous.vanadium.FerrousParser.StorageModContext;
 import io.karma.kommons.util.ArrayUtils;
 import io.karma.kommons.util.SystemInfo;
+import it.unimi.dsi.fastutil.chars.CharPredicate;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 import org.fusesource.jansi.Ansi;
@@ -51,6 +42,23 @@ public final class KitchenSink {
     // @formatter:off
     private KitchenSink() {}
     // @formatter:on
+
+    public static String consumeCharsUntil(final String value, final CharPredicate predicate) {
+        final var builder = new StringBuilder();
+        final var length = value.length();
+        for (var i = 0; i < length; i++) {
+            final var currentChar = value.charAt(i);
+            if (!predicate.test(currentChar)) {
+                break;
+            }
+            builder.append(currentChar);
+        }
+        return builder.toString();
+    }
+
+    public static String consumeCharsUntil(final String value, final char... chars) {
+        return consumeCharsUntil(value, c -> ArrayUtils.contains(chars, c));
+    }
 
     public static boolean areTypesAssignable(final List<?> objects, final Class<?>... types) {
         final var numObjects = objects.size();
@@ -150,38 +158,6 @@ public final class KitchenSink {
         catch (Exception error) {
             return false;
         }
-    }
-
-    public static EnumSet<StorageMod> parseStorageMods(final List<StorageModContext> contexts) {
-        final var mods = EnumSet.noneOf(StorageMod.class);
-        for (final var context : contexts) {
-            if (context.KW_CONST() != null) {
-                mods.add(StorageMod.CONST);
-            }
-            if (context.KW_TLS() != null) {
-                mods.add(StorageMod.TLS);
-            }
-        }
-        return mods;
-    }
-
-    public static Access parseAccess(final Compiler compiler, final CompileContext compileContext,
-                                     final ScopeStack scopeStack, final AccessModContext context) {
-        if (context == null || context.KW_PUB() == null) {
-            return DefaultAccess.PRIVATE;
-        }
-        final var typeContext = context.typeList();
-        if (typeContext != null) {
-            return new ScopedAccess(TokenSlice.from(compileContext, context),
-                Types.parse(compiler, compileContext, scopeStack, typeContext).toArray(Type[]::new));
-        }
-        if (context.KW_MOD() != null) {
-            return DefaultAccess.MODULE;
-        }
-        if (context.COLON() != null) {
-            return DefaultAccess.PROTECTED;
-        }
-        return DefaultAccess.PUBLIC;
     }
 
     public static List<Path> findFilesWithExtensions(final Path path, final String... extensions) {

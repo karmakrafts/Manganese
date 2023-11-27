@@ -17,13 +17,13 @@ package io.karma.ferrous.manganese.ocm.type;
 
 import io.karma.ferrous.manganese.ocm.expr.AllocExpression;
 import io.karma.ferrous.manganese.ocm.expr.Expression;
-import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.target.TargetMachine;
+import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.TokenSlice;
 import org.apiguardian.api.API;
 
-import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 
 import static org.lwjgl.system.MemoryUtil.NULL;
@@ -35,15 +35,15 @@ import static org.lwjgl.system.MemoryUtil.NULL;
 @API(status = API.Status.INTERNAL)
 public final class TupleType implements Type {
     private final TokenSlice tokenSlice;
-    private final Type[] types;
+    private final List<Type> types;
     private Scope enclosingScope;
 
-    public TupleType(final TokenSlice tokenSlice, final Type... types) {
+    public TupleType(final TokenSlice tokenSlice, final List<Type> types) {
         this.tokenSlice = tokenSlice;
         this.types = types;
     }
 
-    public Type[] getTypes() {
+    public List<Type> getTypes() {
         return types;
     }
 
@@ -62,6 +62,11 @@ public final class TupleType implements Type {
     // Type
 
     @Override
+    public Identifier getName() {
+        return Identifier.EMPTY; // TODO: fix this
+    }
+
+    @Override
     public Expression makeDefaultValue() {
         return new AllocExpression(this, false, TokenSlice.EMPTY);
     }
@@ -72,18 +77,8 @@ public final class TupleType implements Type {
     }
 
     @Override
-    public GenericParameter[] getGenericParams() {
-        return new GenericParameter[0];
-    }
-
-    @Override
     public long materialize(final TargetMachine machine) {
         return NULL;
-    }
-
-    @Override
-    public TypeAttribute[] getAttributes() {
-        return new TypeAttribute[0];
     }
 
     @Override
@@ -95,13 +90,13 @@ public final class TupleType implements Type {
 
     @Override
     public int hashCode() {
-        return Objects.hash(Arrays.hashCode(types), enclosingScope);
+        return Objects.hash(types, enclosingScope);
     }
 
     @Override
     public boolean equals(Object obj) {
         if(obj instanceof TupleType type) { // @formatter:off
-            return Arrays.equals(types, type.types)
+            return types.equals(type.types)
                 && Objects.equals(enclosingScope, type.enclosingScope);
         } // @formatter:on
         return false;
@@ -111,9 +106,9 @@ public final class TupleType implements Type {
     public String toString() {
         final var buffer = new StringBuilder();
         buffer.append('(');
-        final var numTypes = types.length;
+        final var numTypes = types.size();
         for (var i = 0; i < numTypes; i++) {
-            buffer.append(types[i]);
+            buffer.append(types.get(i));
             if (i < numTypes - 1) {
                 buffer.append(", ");
             }
