@@ -50,11 +50,16 @@ public final class PhiBuilder {
         targets.put(blockAddress, value);
     }
 
-    public void build() {
+    public long build() {
         final var blocks = targets.keySet().toLongArray();
         final var values = targets.values().toLongArray();
         try (final var stack = MemoryStack.stackPush()) {
             LLVMCore.LLVMAddIncoming(address, stack.pointers(values), stack.pointers(blocks));
         }
+        return address;
+    }
+
+    public long getAddress() {
+        return address;
     }
 }
