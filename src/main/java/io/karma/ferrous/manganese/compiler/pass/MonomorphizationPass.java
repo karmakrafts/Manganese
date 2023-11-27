@@ -18,7 +18,9 @@ package io.karma.ferrous.manganese.compiler.pass;
 import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.module.Module;
+import io.karma.ferrous.manganese.module.ModuleData;
 import io.karma.ferrous.manganese.profiler.Profiler;
+import io.karma.ferrous.manganese.util.Logger;
 import org.apiguardian.api.API;
 
 import java.util.concurrent.ExecutorService;
@@ -34,6 +36,31 @@ public final class MonomorphizationPass implements CompilePass {
                     final ExecutorService executor) {
         Profiler.INSTANCE.push();
         final var moduleData = compileContext.getOrCreateModuleData(module.getName());
+        monomorphizeTypes(moduleData);
+        monomorphizeFunctions(moduleData);
         Profiler.INSTANCE.pop();
+    }
+
+    private void monomorphizeTypes(final ModuleData moduleData) {
+        final var types = moduleData.getTypes().values();
+        for (final var type : types) {
+            if (type.isMonomorphic()) {
+                continue; // Skip all types which are already monomorphic
+            }
+            Logger.INSTANCE.debugln("Monomorphizing %s", type);
+        }
+    }
+
+    private void monomorphizeFunctions(final ModuleData moduleData) {
+        final var overloadSets = moduleData.getFunctions().values();
+        for (final var overloadSet : overloadSets) {
+            final var functions = overloadSet.values();
+            for (final var function : functions) {
+                if (function.isMonomorphic()) {
+                    continue; // Skip all functions which are already monomorphic
+                }
+                Logger.INSTANCE.debugln("Monomorphizing %s", function);
+            }
+        }
     }
 }

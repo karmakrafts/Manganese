@@ -15,6 +15,8 @@
 
 package io.karma.ferrous.manganese.ocm.type;
 
+import io.karma.ferrous.manganese.util.TokenUtils;
+import io.karma.ferrous.vanadium.FerrousLexer;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 
@@ -27,17 +29,17 @@ import java.util.function.Function;
 @API(status = Status.INTERNAL)
 public enum TypeAttribute {
     // @formatter:off
-    POINTER  (type -> String.format("%s*", type)),
-    REFERENCE(type -> String.format("%s&", type));
+    POINTER  (FerrousLexer.ASTERISK),
+    REFERENCE(FerrousLexer.AMP);
     // @formatter:on
 
-    private final Function<String, String> formatter;
+    private final String text;
 
-    TypeAttribute(final Function<String, String> formatter) {
-        this.formatter = formatter;
+    TypeAttribute(final int token) {
+        text = TokenUtils.getLiteral(token);
     }
 
-    public String format(final String type) {
-        return formatter.apply(type);
+    public String getText() {
+        return text;
     }
 }

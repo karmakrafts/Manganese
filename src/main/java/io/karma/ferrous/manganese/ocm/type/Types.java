@@ -17,11 +17,8 @@ package io.karma.ferrous.manganese.ocm.type;
 
 import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.Compiler;
-import io.karma.ferrous.manganese.ocm.constant.TypeConstant;
-import io.karma.ferrous.manganese.ocm.generic.GenericConstraint;
 import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
 import io.karma.ferrous.manganese.ocm.scope.ScopeStack;
-import io.karma.ferrous.manganese.parser.GenericExpressionParser;
 import io.karma.ferrous.manganese.parser.TypeParser;
 import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.TokenSlice;
@@ -147,36 +144,9 @@ public final class Types {
         }; // @formatter:on
     }
 
-    public static List<GenericParameter> getGenericParams(final Compiler compiler, final CompileContext compileContext,
-                                                          final ScopeStack scopeStack,
-                                                          final @Nullable FerrousParser.GenericParamListContext context) {
-        if (context == null) {
-            return Collections.emptyList();
-        }
-        final var params = context.genericParam();
-        if (params == null || params.isEmpty()) {
-            return Collections.emptyList();
-        }
-        final var result = new ArrayList<GenericParameter>();
-        for (final var param : params) {
-            final var name = Identifier.parse(param.ident());
-            final var expr = param.genericExpr();
-            final var defaultType = parse(compiler, compileContext, scopeStack, param.type());
-            var constraints = GenericConstraint.TRUE;
-            if (expr != null) {
-                final var parser = new GenericExpressionParser(compiler, compileContext);
-                ParseTreeWalker.DEFAULT.walk(parser, expr);
-                constraints = parser.getConstraints();
-            }
-            result.add(new GenericParameter(name,
-                constraints,
-                new TypeConstant(defaultType, TokenSlice.from(compileContext, param))));
-        }
-        return result;
-    }
-
-    public static List<Type> parse(final Compiler compiler, final CompileContext compileContext,
-                                   final ScopeStack scopeStack, final @Nullable FerrousParser.TypeListContext context) {
+    public static List<@Nullable Type> parse(final Compiler compiler, final CompileContext compileContext,
+                                             final ScopeStack scopeStack,
+                                             final @Nullable FerrousParser.TypeListContext context) {
         if (context == null) {
             return Collections.emptyList();
         }
@@ -187,8 +157,11 @@ public final class Types {
         // @formatter:on
     }
 
-    public static Type parse(final Compiler compiler, final CompileContext compileContext, final ScopeStack scopeStack,
-                             final FerrousParser.TypeContext context) {
+    public static @Nullable Type parse(final Compiler compiler, final CompileContext compileContext,
+                                       final ScopeStack scopeStack, final @Nullable FerrousParser.TypeContext context) {
+        if (context == null) {
+            return null;
+        }
         final TypeParser unit = new TypeParser(compiler, compileContext, scopeStack);
         ParseTreeWalker.DEFAULT.walk(unit, context);
         return unit.getType();

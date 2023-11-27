@@ -15,7 +15,7 @@
 
 package io.karma.ferrous.manganese.compiler.pass;
 
-import io.karma.ferrous.manganese.ParseAdapter;
+import io.karma.ferrous.manganese.parser.ParseAdapter;
 import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.CompileErrorCode;
 import io.karma.ferrous.manganese.compiler.Compiler;
@@ -72,7 +72,7 @@ public final class TypeDiscoveryPass implements CompilePass {
                 return;
             }
             final var type = Types.parse(compiler, compileContext, scopeStack, context.type());
-            final var genericParams = Types.getGenericParams(compiler,
+            final var genericParams = GenericParameter.parse(compiler,
                 compileContext,
                 scopeStack,
                 context.genericParamList());
@@ -90,7 +90,7 @@ public final class TypeDiscoveryPass implements CompilePass {
             if (checkIsTypeAlreadyDefined(identContext)) {
                 return;
             }
-            final var genericParams = Types.getGenericParams(compiler,
+            final var genericParams = GenericParameter.parse(compiler,
                 compileContext,
                 scopeStack,
                 context.genericParamList());
@@ -110,7 +110,7 @@ public final class TypeDiscoveryPass implements CompilePass {
             if (checkIsTypeAlreadyDefined(identContext)) {
                 return;
             }
-            final var genericParams = Types.getGenericParams(compiler,
+            final var genericParams = GenericParameter.parse(compiler,
                 compileContext,
                 scopeStack,
                 context.genericParamList());
@@ -146,7 +146,7 @@ public final class TypeDiscoveryPass implements CompilePass {
             if (checkIsTypeAlreadyDefined(identContext)) {
                 return;
             }
-            final var genericParams = Types.getGenericParams(compiler,
+            final var genericParams = GenericParameter.parse(compiler,
                 compileContext,
                 scopeStack,
                 context.genericParamList());
@@ -189,7 +189,7 @@ public final class TypeDiscoveryPass implements CompilePass {
             final var udt = new UserDefinedType(kind, type, fields, tokenSlice);
             moduleData.getTypes().put(type.getQualifiedName(), udt);
 
-            Logger.INSTANCE.debugln("Captured field layout for kind '%s'", type.getQualifiedName());
+            Logger.INSTANCE.debugln("Captured field layout for type '%s'", type.getQualifiedName());
             return udt;
         }
     }

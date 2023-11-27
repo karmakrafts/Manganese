@@ -15,7 +15,6 @@
 
 package io.karma.ferrous.manganese.parser;
 
-import io.karma.ferrous.manganese.ParseAdapter;
 import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.field.Field;

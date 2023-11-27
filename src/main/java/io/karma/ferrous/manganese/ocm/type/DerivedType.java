@@ -22,14 +22,12 @@ import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.TokenSlice;
-import io.karma.ferrous.manganese.util.TypeMod;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 import org.lwjgl.llvm.LLVMCore;
 import org.lwjgl.system.MemoryUtil;
 
 import java.util.ArrayList;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
 
@@ -40,15 +38,13 @@ import java.util.Objects;
 @API(status = Status.INTERNAL)
 public final class DerivedType implements Type {
     private final Type baseType;
-    private final List<TypeAttribute> attributes;
+    private final TypeAttribute attribute;
     private final TokenSlice tokenSlice;
-    private final EnumSet<TypeMod> modifiers;
     private long materializedType = MemoryUtil.NULL;
 
-    DerivedType(final Type baseType, final List<TypeAttribute> attributes, final EnumSet<TypeMod> modifiers) {
+    DerivedType(final Type baseType, TypeAttribute attribute) {
         this.baseType = baseType;
-        this.attributes = attributes;
-        this.modifiers = modifiers;
+        this.attribute = attribute;
         tokenSlice = baseType.getTokenSlice();
     }
 
@@ -73,14 +69,19 @@ public final class DerivedType implements Type {
     // Type
 
     @Override
-    public EnumSet<TypeMod> getModifiers() {
-        return modifiers;
+    public boolean isDerived() {
+        return true;
+    }
+
+    @Override
+    public String getMangledName() {
+        return String.format("%s%s", baseType.getMangledName(), attribute.getText());
     }
 
     @Override
     public boolean canAccept(final Type type) {
         if (type instanceof DerivedType derivedType) {
-            return baseType == derivedType.baseType && attributes.equals(derivedType.attributes);
+            return baseType == derivedType.baseType && getAttributes().equals(derivedType.getAttributes());
         }
         return Type.super.canAccept(type);
     }
@@ -121,7 +122,7 @@ public final class DerivedType implements Type {
     @Override
     public List<TypeAttribute> getAttributes() {
         final var attribs = new ArrayList<>(baseType.getAttributes());
-        attribs.addAll(attributes);
+        attribs.add(attribute);
         return attribs;
     }
 
@@ -129,24 +130,20 @@ public final class DerivedType implements Type {
 
     @Override
     public int hashCode() {
-        return Objects.hash(baseType, attributes);
+        return Objects.hash(baseType, attribute);
     }
 
     @Override
     public boolean equals(final Object obj) {
         if (obj instanceof DerivedType type) { // @formatter:off
             return baseType.equals(type.baseType)
-                && attributes.equals(type.attributes);
+                && attribute == type.attribute;
         } // @formatter:on
         return false;
     }
 
     @Override
     public String toString() {
-        var result = getQualifiedName().toInternalName();
-        for (final var attrib : attributes) {
-            result = attrib.format(result);
-        }
-        return result;
+        return String.format("%s%s", attribute.getText(), baseType.toString());
     }
 }

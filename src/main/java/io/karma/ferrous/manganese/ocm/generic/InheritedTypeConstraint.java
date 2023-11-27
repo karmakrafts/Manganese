@@ -13,30 +13,19 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.util;
+package io.karma.ferrous.manganese.ocm.generic;
 
-import io.karma.ferrous.vanadium.FerrousLexer;
+import io.karma.ferrous.manganese.ocm.type.Type;
 import org.apiguardian.api.API;
 
 /**
  * @author Alexander Hinze
- * @since 15/11/2023
+ * @since 27/11/2023
  */
 @API(status = API.Status.INTERNAL)
-public enum TypeMod {
-    // @formatter:off
-    ATOMIC  (FerrousLexer.KW_ATOMIC),
-    TLS     (FerrousLexer.KW_TLS),
-    MUT     (FerrousLexer.KW_MUT);
-    // @formatter:on
-
-    private final String text;
-
-    TypeMod(final int token) {
-        text = TokenUtils.getLiteral(token);
-    }
-
-    public String getText() {
-        return text;
+public record InheritedTypeConstraint(Type value) implements GenericConstraint {
+    @Override
+    public boolean test(final Type type) {
+        return type.canAccept(value);
     }
 }

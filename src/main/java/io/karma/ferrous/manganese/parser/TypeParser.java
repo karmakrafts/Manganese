@@ -15,7 +15,6 @@
 
 package io.karma.ferrous.manganese.parser;
 
-import io.karma.ferrous.manganese.ParseAdapter;
 import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.CompileErrorCode;
 import io.karma.ferrous.manganese.compiler.Compiler;
@@ -27,12 +26,12 @@ import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.Logger;
 import io.karma.ferrous.manganese.util.TokenSlice;
 import io.karma.ferrous.vanadium.FerrousParser.*;
+import io.karma.kommons.function.Functions;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 
 import java.util.Collections;
-import java.util.Stack;
 
 /**
  * @author Alexander Hinze
@@ -40,9 +39,8 @@ import java.util.Stack;
  */
 @API(status = Status.INTERNAL)
 public final class TypeParser extends ParseAdapter {
-    private final Stack<TypeAttribute> attributes = new Stack<>();
     private final ScopeStack capturedScopeStack;
-    private Type baseType;
+    private Type type;
 
     public TypeParser(final Compiler compiler, final CompileContext compileContext,
                       final ScopeStack capturedScopeStack) {
@@ -52,53 +50,71 @@ public final class TypeParser extends ParseAdapter {
 
     @Override
     public void enterPointerType(final PointerTypeContext context) {
-        attributes.push(TypeAttribute.POINTER);
+        if (type != null) {
+            return;
+        }
+        type = Types.parse(compiler, compileContext, capturedScopeStack, context.type());
+        if (type == null) {
+            return;
+        }
+        if (type.isReference()) {
+            compileContext.reportError(CompileErrorCode.E3007);
+            return;
+        }
+        type = type.derive(TypeAttribute.POINTER);
         super.enterPointerType(context);
     }
 
     @Override
     public void enterRefType(final RefTypeContext context) {
-        if (attributes.contains(TypeAttribute.REFERENCE)) {
-            compileContext.reportError(context.start, CompileErrorCode.E3001);
+        if (type != null) {
             return;
         }
-        attributes.push(TypeAttribute.REFERENCE);
+        type = Types.parse(compiler, compileContext, capturedScopeStack, context.type());
+        if (type == null) {
+            return;
+        }
+        if (type.isReference()) {
+            compileContext.reportError(CompileErrorCode.E3002);
+            return;
+        }
+        type = type.derive(TypeAttribute.REFERENCE);
         super.enterRefType(context);
     }
 
     @Override
-    public void enterIdent(final IdentContext context) {
-        if (baseType != null) {
-            return; // Qualified ident contains these, so if kind exists, skip
+    public void enterSimpleType(final SimpleTypeContext context) {
+        final var moduleData = compileContext.getOrCreateModuleData();
+        // Parse named types
+        final var qualifiedIdentContext = context.qualifiedIdent();
+        if (qualifiedIdentContext != null) {
+            if (type != null) {
+                return;
+            }
+            final var name = Identifier.parse(qualifiedIdentContext);
+            type = moduleData.findCompleteType(name, capturedScopeStack.getScopeName());
+            if (type == null) {
+                type = Types.incomplete(name,
+                    Functions.castingIdentity(),
+                    TokenSlice.from(compileContext, context),
+                    Collections.emptyList());
+            }
         }
-        final var name = Identifier.parse(context);
-        final var type = compileContext.getOrCreateModuleData().findCompleteType(name,
-            capturedScopeStack.getScopeName());
-        if (type == null) {
-            baseType = Types.incomplete(name,
-                capturedScopeStack::applyEnclosingScopes,
-                TokenSlice.from(compileContext, context),
-                Collections.emptyList());
-            return;
+        final var identContext = context.ident();
+        if (identContext != null) {
+            if (type != null) {
+                return;
+            }
+            final var name = Identifier.parse(identContext);
+            type = moduleData.findCompleteType(name, capturedScopeStack.getScopeName());
+            if (type == null) {
+                type = Types.incomplete(name,
+                    Functions.castingIdentity(),
+                    TokenSlice.from(compileContext, context),
+                    Collections.emptyList());
+            }
         }
-        baseType = type;
-        super.enterIdent(context);
-    }
-
-    @Override
-    public void enterQualifiedIdent(final QualifiedIdentContext context) {
-        final var name = Identifier.parse(context);
-        final var type = compileContext.getOrCreateModuleData().findCompleteType(name,
-            capturedScopeStack.getScopeName());
-        if (type == null) {
-            baseType = Types.incomplete(name,
-                capturedScopeStack::applyEnclosingScopes,
-                TokenSlice.from(compileContext, context),
-                Collections.emptyList());
-            return;
-        }
-        baseType = type;
-        super.enterQualifiedIdent(context);
+        super.enterSimpleType(context);
     }
 
     @Override
@@ -127,8 +143,7 @@ public final class TypeParser extends ParseAdapter {
 
     private void parsePrimitiveType(final ParserRuleContext context, final String errorMessage) {
         final var text = context.getText();
-        if (baseType != null) {
-            Logger.INSTANCE.warnln("Base kind was already parsed");
+        if (type != null) {
             return;
         }
         final var type = Types.builtin(Identifier.parse(text));
@@ -136,13 +151,10 @@ public final class TypeParser extends ParseAdapter {
             Logger.INSTANCE.errorln("Could not parse primitive kind '%s'", text);
             return;
         }
-        baseType = type.get();
+        this.type = type.get();
     }
 
     public Type getType() {
-        if (attributes.isEmpty()) {
-            return baseType;
-        }
-        return baseType.derive(attributes);
+        return type;
     }
 }

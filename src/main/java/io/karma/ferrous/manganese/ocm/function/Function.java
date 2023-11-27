@@ -25,7 +25,6 @@ import io.karma.ferrous.manganese.ocm.statement.Statement;
 import io.karma.ferrous.manganese.ocm.type.FunctionType;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.target.TargetMachine;
-import io.karma.ferrous.manganese.util.CallingConvention;
 import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.Mangler;
 import io.karma.ferrous.manganese.util.TokenSlice;

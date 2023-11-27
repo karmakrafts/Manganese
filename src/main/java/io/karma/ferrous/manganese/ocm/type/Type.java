@@ -20,9 +20,7 @@ import io.karma.ferrous.manganese.ocm.expr.Expression;
 import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
 import io.karma.ferrous.manganese.ocm.scope.Scoped;
 import io.karma.ferrous.manganese.target.TargetMachine;
-import io.karma.ferrous.manganese.util.KitchenSink;
 import io.karma.ferrous.manganese.util.TokenSlice;
-import io.karma.ferrous.manganese.util.TypeMod;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 import org.jetbrains.annotations.Nullable;
@@ -56,7 +54,7 @@ public interface Type extends Scoped, Mangleable {
         return Collections.emptyList();
     }
 
-    default EnumSet<TypeMod> getModifiers() {
+    default EnumSet<TypeModifier> getModifiers() {
         return getBaseType().getModifiers();
     }
 
@@ -67,7 +65,7 @@ public interface Type extends Scoped, Mangleable {
     default @Nullable GenericParameter getGenericParam(final String name) {
         final var params = getGenericParams();
         for (final GenericParameter param : params) {
-            if (!param.getName().equals(name)) {
+            if (!param.getName().toString().equals(name)) {
                 continue;
             }
             return param;
@@ -134,25 +132,12 @@ public interface Type extends Scoped, Mangleable {
         return getBaseType().isMonomorphic();
     }
 
-    default Type deriveWithMods(final TypeMod... modifiers) {
-        return Types.cached(new DerivedType(this, null, KitchenSink.of(TypeMod[]::new, modifiers)));
-    }
-
-    default Type deriveGeneric(final Expression... values) {
-        final var type = new DerivedType(this, null, EnumSet.noneOf(TypeMod.class));
-        final var params = type.getGenericParams();
-        final var numParams = params.size();
-        if (values.length > numParams) {
-            throw new IllegalArgumentException("Invalid number of values");
-        }
-        for (var i = 0; i < numParams; i++) {
-            params.get(i).setValue(values[i]);
-        }
-        return Types.cached(type);
+    default boolean isDerived() {
+        return false;
     }
 
     default Type derive(final TypeAttribute attribute) {
-        return Types.cached(new DerivedType(this, Collections.singletonList(attribute), EnumSet.noneOf(TypeMod.class)));
+        return Types.cached(new DerivedType(this, attribute));
     }
 
     default Type derive(final Collection<TypeAttribute> attributes) {
@@ -161,22 +146,6 @@ public interface Type extends Scoped, Mangleable {
             type = type.derive(attrib);
         }
         return type;
-    }
-
-    default Type derivePointer() {
-        return derive(TypeAttribute.POINTER);
-    }
-
-    default Type derivePointer(final int depth) {
-        var result = this;
-        for (var i = 0; i < depth; i++) {
-            result = result.derivePointer();
-        }
-        return result;
-    }
-
-    default Type deriveReference() {
-        return derive(TypeAttribute.REFERENCE);
     }
 
     default boolean isReference() {

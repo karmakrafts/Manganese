@@ -15,7 +15,7 @@
 
 package io.karma.ferrous.manganese.compiler.pass;
 
-import io.karma.ferrous.manganese.ParseAdapter;
+import io.karma.ferrous.manganese.parser.ParseAdapter;
 import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.CompileErrorCode;
 import io.karma.ferrous.manganese.compiler.Compiler;
@@ -23,6 +23,7 @@ import io.karma.ferrous.manganese.module.Module;
 import io.karma.ferrous.manganese.module.ModuleData;
 import io.karma.ferrous.manganese.ocm.function.Function;
 import io.karma.ferrous.manganese.ocm.function.Parameter;
+import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
 import io.karma.ferrous.manganese.profiler.Profiler;
 import io.karma.ferrous.manganese.util.FunctionUtils;
 import io.karma.ferrous.manganese.util.KitchenSink;
@@ -33,7 +34,6 @@ import io.karma.ferrous.vanadium.FerrousParser.ProtoFunctionContext;
 import org.apiguardian.api.API;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.concurrent.ExecutorService;
 
@@ -124,6 +124,10 @@ public final class FunctionDeclarationPass implements CompilePass {
             for (var i = 0; i < numParams; i++) {
                 params.add(new Parameter(paramNames[i], paramTypes.get(i), null));
             }
+            final var genericParams = GenericParameter.parse(compiler,
+                compileContext,
+                scopeStack,
+                context.genericParamList());
             final var function = scopeStack.applyEnclosingScopes(new Function(name,
                 callConv,
                 type,
@@ -131,7 +135,7 @@ public final class FunctionDeclarationPass implements CompilePass {
                 true,
                 TokenSlice.from(compileContext, context),
                 params,
-                Collections.emptyList()));
+                genericParams));
             moduleData.getFunctions().computeIfAbsent(function.getQualifiedName(),
                 n -> new HashMap<>()).put(function.getType(), function);
             super.enterProtoFunction(context); // Make sure we pick up the default scope for function prototypes

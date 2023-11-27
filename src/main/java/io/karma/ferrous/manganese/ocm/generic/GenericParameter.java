@@ -15,11 +15,22 @@
 
 package io.karma.ferrous.manganese.ocm.generic;
 
+import io.karma.ferrous.manganese.compiler.CompileContext;
+import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.Named;
+import io.karma.ferrous.manganese.ocm.constant.TypeConstant;
 import io.karma.ferrous.manganese.ocm.expr.Expression;
+import io.karma.ferrous.manganese.ocm.scope.ScopeStack;
+import io.karma.ferrous.manganese.ocm.type.Types;
 import io.karma.ferrous.manganese.util.Identifier;
+import io.karma.ferrous.manganese.util.TokenSlice;
+import io.karma.ferrous.vanadium.FerrousParser.GenericParamContext;
+import io.karma.ferrous.vanadium.FerrousParser.GenericParamListContext;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -40,6 +51,35 @@ public final class GenericParameter implements Named {
 
     public GenericParameter(final Identifier name) {
         this(name, GenericConstraint.TRUE, null);
+    }
+
+    public static @Nullable GenericParameter parse(final Compiler compiler, final CompileContext compileContext,
+                                                   final ScopeStack scopeStack,
+                                                   final @Nullable GenericParamContext context) {
+        if (context == null) {
+            return null;
+        }
+        final var name = Identifier.parse(context.ident());
+        final var constraints = GenericConstraint.parse(compileContext, context.genericExpr());
+        final var typeContext = context.type();
+        final var defaultValue = Types.parse(compiler, compileContext, scopeStack, typeContext);
+        return new GenericParameter(name,
+            constraints,
+            defaultValue != null ? new TypeConstant(defaultValue, TokenSlice.from(compileContext, typeContext)) : null);
+    }
+
+    public static List<GenericParameter> parse(final Compiler compiler, final CompileContext compileContext,
+                                               final ScopeStack scopeStack,
+                                               final @Nullable GenericParamListContext context) {
+        if (context == null) {
+            return Collections.emptyList();
+        }
+        final var paramContexts = context.genericParam();
+        final var params = new ArrayList<GenericParameter>(paramContexts.size()); // Pre-allocate
+        for (final var paramContext : paramContexts) {
+            params.add(parse(compiler, compileContext, scopeStack, paramContext));
+        }
+        return params;
     }
 
     @Override

@@ -15,7 +15,7 @@
 
 package io.karma.ferrous.manganese.compiler.pass;
 
-import io.karma.ferrous.manganese.ParseAdapter;
+import io.karma.ferrous.manganese.parser.ParseAdapter;
 import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.module.Module;

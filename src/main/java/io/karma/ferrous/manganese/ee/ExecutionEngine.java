@@ -26,7 +26,7 @@ import io.karma.ferrous.manganese.ocm.type.BuiltinType;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.ocm.type.Types;
 import io.karma.ferrous.manganese.target.TargetMachine;
-import io.karma.ferrous.manganese.util.CallingConvention;
+import io.karma.ferrous.manganese.ocm.function.CallingConvention;
 import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.kommons.function.Functions;
 import org.apiguardian.api.API;

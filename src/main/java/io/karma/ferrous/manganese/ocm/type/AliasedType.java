@@ -76,6 +76,11 @@ public final class AliasedType implements Type {
     // Type
 
     @Override
+    public boolean isMonomorphic() {
+        return genericParams.isEmpty();
+    }
+
+    @Override
     public boolean canAccept(final Type type) {
         return backingType.canAccept(type);
     }

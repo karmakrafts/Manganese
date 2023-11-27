@@ -13,23 +13,31 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.ocm.generic;
+package io.karma.ferrous.manganese.ocm.type;
 
-import io.karma.ferrous.manganese.ocm.type.Type;
+import io.karma.ferrous.manganese.util.TokenUtils;
+import io.karma.ferrous.vanadium.FerrousLexer;
+import org.apiguardian.api.API;
 
 /**
  * @author Alexander Hinze
- * @since 29/10/2023
+ * @since 15/11/2023
  */
-public record ConjunctiveConstraint(GenericConstraint... constraints) implements GenericConstraint {
-    @Override
-    public boolean test(final Type type) {
-        for (final var constraint : constraints) {
-            if (constraint.test(type)) {
-                continue;
-            }
-            return false;
-        }
-        return true;
+@API(status = API.Status.INTERNAL)
+public enum TypeModifier {
+    // @formatter:off
+    ATOMIC  (FerrousLexer.KW_ATOMIC),
+    TLS     (FerrousLexer.KW_TLS),
+    MUT     (FerrousLexer.KW_MUT);
+    // @formatter:on
+
+    private final String text;
+
+    TypeModifier(final int token) {
+        text = TokenUtils.getLiteral(token);
+    }
+
+    public String getText() {
+        return text;
     }
 }

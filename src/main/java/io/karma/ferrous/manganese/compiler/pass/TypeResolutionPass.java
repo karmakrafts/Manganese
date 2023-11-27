@@ -50,7 +50,7 @@ public final class TypeResolutionPass implements CompilePass {
         final var moduleData = compileContext.getOrCreateModuleData(module.getName());
         sortTypes(compileContext, moduleData);
         resolveTypes(compileContext, moduleData);
-        materializeTypes(compiler, compileContext, moduleData);
+        materializeTypes(compiler, moduleData);
         resolveTypeAccess(compileContext, moduleData);
         Profiler.INSTANCE.pop();
     }
@@ -141,7 +141,7 @@ public final class TypeResolutionPass implements CompilePass {
         return true;
     }
 
-    private boolean resolveFieldTypes(final CompileContext compileContext, final UserDefinedType type,
+    private boolean resolveFieldTypes(final UserDefinedType type,
                                       final Identifier scopeName, final ModuleData moduleData) {
         Profiler.INSTANCE.push();
         final var structType = type.type();
@@ -178,15 +178,14 @@ public final class TypeResolutionPass implements CompilePass {
             if (!(udt instanceof UserDefinedType actualUdt)) {
                 continue; // Skip everything else apart from UDTs
             }
-            if (!resolveFieldTypes(compileContext, actualUdt, scopeName, moduleData)) {
+            if (!resolveFieldTypes(actualUdt, scopeName, moduleData)) {
                 compileContext.reportError(actualUdt.tokenSlice().getFirstToken(), CompileErrorCode.E3004);
             }
         }
         Profiler.INSTANCE.pop();
     }
 
-    private void materializeTypes(final Compiler compiler, final CompileContext compileContext,
-                                  final ModuleData moduleData) {
+    private void materializeTypes(final Compiler compiler, final ModuleData moduleData) {
         Profiler.INSTANCE.push();
         final var namedTypes = moduleData.getTypes().values();
         for (final var type : namedTypes) {
@@ -234,7 +233,7 @@ public final class TypeResolutionPass implements CompilePass {
             rootNode.addDependency(node);
         }
 
-        Logger.INSTANCE.debugln("Reordering %d kind entries", namedTypes.size());
+        Logger.INSTANCE.debugln("Reordering %d type entries", namedTypes.size());
         final var sortedNodes = new TopoSorter<>(rootNode).sort(ArrayList::new);
         final var sortedMap = new LinkedHashMap<Identifier, Type>();
 
