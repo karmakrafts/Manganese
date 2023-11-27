@@ -20,6 +20,7 @@ import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.CompileErrorCode;
 import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.module.Module;
+import io.karma.ferrous.manganese.module.ModuleData;
 import io.karma.ferrous.manganese.ocm.field.Field;
 import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
 import io.karma.ferrous.manganese.ocm.type.Types;
@@ -50,13 +51,18 @@ public final class TypeDiscoveryPass implements CompilePass {
     public void run(final Compiler compiler, final CompileContext compileContext, final Module module,
                     final ExecutorService executor) {
         Profiler.INSTANCE.push();
-        compileContext.walkParseTree(new ParseListenerImpl(compiler, compileContext));
+        final var moduleData = compileContext.getOrCreateModuleData(module.getName());
+        compileContext.walkParseTree(new ParseListenerImpl(compiler, compileContext, moduleData));
         Profiler.INSTANCE.pop();
     }
 
     private static final class ParseListenerImpl extends ParseAdapter {
-        public ParseListenerImpl(final Compiler compiler, final CompileContext compileContext) {
+        private final ModuleData moduleData;
+
+        public ParseListenerImpl(final Compiler compiler, final CompileContext compileContext,
+                                 final ModuleData moduleData) {
             super(compiler, compileContext);
+            this.moduleData = moduleData;
         }
 
         @Override
@@ -75,7 +81,7 @@ public final class TypeDiscoveryPass implements CompilePass {
                 scopeStack::applyEnclosingScopes,
                 TokenSlice.from(compileContext, context),
                 genericParams);
-            compileContext.getOrCreateModuleData().getTypes().put(aliasedType.getQualifiedName(), aliasedType);
+            moduleData.getTypes().put(aliasedType.getQualifiedName(), aliasedType);
         }
 
         @Override
@@ -146,14 +152,17 @@ public final class TypeDiscoveryPass implements CompilePass {
                 context.genericParamList());
 
             super.enterTrait(context);
-            final var scope = analyzeFieldLayout(context, Identifier.parse(identContext), genericParams, UserDefinedTypeKind.TRAIT);
+            final var scope = analyzeFieldLayout(context,
+                Identifier.parse(identContext),
+                genericParams,
+                UserDefinedTypeKind.TRAIT);
             popScope();
             pushScope(scope);
         }
 
         private boolean checkIsTypeAlreadyDefined(final IdentContext identContext) {
             final var name = Identifier.parse(identContext);
-            final var type = compileContext.getOrCreateModuleData().getTypes().get(name);
+            final var type = moduleData.getTypes().get(name);
             if (type != null) {
                 final var message = KitchenSink.makeCompilerMessage(String.format("Type '%s' is already defined",
                     name));
@@ -164,7 +173,8 @@ public final class TypeDiscoveryPass implements CompilePass {
         }
 
         private UserDefinedType analyzeFieldLayout(final ParserRuleContext parent, final Identifier name,
-                                                   final List<GenericParameter> genericParams, final UserDefinedTypeKind kind) {
+                                                   final List<GenericParameter> genericParams,
+                                                   final UserDefinedTypeKind kind) {
             final var layoutAnalyzer = new FieldParser(compiler, compileContext, scopeStack);
             ParseTreeWalker.DEFAULT.walk(layoutAnalyzer, parent);
 
@@ -177,7 +187,7 @@ public final class TypeDiscoveryPass implements CompilePass {
                 tokenSlice,
                 fieldTypes);
             final var udt = new UserDefinedType(kind, type, fields, tokenSlice);
-            compileContext.getOrCreateModuleData().getTypes().put(type.getQualifiedName(), udt);
+            moduleData.getTypes().put(type.getQualifiedName(), udt);
 
             Logger.INSTANCE.debugln("Captured field layout for kind '%s'", type.getQualifiedName());
             return udt;

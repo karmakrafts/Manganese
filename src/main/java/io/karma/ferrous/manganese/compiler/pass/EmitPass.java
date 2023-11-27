@@ -33,7 +33,7 @@ public final class EmitPass implements CompilePass {
     public void run(final Compiler compiler, final CompileContext compileContext, final Module module,
                     final ExecutorService executor) {
         Profiler.INSTANCE.push();
-        final var moduleData = compileContext.getOrCreateModuleData();
+        final var moduleData = compileContext.getOrCreateModuleData(module.getName());
         final var overloadSets = moduleData.getFunctions().values();
         for (final var overloadSet : overloadSets) {
             final var functions = overloadSet.values();

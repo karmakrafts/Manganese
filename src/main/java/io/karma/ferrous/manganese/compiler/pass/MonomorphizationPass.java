@@ -18,6 +18,7 @@ package io.karma.ferrous.manganese.compiler.pass;
 import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.module.Module;
+import io.karma.ferrous.manganese.profiler.Profiler;
 import org.apiguardian.api.API;
 
 import java.util.concurrent.ExecutorService;
@@ -29,7 +30,10 @@ import java.util.concurrent.ExecutorService;
 @API(status = API.Status.INTERNAL)
 public final class MonomorphizationPass implements CompilePass {
     @Override
-    public void run(final Compiler compiler, final CompileContext compileContext, final Module module, final ExecutorService executor) {
-
+    public void run(final Compiler compiler, final CompileContext compileContext, final Module module,
+                    final ExecutorService executor) {
+        Profiler.INSTANCE.push();
+        final var moduleData = compileContext.getOrCreateModuleData(module.getName());
+        Profiler.INSTANCE.pop();
     }
 }

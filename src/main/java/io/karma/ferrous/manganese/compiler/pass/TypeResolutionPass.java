@@ -19,6 +19,7 @@ import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.CompileErrorCode;
 import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.module.Module;
+import io.karma.ferrous.manganese.module.ModuleData;
 import io.karma.ferrous.manganese.ocm.access.AccessKind;
 import io.karma.ferrous.manganese.ocm.access.ScopedAccess;
 import io.karma.ferrous.manganese.ocm.type.*;
@@ -46,10 +47,11 @@ public final class TypeResolutionPass implements CompilePass {
     public void run(final Compiler compiler, final CompileContext compileContext, final Module module,
                     final ExecutorService executor) {
         Profiler.INSTANCE.push();
-        sortTypes(compileContext);
-        resolveTypes(compileContext);
-        materializeTypes(compiler, compileContext);
-        resolveTypeAccess(compileContext);
+        final var moduleData = compileContext.getOrCreateModuleData(module.getName());
+        sortTypes(compileContext, moduleData);
+        resolveTypes(compileContext, moduleData);
+        materializeTypes(compiler, compileContext, moduleData);
+        resolveTypeAccess(compileContext, moduleData);
         Profiler.INSTANCE.pop();
     }
 
@@ -118,8 +120,8 @@ public final class TypeResolutionPass implements CompilePass {
         return true;
     }
 
-    private boolean resolveAliasedType(final CompileContext compileContext, final AliasedType alias,
-                                       final Identifier scopeName) {
+    private boolean resolveAliasedType(final AliasedType alias, final Identifier scopeName,
+                                       final ModuleData moduleData) {
         Profiler.INSTANCE.push();
         var currentType = alias.getBackingType();
         while (!currentType.isComplete()) {
@@ -128,8 +130,7 @@ public final class TypeResolutionPass implements CompilePass {
                 continue;
             }
             final var currentTypeName = currentType.getQualifiedName();
-            final var completeType = compileContext.getOrCreateModuleData().findCompleteType(currentTypeName,
-                scopeName);
+            final var completeType = moduleData.findCompleteType(currentTypeName, scopeName);
             if (completeType == null) {
                 return false;
             }
@@ -140,7 +141,8 @@ public final class TypeResolutionPass implements CompilePass {
         return true;
     }
 
-    private boolean resolveFieldTypes(final CompileContext compileContext, final UserDefinedType type, final Identifier scopeName) {
+    private boolean resolveFieldTypes(final CompileContext compileContext, final UserDefinedType type,
+                                      final Identifier scopeName, final ModuleData moduleData) {
         Profiler.INSTANCE.push();
         final var structType = type.type();
         final var fieldTypes = structType.getFieldTypes();
@@ -152,7 +154,7 @@ public final class TypeResolutionPass implements CompilePass {
             }
             final var fieldTypeName = fieldType.getQualifiedName();
             Logger.INSTANCE.debugln("Found incomplete field kind '%s' in '%s'", fieldTypeName, scopeName);
-            final var completeType = compileContext.getOrCreateModuleData().findCompleteType(fieldTypeName, scopeName);
+            final var completeType = moduleData.findCompleteType(fieldTypeName, scopeName);
             if (completeType == null) {
                 return false;
             }
@@ -163,29 +165,30 @@ public final class TypeResolutionPass implements CompilePass {
         return true;
     }
 
-    private void resolveTypes(final CompileContext compileContext) {
+    private void resolveTypes(final CompileContext compileContext, final ModuleData moduleData) {
         Profiler.INSTANCE.push();
-        final var types = compileContext.getOrCreateModuleData().getTypes().values();
+        final var types = moduleData.getTypes().values();
         for (final var udt : types) {
             final var scopeName = udt.getScopeName();
             if (udt.isAliased() && udt instanceof AliasedType alias) {
-                if (!resolveAliasedType(compileContext, alias, scopeName)) {
+                if (!resolveAliasedType(alias, scopeName, moduleData)) {
                     compileContext.reportError(alias.getTokenSlice().getFirstToken(), CompileErrorCode.E3003);
                 }
             }
             if (!(udt instanceof UserDefinedType actualUdt)) {
                 continue; // Skip everything else apart from UDTs
             }
-            if (!resolveFieldTypes(compileContext, actualUdt, scopeName)) {
+            if (!resolveFieldTypes(compileContext, actualUdt, scopeName, moduleData)) {
                 compileContext.reportError(actualUdt.tokenSlice().getFirstToken(), CompileErrorCode.E3004);
             }
         }
         Profiler.INSTANCE.pop();
     }
 
-    private void materializeTypes(final Compiler compiler, final CompileContext compileContext) {
+    private void materializeTypes(final Compiler compiler, final CompileContext compileContext,
+                                  final ModuleData moduleData) {
         Profiler.INSTANCE.push();
-        final var namedTypes = compileContext.getOrCreateModuleData().getTypes().values();
+        final var namedTypes = moduleData.getTypes().values();
         for (final var type : namedTypes) {
             if (type.isAliased()) {
                 continue; // Don't need to waste time on doing nothing..
@@ -200,10 +203,10 @@ public final class TypeResolutionPass implements CompilePass {
         Profiler.INSTANCE.pop();
     }
 
-    private void sortTypes(final CompileContext compileContext) {
+    private void sortTypes(final CompileContext compileContext, final ModuleData moduleData) {
         Profiler.INSTANCE.push();
         final var rootNode = new TopoNode<Type>(DummyType.INSTANCE);
-        final var namedTypes = compileContext.getOrCreateModuleData().getTypes();
+        final var namedTypes = moduleData.getTypes();
         // @formatter:off
         final var nodes = namedTypes.entrySet()
             .stream()
@@ -249,9 +252,8 @@ public final class TypeResolutionPass implements CompilePass {
         Profiler.INSTANCE.pop();
     }
 
-    private void resolveTypeAccess(final CompileContext compileContext) {
+    private void resolveTypeAccess(final CompileContext compileContext, final ModuleData moduleData) {
         Profiler.INSTANCE.push();
-        final var moduleData = compileContext.getOrCreateModuleData();
         final var namedTypes = moduleData.getTypes().values();
         for (final var udt : namedTypes) {
             if (!(udt instanceof UserDefinedType actualUdt)) {
