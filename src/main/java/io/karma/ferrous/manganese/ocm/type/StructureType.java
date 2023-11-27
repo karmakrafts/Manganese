@@ -130,6 +130,11 @@ public final class StructureType implements Type {
     }
 
     @Override
+    public boolean isMonomorphic() {
+        return genericParams.isEmpty();
+    }
+
+    @Override
     public Type getBaseType() {
         return this;
     }

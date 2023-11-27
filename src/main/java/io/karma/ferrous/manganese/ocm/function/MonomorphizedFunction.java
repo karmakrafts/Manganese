@@ -42,6 +42,11 @@ public final class MonomorphizedFunction extends Function {
     }
 
     @Override
+    public boolean isMonomorphic() {
+        return true;
+    }
+
+    @Override
     public MonomorphizedFunction monomorphize(final List<Type> genericTypes) {
         throw new UnsupportedOperationException("Function is already monomorphized");
     }

@@ -126,6 +126,14 @@ public interface Type extends Scoped, Mangleable {
         return getBaseType().isComplete();
     }
 
+    /**
+     * @return True if this is a monomorphic type
+     * (when it has no generic parameters associated with it).
+     */
+    default boolean isMonomorphic() {
+        return getBaseType().isMonomorphic();
+    }
+
     default Type deriveWithMods(final TypeMod... modifiers) {
         return Types.cached(new DerivedType(this, null, KitchenSink.of(TypeMod[]::new, modifiers)));
     }

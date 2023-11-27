@@ -89,6 +89,10 @@ public class Function implements Scoped, Mangleable {
         return shouldMangle;
     }
 
+    public boolean isMonomorphic() {
+        return genericParams.isEmpty();
+    }
+
     public @Nullable FunctionBody getBody() {
         return body;
     }
