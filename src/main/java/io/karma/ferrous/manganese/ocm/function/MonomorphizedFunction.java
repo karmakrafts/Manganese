@@ -15,7 +15,6 @@
 
 package io.karma.ferrous.manganese.ocm.function;
 
-import io.karma.ferrous.manganese.ocm.Parameter;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.util.Mangler;
 import org.apiguardian.api.API;

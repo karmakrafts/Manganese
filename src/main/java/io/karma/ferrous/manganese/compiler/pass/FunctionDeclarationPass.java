@@ -20,7 +20,7 @@ import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.CompileErrorCode;
 import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.module.Module;
-import io.karma.ferrous.manganese.ocm.Parameter;
+import io.karma.ferrous.manganese.ocm.function.Parameter;
 import io.karma.ferrous.manganese.ocm.function.Function;
 import io.karma.ferrous.manganese.profiler.Profiler;
 import io.karma.ferrous.manganese.util.FunctionUtils;
