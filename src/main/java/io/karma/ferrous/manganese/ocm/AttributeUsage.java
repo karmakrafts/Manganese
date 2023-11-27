@@ -16,10 +16,17 @@
 package io.karma.ferrous.manganese.ocm;
 
 import io.karma.ferrous.manganese.compiler.CompileContext;
+import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.expr.Expression;
+import io.karma.ferrous.manganese.ocm.scope.ScopeStack;
+import io.karma.ferrous.manganese.ocm.type.UserDefinedType;
+import io.karma.ferrous.manganese.parser.AttributeUsageParser;
 import io.karma.ferrous.manganese.util.Identifier;
+import io.karma.ferrous.vanadium.FerrousParser.AttribUsageContext;
 import io.karma.ferrous.vanadium.FerrousParser.AttributeListContext;
+import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import org.apiguardian.api.API;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -31,15 +38,24 @@ import java.util.List;
  * @since 16/11/2023
  */
 @API(status = API.Status.INTERNAL)
-public record AttributeUsage(Attribute attribute, HashMap<Identifier, Expression> values) {
-    public static List<AttributeUsage> parse(final CompileContext compileContext, final AttributeListContext context) {
+public record AttributeUsage(UserDefinedType attribute, HashMap<Identifier, Expression> values) {
+    public static @Nullable AttributeUsage parse(final Compiler compiler, final CompileContext compileContext,
+                                                 final ScopeStack capturedScopeStack,
+                                                 final AttribUsageContext context) {
+        final var parser = new AttributeUsageParser(compiler, compileContext, capturedScopeStack);
+        ParseTreeWalker.DEFAULT.walk(parser, context);
+        return parser.getUsage();
+    }
+
+    public static List<AttributeUsage> parse(final Compiler compiler, final CompileContext compileContext,
+                                             final ScopeStack capturedScopeStack, final AttributeListContext context) {
         final var usageContexts = context.attribUsage();
         if (usageContexts == null || usageContexts.isEmpty()) {
             return Collections.emptyList();
         }
         final var usages = new ArrayList<AttributeUsage>();
         for (final var usageContext : usageContexts) {
-
+            usages.add(parse(compiler, compileContext, capturedScopeStack, usageContext));
         }
         return usages;
     }

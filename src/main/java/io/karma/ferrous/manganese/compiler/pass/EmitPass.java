@@ -38,6 +38,9 @@ public final class EmitPass implements CompilePass {
         for (final var overloadSet : overloadSets) {
             final var functions = overloadSet.values();
             for (final var function : functions) {
+                if (!function.isMonomorphic()) {
+                    continue;
+                }
                 function.emit(compileContext, module, compiler.getTargetMachine());
             }
         }

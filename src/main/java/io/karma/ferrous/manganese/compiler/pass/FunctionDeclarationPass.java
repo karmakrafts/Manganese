@@ -20,6 +20,7 @@ import io.karma.ferrous.manganese.compiler.CompileErrorCode;
 import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.module.Module;
 import io.karma.ferrous.manganese.module.ModuleData;
+import io.karma.ferrous.manganese.ocm.AttributeUsage;
 import io.karma.ferrous.manganese.ocm.function.Function;
 import io.karma.ferrous.manganese.ocm.function.Parameter;
 import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
@@ -128,14 +129,18 @@ public final class FunctionDeclarationPass implements CompilePass {
                 compileContext,
                 scopeStack,
                 context.genericParamList());
+            final var attributeUsages = AttributeUsage.parse(compiler,
+                compileContext,
+                scopeStack,
+                context.attributeList());
             final var function = scopeStack.applyEnclosingScopes(new Function(name,
                 callConv,
                 type,
                 context.KW_EXTERN() != null,
-                true,
                 TokenSlice.from(compileContext, context),
                 params,
-                genericParams));
+                genericParams,
+                attributeUsages));
             moduleData.getFunctions().computeIfAbsent(function.getQualifiedName(),
                 n -> new HashMap<>()).put(function.getType(), function);
             super.enterProtoFunction(context); // Make sure we pick up the default scope for function prototypes

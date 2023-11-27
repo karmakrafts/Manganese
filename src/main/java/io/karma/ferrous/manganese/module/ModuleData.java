@@ -15,7 +15,6 @@
 
 package io.karma.ferrous.manganese.module;
 
-import io.karma.ferrous.manganese.ocm.Attribute;
 import io.karma.ferrous.manganese.ocm.field.Field;
 import io.karma.ferrous.manganese.ocm.function.Function;
 import io.karma.ferrous.manganese.ocm.statement.LetStatement;
@@ -48,7 +47,6 @@ public final class ModuleData {
     private final HashMap<Identifier, HashMap<FunctionType, Function>> functions = new HashMap<>();
     private final HashMap<Function, LinkedHashMap<Identifier, LetStatement>> locals = new HashMap<>();
     private final LinkedHashMap<Identifier, Field> globalFields = new LinkedHashMap<>();
-    private final HashMap<Identifier, Attribute> attributes = new HashMap<>();
     private BufferedTokenStream tokenStream;
     private FileContext fileContext;
     private FerrousLexer lexer;
@@ -101,6 +99,14 @@ public final class ModuleData {
 
     // Non-synchronized data
 
+    public void addType(final Type type) {
+        final var name = type.getQualifiedName();
+        if (types.containsKey(name)) {
+            throw new IllegalStateException("Type already exists");
+        }
+        types.put(name, type);
+    }
+
     public LinkedHashMap<Identifier, Type> getTypes() {
         return types;
     }
@@ -115,10 +121,6 @@ public final class ModuleData {
 
     public HashMap<Function, LinkedHashMap<Identifier, LetStatement>> getLocals() {
         return locals;
-    }
-
-    public HashMap<Identifier, Attribute> getAttributes() {
-        return attributes;
     }
 
     public @Nullable Type findCompleteType(final Identifier name, final Identifier scopeName) {

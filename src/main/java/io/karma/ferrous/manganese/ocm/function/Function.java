@@ -17,11 +17,13 @@ package io.karma.ferrous.manganese.ocm.function;
 
 import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.module.Module;
+import io.karma.ferrous.manganese.ocm.AttributeUsage;
 import io.karma.ferrous.manganese.ocm.Mangleable;
 import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.ocm.scope.Scoped;
 import io.karma.ferrous.manganese.ocm.statement.Statement;
+import io.karma.ferrous.manganese.ocm.type.BuiltinAttributes;
 import io.karma.ferrous.manganese.ocm.type.FunctionType;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.target.TargetMachine;
@@ -47,9 +49,9 @@ public class Function implements Scoped, Mangleable {
     protected final Identifier name;
     protected final CallingConvention callConv;
     protected final boolean isExtern;
-    protected final boolean shouldMangle;
     protected final List<Parameter> parameters;
     protected final List<GenericParameter> genericParams;
+    protected final List<AttributeUsage> attributeUsages;
     protected final TokenSlice tokenSlice;
     protected final FunctionType type;
     protected FunctionBody body;
@@ -57,16 +59,16 @@ public class Function implements Scoped, Mangleable {
     protected long materializedPrototype;
 
     public Function(final Identifier name, final CallingConvention callConv, final FunctionType type,
-                    final boolean isExtern, final boolean shouldMangle, final TokenSlice tokenSlice,
-                    final List<Parameter> params, final List<GenericParameter> genericParams) {
+                    final boolean isExtern, final TokenSlice tokenSlice, final List<Parameter> params,
+                    final List<GenericParameter> genericParams, final List<AttributeUsage> attributeUsages) {
         this.name = name;
         this.callConv = callConv;
         this.isExtern = isExtern;
-        this.shouldMangle = shouldMangle;
         this.type = type;
         this.tokenSlice = tokenSlice;
         this.parameters = params;
         this.genericParams = genericParams;
+        this.attributeUsages = attributeUsages;
     }
 
     public void createBody(final Statement... statements) {
@@ -85,7 +87,13 @@ public class Function implements Scoped, Mangleable {
     }
 
     public boolean shouldMangle() {
-        return shouldMangle;
+        for (final var usage : attributeUsages) {
+            if (usage.attribute() != BuiltinAttributes.NOMANGLE) {
+                continue;
+            }
+            return false;
+        }
+        return true;
     }
 
     public boolean isMonomorphic() {
@@ -110,6 +118,10 @@ public class Function implements Scoped, Mangleable {
 
     public List<GenericParameter> getGenericParameters() {
         return genericParams;
+    }
+
+    public List<AttributeUsage> getAttributeUsages() {
+        return attributeUsages;
     }
 
     public long materialize(final Module module, final TargetMachine targetMachine) {
@@ -150,6 +162,9 @@ public class Function implements Scoped, Mangleable {
 
     @Override
     public String getMangledName() {
+        if (!shouldMangle()) {
+            return getName().toInternalName();
+        }
         return String.format("%s(%s)",
             getQualifiedName().toInternalName(),
             Mangler.mangleSequence(parameters.stream().map(Parameter::getType).toList()));

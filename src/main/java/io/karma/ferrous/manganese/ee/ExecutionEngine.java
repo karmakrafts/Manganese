@@ -175,8 +175,8 @@ public final class ExecutionEngine {
             CallingConvention.CDECL,
             functionType,
             false,
-            true,
             tokenSlice,
+            Collections.emptyList(),
             Collections.emptyList(),
             Collections.emptyList());
         final var irContext = new FunctionIRContext(compileContext, module, targetMachine, function);

@@ -22,6 +22,7 @@ import io.karma.ferrous.manganese.module.Module;
 import io.karma.ferrous.manganese.module.ModuleData;
 import io.karma.ferrous.manganese.ocm.field.Field;
 import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
+import io.karma.ferrous.manganese.ocm.type.BuiltinAttributes;
 import io.karma.ferrous.manganese.ocm.type.Types;
 import io.karma.ferrous.manganese.ocm.type.UserDefinedType;
 import io.karma.ferrous.manganese.ocm.type.UserDefinedTypeKind;
@@ -51,6 +52,7 @@ public final class TypeDiscoveryPass implements CompilePass {
     public void run(final Compiler compiler, final CompileContext compileContext, final Module module,
                     final ExecutorService executor) {
         Profiler.INSTANCE.push();
+        BuiltinAttributes.addAll(compileContext); // Inject builtin attributes
         final var moduleData = compileContext.getOrCreateModuleData(module.getName());
         compileContext.walkParseTree(new ParseListenerImpl(compiler, compileContext, moduleData));
         Profiler.INSTANCE.pop();

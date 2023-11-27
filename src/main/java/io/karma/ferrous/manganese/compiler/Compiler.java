@@ -138,7 +138,6 @@ public final class Compiler {
         passes.add(new TypeResolutionPass());
         passes.add(new FunctionDeclarationPass());
         passes.add(new FunctionDefinitionPass());
-        passes.add(new MonomorphizationPass());
         passes.add(new EmitPass());
     }
 

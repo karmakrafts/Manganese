@@ -34,10 +34,10 @@ public final class MonomorphizedFunction extends Function {
             function.getCallConv(),
             function.getType(),
             function.isExtern(),
-            function.shouldMangle(),
             function.getTokenSlice(),
             function.getParameters(),
-            function.getGenericParameters());
+            function.getGenericParameters(),
+            function.getAttributeUsages());
         this.genericTypes = genericTypes;
     }
 
