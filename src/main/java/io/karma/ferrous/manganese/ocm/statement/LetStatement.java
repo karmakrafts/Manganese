@@ -22,7 +22,7 @@ import io.karma.ferrous.manganese.ocm.field.FieldStorage;
 import io.karma.ferrous.manganese.ocm.ir.IRContext;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.ocm.type.Type;
-import io.karma.ferrous.manganese.ocm.type.UDT;
+import io.karma.ferrous.manganese.ocm.type.UserDefinedType;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.StorageMod;
@@ -66,7 +66,7 @@ public final class LetStatement implements Statement, Named, ValueStorage {
         this.isInitialized = isInitialized;
         this.storageMods = storageMods;
         this.tokenSlice = tokenSlice;
-        if (type instanceof UDT udt) {
+        if (type instanceof UserDefinedType udt) {
             fieldValues = udt.fields().stream().map(f -> new FieldStorage(f, this)).toList();
         }
         else {

@@ -63,7 +63,7 @@ public final class TypeResolutionPass implements CompilePass {
         final var childNode = pair.getRight();
         final var childType = childNode.getValue();
 
-        if (childType instanceof UDT udt && !udt.isComplete()) {
+        if (childType instanceof UserDefinedType udt && !udt.isComplete()) {
             buffer.fgBright(Ansi.Color.MAGENTA).a('U').fgBright(Ansi.Color.CYAN);
             final var fields = udt.fields();
             for (final var field : fields) {
@@ -140,7 +140,7 @@ public final class TypeResolutionPass implements CompilePass {
         return true;
     }
 
-    private boolean resolveFieldTypes(final CompileContext compileContext, final UDT type, final Identifier scopeName) {
+    private boolean resolveFieldTypes(final CompileContext compileContext, final UserDefinedType type, final Identifier scopeName) {
         Profiler.INSTANCE.push();
         final var structType = type.type();
         final var fieldTypes = structType.getFieldTypes();
@@ -173,7 +173,7 @@ public final class TypeResolutionPass implements CompilePass {
                     compileContext.reportError(alias.getTokenSlice().getFirstToken(), CompileErrorCode.E3003);
                 }
             }
-            if (!(udt instanceof UDT actualUdt)) {
+            if (!(udt instanceof UserDefinedType actualUdt)) {
                 continue; // Skip everything else apart from UDTs
             }
             if (!resolveFieldTypes(compileContext, actualUdt, scopeName)) {
@@ -254,7 +254,7 @@ public final class TypeResolutionPass implements CompilePass {
         final var moduleData = compileContext.getOrCreateModuleData();
         final var namedTypes = moduleData.getTypes().values();
         for (final var udt : namedTypes) {
-            if (!(udt instanceof UDT actualUdt)) {
+            if (!(udt instanceof UserDefinedType actualUdt)) {
                 continue; // Skip any non-UDTs
             }
             final var fields = actualUdt.fields();

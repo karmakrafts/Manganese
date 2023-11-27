@@ -23,8 +23,8 @@ import io.karma.ferrous.manganese.module.Module;
 import io.karma.ferrous.manganese.ocm.field.Field;
 import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
 import io.karma.ferrous.manganese.ocm.type.Types;
-import io.karma.ferrous.manganese.ocm.type.UDT;
-import io.karma.ferrous.manganese.ocm.type.UDTKind;
+import io.karma.ferrous.manganese.ocm.type.UserDefinedType;
+import io.karma.ferrous.manganese.ocm.type.UserDefinedTypeKind;
 import io.karma.ferrous.manganese.parser.FieldParser;
 import io.karma.ferrous.manganese.profiler.Profiler;
 import io.karma.ferrous.manganese.util.Identifier;
@@ -93,7 +93,7 @@ public final class TypeDiscoveryPass implements CompilePass {
             final var scope = analyzeFieldLayout(context,
                 Identifier.parse(identContext),
                 genericParams,
-                UDTKind.ATTRIBUTE);
+                UserDefinedTypeKind.ATTRIBUTE);
             popScope();
             pushScope(scope);
         }
@@ -113,7 +113,7 @@ public final class TypeDiscoveryPass implements CompilePass {
             final var scope = analyzeFieldLayout(context,
                 Identifier.parse(identContext),
                 genericParams,
-                UDTKind.STRUCT);
+                UserDefinedTypeKind.STRUCT);
             popScope();
             pushScope(scope);
         }
@@ -129,7 +129,7 @@ public final class TypeDiscoveryPass implements CompilePass {
             final var scope = analyzeFieldLayout(context,
                 Identifier.parse(identContext),
                 Collections.emptyList(),
-                UDTKind.ENUM_CLASS);
+                UserDefinedTypeKind.ENUM_CLASS);
             popScope();
             pushScope(scope);
         }
@@ -146,7 +146,7 @@ public final class TypeDiscoveryPass implements CompilePass {
                 context.genericParamList());
 
             super.enterTrait(context);
-            final var scope = analyzeFieldLayout(context, Identifier.parse(identContext), genericParams, UDTKind.TRAIT);
+            final var scope = analyzeFieldLayout(context, Identifier.parse(identContext), genericParams, UserDefinedTypeKind.TRAIT);
             popScope();
             pushScope(scope);
         }
@@ -163,8 +163,8 @@ public final class TypeDiscoveryPass implements CompilePass {
             return false;
         }
 
-        private UDT analyzeFieldLayout(final ParserRuleContext parent, final Identifier name,
-                                       final List<GenericParameter> genericParams, final UDTKind kind) {
+        private UserDefinedType analyzeFieldLayout(final ParserRuleContext parent, final Identifier name,
+                                                   final List<GenericParameter> genericParams, final UserDefinedTypeKind kind) {
             final var layoutAnalyzer = new FieldParser(compiler, compileContext, scopeStack);
             ParseTreeWalker.DEFAULT.walk(layoutAnalyzer, parent);
 
@@ -176,7 +176,7 @@ public final class TypeDiscoveryPass implements CompilePass {
                 genericParams,
                 tokenSlice,
                 fieldTypes);
-            final var udt = new UDT(kind, type, fields, tokenSlice);
+            final var udt = new UserDefinedType(kind, type, fields, tokenSlice);
             compileContext.getOrCreateModuleData().getTypes().put(type.getQualifiedName(), udt);
 
             Logger.INSTANCE.debugln("Captured field layout for kind '%s'", type.getQualifiedName());

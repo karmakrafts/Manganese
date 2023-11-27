@@ -19,7 +19,7 @@ import io.karma.ferrous.manganese.ocm.ValueStorage;
 import io.karma.ferrous.manganese.ocm.expr.Expression;
 import io.karma.ferrous.manganese.ocm.ir.IRContext;
 import io.karma.ferrous.manganese.ocm.type.Type;
-import io.karma.ferrous.manganese.ocm.type.UDT;
+import io.karma.ferrous.manganese.ocm.type.UserDefinedType;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Identifier;
 import org.apiguardian.api.API;
@@ -49,7 +49,7 @@ public final class FieldStorage implements ValueStorage {
         if (isInitialized) {
             value = field.getType().makeDefaultValue();
         }
-        if (field.getType() instanceof UDT udt) {
+        if (field.getType() instanceof UserDefinedType udt) {
             fieldValues = udt.fields().stream().map(f -> new FieldStorage(f, this)).toList();
         }
         else {

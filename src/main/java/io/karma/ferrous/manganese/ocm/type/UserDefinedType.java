@@ -33,7 +33,7 @@ import java.util.Objects;
  * @since 21/10/2023
  */
 @API(status = API.Status.INTERNAL)
-public record UDT(UDTKind kind, StructureType type, List<Field> fields, TokenSlice tokenSlice) implements Scope, Type {
+public record UserDefinedType(UserDefinedTypeKind kind, StructureType type, List<Field> fields, TokenSlice tokenSlice) implements Scope, Type {
     @Override
     public ScopeType getScopeType() {
         return kind.getScopeType();
@@ -83,7 +83,7 @@ public record UDT(UDTKind kind, StructureType type, List<Field> fields, TokenSli
 
     @Override
     public boolean equals(Object obj) {
-        if (obj instanceof UDT udt) {
+        if (obj instanceof UserDefinedType udt) {
             return kind == udt.kind && Objects.equals(type, udt.type);
         }
         return false;

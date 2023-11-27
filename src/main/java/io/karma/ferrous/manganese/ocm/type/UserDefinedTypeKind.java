@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
  * @since 14/10/2023
  */
 @API(status = Status.INTERNAL)
-public enum UDTKind {
+public enum UserDefinedTypeKind {
     // @formatter:off
     STRUCT    (ScopeType.STRUCT,     FerrousLexer.KW_STRUCT),
     CLASS     (ScopeType.CLASS,      FerrousLexer.KW_CLASS),
@@ -43,7 +43,7 @@ public enum UDTKind {
     private final ScopeType scopeType;
     private final int[] tokens;
 
-    UDTKind(final ScopeType scopeType, final int... tokens) {
+    UserDefinedTypeKind(final ScopeType scopeType, final int... tokens) {
         this.scopeType = scopeType;
         this.tokens = tokens;
     }
