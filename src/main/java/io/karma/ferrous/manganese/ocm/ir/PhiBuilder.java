@@ -15,7 +15,7 @@
 
 package io.karma.ferrous.manganese.ocm.ir;
 
-import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
+import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
 import org.apiguardian.api.API;
 import org.lwjgl.llvm.LLVMCore;
 import org.lwjgl.system.MemoryStack;
@@ -28,27 +28,30 @@ import org.lwjgl.system.MemoryStack;
 public final class PhiBuilder {
     private final IRContext irContext;
     private final long address;
-    private final Object2LongOpenHashMap<String> targets = new Object2LongOpenHashMap<>();
+    private final Long2LongOpenHashMap targets = new Long2LongOpenHashMap();
 
     PhiBuilder(final IRContext irContext, final long address) {
         this.irContext = irContext;
         this.address = address;
     }
 
-    public void addIncoming(final String name, final long value) {
-        if (targets.containsKey(name)) {
+    public void addIncoming(final long block, final long value) {
+        if (targets.containsKey(block)) {
             return;
         }
-        targets.put(name, value);
+        targets.put(block, value);
+    }
+
+    public void addIncoming(final String name, final long value) {
+        final var blockAddress = irContext.getOrCreate(name).getBlockAddress();
+        if (targets.containsKey(blockAddress)) {
+            return;
+        }
+        targets.put(blockAddress, value);
     }
 
     public void build() {
-        // @formatter:off
-        final var blocks = targets.keySet()
-            .stream()
-            .mapToLong(name -> irContext.getOrCreate(name).getBlockAddress())
-            .toArray();
-        // @formatter:on
+        final var blocks = targets.keySet().toLongArray();
         final var values = targets.values().toLongArray();
         try (final var stack = MemoryStack.stackPush()) {
             LLVMCore.LLVMAddIncoming(address, stack.pointers(values), stack.pointers(blocks));
