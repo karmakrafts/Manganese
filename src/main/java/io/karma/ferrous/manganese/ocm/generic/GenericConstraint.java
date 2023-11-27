@@ -19,7 +19,6 @@ import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.vanadium.FerrousParser.GenericExprContext;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.function.Predicate;
 
@@ -32,6 +31,10 @@ public interface GenericConstraint extends Predicate<Type> {
     GenericConstraint TRUE = type -> true;
     GenericConstraint FALSE = type -> false;
 
+    static GenericConstraint parse(final CompileContext compileContext, final GenericExprContext context) {
+        return GenericConstraint.TRUE; // TODO: implement this
+    }
+
     default @NotNull GenericConstraint or(final GenericConstraint other) {
         return type -> test(type) || other.test(type);
     }
@@ -42,9 +45,5 @@ public interface GenericConstraint extends Predicate<Type> {
 
     default @NotNull GenericConstraint negate() {
         return type -> !test(type);
-    }
-
-    static GenericConstraint parse(final CompileContext compileContext, final GenericExprContext context) {
-        return GenericConstraint.TRUE; // TODO: implement this
     }
 }

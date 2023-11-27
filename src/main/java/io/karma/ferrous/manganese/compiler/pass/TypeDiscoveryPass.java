@@ -15,7 +15,6 @@
 
 package io.karma.ferrous.manganese.compiler.pass;
 
-import io.karma.ferrous.manganese.parser.ParseAdapter;
 import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.CompileErrorCode;
 import io.karma.ferrous.manganese.compiler.Compiler;
@@ -27,6 +26,7 @@ import io.karma.ferrous.manganese.ocm.type.Types;
 import io.karma.ferrous.manganese.ocm.type.UserDefinedType;
 import io.karma.ferrous.manganese.ocm.type.UserDefinedTypeKind;
 import io.karma.ferrous.manganese.parser.FieldParser;
+import io.karma.ferrous.manganese.parser.ParseAdapter;
 import io.karma.ferrous.manganese.profiler.Profiler;
 import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.KitchenSink;

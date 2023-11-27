@@ -15,11 +15,11 @@
 
 package io.karma.ferrous.manganese.compiler.pass;
 
-import io.karma.ferrous.manganese.parser.ParseAdapter;
 import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.module.Module;
 import io.karma.ferrous.manganese.parser.FunctionParser;
+import io.karma.ferrous.manganese.parser.ParseAdapter;
 import io.karma.ferrous.manganese.profiler.Profiler;
 import io.karma.ferrous.vanadium.FerrousParser.FunctionContext;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;

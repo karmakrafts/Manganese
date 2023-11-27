@@ -20,8 +20,6 @@ import io.karma.ferrous.vanadium.FerrousLexer;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 
-import java.util.function.Function;
-
 /**
  * @author Alexander Hinze
  * @since 14/10/2023

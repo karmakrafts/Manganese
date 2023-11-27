@@ -141,8 +141,8 @@ public final class TypeResolutionPass implements CompilePass {
         return true;
     }
 
-    private boolean resolveFieldTypes(final UserDefinedType type,
-                                      final Identifier scopeName, final ModuleData moduleData) {
+    private boolean resolveFieldTypes(final UserDefinedType type, final Identifier scopeName,
+                                      final ModuleData moduleData) {
         Profiler.INSTANCE.push();
         final var structType = type.type();
         final var fieldTypes = structType.getFieldTypes();
