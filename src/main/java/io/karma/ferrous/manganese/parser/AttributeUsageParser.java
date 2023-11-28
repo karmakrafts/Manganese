@@ -16,14 +16,17 @@
 package io.karma.ferrous.manganese.parser;
 
 import io.karma.ferrous.manganese.compiler.CompileContext;
+import io.karma.ferrous.manganese.compiler.CompileErrorCode;
 import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.AttributeUsage;
 import io.karma.ferrous.manganese.ocm.expr.Expression;
 import io.karma.ferrous.manganese.ocm.scope.ScopeStack;
 import io.karma.ferrous.manganese.ocm.type.UserDefinedType;
+import io.karma.ferrous.manganese.ocm.type.UserDefinedTypeKind;
 import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.vanadium.FerrousParser.IdentContext;
 import io.karma.ferrous.vanadium.FerrousParser.QualifiedIdentContext;
+import org.antlr.v4.runtime.ParserRuleContext;
 import org.apiguardian.api.API;
 
 import java.util.LinkedHashMap;
@@ -44,31 +47,32 @@ public final class AttributeUsageParser extends ParseAdapter {
         this.capturedScopeStack = capturedScopeStack;
     }
 
-    @Override
-    public void enterQualifiedIdent(final QualifiedIdentContext context) {
+    private void parseType(final ParserRuleContext context) {
         if (attribute != null) {
             return;
         }
         final var foundType = compileContext.getOrCreateModuleData().findCompleteType(Identifier.parse(context),
             capturedScopeStack.getScopeName());
         if (!(foundType instanceof UserDefinedType udt)) {
+            compileContext.reportError(context.start, CompileErrorCode.E3002);
+            return;
+        }
+        if(udt.kind() != UserDefinedTypeKind.ATTRIBUTE) {
+            compileContext.reportError(context.start, CompileErrorCode.E4016);
             return;
         }
         attribute = udt;
+    }
+
+    @Override
+    public void enterQualifiedIdent(final QualifiedIdentContext context) {
+        parseType(context);
         super.enterQualifiedIdent(context);
     }
 
     @Override
     public void enterIdent(final IdentContext context) {
-        if (attribute != null) {
-            return;
-        }
-        final var foundType = compileContext.getOrCreateModuleData().findCompleteType(Identifier.parse(context),
-            capturedScopeStack.getScopeName());
-        if (!(foundType instanceof UserDefinedType udt)) {
-            return;
-        }
-        attribute = udt;
+        parseType(context);
         super.enterIdent(context);
     }
 

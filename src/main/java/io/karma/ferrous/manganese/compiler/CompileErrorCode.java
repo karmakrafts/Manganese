@@ -61,6 +61,7 @@ public enum CompileErrorCode {
     E4013("Unary operator is not applicable in this context", CompileStatus.SEMANTIC_ERROR),
     E4014("Binary operator is not applicable in this context", CompileStatus.SEMANTIC_ERROR),
     E4015("Expression cannot be evaluated in a const context", CompileStatus.SEMANTIC_ERROR),
+    E4016("Type is not an attribute", CompileStatus.SEMANTIC_ERROR),
     // Translation errors
     E5000("Could not find function during translation", CompileStatus.TRANSLATION_ERROR),
     // Link errors

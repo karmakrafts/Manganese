@@ -58,7 +58,7 @@ public final class TypeParser extends ParseAdapter {
             return;
         }
         if (type.isReference()) {
-            compileContext.reportError(CompileErrorCode.E3007);
+            compileContext.reportError(context.start, CompileErrorCode.E3007);
             return;
         }
         type = type.derive(TypeAttribute.POINTER);
@@ -75,7 +75,7 @@ public final class TypeParser extends ParseAdapter {
             return;
         }
         if (type.isReference()) {
-            compileContext.reportError(CompileErrorCode.E3002);
+            compileContext.reportError(context.start, CompileErrorCode.E3002);
             return;
         }
         type = type.derive(TypeAttribute.REFERENCE);
