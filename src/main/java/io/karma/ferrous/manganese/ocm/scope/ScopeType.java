@@ -46,7 +46,8 @@ public enum ScopeType {
     FOR         (false),
     WHILE       (false),
     DO          (false),
-    LOOP        (false);
+    LOOP        (false),
+    LABEL_BLOCK (false);
     // @formatter:on
 
     private final boolean isGlobal;

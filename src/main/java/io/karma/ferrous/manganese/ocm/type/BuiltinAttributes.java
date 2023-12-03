@@ -34,6 +34,7 @@ public final class BuiltinAttributes {
     public static final UserDefinedType NORETURN = create("noreturn");
     public static final UserDefinedType NODISCARD = create("nodiscard");
     public static final UserDefinedType NOOPT = create("noopt");
+    public static final UserDefinedType PACKED = create("packed");
 
     // @formatter:off
     private BuiltinAttributes() {}
@@ -45,6 +46,7 @@ public final class BuiltinAttributes {
         moduleData.addType(NORETURN);
         moduleData.addType(NODISCARD);
         moduleData.addType(NOOPT);
+        moduleData.addType(PACKED);
     }
 
     private static UserDefinedType create(final String name) {
@@ -58,6 +60,7 @@ public final class BuiltinAttributes {
         structType.setEnclosingScope(DefaultScope.GLOBAL);
         return new UserDefinedType(UserDefinedTypeKind.ATTRIBUTE,
             structType,
+            Collections.emptyList(),
             Collections.emptyList(),
             TokenSlice.EMPTY);
     }

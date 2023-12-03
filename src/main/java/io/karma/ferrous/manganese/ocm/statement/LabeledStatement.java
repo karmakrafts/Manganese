@@ -15,30 +15,13 @@
 
 package io.karma.ferrous.manganese.ocm.statement;
 
-import io.karma.ferrous.manganese.ocm.ir.IREmitter;
-import io.karma.ferrous.manganese.ocm.scope.Scoped;
-import io.karma.ferrous.manganese.util.TokenSlice;
+import org.apiguardian.api.API;
 
 /**
  * @author Alexander Hinze
- * @since 22/10/2023
+ * @since 03/12/2023
  */
-public interface Statement extends IREmitter, Scoped {
-    TokenSlice getTokenSlice();
-
-    default boolean isUnsafe() {
-        return false;
-    }
-
-    default boolean returnsExecution() { // False for loop, while(true) etc.
-        return true;
-    }
-
-    default boolean terminatesScope() {
-        return false;
-    }
-
-    default boolean terminatesBlock() {
-        return terminatesScope();
-    }
+@API(status = API.Status.INTERNAL)
+public interface LabeledStatement extends Statement {
+    String getLabelName();
 }

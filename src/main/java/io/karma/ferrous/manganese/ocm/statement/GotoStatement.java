@@ -43,6 +43,11 @@ public final class GotoStatement implements Statement {
     }
 
     @Override
+    public boolean isUnsafe() {
+        return true;
+    }
+
+    @Override
     public long emit(final TargetMachine targetMachine, final IRContext irContext) {
         return irContext.getCurrentOrCreate().br(labelName);
     }

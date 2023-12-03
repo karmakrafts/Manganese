@@ -23,26 +23,19 @@ import org.apiguardian.api.API;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.llvm.LLVMCore;
 
-import java.util.Objects;
-
 /**
  * @author Alexander Hinze
  * @since 03/12/2023
  */
 @API(status = API.Status.INTERNAL)
-public final class Label implements Statement, LabeledStatement {
+public final class LabelBlock implements LabeledStatement {
     private final String name;
     private final TokenSlice tokenSlice;
     private Scope enclosingScope;
 
-    public Label(final String name, final TokenSlice tokenSlice) {
+    public LabelBlock(final String name, final TokenSlice tokenSlice) {
         this.name = name;
         this.tokenSlice = tokenSlice;
-    }
-
-    @Override
-    public String getLabelName() {
-        return name;
     }
 
     @Override
@@ -61,25 +54,12 @@ public final class Label implements Statement, LabeledStatement {
     }
 
     @Override
+    public String getLabelName() {
+        return name;
+    }
+
+    @Override
     public TokenSlice getTokenSlice() {
         return tokenSlice;
-    }
-
-    @Override
-    public int hashCode() {
-        return super.hashCode();
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj instanceof Label label) {
-            return Objects.equals(enclosingScope, label.enclosingScope) && name.equals(label.name);
-        }
-        return false;
-    }
-
-    @Override
-    public String toString() {
-        return String.format("%s:", name);
     }
 }

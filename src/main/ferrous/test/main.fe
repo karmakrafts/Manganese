@@ -1,10 +1,30 @@
+fun testing(): i32 {
+    return 2
+}
+
+@packed // Omits any padding and allows specifying bitfields in a struct
+pub struct Foo {
+    pub x: i20
+    pub y: i10
+    pub z: i2
+
+    pub struct Bar { // Nested type declarations
+        value: bool
+    }
+}
+
+fun bar(value: Foo&, value2: Foo::Bar&) {
+}
+
 @nomangle
 fun main(num_args: i32, args: char**): i32 {
-    goto:testing
+    goto:testing // Terminates entry block, omits everything beyond this point
     return 0
-    testing2:
-    return 2
-    testing:
-    goto:testing2
-    return 1
+    testing2: {
+        return testing()
+    }
+    testing: {
+        goto:testing2 // Terminates testing block, omits everything beyond this point
+        return 1
+    }
 }

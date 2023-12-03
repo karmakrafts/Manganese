@@ -17,12 +17,14 @@ package io.karma.ferrous.manganese.parser;
 
 import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.Compiler;
+import io.karma.ferrous.manganese.ocm.AttributeUsage;
 import io.karma.ferrous.manganese.ocm.access.Access;
 import io.karma.ferrous.manganese.ocm.field.Field;
 import io.karma.ferrous.manganese.ocm.scope.ScopeStack;
 import io.karma.ferrous.manganese.ocm.type.Types;
 import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.TokenSlice;
+import io.karma.ferrous.vanadium.FerrousParser.AttributeListContext;
 import io.karma.ferrous.vanadium.FerrousParser.FieldContext;
 import io.karma.ferrous.vanadium.FerrousParser.UdtContext;
 import org.apiguardian.api.API;
@@ -35,13 +37,14 @@ import java.util.ArrayList;
  * @since 15/10/2023
  */
 @API(status = Status.INTERNAL)
-public final class FieldParser extends ParseAdapter {
+public final class UserDefinedTypeParser extends ParseAdapter {
     private final ArrayList<Field> fields = new ArrayList<>();
+    private final ArrayList<AttributeUsage> attributeUsages = new ArrayList<>();
     private final ScopeStack capturedScopeStack;
     private int nestedScopes = 0;
 
-    public FieldParser(final Compiler compiler, final CompileContext compileContext,
-                       final ScopeStack capturedScopeStack) {
+    public UserDefinedTypeParser(final Compiler compiler, final CompileContext compileContext,
+                                 final ScopeStack capturedScopeStack) {
         super(compiler, compileContext);
         this.capturedScopeStack = capturedScopeStack;
     }
@@ -61,6 +64,14 @@ public final class FieldParser extends ParseAdapter {
     }
 
     @Override
+    public void enterAttributeList(final AttributeListContext context) {
+        if (isOutOfScope()) {
+            return;
+        }
+        attributeUsages.addAll(AttributeUsage.parse(compiler, compileContext, capturedScopeStack, context));
+    }
+
+    @Override
     public void enterField(final FieldContext context) {
         if (isOutOfScope()) {
             return;
@@ -73,10 +84,13 @@ public final class FieldParser extends ParseAdapter {
             context.KW_STATIC() != null,
             capturedScopeStack.peek().getScopeType().isGlobal(),
             TokenSlice.from(compileContext, context)));
-        super.enterField(context);
     }
 
     public ArrayList<Field> getFields() {
         return fields;
+    }
+
+    public ArrayList<AttributeUsage> getAttributeUsages() {
+        return attributeUsages;
     }
 }

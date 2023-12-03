@@ -25,8 +25,8 @@ import io.karma.ferrous.manganese.ocm.type.BuiltinAttributes;
 import io.karma.ferrous.manganese.ocm.type.Types;
 import io.karma.ferrous.manganese.ocm.type.UserDefinedType;
 import io.karma.ferrous.manganese.ocm.type.UserDefinedTypeKind;
-import io.karma.ferrous.manganese.parser.FieldParser;
 import io.karma.ferrous.manganese.parser.ParseAdapter;
+import io.karma.ferrous.manganese.parser.UserDefinedTypeParser;
 import io.karma.ferrous.manganese.profiler.Profiler;
 import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.KitchenSink;
@@ -90,11 +90,10 @@ public final class TypeDiscoveryPass implements CompilePass {
                 compileContext,
                 scopeStack,
                 context.genericParamList());
-            final var scope = analyzeFieldLayout(context,
+            pushScope(analyzeFieldLayout(context,
                 Identifier.parse(identContext),
                 genericParams,
-                UserDefinedTypeKind.ATTRIBUTE);
-            pushScope(scope);
+                UserDefinedTypeKind.ATTRIBUTE));
         }
 
         @Override
@@ -107,11 +106,10 @@ public final class TypeDiscoveryPass implements CompilePass {
                 compileContext,
                 scopeStack,
                 context.genericParamList());
-            final var scope = analyzeFieldLayout(context,
+            pushScope(analyzeFieldLayout(context,
                 Identifier.parse(identContext),
                 genericParams,
-                UserDefinedTypeKind.STRUCT);
-            pushScope(scope);
+                UserDefinedTypeKind.STRUCT));
         }
 
         @Override
@@ -120,11 +118,10 @@ public final class TypeDiscoveryPass implements CompilePass {
             if (checkIsTypeAlreadyDefined(identContext)) {
                 return;
             }
-            final var scope = analyzeFieldLayout(context,
+            pushScope(analyzeFieldLayout(context,
                 Identifier.parse(identContext),
                 Collections.emptyList(),
-                UserDefinedTypeKind.ENUM_CLASS);
-            pushScope(scope);
+                UserDefinedTypeKind.ENUM_CLASS));
         }
 
         @Override
@@ -137,11 +134,10 @@ public final class TypeDiscoveryPass implements CompilePass {
                 compileContext,
                 scopeStack,
                 context.genericParamList());
-            final var scope = analyzeFieldLayout(context,
+            pushScope(analyzeFieldLayout(context,
                 Identifier.parse(identContext),
                 genericParams,
-                UserDefinedTypeKind.TRAIT);
-            pushScope(scope);
+                UserDefinedTypeKind.TRAIT));
         }
 
         private boolean checkIsTypeAlreadyDefined(final IdentContext identContext) {
@@ -159,18 +155,20 @@ public final class TypeDiscoveryPass implements CompilePass {
         private UserDefinedType analyzeFieldLayout(final ParserRuleContext parent, final Identifier name,
                                                    final List<GenericParameter> genericParams,
                                                    final UserDefinedTypeKind kind) {
-            final var layoutAnalyzer = new FieldParser(compiler, compileContext, scopeStack);
+            final var layoutAnalyzer = new UserDefinedTypeParser(compiler, compileContext, scopeStack);
             ParseTreeWalker.DEFAULT.walk(layoutAnalyzer, parent);
 
             final var fields = layoutAnalyzer.getFields();
             final var fieldTypes = fields.stream().map(Field::getType).toList();
             final var tokenSlice = TokenSlice.from(compileContext, parent);
+            final var attributeUsages = layoutAnalyzer.getAttributeUsages();
             final var type = Types.structure(name,
+                attributeUsages.stream().anyMatch(usage -> usage.attribute() == BuiltinAttributes.PACKED),
                 scopeStack::applyEnclosingScopes,
                 genericParams,
                 tokenSlice,
                 fieldTypes);
-            final var udt = new UserDefinedType(kind, type, fields, tokenSlice);
+            final var udt = new UserDefinedType(kind, type, fields, attributeUsages, tokenSlice);
             compileContext.getOrCreateModuleData().getTypes().put(type.getQualifiedName(), udt);
 
             Logger.INSTANCE.debugln("Captured field layout for type '%s'", type.getQualifiedName());

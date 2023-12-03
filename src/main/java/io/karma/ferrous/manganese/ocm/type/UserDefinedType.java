@@ -15,6 +15,7 @@
 
 package io.karma.ferrous.manganese.ocm.type;
 
+import io.karma.ferrous.manganese.ocm.AttributeUsage;
 import io.karma.ferrous.manganese.ocm.expr.Expression;
 import io.karma.ferrous.manganese.ocm.field.Field;
 import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
@@ -33,8 +34,8 @@ import java.util.Objects;
  * @since 21/10/2023
  */
 @API(status = API.Status.INTERNAL)
-public record UserDefinedType(UserDefinedTypeKind kind, StructureType type, List<Field> fields, TokenSlice tokenSlice)
-    implements Scope, Type {
+public record UserDefinedType(UserDefinedTypeKind kind, StructureType type, List<Field> fields,
+                              List<AttributeUsage> attributeUsages, TokenSlice tokenSlice) implements Scope, Type {
     @Override
     public ScopeType getScopeType() {
         return kind.getScopeType();

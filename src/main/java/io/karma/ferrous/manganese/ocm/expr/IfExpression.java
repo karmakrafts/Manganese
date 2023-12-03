@@ -17,8 +17,10 @@ package io.karma.ferrous.manganese.ocm.expr;
 
 import io.karma.ferrous.manganese.ocm.ir.IRContext;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
+import io.karma.ferrous.manganese.ocm.statement.Statement;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.ocm.type.Types;
+import io.karma.ferrous.manganese.ocm.type.VoidType;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.TokenSlice;
 import io.karma.kommons.lazy.Lazy;
@@ -36,19 +38,25 @@ import static org.lwjgl.system.MemoryUtil.NULL;
  */
 @API(status = API.Status.INTERNAL)
 public final class IfExpression implements Expression {
-    private final List<Pair<Expression, ScopeExpression>> branches;
+    private final List<Pair<Expression, List<Statement>>> branches;
     private final Lazy<Type> type;
     private final TokenSlice tokenSlice;
     private Scope enclosingScope;
 
-    public IfExpression(final List<Pair<Expression, ScopeExpression>> branches, final TokenSlice tokenSlice) {
+    public IfExpression(final List<Pair<Expression, List<Statement>>> branches, final TokenSlice tokenSlice) {
         if (branches.isEmpty()) {
             throw new IllegalArgumentException("If expression requires at least one block");
         }
         this.branches = branches;
         // @formatter:off
         type = new Lazy<>(() -> Types.findCommonType(branches.stream()
-            .map(pair -> pair.getRight().getType())
+            .map(pair -> {
+                final var statement = pair.getRight();
+                if(statement instanceof Expression expr) {
+                    return expr.getType();
+                }
+                return VoidType.INSTANCE;
+            })
             .toList()));
         // @formatter:on
         this.tokenSlice = tokenSlice;
@@ -81,7 +89,7 @@ public final class IfExpression implements Expression {
     @Override
     public long emit(final TargetMachine targetMachine, final IRContext irContext) {
         for (final var branch : branches) {
-            final var statements = branch.getRight().getStatements();
+            final var statements = branch.getRight();
             for (final var statement : statements) {
                 statement.emit(targetMachine, irContext); // Ignore result here
             }

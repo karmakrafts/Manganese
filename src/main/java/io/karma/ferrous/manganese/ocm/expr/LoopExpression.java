@@ -18,15 +18,12 @@ package io.karma.ferrous.manganese.ocm.expr;
 import io.karma.ferrous.manganese.ocm.ir.IRContext;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.ocm.scope.ScopeType;
-import io.karma.ferrous.manganese.ocm.statement.ReturnStatement;
 import io.karma.ferrous.manganese.ocm.statement.Statement;
 import io.karma.ferrous.manganese.ocm.type.Type;
-import io.karma.ferrous.manganese.ocm.type.Types;
 import io.karma.ferrous.manganese.ocm.type.VoidType;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.TokenSlice;
-import io.karma.kommons.lazy.Lazy;
 import org.apiguardian.api.API;
 import org.jetbrains.annotations.Nullable;
 
@@ -35,59 +32,47 @@ import java.util.UUID;
 
 /**
  * @author Alexander Hinze
- * @since 06/11/2023
+ * @since 03/12/2023
  */
 @API(status = API.Status.INTERNAL)
-public final class ScopeExpression implements Expression, Scope {
-    private final ScopeType scopeType;
-    private final Statement[] statements;
-    private final Lazy<Type> type = new Lazy<>(this::findReturnType);
+public final class LoopExpression implements Expression, Scope {
+    private final Identifier scopeName;
     private final TokenSlice tokenSlice;
-    private final UUID uuid = UUID.randomUUID();
+    private final ArrayList<Statement> statements = new ArrayList<>();
     private Scope enclosingScope;
 
-    public ScopeExpression(final ScopeType scopeType, final TokenSlice tokenSlice, final Statement... statements) {
-        this.scopeType = scopeType;
-        this.statements = statements;
+    public LoopExpression(final String scopeName, final TokenSlice tokenSlice) {
+        this.scopeName = new Identifier(scopeName);
         this.tokenSlice = tokenSlice;
     }
 
-    public Statement[] getStatements() {
-        return statements;
-    }
-
-    private Type findReturnType() {
-        final var types = new ArrayList<Type>();
-        for (final var statement : statements) {
-            if (!(statement instanceof ReturnStatement returnStatement)) {
-                continue;
-            }
-            final var type = returnStatement.getValue().getType();
-            if (type == VoidType.INSTANCE) {
-                continue;
-            }
-            types.add(type);
-        }
-        return types.isEmpty() ? VoidType.INSTANCE : Types.findCommonType(types);
-    }
-
-    public UUID getUUID() {
-        return uuid;
+    public LoopExpression(final TokenSlice tokenSlice) {
+        this(String.format("loop%s", UUID.randomUUID()), tokenSlice);
     }
 
     // Scope
 
     @Override
-    public ScopeType getScopeType() {
-        return scopeType;
+    public Identifier getName() {
+        return scopeName;
     }
 
     @Override
-    public Identifier getName() {
-        return new Identifier(String.format("scope%s", uuid));
+    public ScopeType getScopeType() {
+        return ScopeType.LOOP;
     }
 
-    // Scoped
+    // Expression
+
+    @Override
+    public Type getType() {
+        return VoidType.INSTANCE; // TODO: implement type deduction from yielding
+    }
+
+    @Override
+    public long emit(final TargetMachine targetMachine, final IRContext irContext) {
+        return 0L;
+    }
 
     @Override
     public @Nullable Scope getEnclosingScope() {
@@ -99,23 +84,8 @@ public final class ScopeExpression implements Expression, Scope {
         this.enclosingScope = enclosingScope;
     }
 
-    // Expression
-
     @Override
     public TokenSlice getTokenSlice() {
         return tokenSlice;
-    }
-
-    @Override
-    public Type getType() {
-        return type.getOrCreate();
-    }
-
-    @Override
-    public long emit(final TargetMachine targetMachine, final IRContext irContext) {
-        for (final var statement : statements) {
-            statement.emit(targetMachine, irContext);
-        }
-        return 0;
     }
 }

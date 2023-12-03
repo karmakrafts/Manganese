@@ -21,7 +21,7 @@ import io.karma.ferrous.manganese.ocm.ir.FunctionIRContext;
 import io.karma.ferrous.manganese.ocm.ir.IRContext;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.ocm.scope.ScopeType;
-import io.karma.ferrous.manganese.ocm.statement.Label;
+import io.karma.ferrous.manganese.ocm.statement.LabeledStatement;
 import io.karma.ferrous.manganese.ocm.statement.Statement;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Identifier;
@@ -60,17 +60,17 @@ public final class FunctionBody implements Scope {
         try (final var context = new FunctionIRContext(compileContext, module, targetMachine, function)) {
             context.reset();
             for (final var statement : statements) {
-                if (!(statement instanceof Label label)) {
+                if (!(statement instanceof LabeledStatement labeled)) {
                     continue;
                 }
-                label.emit(targetMachine, context); // Pre-emit all blocks in the right order
+                labeled.emit(targetMachine, context); // Pre-emit all blocks in the right order
             }
             context.reset();
             var isTerminated = false;
             var lastBlock = IRContext.DEFAULT_BLOCK;
             for (final var statement : statements) {
-                if (statement instanceof Label label) {
-                    if (!lastBlock.equals(label.getName())) {
+                if (statement instanceof LabeledStatement labeled) {
+                    if (!lastBlock.equals(labeled.getLabelName())) {
                         isTerminated = false;
                     }
                 }

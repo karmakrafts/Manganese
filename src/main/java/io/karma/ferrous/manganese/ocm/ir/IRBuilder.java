@@ -257,13 +257,14 @@ public final class IRBuilder implements AutoCloseable {
     public long condBr(final long condition, final String trueLabel, final String falseLabel) {
         final var trueAddress = irContext.getOrCreate(trueLabel).blockAddress;
         final var falseAddress = irContext.getOrCreate(falseLabel).blockAddress;
+        irContext.reset();
         return LLVMBuildCondBr(address, condition, trueAddress, falseAddress);
     }
 
     public long br(final String name) {
-        final var result = LLVMBuildBr(address, irContext.getOrCreate(name).blockAddress);
+        final var blockAddress = irContext.getOrCreate(name).blockAddress;
         irContext.reset();
-        return result;
+        return LLVMBuildBr(address, blockAddress);
     }
 
     public PhiBuilder phi() {
