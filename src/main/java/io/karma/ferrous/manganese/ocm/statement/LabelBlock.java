@@ -17,7 +17,9 @@ package io.karma.ferrous.manganese.ocm.statement;
 
 import io.karma.ferrous.manganese.ocm.ir.IRContext;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
+import io.karma.ferrous.manganese.ocm.scope.ScopeType;
 import io.karma.ferrous.manganese.target.TargetMachine;
+import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.TokenSlice;
 import org.apiguardian.api.API;
 import org.jetbrains.annotations.Nullable;
@@ -28,14 +30,26 @@ import org.lwjgl.llvm.LLVMCore;
  * @since 03/12/2023
  */
 @API(status = API.Status.INTERNAL)
-public final class LabelBlock implements LabeledStatement {
+public final class LabelBlock implements LabeledStatement, Scope {
+    private final Identifier scopeName;
     private final String name;
     private final TokenSlice tokenSlice;
     private Scope enclosingScope;
 
     public LabelBlock(final String name, final TokenSlice tokenSlice) {
+        scopeName = new Identifier(name);
         this.name = name;
         this.tokenSlice = tokenSlice;
+    }
+
+    @Override
+    public ScopeType getScopeType() {
+        return ScopeType.LABEL_BLOCK;
+    }
+
+    @Override
+    public Identifier getName() {
+        return scopeName;
     }
 
     @Override

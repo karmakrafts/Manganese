@@ -35,6 +35,7 @@ import org.apiguardian.api.API.Status;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * @author Alexander Hinze
@@ -126,16 +127,24 @@ public abstract class ParseAdapter implements FerrousParserListener {
     public void exitBreakStatement(BreakStatementContext breakStatementContext) {}
 
     @Override
-    public void enterLabelBlock(LabelBlockContext labelBlockContext) {}
+    public void enterLabelBlock(final LabelBlockContext context) {
+        pushScope(ScopeType.LABEL_BLOCK, new Identifier(context.IDENT().getText()));
+    }
 
     @Override
-    public void exitLabelBlock(LabelBlockContext labelBlockContext) {}
+    public void exitLabelBlock(final LabelBlockContext context) {
+        popScope();
+    }
 
     @Override
-    public void enterUnsafeBlock(UnsafeBlockContext unsafeBlockContext) {}
+    public void enterUnsafeBlock(final UnsafeBlockContext context) {
+        pushScope(ScopeType.UNSAFE_BLOCK, new Identifier(String.format("scope%s", UUID.randomUUID())));
+    }
 
     @Override
-    public void exitUnsafeBlock(UnsafeBlockContext unsafeBlockContext) {}
+    public void exitUnsafeBlock(final UnsafeBlockContext context) {
+        popScope();
+    }
 
     @Override
     public void enterUnsafeExpr(UnsafeExprContext unsafeExprContext) {}
