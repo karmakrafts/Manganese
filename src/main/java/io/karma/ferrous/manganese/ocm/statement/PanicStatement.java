@@ -54,6 +54,11 @@ public final class PanicStatement implements Statement {
     // Statement
 
     @Override
+    public boolean terminatesScope() {
+        return true;
+    }
+
+    @Override
     public @Nullable Scope getEnclosingScope() {
         return enclosingScope;
     }
@@ -78,6 +83,7 @@ public final class PanicStatement implements Statement {
         final var builder = irContext.getCurrentOrCreate();
         // TODO: print error message
         builder.trap();
+        builder.unreachable(); // Make sure we terminate the current scope
         return NULL;
     }
 }

@@ -96,6 +96,12 @@ public abstract class ParseAdapter implements FerrousParserListener {
 
     // @formatter:off
     @Override
+    public void enterLabel(LabelContext labelContext) {}
+
+    @Override
+    public void exitLabel(LabelContext labelContext) {}
+
+    @Override
     public void enterGotoStatement(GotoStatementContext gotoStatementContext) {}
 
     @Override

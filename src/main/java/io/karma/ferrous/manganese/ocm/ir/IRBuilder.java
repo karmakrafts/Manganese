@@ -261,7 +261,9 @@ public final class IRBuilder implements AutoCloseable {
     }
 
     public long br(final String name) {
-        return LLVMBuildBr(address, irContext.getOrCreate(name).blockAddress);
+        final var result = LLVMBuildBr(address, irContext.getOrCreate(name).blockAddress);
+        irContext.reset();
+        return result;
     }
 
     public PhiBuilder phi() {

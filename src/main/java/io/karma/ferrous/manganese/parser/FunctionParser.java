@@ -66,7 +66,7 @@ public final class FunctionParser extends ParseAdapter {
             return;
         }
         final var statements = body.getStatements();
-        if (statements.isEmpty() || !statements.getLast().returnsFromCurrentScope()) {
+        if (statements.isEmpty() || !statements.getLast().terminatesScope()) {
             if (function.getType().getReturnType() == VoidType.INSTANCE) {
                 statements.addLast(new ReturnStatement(TokenSlice.from(compileContext,
                     context))); // Implicitly return from void functions at the end of scope

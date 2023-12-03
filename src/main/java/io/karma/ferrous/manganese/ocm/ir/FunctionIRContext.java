@@ -96,7 +96,7 @@ public final class FunctionIRContext implements IRContext {
         return currentBuilder = builders.computeIfAbsent(name, n -> {
             final var fnAddress = function.materialize(module, targetMachine);
             final var context = module.getContext();
-            final var blockAddress = LLVMAppendBasicBlockInContext(context, fnAddress, name);
+            final var blockAddress = LLVMAppendBasicBlockInContext(context, fnAddress, String.format(".%s", name));
             return new IRBuilder(this, targetMachine, blockAddress, context);
         });
     }

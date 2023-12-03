@@ -461,7 +461,6 @@ public final class ExpressionParser extends ParseAdapter {
             }
             setExpression(context,
                 new BigIntConstant(type, new BigInteger(parts[0]), TokenSlice.from(compileContext, context)));
-            return;
         }
         // TODO: error here..
     }

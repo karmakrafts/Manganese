@@ -22,27 +22,30 @@ import io.karma.ferrous.manganese.util.TokenSlice;
 import org.apiguardian.api.API;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Objects;
+
 /**
  * @author Alexander Hinze
- * @since 14/11/2023
+ * @since 03/12/2023
  */
 @API(status = API.Status.INTERNAL)
-public final class UnreachableStatement implements Statement {
+public final class Label implements Statement {
+    private final String name;
     private final TokenSlice tokenSlice;
     private Scope enclosingScope;
 
-    public UnreachableStatement(final TokenSlice tokenSlice) {
+    public Label(final String name, final TokenSlice tokenSlice) {
+        this.name = name;
         this.tokenSlice = tokenSlice;
     }
 
-    @Override
-    public boolean terminatesScope() {
-        return true;
+    public String getName() {
+        return name;
     }
 
     @Override
     public long emit(final TargetMachine targetMachine, final IRContext irContext) {
-        return irContext.getCurrentOrCreate().unreachable();
+        return irContext.getOrCreate(name).getBlockAddress();
     }
 
     @Override
@@ -58,5 +61,23 @@ public final class UnreachableStatement implements Statement {
     @Override
     public TokenSlice getTokenSlice() {
         return tokenSlice;
+    }
+
+    @Override
+    public int hashCode() {
+        return super.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof Label label) {
+            return Objects.equals(enclosingScope, label.enclosingScope) && name.equals(label.name);
+        }
+        return false;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("%s:", name);
     }
 }

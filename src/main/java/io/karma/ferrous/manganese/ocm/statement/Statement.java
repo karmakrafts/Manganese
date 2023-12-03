@@ -26,11 +26,11 @@ import io.karma.ferrous.manganese.util.TokenSlice;
 public interface Statement extends IREmitter, Scoped {
     TokenSlice getTokenSlice();
 
-    default boolean returnsFromCurrentScope() {
+    default boolean terminatesScope() {
         return false;
     }
 
-    default boolean breaksCurrentScope() {
-        return false;
+    default boolean terminatesBlock() {
+        return terminatesScope();
     }
 }

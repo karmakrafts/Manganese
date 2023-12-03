@@ -79,7 +79,7 @@ public final class TypeParser extends ParseAdapter {
                     Collections.emptyList());
             }
         }
-        // Handle derived types
+        // Handle derived types recursively
         final var typeContext = context.type();
         if (typeContext == null) {
             return;

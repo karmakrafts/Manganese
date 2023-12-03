@@ -79,7 +79,7 @@ public final class ReturnStatement implements Statement {
     }
 
     @Override
-    public boolean returnsFromCurrentScope() {
+    public boolean terminatesScope() {
         return true;
     }
 

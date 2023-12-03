@@ -27,7 +27,7 @@ import org.jetbrains.annotations.Nullable;
  */
 @API(status = API.Status.INTERNAL)
 public interface IRContext extends AutoCloseable {
-    String DEFAULT_BLOCK = "";
+    String DEFAULT_BLOCK = ".entry";
 
     long getParameter(final Identifier name);
 
@@ -47,5 +47,9 @@ public interface IRContext extends AutoCloseable {
             return current;
         }
         return getOrCreate(DEFAULT_BLOCK);
+    }
+
+    default void reset() {
+        getOrCreate(DEFAULT_BLOCK);
     }
 }

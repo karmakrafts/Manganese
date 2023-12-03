@@ -38,8 +38,13 @@ public final class GotoStatement implements Statement {
     }
 
     @Override
+    public boolean terminatesBlock() {
+        return true; // Goto doesn't terminate scopes, only blocks
+    }
+
+    @Override
     public long emit(final TargetMachine targetMachine, final IRContext irContext) {
-        return 0;
+        return irContext.getCurrentOrCreate().br(labelName);
     }
 
     @Override

@@ -1,22 +1,10 @@
-mod test {
-    pub attrib TestAttrib {
-    }
-
-    pub fun foobar(value: i32): bool {
-        return false
-    }
-
-    pub fun foobar(value: f32): bool {
-        return false
-    }
-}
-
 @nomangle
-extern fun printf(fmt: char*, ...): i32
-
-@nomangle
-@test::TestAttrib
 fun main(num_args: i32, args: char**): i32 {
-    panic(":(")
+    goto:testing
     return 0
+    testing2:
+    return 2
+    testing:
+    goto:testing2
+    return 1
 }

@@ -21,20 +21,14 @@ import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.constant.NullConstant;
 import io.karma.ferrous.manganese.ocm.function.Function;
 import io.karma.ferrous.manganese.ocm.scope.ScopeStack;
-import io.karma.ferrous.manganese.ocm.statement.LetStatement;
-import io.karma.ferrous.manganese.ocm.statement.PanicStatement;
-import io.karma.ferrous.manganese.ocm.statement.ReturnStatement;
-import io.karma.ferrous.manganese.ocm.statement.Statement;
+import io.karma.ferrous.manganese.ocm.statement.*;
 import io.karma.ferrous.manganese.ocm.type.ImaginaryType;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.ocm.type.Types;
 import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.KitchenSink;
 import io.karma.ferrous.manganese.util.TokenSlice;
-import io.karma.ferrous.vanadium.FerrousParser.LetStatementContext;
-import io.karma.ferrous.vanadium.FerrousParser.PanicStatementContext;
-import io.karma.ferrous.vanadium.FerrousParser.ReturnStatementContext;
-import io.karma.ferrous.vanadium.FerrousParser.StatementContext;
+import io.karma.ferrous.vanadium.FerrousParser.*;
 import org.apiguardian.api.API;
 
 import java.util.ArrayList;
@@ -67,9 +61,14 @@ public final class StatementParser extends ParseAdapter {
         statements.add(statement);
     }
 
-    // Account for expressions-as-statements
     @Override
     public void enterStatement(final StatementContext context) {
+        // Unreachable statements
+        if (context.KW_UNREACHABLE() != null) {
+            addStatement(new UnreachableStatement(TokenSlice.from(compileContext, context)));
+            return;
+        }
+        // Account for expressions-as-statements
         final var exprContext = context.expr();
         if (exprContext != null) {
             final var expr = ExpressionParser.parse(compiler, compileContext, capturedScopeStack, exprContext, parent);
@@ -80,6 +79,21 @@ public final class StatementParser extends ParseAdapter {
             expr.setResultDiscarded(true); // Statement means we always discard our result
             addStatement(expr);
         }
+    }
+
+    @Override
+    public void enterGotoStatement(final GotoStatementContext context) {
+        addStatement(new GotoStatement(context.IDENT().getText(), TokenSlice.from(compileContext, context)));
+    }
+
+    @Override
+    public void enterLabel(final LabelContext context) {
+        addStatement(new Label(context.IDENT().getText(), TokenSlice.from(compileContext, context)));
+    }
+
+    @Override
+    public void enterLabelBlock(final LabelBlockContext context) {
+        // TODO: implement this
     }
 
     @Override
