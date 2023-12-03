@@ -70,15 +70,14 @@ public final class PanicStatement implements Statement {
 
     @Override
     public long emit(final TargetMachine targetMachine, final IRContext irContext) {
-        final var builder = irContext.getCompileContext();
         if (isConst) {
-            if (!value.isConst()) {
-                builder.reportError(value.getTokenSlice().getFirstToken(), CompileErrorCode.E4015);
-                return NULL;
-            }
-            builder.reportError(value.getTokenSlice().getFirstToken(), CompileErrorCode.E7000);
+            // TODO: implement const-evaluation of string expression
+            irContext.getCompileContext().reportError(value.getTokenSlice().getFirstToken(), CompileErrorCode.E7000);
             return NULL;
         }
-        return 0;
+        final var builder = irContext.getCurrentOrCreate();
+        // TODO: print error message
+        builder.trap();
+        return NULL;
     }
 }

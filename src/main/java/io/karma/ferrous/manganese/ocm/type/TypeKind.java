@@ -13,32 +13,19 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.util;
+package io.karma.ferrous.manganese.ocm.type;
 
-import io.karma.ferrous.vanadium.FerrousParser;
 import org.apiguardian.api.API;
-
-import java.util.EnumSet;
-import java.util.List;
 
 /**
  * @author Alexander Hinze
- * @since 08/11/2023
+ * @since 03/12/2023
  */
 @API(status = API.Status.INTERNAL)
-public enum StorageMod {
-    CONST, TLS;
+public enum TypeKind {
+    INT, UINT, REAL, BOOL, CHAR, VOID, UDT;
 
-    public static EnumSet<StorageMod> parse(final List<FerrousParser.StorageModContext> contexts) {
-        final var mods = EnumSet.noneOf(StorageMod.class);
-        for (final var context : contexts) {
-            if (context.KW_CONST() != null) {
-                mods.add(CONST);
-            }
-            if (context.KW_TLS() != null) {
-                mods.add(TLS);
-            }
-        }
-        return mods;
+    public boolean isBuiltin() {
+        return this == UDT;
     }
 }

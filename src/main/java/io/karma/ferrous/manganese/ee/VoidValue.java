@@ -15,8 +15,8 @@
 
 package io.karma.ferrous.manganese.ee;
 
-import io.karma.ferrous.manganese.ocm.type.BuiltinType;
 import io.karma.ferrous.manganese.ocm.type.Type;
+import io.karma.ferrous.manganese.ocm.type.VoidType;
 import org.apiguardian.api.API;
 
 import static org.lwjgl.system.MemoryUtil.NULL;
@@ -35,7 +35,7 @@ public final class VoidValue implements GenericValue {
 
     @Override
     public Type getType() {
-        return BuiltinType.VOID;
+        return VoidType.INSTANCE;
     }
 
     @Override

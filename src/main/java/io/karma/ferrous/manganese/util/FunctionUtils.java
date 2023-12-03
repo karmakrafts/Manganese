@@ -20,10 +20,10 @@ import io.karma.ferrous.manganese.compiler.CompileErrorCode;
 import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.function.CallingConvention;
 import io.karma.ferrous.manganese.ocm.scope.ScopeStack;
-import io.karma.ferrous.manganese.ocm.type.BuiltinType;
 import io.karma.ferrous.manganese.ocm.type.FunctionType;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.ocm.type.Types;
+import io.karma.ferrous.manganese.ocm.type.VoidType;
 import io.karma.ferrous.vanadium.FerrousLexer;
 import io.karma.ferrous.vanadium.FerrousParser;
 import io.karma.ferrous.vanadium.FerrousParser.FunctionIdentContext;
@@ -109,7 +109,7 @@ public final class FunctionUtils {
             .filter(type -> type != null && !type.getText().equals(TokenUtils.getLiteral(FerrousLexer.TRIPLE_DOT)))
             .map(type -> Types.parse(compiler, compileContext, scopeStack, type))
             .peek(type -> {
-                if(type == BuiltinType.VOID) {
+                if(type == VoidType.INSTANCE) {
                     compileContext.reportError(type.getTokenSlice().getFirstToken(), CompileErrorCode.E4002);
                 }
             })
@@ -122,7 +122,7 @@ public final class FunctionUtils {
         final var type = context.type();
         // @formatter:off
         final var returnType = type == null
-            ? BuiltinType.VOID
+            ? VoidType.INSTANCE
             : Objects.requireNonNull(Types.parse(compiler, compileContext, scopeStack, type));
         // @formatter:on
         final var paramList = context.functionParamList();

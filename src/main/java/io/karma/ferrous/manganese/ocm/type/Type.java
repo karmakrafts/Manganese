@@ -38,9 +38,13 @@ import java.util.List;
 public interface Type extends Scoped, Mangleable {
     long materialize(final TargetMachine machine);
 
+    Expression makeDefaultValue(final TargetMachine targetMachine);
+
     Type getBaseType();
 
-    Expression makeDefaultValue();
+    default TypeKind getKind() {
+        return TypeKind.UDT;
+    }
 
     default TokenSlice getTokenSlice() {
         return TokenSlice.EMPTY;
@@ -59,7 +63,7 @@ public interface Type extends Scoped, Mangleable {
     }
 
     default Type monomorphize(final List<Type> genericTypes) {
-        return Types.cached(new MonomorphizedType(this, genericTypes));
+        return this;
     }
 
     default @Nullable GenericParameter getGenericParam(final String name) {
@@ -113,7 +117,7 @@ public interface Type extends Scoped, Mangleable {
      * @return True if this is a builtin type.
      */
     default boolean isBuiltin() {
-        return getBaseType().isBuiltin();
+        return false;
     }
 
     /**
@@ -121,7 +125,7 @@ public interface Type extends Scoped, Mangleable {
      * False if this type is incomplete and missing and associated data layout.
      */
     default boolean isComplete() {
-        return getBaseType().isComplete();
+        return true;
     }
 
     /**
@@ -146,6 +150,14 @@ public interface Type extends Scoped, Mangleable {
             type = type.derive(attrib);
         }
         return type;
+    }
+
+    default Type asPtr() {
+        return derive(TypeAttribute.POINTER);
+    }
+
+    default Type asRef() {
+        return derive(TypeAttribute.REFERENCE);
     }
 
     default boolean isReference() {

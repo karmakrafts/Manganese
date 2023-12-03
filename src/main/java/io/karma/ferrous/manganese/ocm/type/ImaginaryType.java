@@ -40,7 +40,8 @@ public enum ImaginaryType implements Type, Named {
     EXPR    (FerrousLexer.KW_EXPR),
     LITERAL (FerrousLexer.KW_LITERAL),
     TYPE    (FerrousLexer.KW_TYPE),
-    STRING  (FerrousLexer.KW_STRING);
+    STRING  (FerrousLexer.KW_STRING),
+    VAARGS  (FerrousLexer.KW_VAARGS);
     // @formatter:on
 
     private final Identifier name;
@@ -70,14 +71,19 @@ public enum ImaginaryType implements Type, Named {
     // Type
 
     @Override
-    public Expression makeDefaultValue() {
+    public Expression makeDefaultValue(final TargetMachine targetMachine) {
         return switch(this) { // @formatter:off
             case EXPR    -> new EmptyExpression(TokenSlice.EMPTY);
-            case TYPE    -> new VoidConstant();
+            case TYPE    -> new TypeConstant(VoidType.INSTANCE, TokenSlice.EMPTY);
             case STRING  -> new StringConstant("", TokenSlice.EMPTY);
             case IDENT   -> new IdentConstant(Identifier.EMPTY, TokenSlice.EMPTY);
             case TOKEN   -> new TokenConstant(TokenSlice.EMPTY_TOKEN, TokenSlice.EMPTY);
             case LITERAL -> new LiteralConstant(new NullConstant(TokenSlice.EMPTY), TokenSlice.EMPTY);
+            case VAARGS  -> {
+                final var value = new NullConstant(TokenSlice.EMPTY);
+                value.setContextualType(VoidType.INSTANCE.asPtr());
+                yield value;
+            }
         }; // @formatter:on
     }
 
@@ -88,7 +94,11 @@ public enum ImaginaryType implements Type, Named {
 
     @Override
     public long materialize(final TargetMachine machine) {
-        throw new UnsupportedOperationException("Imaginary types cannot be materialized");
+        return switch(this) { // @formatter:off
+            case STRING -> CharType.INSTANCE.asPtr().materialize(machine);
+            case VAARGS -> VoidType.INSTANCE.asPtr().materialize(machine);
+            default     -> throw new UnsupportedOperationException("Imaginary types cannot be materialized");
+        }; // @formatter:on
     }
 
     @Override

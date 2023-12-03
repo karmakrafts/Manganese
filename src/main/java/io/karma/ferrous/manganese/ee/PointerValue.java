@@ -15,8 +15,8 @@
 
 package io.karma.ferrous.manganese.ee;
 
-import io.karma.ferrous.manganese.ocm.type.BuiltinType;
 import io.karma.ferrous.manganese.ocm.type.Type;
+import io.karma.ferrous.manganese.ocm.type.VoidType;
 import org.apiguardian.api.API;
 
 import static org.lwjgl.llvm.LLVMExecutionEngine.LLVMCreateGenericValueOfPointer;
@@ -35,7 +35,7 @@ public final class PointerValue implements GenericValue {
     private boolean isDisposed;
 
     PointerValue(long address) {
-        type = BuiltinType.VOID;
+        type = VoidType.INSTANCE;
         this.address = address;
         isAllocated = false;
     }

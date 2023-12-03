@@ -13,41 +13,33 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.ocm.type;
+package io.karma.ferrous.manganese.ocm.statement;
 
-import io.karma.ferrous.manganese.ocm.expr.Expression;
+import io.karma.ferrous.manganese.ocm.ir.IRContext;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.target.TargetMachine;
-import io.karma.ferrous.manganese.util.Identifier;
-import io.karma.ferrous.manganese.util.Mangler;
+import io.karma.ferrous.manganese.util.TokenSlice;
 import org.apiguardian.api.API;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.List;
-
 /**
  * @author Alexander Hinze
- * @since 27/11/2023
+ * @since 30/11/2023
  */
 @API(status = API.Status.INTERNAL)
-public final class MonomorphizedType implements Type {
-    private final Type baseType;
-    private final List<Type> genericTypes;
+public final class GotoStatement implements Statement {
+    private final String labelName;
+    private final TokenSlice tokenSlice;
     private Scope enclosingScope;
 
-    MonomorphizedType(final Type baseType, final List<Type> genericTypes) {
-        this.baseType = baseType;
-        this.genericTypes = genericTypes;
+    public GotoStatement(final String labelName, final TokenSlice tokenSlice) {
+        this.labelName = labelName;
+        this.tokenSlice = tokenSlice;
     }
 
     @Override
-    public String getMangledName() {
-        return String.format("%s<%s>", Type.super.getMangledName(), Mangler.mangleSequence(genericTypes));
-    }
-
-    @Override
-    public Identifier getName() {
-        return baseType.getName();
+    public long emit(final TargetMachine targetMachine, final IRContext irContext) {
+        return 0;
     }
 
     @Override
@@ -61,17 +53,7 @@ public final class MonomorphizedType implements Type {
     }
 
     @Override
-    public long materialize(final TargetMachine machine) {
-        return 0L;
-    }
-
-    @Override
-    public Type getBaseType() {
-        return baseType;
-    }
-
-    @Override
-    public Expression makeDefaultValue(final TargetMachine targetMachine) {
-        return null;
+    public TokenSlice getTokenSlice() {
+        return tokenSlice;
     }
 }

@@ -19,7 +19,6 @@ import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.CompileErrorCode;
 import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.module.Module;
-import io.karma.ferrous.manganese.module.ModuleData;
 import io.karma.ferrous.manganese.ocm.field.Field;
 import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
 import io.karma.ferrous.manganese.ocm.type.BuiltinAttributes;
@@ -52,19 +51,14 @@ public final class TypeDiscoveryPass implements CompilePass {
     public void run(final Compiler compiler, final CompileContext compileContext, final Module module,
                     final ExecutorService executor) {
         Profiler.INSTANCE.push();
-        BuiltinAttributes.addAll(compileContext); // Inject builtin attributes
-        final var moduleData = compileContext.getOrCreateModuleData(module.getName());
-        compileContext.walkParseTree(new ParseListenerImpl(compiler, compileContext, moduleData));
+        BuiltinAttributes.inject(compileContext); // Inject builtin attributes
+        compileContext.walkParseTree(new ParseListenerImpl(compiler, compileContext));
         Profiler.INSTANCE.pop();
     }
 
     private static final class ParseListenerImpl extends ParseAdapter {
-        private final ModuleData moduleData;
-
-        public ParseListenerImpl(final Compiler compiler, final CompileContext compileContext,
-                                 final ModuleData moduleData) {
+        public ParseListenerImpl(final Compiler compiler, final CompileContext compileContext) {
             super(compiler, compileContext);
-            this.moduleData = moduleData;
         }
 
         @Override
@@ -83,7 +77,7 @@ public final class TypeDiscoveryPass implements CompilePass {
                 scopeStack::applyEnclosingScopes,
                 TokenSlice.from(compileContext, context),
                 genericParams);
-            moduleData.getTypes().put(aliasedType.getQualifiedName(), aliasedType);
+            compileContext.getOrCreateModuleData().getTypes().put(aliasedType.getQualifiedName(), aliasedType);
         }
 
         @Override
@@ -96,13 +90,10 @@ public final class TypeDiscoveryPass implements CompilePass {
                 compileContext,
                 scopeStack,
                 context.genericParamList());
-
-            super.enterAttrib(context);
             final var scope = analyzeFieldLayout(context,
                 Identifier.parse(identContext),
                 genericParams,
                 UserDefinedTypeKind.ATTRIBUTE);
-            popScope();
             pushScope(scope);
         }
 
@@ -116,13 +107,10 @@ public final class TypeDiscoveryPass implements CompilePass {
                 compileContext,
                 scopeStack,
                 context.genericParamList());
-
-            super.enterStruct(context);
             final var scope = analyzeFieldLayout(context,
                 Identifier.parse(identContext),
                 genericParams,
                 UserDefinedTypeKind.STRUCT);
-            popScope();
             pushScope(scope);
         }
 
@@ -132,13 +120,10 @@ public final class TypeDiscoveryPass implements CompilePass {
             if (checkIsTypeAlreadyDefined(identContext)) {
                 return;
             }
-
-            super.enterEnumClass(context);
             final var scope = analyzeFieldLayout(context,
                 Identifier.parse(identContext),
                 Collections.emptyList(),
                 UserDefinedTypeKind.ENUM_CLASS);
-            popScope();
             pushScope(scope);
         }
 
@@ -152,19 +137,16 @@ public final class TypeDiscoveryPass implements CompilePass {
                 compileContext,
                 scopeStack,
                 context.genericParamList());
-
-            super.enterTrait(context);
             final var scope = analyzeFieldLayout(context,
                 Identifier.parse(identContext),
                 genericParams,
                 UserDefinedTypeKind.TRAIT);
-            popScope();
             pushScope(scope);
         }
 
         private boolean checkIsTypeAlreadyDefined(final IdentContext identContext) {
             final var name = Identifier.parse(identContext);
-            final var type = moduleData.getTypes().get(name);
+            final var type = compileContext.getOrCreateModuleData().getTypes().get(name);
             if (type != null) {
                 final var message = KitchenSink.makeCompilerMessage(String.format("Type '%s' is already defined",
                     name));
@@ -189,7 +171,7 @@ public final class TypeDiscoveryPass implements CompilePass {
                 tokenSlice,
                 fieldTypes);
             final var udt = new UserDefinedType(kind, type, fields, tokenSlice);
-            moduleData.getTypes().put(type.getQualifiedName(), udt);
+            compileContext.getOrCreateModuleData().getTypes().put(type.getQualifiedName(), udt);
 
             Logger.INSTANCE.debugln("Captured field layout for type '%s'", type.getQualifiedName());
             return udt;

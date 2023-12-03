@@ -15,11 +15,12 @@
 
 package io.karma.ferrous.manganese.ocm.ir;
 
-import io.karma.ferrous.manganese.module.Module;
 import io.karma.ferrous.manganese.ocm.function.Function;
+import io.karma.ferrous.manganese.ocm.function.IntrinsicFunction;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import org.apiguardian.api.API;
 import org.lwjgl.system.MemoryStack;
+import org.lwjgl.system.MemoryUtil;
 
 import static org.lwjgl.llvm.LLVMCore.*;
 import static org.lwjgl.system.MemoryUtil.NULL;
@@ -31,16 +32,14 @@ import static org.lwjgl.system.MemoryUtil.NULL;
 @API(status = API.Status.INTERNAL)
 public final class IRBuilder implements AutoCloseable {
     private final IRContext irContext;
-    private final Module module;
     private final TargetMachine targetMachine;
     private final long blockAddress;
     private final long address;
     private boolean isDisposed = false;
 
-    public IRBuilder(final IRContext irContext, final Module module, final TargetMachine targetMachine,
-                     final long blockAddress, final long context) {
+    public IRBuilder(final IRContext irContext, final TargetMachine targetMachine, final long blockAddress,
+                     final long context) {
         this.irContext = irContext;
-        this.module = module;
         this.targetMachine = targetMachine;
         if (blockAddress == NULL || context == NULL) {
             throw new IllegalArgumentException("Block address and/or context cannot be null");
@@ -255,10 +254,6 @@ public final class IRBuilder implements AutoCloseable {
 
     // Control flow
 
-    public long indirectBr(final long condition, final long destAddresses, final int numDests) {
-        return LLVMBuildIndirectBr(address, destAddresses, numDests);
-    }
-
     public long condBr(final long condition, final String trueLabel, final String falseLabel) {
         final var trueAddress = irContext.getOrCreate(trueLabel).blockAddress;
         final var falseAddress = irContext.getOrCreate(falseLabel).blockAddress;
@@ -269,13 +264,28 @@ public final class IRBuilder implements AutoCloseable {
         return LLVMBuildBr(address, irContext.getOrCreate(name).blockAddress);
     }
 
-    public PhiBuilder phi(final long type) {
-        return new PhiBuilder(irContext, LLVMBuildPhi(address, type, ""));
+    public PhiBuilder phi() {
+        return new PhiBuilder(address, irContext);
+    }
+
+    public IndirectBrBuilder indirectBr() {
+        return new IndirectBrBuilder(address);
+    }
+
+    public long select(final long condition, final long trueValue, final long falseValue) {
+        return LLVMBuildSelect(address, condition, trueValue, falseValue, "");
+    }
+
+    public long call(final long address, final long... args) {
+        try (final var stack = MemoryStack.stackPush()) {
+            final var typeAddress = LLVMGetElementType(address); // Get function type from pointer
+            return LLVMBuildCall2(this.address, typeAddress, address, stack.pointers(args), "");
+        }
     }
 
     public long call(final Function function, final long... args) {
         try (final var stack = MemoryStack.stackPush()) {
-            final var fnAddress = function.emit(irContext.getCompileContext(), module, targetMachine);
+            final var fnAddress = function.emit(irContext.getCompileContext(), irContext.getModule(), targetMachine);
             final var typeAddress = function.getType().materialize(targetMachine);
             return LLVMBuildCall2(address, typeAddress, fnAddress, stack.pointers(args), "");
         }
@@ -293,9 +303,73 @@ public final class IRBuilder implements AutoCloseable {
         return LLVMBuildUnreachable(address);
     }
 
-    public long getAddress() {
-        return address;
+    public long vaArg(final long ptr, final long type) {
+        return LLVMBuildVAArg(address, ptr, type, "");
     }
+
+    // Intrinsics
+
+    public void trap() {
+        call(IntrinsicFunction.TRAP);
+    }
+
+    public void debugTrap() {
+        call(IntrinsicFunction.DEBUG_TRAP);
+    }
+
+    public long returnAddress(final int level) {
+        try (final var stack = MemoryStack.stackPush()) {
+            final var levelBuffer = stack.mallocInt(1);
+            levelBuffer.put(level);
+            return call(IntrinsicFunction.RETURN_ADDRESS, MemoryUtil.memAddress(levelBuffer));
+        }
+    }
+
+    public long addressOfReturnAddress() {
+        return call(IntrinsicFunction.ADDRESS_OF_RETURN_ADDRESS);
+    }
+
+    public long frameAddress(final int level) {
+        try (final var stack = MemoryStack.stackPush()) {
+            final var levelBuffer = stack.mallocInt(1);
+            levelBuffer.put(level);
+            return call(IntrinsicFunction.FRAME_ADDRESS, MemoryUtil.memAddress(levelBuffer));
+        }
+    }
+
+    public void stackSave(final long ptr) {
+        call(IntrinsicFunction.STACK_SAVE, ptr);
+    }
+
+    public void stackRestore(final long ptr) {
+        call(IntrinsicFunction.STACK_RESTORE, ptr);
+    }
+
+    public long threadPointer() {
+        return call(IntrinsicFunction.THREAD_POINTER);
+    }
+
+    public long sponEntry() {
+        return call(IntrinsicFunction.SPON_ENTRY);
+    }
+
+    public void prefetch(final long ptr, final int rw, final int locality, final int cacheType) {
+        call(IntrinsicFunction.PREFETCH, ptr, rw, locality, cacheType);
+    }
+
+    public void vaStart(final long ptr) {
+        call(IntrinsicFunction.VA_START, ptr);
+    }
+
+    public void vaEnd(final long ptr) {
+        call(IntrinsicFunction.VA_END, ptr);
+    }
+
+    public void vaCopy(final long srcPtr, final long dstPtr) {
+        call(IntrinsicFunction.VA_COPY, srcPtr, dstPtr);
+    }
+
+    // Non-instruction related functions
 
     public long getBlockAddress() {
         return blockAddress;

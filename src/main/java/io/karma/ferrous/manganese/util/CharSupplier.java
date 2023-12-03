@@ -13,21 +13,16 @@
  * limitations under the License.
  */
 
-import io.karma.ferrous.manganese.ocm.type.BuiltinType;
-import io.karma.ferrous.manganese.ocm.type.Types;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
+package io.karma.ferrous.manganese.util;
+
+import org.apiguardian.api.API;
 
 /**
  * @author Alexander Hinze
- * @since 06/11/2023
+ * @since 28/11/2023
  */
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public final class TestTypeUtils extends AbstractTest {
-    @Test
-    void testFindCommonType() {
-        Assertions.assertNull(Types.findCommonType());
-        Assertions.assertEquals(Types.findCommonType(BuiltinType.I32), BuiltinType.I32);
-    }
+@FunctionalInterface
+@API(status = API.Status.INTERNAL)
+public interface CharSupplier {
+    char get();
 }

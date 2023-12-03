@@ -20,9 +20,11 @@ import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Identifier;
+import io.karma.ferrous.manganese.util.Mangler;
 import io.karma.ferrous.manganese.util.TokenSlice;
 import org.apiguardian.api.API;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 
@@ -35,6 +37,7 @@ public final class AliasedType implements Type {
     private final Identifier name;
     private final List<GenericParameter> genericParams;
     private final TokenSlice tokenSlice;
+    private final HashMap<String, MonomorphizedType> monomorphizationCache = new HashMap<>();
     private Type backingType;
     private Scope enclosingScope;
 
@@ -81,13 +84,19 @@ public final class AliasedType implements Type {
     }
 
     @Override
+    public Type monomorphize(final List<Type> genericTypes) {
+        return monomorphizationCache.computeIfAbsent(Mangler.mangleSequence(genericTypes),
+            key -> new MonomorphizedType(this, genericTypes));
+    }
+
+    @Override
     public boolean canAccept(final Type type) {
         return backingType.canAccept(type);
     }
 
     @Override
-    public Expression makeDefaultValue() {
-        return backingType.makeDefaultValue();
+    public Expression makeDefaultValue(final TargetMachine targetMachine) {
+        return backingType.makeDefaultValue(targetMachine);
     }
 
     @Override

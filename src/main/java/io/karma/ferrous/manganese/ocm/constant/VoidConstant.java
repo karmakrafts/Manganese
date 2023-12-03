@@ -17,8 +17,8 @@ package io.karma.ferrous.manganese.ocm.constant;
 
 import io.karma.ferrous.manganese.ocm.ir.IRContext;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
-import io.karma.ferrous.manganese.ocm.type.BuiltinType;
 import io.karma.ferrous.manganese.ocm.type.Type;
+import io.karma.ferrous.manganese.ocm.type.VoidType;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.TokenSlice;
 import org.apiguardian.api.API;
@@ -54,7 +54,7 @@ public final class VoidConstant implements Constant {
 
     @Override
     public Type getType() {
-        return BuiltinType.VOID;
+        return VoidType.INSTANCE;
     }
 
     @Override

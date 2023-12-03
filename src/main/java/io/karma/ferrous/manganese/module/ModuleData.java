@@ -107,6 +107,16 @@ public final class ModuleData {
         types.put(name, type);
     }
 
+    public void addFunction(final Function function) {
+        final var name = function.getQualifiedName();
+        final var type = function.getType();
+        final var overloadSet = functions.computeIfAbsent(name, n -> new HashMap<>());
+        if (overloadSet.containsKey(type)) {
+            throw new IllegalStateException("Function already exists");
+        }
+        overloadSet.put(type, function);
+    }
+
     public LinkedHashMap<Identifier, Type> getTypes() {
         return types;
     }

@@ -26,8 +26,7 @@ import io.karma.ferrous.manganese.util.Identifier;
 import org.apiguardian.api.API;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.List;
 
 /**
  * @author Alexander Hinze
@@ -36,19 +35,19 @@ import java.util.Arrays;
 @API(status = API.Status.INTERNAL)
 public final class FunctionBody implements Scope {
     private final Function function;
-    private final ArrayList<Statement> statements;
+    private final List<Statement> statements;
     private boolean isAppended;
 
-    public FunctionBody(final Function function, final Statement... statements) {
+    public FunctionBody(final Function function, final List<Statement> statements) {
         this.function = function;
-        this.statements = new ArrayList<>(Arrays.asList(statements));
+        this.statements = statements;
     }
 
     public Function getFunction() {
         return function;
     }
 
-    public ArrayList<Statement> getStatements() {
+    public List<Statement> getStatements() {
         return statements;
     }
 

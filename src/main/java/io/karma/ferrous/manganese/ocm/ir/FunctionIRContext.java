@@ -97,7 +97,7 @@ public final class FunctionIRContext implements IRContext {
             final var fnAddress = function.materialize(module, targetMachine);
             final var context = module.getContext();
             final var blockAddress = LLVMAppendBasicBlockInContext(context, fnAddress, name);
-            return new IRBuilder(this, module, targetMachine, blockAddress, context);
+            return new IRBuilder(this, targetMachine, blockAddress, context);
         });
     }
 

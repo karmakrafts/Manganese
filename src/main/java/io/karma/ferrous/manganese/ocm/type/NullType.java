@@ -59,13 +59,13 @@ public final class NullType implements Type {
     // Type
 
     @Override
-    public Expression makeDefaultValue() {
+    public Expression makeDefaultValue(final TargetMachine targetMachine) {
         return new NullConstant(TokenSlice.EMPTY);
     }
 
     @Override
     public long materialize(final TargetMachine machine) {
-        return BuiltinType.VOID.derive(TypeAttribute.POINTER).materialize(machine);
+        return VoidType.INSTANCE.asPtr().materialize(machine);
     }
 
     @Override

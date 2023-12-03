@@ -46,8 +46,8 @@ public record UserDefinedType(UserDefinedTypeKind kind, StructureType type, List
     }
 
     @Override
-    public Expression makeDefaultValue() {
-        return type.makeDefaultValue();
+    public Expression makeDefaultValue(final TargetMachine targetMachine) {
+        return type.makeDefaultValue(targetMachine);
     }
 
     @Override
@@ -92,6 +92,6 @@ public record UserDefinedType(UserDefinedTypeKind kind, StructureType type, List
 
     @Override
     public String toString() {
-        return type == null ? "null" : type.toString();
+        return type == null ? "null" : type.getQualifiedName().toString();
     }
 }

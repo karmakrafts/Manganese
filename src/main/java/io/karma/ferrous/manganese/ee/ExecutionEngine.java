@@ -21,9 +21,9 @@ import io.karma.ferrous.manganese.module.Module;
 import io.karma.ferrous.manganese.ocm.expr.Expression;
 import io.karma.ferrous.manganese.ocm.function.CallingConvention;
 import io.karma.ferrous.manganese.ocm.function.Function;
+import io.karma.ferrous.manganese.ocm.function.FunctionModifier;
 import io.karma.ferrous.manganese.ocm.ir.FunctionIRContext;
 import io.karma.ferrous.manganese.ocm.statement.ReturnStatement;
-import io.karma.ferrous.manganese.ocm.type.BuiltinType;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.ocm.type.Types;
 import io.karma.ferrous.manganese.target.TargetMachine;
@@ -34,6 +34,7 @@ import org.lwjgl.system.MemoryStack;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashSet;
 
 import static org.lwjgl.llvm.LLVMExecutionEngine.*;
@@ -94,7 +95,7 @@ public final class ExecutionEngine {
         return (char) LLVMGenericValueToInt(value.getAddress(), true);
     }
 
-    public IntValue makeInt(final BuiltinType type, final long value) {
+    public IntValue makeInt(final Type type, final long value) {
         final var val = new IntValue(targetMachine, type, value);
         values.add(val);
         return val;
@@ -107,7 +108,7 @@ public final class ExecutionEngine {
         return LLVMGenericValueToInt(intValue.getAddress(), intValue.isSigned());
     }
 
-    public RealValue makeReal(final BuiltinType type, final double value) {
+    public RealValue makeReal(final Type type, final double value) {
         final var val = new RealValue(targetMachine, type, value);
         values.add(val);
         return val;
@@ -140,10 +141,11 @@ public final class ExecutionEngine {
             final var fnAddress = function.emit(compileContext, module, targetMachine);
             final var argValues = Arrays.stream(args).mapToLong(GenericValue::getAddress).toArray();
             final var returnValue = LLVMRunFunction(address, fnAddress, stack.pointers(argValues));
-            if (returnType instanceof BuiltinType builtinType) {
-                return switch (builtinType) {
-                    case I8, I16, I32, I64, ISIZE, U8, U16, U32, U64, USIZE -> new IntValue(builtinType, returnValue);
-                    case F32, F64 -> new RealValue(builtinType, returnValue);
+            final var kind = returnType.getKind();
+            if (kind.isBuiltin()) {
+                return switch (kind) {
+                    case INT, UINT -> new IntValue(returnType, returnValue);
+                    case REAL -> new RealValue(returnType, returnValue);
                     case BOOL -> new BoolValue(returnValue);
                     case VOID -> VoidValue.INSTANCE;
                     default -> throw new IllegalStateException("Unsupported return type");
@@ -174,7 +176,7 @@ public final class ExecutionEngine {
         final var function = new Function(functionName,
             CallingConvention.CDECL,
             functionType,
-            false,
+            EnumSet.noneOf(FunctionModifier.class),
             tokenSlice,
             Collections.emptyList(),
             Collections.emptyList(),

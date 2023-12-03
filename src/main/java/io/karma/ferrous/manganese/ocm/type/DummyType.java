@@ -37,7 +37,7 @@ public final class DummyType implements Type, Named {
     // @formatter:on
 
     @Override
-    public Expression makeDefaultValue() {
+    public Expression makeDefaultValue(final TargetMachine targetMachine) {
         throw new UnsupportedOperationException("Dummy type does not have default value");
     }
 

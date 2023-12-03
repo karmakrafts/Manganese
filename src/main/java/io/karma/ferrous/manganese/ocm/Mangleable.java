@@ -23,6 +23,12 @@ import org.apiguardian.api.API;
  */
 @API(status = API.Status.INTERNAL)
 public interface Mangleable extends Named {
+    char DEFAULT_SEQUENCE_PREFIX = '@';
+
+    default char getMangledSequencePrefix() {
+        return DEFAULT_SEQUENCE_PREFIX;
+    }
+
     default String getMangledName() {
         return getQualifiedName().toInternalName();
     }

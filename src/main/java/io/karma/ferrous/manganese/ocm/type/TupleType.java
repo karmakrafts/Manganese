@@ -67,7 +67,7 @@ public final class TupleType implements Type {
     }
 
     @Override
-    public Expression makeDefaultValue() {
+    public Expression makeDefaultValue(final TargetMachine targetMachine) {
         return new AllocExpression(this, false, TokenSlice.EMPTY);
     }
 

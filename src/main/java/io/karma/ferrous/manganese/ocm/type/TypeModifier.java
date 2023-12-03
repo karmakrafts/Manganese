@@ -26,14 +26,16 @@ import org.apiguardian.api.API;
 @API(status = API.Status.INTERNAL)
 public enum TypeModifier {
     // @formatter:off
-    ATOMIC  (FerrousLexer.KW_ATOMIC),
-    TLS     (FerrousLexer.KW_TLS),
-    MUT     (FerrousLexer.KW_MUT);
+    ATOMIC (FerrousLexer.KW_ATOMIC),
+    TLS    (FerrousLexer.KW_TLS),
+    MUT    (FerrousLexer.KW_MUT);
     // @formatter:on
 
+    private final int token;
     private final String text;
 
     TypeModifier(final int token) {
+        this.token = token;
         text = TokenUtils.getLiteral(token);
     }
 

@@ -17,8 +17,10 @@ package io.karma.ferrous.manganese.ocm.ir;
 
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
 import org.apiguardian.api.API;
-import org.lwjgl.llvm.LLVMCore;
 import org.lwjgl.system.MemoryStack;
+
+import static org.lwjgl.llvm.LLVMCore.LLVMAddIncoming;
+import static org.lwjgl.llvm.LLVMCore.LLVMBuildPhi;
 
 /**
  * @author Alexander Hinze
@@ -26,40 +28,45 @@ import org.lwjgl.system.MemoryStack;
  */
 @API(status = API.Status.INTERNAL)
 public final class PhiBuilder {
+    private final long builderAddress;
     private final IRContext irContext;
-    private final long address;
     private final Long2LongOpenHashMap targets = new Long2LongOpenHashMap();
+    private long type;
 
-    PhiBuilder(final IRContext irContext, final long address) {
+    PhiBuilder(final long builderAddress, final IRContext irContext) {
+        this.builderAddress = builderAddress;
         this.irContext = irContext;
-        this.address = address;
     }
 
-    public void addIncoming(final long block, final long value) {
+    public PhiBuilder setType(final long type) {
+        this.type = type;
+        return this;
+    }
+
+    public PhiBuilder addIncoming(final long block, final long value) {
         if (targets.containsKey(block)) {
-            return;
+            return this;
         }
         targets.put(block, value);
+        return this;
     }
 
-    public void addIncoming(final String name, final long value) {
+    public PhiBuilder addIncoming(final String name, final long value) {
         final var blockAddress = irContext.getOrCreate(name).getBlockAddress();
         if (targets.containsKey(blockAddress)) {
-            return;
+            return this;
         }
         targets.put(blockAddress, value);
+        return this;
     }
 
     public long build() {
+        final var address = LLVMBuildPhi(builderAddress, type, "");
         final var blocks = targets.keySet().toLongArray();
         final var values = targets.values().toLongArray();
         try (final var stack = MemoryStack.stackPush()) {
-            LLVMCore.LLVMAddIncoming(address, stack.pointers(values), stack.pointers(blocks));
+            LLVMAddIncoming(address, stack.pointers(values), stack.pointers(blocks));
         }
-        return address;
-    }
-
-    public long getAddress() {
         return address;
     }
 }

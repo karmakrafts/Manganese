@@ -20,8 +20,7 @@ import io.karma.ferrous.manganese.compiler.CompileErrorCode;
 import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.function.Function;
 import io.karma.ferrous.manganese.ocm.statement.ReturnStatement;
-import io.karma.ferrous.manganese.ocm.statement.Statement;
-import io.karma.ferrous.manganese.ocm.type.BuiltinType;
+import io.karma.ferrous.manganese.ocm.type.VoidType;
 import io.karma.ferrous.manganese.util.TokenSlice;
 import io.karma.ferrous.vanadium.FerrousParser.FunctionBodyContext;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
@@ -47,12 +46,12 @@ public final class FunctionParser extends ParseAdapter {
             super.enterFunctionBody(context);
             return;
         }
-        final var scopeStack = function.rebuildScopeStack();
+        final var scopeStack = function.rebuildScopeStack(); // Reconstruct scope stack from prototype
         final var type = function.getType();
         final var parser = new StatementParser(compiler, compileContext, type.getReturnType(), scopeStack, function);
         ParseTreeWalker.DEFAULT.walk(parser, context);
         final var statements = parser.getStatements();
-        function.createBody(statements.toArray(Statement[]::new));
+        function.createBody(statements);
         for (final var statement : statements) {
             statement.setEnclosingScope(function.getBody());
         }
@@ -68,7 +67,7 @@ public final class FunctionParser extends ParseAdapter {
         }
         final var statements = body.getStatements();
         if (statements.isEmpty() || !statements.getLast().returnsFromCurrentScope()) {
-            if (function.getType().getReturnType() == BuiltinType.VOID) {
+            if (function.getType().getReturnType() == VoidType.INSTANCE) {
                 statements.addLast(new ReturnStatement(TokenSlice.from(compileContext,
                     context))); // Implicitly return from void functions at the end of scope
             }

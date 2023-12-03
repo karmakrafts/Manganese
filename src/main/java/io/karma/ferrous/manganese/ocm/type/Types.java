@@ -58,11 +58,10 @@ public final class Types {
         return type;
     }
 
-    public static Optional<BuiltinType> builtin(final Identifier name) { // @formatter:off
-        return Arrays.stream(BuiltinType.values())
-            .filter(type -> type.getName().equals(name))
-            .findFirst();
-    } // @formatter:on
+    public static IntType integer(final int width, final boolean isUnsigned,
+                                  final Function<IntType, IntType> callback) {
+        return cached(callback.apply(new IntType(width, isUnsigned)));
+    }
 
     public static FunctionType function(final Type returnType, final List<Type> paramTypes, final boolean isVarArg,
                                         final Function<FunctionType, FunctionType> callback,
@@ -144,15 +143,15 @@ public final class Types {
         }; // @formatter:on
     }
 
-    public static List<@Nullable Type> parse(final Compiler compiler, final CompileContext compileContext,
-                                             final ScopeStack scopeStack,
-                                             final @Nullable FerrousParser.TypeListContext context) {
+    public static List<Type> parse(final Compiler compiler, final CompileContext compileContext,
+                                   final ScopeStack scopeStack, final @Nullable FerrousParser.TypeListContext context) {
         if (context == null) {
             return Collections.emptyList();
         }
         // @formatter:off
         return context.type().stream()
             .map(ctx -> parse(compiler, compileContext, scopeStack, ctx))
+            .filter(Objects::nonNull)
             .toList();
         // @formatter:on
     }

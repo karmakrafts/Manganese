@@ -26,22 +26,20 @@ import io.karma.ferrous.vanadium.FerrousParser.AttribUsageContext;
 import io.karma.ferrous.vanadium.FerrousParser.AttributeListContext;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import org.apiguardian.api.API;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author Alexander Hinze
  * @since 16/11/2023
  */
 @API(status = API.Status.INTERNAL)
-public record AttributeUsage(UserDefinedType attribute, HashMap<Identifier, Expression> values) {
-    public static @Nullable AttributeUsage parse(final Compiler compiler, final CompileContext compileContext,
-                                                 final ScopeStack capturedScopeStack,
-                                                 final AttribUsageContext context) {
+public record AttributeUsage(UserDefinedType attribute, Map<Identifier, Expression> values) {
+    public static AttributeUsage parse(final Compiler compiler, final CompileContext compileContext,
+                                       final ScopeStack capturedScopeStack, final AttribUsageContext context) {
         final var parser = new AttributeUsageParser(compiler, compileContext, capturedScopeStack);
         ParseTreeWalker.DEFAULT.walk(parser, context);
         return parser.getUsage();

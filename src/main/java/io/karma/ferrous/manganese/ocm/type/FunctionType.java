@@ -43,8 +43,8 @@ public class FunctionType implements Type {
     private final TokenSlice tokenSlice;
     private long materializedType = MemoryUtil.NULL;
 
-    FunctionType(final Type returnType, final boolean isVarArg, final TokenSlice tokenSlice,
-                 final List<Type> paramTypes) {
+    public FunctionType(final Type returnType, final boolean isVarArg, final TokenSlice tokenSlice,
+                        final List<Type> paramTypes) {
         this.returnType = returnType;
         this.paramTypes = paramTypes;
         this.isVarArg = isVarArg;
@@ -107,7 +107,7 @@ public class FunctionType implements Type {
     }
 
     @Override
-    public Expression makeDefaultValue() {
+    public Expression makeDefaultValue(final TargetMachine targetMachine) {
         throw new IllegalStateException("Functions don't have a default value");
     }
 

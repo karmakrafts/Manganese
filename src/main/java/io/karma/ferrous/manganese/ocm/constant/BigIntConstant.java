@@ -13,41 +13,50 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.ocm.type;
+package io.karma.ferrous.manganese.ocm.constant;
 
-import io.karma.ferrous.manganese.ocm.expr.Expression;
+import io.karma.ferrous.manganese.ocm.ir.IRContext;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
+import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.target.TargetMachine;
-import io.karma.ferrous.manganese.util.Identifier;
-import io.karma.ferrous.manganese.util.Mangler;
+import io.karma.ferrous.manganese.util.TokenSlice;
 import org.apiguardian.api.API;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.List;
+import java.math.BigInteger;
+
+import static org.lwjgl.llvm.LLVMCore.LLVMConstIntOfStringAndSize;
 
 /**
  * @author Alexander Hinze
- * @since 27/11/2023
+ * @since 02/12/2023
  */
 @API(status = API.Status.INTERNAL)
-public final class MonomorphizedType implements Type {
-    private final Type baseType;
-    private final List<Type> genericTypes;
+public final class BigIntConstant implements Constant {
+    private final Type type;
+    private final BigInteger value;
+    private final TokenSlice tokenSlice;
     private Scope enclosingScope;
 
-    MonomorphizedType(final Type baseType, final List<Type> genericTypes) {
-        this.baseType = baseType;
-        this.genericTypes = genericTypes;
+    public BigIntConstant(final Type type, final BigInteger value, final TokenSlice tokenSlice) {
+        this.type = type;
+        this.value = value;
+        this.tokenSlice = tokenSlice;
+    }
+
+    public BigInteger getValue() {
+        return value;
     }
 
     @Override
-    public String getMangledName() {
-        return String.format("%s<%s>", Type.super.getMangledName(), Mangler.mangleSequence(genericTypes));
+    public Type getType() {
+        return type;
     }
 
     @Override
-    public Identifier getName() {
-        return baseType.getName();
+    public long emit(final TargetMachine targetMachine, final IRContext irContext) {
+        final var typeAddress = this.type.materialize(targetMachine);
+        return LLVMConstIntOfStringAndSize(typeAddress, value.toString(10), (byte) 10);
     }
 
     @Override
@@ -61,17 +70,7 @@ public final class MonomorphizedType implements Type {
     }
 
     @Override
-    public long materialize(final TargetMachine machine) {
-        return 0L;
-    }
-
-    @Override
-    public Type getBaseType() {
-        return baseType;
-    }
-
-    @Override
-    public Expression makeDefaultValue(final TargetMachine targetMachine) {
-        return null;
+    public TokenSlice getTokenSlice() {
+        return tokenSlice;
     }
 }

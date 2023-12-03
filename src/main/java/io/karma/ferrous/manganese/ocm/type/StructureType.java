@@ -21,6 +21,7 @@ import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Identifier;
+import io.karma.ferrous.manganese.util.Mangler;
 import io.karma.ferrous.manganese.util.TokenSlice;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
@@ -28,6 +29,7 @@ import org.lwjgl.llvm.LLVMCore;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 
@@ -44,6 +46,7 @@ public final class StructureType implements Type {
     private final List<Type> fieldTypes;
     private final List<GenericParameter> genericParams;
     private final TokenSlice tokenSlice;
+    private final HashMap<String, MonomorphizedType> monomorphizationCache = new HashMap<>();
     private long materializedType = MemoryUtil.NULL;
     private Scope enclosingScope;
 
@@ -98,8 +101,12 @@ public final class StructureType implements Type {
     // Type
 
     @Override
-    public Expression makeDefaultValue() {
-        final var values = fieldTypes.stream().map(Type::makeDefaultValue).toArray(Expression[]::new);
+    public Expression makeDefaultValue(final TargetMachine targetMachine) {
+        // @formatter:off
+        final var values = fieldTypes.stream()
+            .map(type -> type.makeDefaultValue(targetMachine))
+            .toArray(Expression[]::new);
+        // @formatter:on
         return new StructConstant(this, TokenSlice.EMPTY, values);
     }
 
@@ -132,6 +139,12 @@ public final class StructureType implements Type {
     @Override
     public boolean isMonomorphic() {
         return genericParams.isEmpty();
+    }
+
+    @Override
+    public Type monomorphize(final List<Type> genericTypes) {
+        return monomorphizationCache.computeIfAbsent(Mangler.mangleSequence(genericTypes),
+            key -> new MonomorphizedType(this, genericTypes));
     }
 
     @Override

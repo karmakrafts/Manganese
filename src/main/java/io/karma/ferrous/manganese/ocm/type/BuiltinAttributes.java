@@ -16,6 +16,7 @@
 package io.karma.ferrous.manganese.ocm.type;
 
 import io.karma.ferrous.manganese.compiler.CompileContext;
+import io.karma.ferrous.manganese.ocm.scope.DefaultScope;
 import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.TokenSlice;
 import io.karma.kommons.function.Functions;
@@ -32,16 +33,18 @@ public final class BuiltinAttributes {
     public static final UserDefinedType NOMANGLE = create("nomangle");
     public static final UserDefinedType NORETURN = create("noreturn");
     public static final UserDefinedType NODISCARD = create("nodiscard");
+    public static final UserDefinedType NOOPT = create("noopt");
 
     // @formatter:off
     private BuiltinAttributes() {}
     // @formatter:on
 
-    public static void addAll(final CompileContext compileContext) {
+    public static void inject(final CompileContext compileContext) {
         final var moduleData = compileContext.getOrCreateModuleData();
         moduleData.addType(NOMANGLE);
         moduleData.addType(NORETURN);
         moduleData.addType(NODISCARD);
+        moduleData.addType(NOOPT);
     }
 
     private static UserDefinedType create(final String name) {
@@ -52,6 +55,7 @@ public final class BuiltinAttributes {
             Collections.emptyList(),
             TokenSlice.EMPTY,
             Collections.emptyList());
+        structType.setEnclosingScope(DefaultScope.GLOBAL);
         return new UserDefinedType(UserDefinedTypeKind.ATTRIBUTE,
             structType,
             Collections.emptyList(),

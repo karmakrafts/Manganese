@@ -15,8 +15,8 @@
 
 package io.karma.ferrous.manganese.ee;
 
-import io.karma.ferrous.manganese.ocm.type.BuiltinType;
 import io.karma.ferrous.manganese.ocm.type.Type;
+import io.karma.ferrous.manganese.ocm.type.TypeKind;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import org.apiguardian.api.API;
 
@@ -30,21 +30,21 @@ import static org.lwjgl.system.MemoryUtil.NULL;
  */
 @API(status = API.Status.INTERNAL)
 public final class IntValue implements GenericValue {
-    private final BuiltinType type;
+    private final Type type;
     private final long address;
     private final boolean isAllocated;
     private boolean isDisposed;
 
-    IntValue(final BuiltinType type, final long address) {
+    IntValue(final Type type, final long address) {
         this.type = type;
         this.address = address;
         isAllocated = false;
     }
 
-    IntValue(final TargetMachine targetMachine, final BuiltinType type, final long value) {
+    IntValue(final TargetMachine targetMachine, final Type type, final long value) {
         this.type = type;
         final var typeAddress = type.materialize(targetMachine);
-        address = LLVMCreateGenericValueOfInt(typeAddress, value, type.isSignedInt());
+        address = LLVMCreateGenericValueOfInt(typeAddress, value, type.getKind() == TypeKind.INT);
         if (address == NULL) {
             throw new IllegalStateException("Could not allocate generic int value");
         }
@@ -52,7 +52,7 @@ public final class IntValue implements GenericValue {
     }
 
     public boolean isSigned() {
-        return type.isSignedInt();
+        return type.getKind() == TypeKind.INT;
     }
 
     @Override

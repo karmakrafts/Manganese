@@ -47,11 +47,10 @@ public final class TypeResolutionPass implements CompilePass {
     public void run(final Compiler compiler, final CompileContext compileContext, final Module module,
                     final ExecutorService executor) {
         Profiler.INSTANCE.push();
-        final var moduleData = compileContext.getOrCreateModuleData(module.getName());
-        sortTypes(compileContext, moduleData);
-        resolveTypes(compileContext, moduleData);
-        materializeTypes(compiler, moduleData);
-        resolveTypeAccess(compileContext, moduleData);
+        sortTypes(compileContext);
+        resolveTypes(compileContext);
+        materializeTypes(compiler, compileContext);
+        resolveTypeAccess(compileContext);
         Profiler.INSTANCE.pop();
     }
 
@@ -115,7 +114,7 @@ public final class TypeResolutionPass implements CompilePass {
 
         parentNode.addDependency(childNode);
         buffer.a('D').fg(Ansi.Color.CYAN).a(" > ").a(childType);
-        Logger.INSTANCE.debugln("Resolved kind graph: %s", buffer.toString());
+        Logger.INSTANCE.debugln("Resolved type graph: %s", buffer.toString());
 
         return true;
     }
@@ -153,20 +152,21 @@ public final class TypeResolutionPass implements CompilePass {
                 continue;
             }
             final var fieldTypeName = fieldType.getQualifiedName();
-            Logger.INSTANCE.debugln("Found incomplete field kind '%s' in '%s'", fieldTypeName, scopeName);
+            Logger.INSTANCE.debugln("Found incomplete field type '%s' in '%s'", fieldTypeName, scopeName);
             final var completeType = moduleData.findCompleteType(fieldTypeName, scopeName);
             if (completeType == null) {
                 return false;
             }
-            Logger.INSTANCE.debugln("  > Resolved to complete kind '%s'", completeType);
+            Logger.INSTANCE.debugln("  > Resolved to complete type '%s'", completeType);
             structType.setFieldType(i, completeType.derive(fieldType.getAttributes()));
         }
         Profiler.INSTANCE.pop();
         return true;
     }
 
-    private void resolveTypes(final CompileContext compileContext, final ModuleData moduleData) {
+    private void resolveTypes(final CompileContext compileContext) {
         Profiler.INSTANCE.push();
+        final var moduleData = compileContext.getOrCreateModuleData();
         final var types = moduleData.getTypes().values();
         for (final var udt : types) {
             final var scopeName = udt.getScopeName();
@@ -185,27 +185,27 @@ public final class TypeResolutionPass implements CompilePass {
         Profiler.INSTANCE.pop();
     }
 
-    private void materializeTypes(final Compiler compiler, final ModuleData moduleData) {
+    private void materializeTypes(final Compiler compiler, final CompileContext compileContext) {
         Profiler.INSTANCE.push();
-        final var namedTypes = moduleData.getTypes().values();
+        final var namedTypes = compileContext.getOrCreateModuleData().getTypes().values();
         for (final var type : namedTypes) {
             if (type.isAliased()) {
                 continue; // Don't need to waste time on doing nothing..
             }
             if (!type.isComplete()) {
-                Logger.INSTANCE.errorln("Cannot materialize kind '%s' as it is incomplete", type.getQualifiedName());
+                Logger.INSTANCE.errorln("Cannot materialize type '%s' as it is incomplete", type.getQualifiedName());
                 continue;
             }
             final var address = type.materialize(compiler.getTargetMachine());
-            Logger.INSTANCE.debugln("Materialized kind %s at 0x%08X", type.getQualifiedName(), address);
+            Logger.INSTANCE.debugln("Materialized type %s at 0x%08X", type.getQualifiedName(), address);
         }
         Profiler.INSTANCE.pop();
     }
 
-    private void sortTypes(final CompileContext compileContext, final ModuleData moduleData) {
+    private void sortTypes(final CompileContext compileContext) {
         Profiler.INSTANCE.push();
         final var rootNode = new TopoNode<Type>(DummyType.INSTANCE);
-        final var namedTypes = moduleData.getTypes();
+        final var namedTypes = compileContext.getOrCreateModuleData().getTypes();
         // @formatter:off
         final var nodes = namedTypes.entrySet()
             .stream()
@@ -251,8 +251,9 @@ public final class TypeResolutionPass implements CompilePass {
         Profiler.INSTANCE.pop();
     }
 
-    private void resolveTypeAccess(final CompileContext compileContext, final ModuleData moduleData) {
+    private void resolveTypeAccess(final CompileContext compileContext) {
         Profiler.INSTANCE.push();
+        final var moduleData = compileContext.getOrCreateModuleData();
         final var namedTypes = moduleData.getTypes().values();
         for (final var udt : namedTypes) {
             if (!(udt instanceof UserDefinedType actualUdt)) {

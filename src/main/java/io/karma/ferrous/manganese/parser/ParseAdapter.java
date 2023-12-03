@@ -96,6 +96,54 @@ public abstract class ParseAdapter implements FerrousParserListener {
 
     // @formatter:off
     @Override
+    public void enterGotoStatement(GotoStatementContext gotoStatementContext) {}
+
+    @Override
+    public void exitGotoStatement(GotoStatementContext gotoStatementContext) {}
+
+    @Override
+    public void enterContinueStatement(ContinueStatementContext continueStatementContext) {}
+
+    @Override
+    public void exitContinueStatement(ContinueStatementContext continueStatementContext) {}
+
+    @Override
+    public void enterYieldStatement(YieldStatementContext yieldStatementContext) {}
+
+    @Override
+    public void exitYieldStatement(YieldStatementContext yieldStatementContext) {}
+
+    @Override
+    public void enterBreakStatement(BreakStatementContext breakStatementContext) {}
+
+    @Override
+    public void exitBreakStatement(BreakStatementContext breakStatementContext) {}
+
+    @Override
+    public void enterLabelBlock(LabelBlockContext labelBlockContext) {}
+
+    @Override
+    public void exitLabelBlock(LabelBlockContext labelBlockContext) {}
+
+    @Override
+    public void enterUnsafeBlock(UnsafeBlockContext unsafeBlockContext) {}
+
+    @Override
+    public void exitUnsafeBlock(UnsafeBlockContext unsafeBlockContext) {}
+
+    @Override
+    public void enterUnsafeExpr(UnsafeExprContext unsafeExprContext) {}
+
+    @Override
+    public void exitUnsafeExpr(UnsafeExprContext unsafeExprContext) {}
+
+    @Override
+    public void enterModifiedType(ModifiedTypeContext modifiedTypeContext) {}
+
+    @Override
+    public void exitModifiedType(ModifiedTypeContext modifiedTypeContext) {}
+
+    @Override
     public void enterStructBody(StructBodyContext structBodyContext) {}
 
     @Override
@@ -857,12 +905,6 @@ public abstract class ParseAdapter implements FerrousParserListener {
     public void exitCallConvMod(CallConvModContext callConvModContext) {}
 
     @Override
-    public void enterStorageMod(StorageModContext storageModContext) {}
-
-    @Override
-    public void exitStorageMod(StorageModContext storageModContext) {}
-
-    @Override
     public void enterTypeMod(TypeModContext typeModContext) {}
 
     @Override
@@ -879,30 +921,6 @@ public abstract class ParseAdapter implements FerrousParserListener {
 
     @Override
     public void exitType(TypeContext typeContext) {}
-
-    @Override
-    public void enterSimpleType(SimpleTypeContext simpleTypeContext) {}
-
-    @Override
-    public void exitSimpleType(SimpleTypeContext simpleTypeContext) {}
-
-    @Override
-    public void enterRefType(RefTypeContext refTypeContext) {}
-
-    @Override
-    public void exitRefType(RefTypeContext refTypeContext) {}
-
-    @Override
-    public void enterPointerType(PointerTypeContext pointerTypeContext) {}
-
-    @Override
-    public void exitPointerType(PointerTypeContext pointerTypeContext) {}
-
-    @Override
-    public void enterGenericType(GenericTypeContext genericTypeContext) {}
-
-    @Override
-    public void exitGenericType(GenericTypeContext genericTypeContext) {}
 
     @Override
     public void enterSliceType(SliceTypeContext arrayTypeContext) {}

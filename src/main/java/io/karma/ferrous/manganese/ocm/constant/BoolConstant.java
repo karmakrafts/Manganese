@@ -17,7 +17,7 @@ package io.karma.ferrous.manganese.ocm.constant;
 
 import io.karma.ferrous.manganese.ocm.ir.IRContext;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
-import io.karma.ferrous.manganese.ocm.type.BuiltinType;
+import io.karma.ferrous.manganese.ocm.type.BoolType;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.TokenSlice;
@@ -66,7 +66,7 @@ public final class BoolConstant implements Constant {
 
     @Override
     public Type getType() {
-        return BuiltinType.BOOL;
+        return BoolType.INSTANCE;
     }
 
     @Override

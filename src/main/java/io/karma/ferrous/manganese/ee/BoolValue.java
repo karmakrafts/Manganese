@@ -15,7 +15,7 @@
 
 package io.karma.ferrous.manganese.ee;
 
-import io.karma.ferrous.manganese.ocm.type.BuiltinType;
+import io.karma.ferrous.manganese.ocm.type.BoolType;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import org.apiguardian.api.API;
@@ -40,7 +40,7 @@ public final class BoolValue implements GenericValue {
     }
 
     BoolValue(final TargetMachine targetMachine, final boolean value) {
-        final var typeAddress = BuiltinType.BOOL.materialize(targetMachine);
+        final var typeAddress = BoolType.INSTANCE.materialize(targetMachine);
         address = LLVMCreateGenericValueOfInt(typeAddress, value ? 1 : 0, true);
         if (address == NULL) {
             throw new IllegalStateException("Could not allocate generic bool value");
@@ -50,7 +50,7 @@ public final class BoolValue implements GenericValue {
 
     @Override
     public Type getType() {
-        return BuiltinType.BOOL;
+        return BoolType.INSTANCE;
     }
 
     @Override

@@ -34,6 +34,8 @@ import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 
@@ -48,22 +50,24 @@ import static org.lwjgl.system.MemoryUtil.NULL;
 public class Function implements Scoped, Mangleable {
     protected final Identifier name;
     protected final CallingConvention callConv;
-    protected final boolean isExtern;
+    protected final EnumSet<FunctionModifier> modifiers;
     protected final List<Parameter> parameters;
     protected final List<GenericParameter> genericParams;
     protected final List<AttributeUsage> attributeUsages;
     protected final TokenSlice tokenSlice;
     protected final FunctionType type;
+    protected final HashMap<String, MonomorphizedFunction> monomorphizationCache = new HashMap<>();
     protected FunctionBody body;
     protected Scope enclosingScope;
     protected long materializedPrototype;
 
     public Function(final Identifier name, final CallingConvention callConv, final FunctionType type,
-                    final boolean isExtern, final TokenSlice tokenSlice, final List<Parameter> params,
-                    final List<GenericParameter> genericParams, final List<AttributeUsage> attributeUsages) {
+                    final EnumSet<FunctionModifier> modifiers, final TokenSlice tokenSlice,
+                    final List<Parameter> params, final List<GenericParameter> genericParams,
+                    final List<AttributeUsage> attributeUsages) {
         this.name = name;
         this.callConv = callConv;
-        this.isExtern = isExtern;
+        this.modifiers = modifiers;
         this.type = type;
         this.tokenSlice = tokenSlice;
         this.parameters = params;
@@ -71,7 +75,7 @@ public class Function implements Scoped, Mangleable {
         this.attributeUsages = attributeUsages;
     }
 
-    public void createBody(final Statement... statements) {
+    public void createBody(final List<Statement> statements) {
         if (body != null) {
             throw new IllegalStateException("Body already exists for this function");
         }
@@ -80,10 +84,6 @@ public class Function implements Scoped, Mangleable {
 
     public CallingConvention getCallConv() {
         return callConv;
-    }
-
-    public boolean isExtern() {
-        return isExtern;
     }
 
     public boolean shouldMangle() {
@@ -112,6 +112,10 @@ public class Function implements Scoped, Mangleable {
         return tokenSlice;
     }
 
+    public EnumSet<FunctionModifier> getModifiers() {
+        return modifiers;
+    }
+
     public List<Parameter> getParameters() {
         return parameters;
     }
@@ -133,7 +137,7 @@ public class Function implements Scoped, Mangleable {
         for (var i = 0; i < numParams; i++) {
             LLVMSetValueName2(LLVMGetParam(address, i), parameters.get(i).getName().toString());
         }
-        LLVMSetLinkage(address, isExtern ? LLVMExternalLinkage : 0);
+        LLVMSetLinkage(address, modifiers.contains(FunctionModifier.EXTERN) ? LLVMExternalLinkage : 0);
         LLVMSetFunctionCallConv(address, callConv.getLLVMValue(targetMachine));
         return materializedPrototype = address;
     }
@@ -155,7 +159,11 @@ public class Function implements Scoped, Mangleable {
     }
 
     public MonomorphizedFunction monomorphize(final List<Type> genericTypes) {
-        return new MonomorphizedFunction(this, genericTypes);
+        if (isMonomorphic()) {
+            throw new IllegalStateException("Monomorphic function cannot be monomorphized again");
+        }
+        return monomorphizationCache.computeIfAbsent(Mangler.mangleSequence(genericTypes),
+            key -> new MonomorphizedFunction(this, genericTypes));
     }
 
     // Mangleable
@@ -193,7 +201,7 @@ public class Function implements Scoped, Mangleable {
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, callConv, isExtern, type, enclosingScope);
+        return Objects.hash(name, callConv, modifiers, type, enclosingScope);
     }
 
     @Override
@@ -201,7 +209,7 @@ public class Function implements Scoped, Mangleable {
         if(obj instanceof Function function) { // @formatter:off
             return name.equals(function.name)
                 && callConv == function.callConv
-                && isExtern == function.isExtern
+                && modifiers.equals(function.modifiers)
                 && type.equals(function.type)
                 && Objects.equals(enclosingScope, function.enclosingScope);
         } // @formatter:on
@@ -210,6 +218,6 @@ public class Function implements Scoped, Mangleable {
 
     @Override
     public String toString() {
-        return String.format("%s %s(%s)", type, name, parameters);
+        return String.format("%s %s(%s)", type.getReturnType(), name, parameters);
     }
 }

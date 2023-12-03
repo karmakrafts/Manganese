@@ -15,7 +15,7 @@
 
 package io.karma.ferrous.manganese.ee;
 
-import io.karma.ferrous.manganese.ocm.type.BuiltinType;
+import io.karma.ferrous.manganese.ocm.type.CharType;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import org.apiguardian.api.API;
@@ -39,7 +39,7 @@ public final class CharValue implements GenericValue {
     }
 
     CharValue(final TargetMachine targetMachine, final char value) {
-        final var typeAddress = BuiltinType.CHAR.materialize(targetMachine);
+        final var typeAddress = CharType.INSTANCE.materialize(targetMachine);
         address = LLVMExecutionEngine.LLVMCreateGenericValueOfInt(typeAddress, value, true);
         if (address == NULL) {
             throw new IllegalStateException("Could not allocate generic char value");
@@ -49,7 +49,7 @@ public final class CharValue implements GenericValue {
 
     @Override
     public Type getType() {
-        return BuiltinType.CHAR;
+        return CharType.INSTANCE;
     }
 
     @Override

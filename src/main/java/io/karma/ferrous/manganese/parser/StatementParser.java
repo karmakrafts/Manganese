@@ -22,12 +22,17 @@ import io.karma.ferrous.manganese.ocm.constant.NullConstant;
 import io.karma.ferrous.manganese.ocm.function.Function;
 import io.karma.ferrous.manganese.ocm.scope.ScopeStack;
 import io.karma.ferrous.manganese.ocm.statement.LetStatement;
+import io.karma.ferrous.manganese.ocm.statement.PanicStatement;
 import io.karma.ferrous.manganese.ocm.statement.ReturnStatement;
 import io.karma.ferrous.manganese.ocm.statement.Statement;
+import io.karma.ferrous.manganese.ocm.type.ImaginaryType;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.ocm.type.Types;
-import io.karma.ferrous.manganese.util.*;
+import io.karma.ferrous.manganese.util.Identifier;
+import io.karma.ferrous.manganese.util.KitchenSink;
+import io.karma.ferrous.manganese.util.TokenSlice;
 import io.karma.ferrous.vanadium.FerrousParser.LetStatementContext;
+import io.karma.ferrous.vanadium.FerrousParser.PanicStatementContext;
 import io.karma.ferrous.vanadium.FerrousParser.ReturnStatementContext;
 import io.karma.ferrous.vanadium.FerrousParser.StatementContext;
 import org.apiguardian.api.API;
@@ -42,15 +47,15 @@ import java.util.List;
  */
 @API(status = API.Status.INTERNAL)
 public final class StatementParser extends ParseAdapter {
-    private final Type returnType;
+    private final Type expectedReturnType;
     private final ArrayList<Statement> statements = new ArrayList<>();
     private final ScopeStack capturedScopeStack;
     private final Object parent;
 
-    public StatementParser(final Compiler compiler, final CompileContext compileContext, final Type returnType,
+    public StatementParser(final Compiler compiler, final CompileContext compileContext, final Type expectedReturnType,
                            final ScopeStack capturedScopeStack, final Object parent) {
         super(compiler, compileContext);
-        this.returnType = returnType;
+        this.expectedReturnType = expectedReturnType;
         this.capturedScopeStack = capturedScopeStack;
         this.parent = parent;
     }
@@ -62,126 +67,111 @@ public final class StatementParser extends ParseAdapter {
         statements.add(statement);
     }
 
+    // Account for expressions-as-statements
     @Override
     public void enterStatement(final StatementContext context) {
         final var exprContext = context.expr();
         if (exprContext != null) {
-            final var expr = ExpressionUtils.parseExpression(compiler,
-                compileContext,
-                capturedScopeStack,
-                exprContext,
-                parent);
+            final var expr = ExpressionParser.parse(compiler, compileContext, capturedScopeStack, exprContext, parent);
             if (expr == null) {
                 compileContext.reportError(exprContext.start, CompileErrorCode.E2001);
                 return;
             }
             expr.setResultDiscarded(true); // Statement means we always discard our result
-            statements.add(expr);
+            addStatement(expr);
         }
-        super.enterStatement(context);
+    }
+
+    @Override
+    public void enterPanicStatement(final PanicStatementContext context) {
+        final var literalContext = context.stringLiteral();
+        if (literalContext == null) {
+            return;
+        }
+        final var literal = ExpressionParser.parse(compiler, compileContext, capturedScopeStack, literalContext, null);
+        if (literal == null) {
+            return;
+        }
+        if (literal.getType() != ImaginaryType.STRING) {
+            return; // TODO: add error
+        }
+        final var isConst = context.KW_CONST() != null;
+        if (isConst && !literal.isConst()) {
+            compileContext.reportError(literal.getTokenSlice().getFirstToken(), CompileErrorCode.E4015);
+            return;
+        }
+        addStatement(new PanicStatement(literal, isConst, TokenSlice.from(compileContext, context)));
     }
 
     @Override
     public void enterLetStatement(final LetStatementContext context) {
-        try {
-            final var name = Identifier.parse(context.ident());
-            final var typeContext = context.type();
-            final var exprContext = context.expr();
-            final var isMutable = context.KW_MUT() != null;
-            final var storageMods = StorageMod.parse(context.storageMod());
-            Type type = null;
-            if (typeContext != null) {
-                type = Types.parse(compiler, compileContext, scopeStack, typeContext);
-                if (type == null || !type.isComplete()) {
-                    compileContext.reportError(typeContext.start, CompileErrorCode.E3002);
+        final var name = Identifier.parse(context.ident());
+        final var typeContext = context.type();
+        final var exprContext = context.expr();
+        final var isMutable = context.KW_MUT() != null;
+        Type type = null;
+        if (typeContext != null) {
+            type = Types.parse(compiler, compileContext, scopeStack, typeContext);
+            if (type == null || !type.isComplete()) {
+                compileContext.reportError(typeContext.start, CompileErrorCode.E3002);
+                return;
+            }
+            if (context.QMK() != null) {
+                if (!isMutable) {
+                    compileContext.reportError(context.QMK().getSymbol(), CompileErrorCode.E4010);
                     return;
                 }
-                if (context.QMK() != null) {
-                    if (!isMutable) {
-                        compileContext.reportError(context.QMK().getSymbol(), CompileErrorCode.E4010);
-                        return;
-                    }
-                    addStatement(new LetStatement(name,
-                        type,
-                        null,
-                        true,
-                        false,
-                        storageMods,
-                        TokenSlice.from(compileContext, context)));
-                    return;
-                }
-                if (exprContext == null) {
-                    addStatement(new LetStatement(name,
-                        type,
-                        type.makeDefaultValue(),
-                        isMutable,
-                        true,
-                        storageMods,
-                        TokenSlice.from(compileContext, context)));
-                    return;
-                }
+                addStatement(new LetStatement(name, type, null, true, false, TokenSlice.from(compileContext, context)));
+                return;
             }
             if (exprContext == null) {
-                compileContext.reportError(context.start, CompileErrorCode.E4006);
+                addStatement(new LetStatement(name,
+                    type,
+                    type.makeDefaultValue(compiler.getTargetMachine()),
+                    isMutable,
+                    true,
+                    TokenSlice.from(compileContext, context)));
                 return;
             }
-            final var expr = ExpressionUtils.parseExpression(compiler,
-                compileContext,
-                capturedScopeStack,
-                exprContext,
-                parent);
-            if (expr == null) {
-                compileContext.reportError(exprContext.start, CompileErrorCode.E2001);
-                return;
-            }
-            if (type == null) {
-                type = expr.getType(); // Deduce variable kind from expression
-            }
-            if (expr instanceof NullConstant nll) {
-                nll.setContextualType(type); // Give null contextual type information about our variable
-            }
-            addStatement(new LetStatement(name,
-                type,
-                expr,
-                isMutable,
-                true,
-                storageMods,
-                TokenSlice.from(compileContext, context)));
         }
-        finally {
-            super.enterLetStatement(context);
+        if (exprContext == null) {
+            compileContext.reportError(context.start, CompileErrorCode.E4006);
+            return;
         }
+        final var expr = ExpressionParser.parse(compiler, compileContext, capturedScopeStack, exprContext, parent);
+        if (expr == null) {
+            compileContext.reportError(exprContext.start, CompileErrorCode.E2001);
+            return;
+        }
+        if (type == null) {
+            type = expr.getType(); // Deduce variable kind from expression
+        }
+        if (expr instanceof NullConstant nll) {
+            nll.setContextualType(type); // Give null contextual type information about our variable
+        }
+        addStatement(new LetStatement(name, type, expr, isMutable, true, TokenSlice.from(compileContext, context)));
     }
 
     @Override
     public void enterReturnStatement(final ReturnStatementContext context) {
-        try {
-            final var exprContext = context.expr();
-            if (exprContext != null) {
-                final var expr = ExpressionUtils.parseExpression(compiler,
-                    compileContext,
-                    capturedScopeStack,
-                    exprContext,
-                    parent);
-                if (expr == null) {
-                    return;
-                }
-                final var exprType = expr.getType();
-                if (!returnType.canAccept(exprType)) {
-                    final var message = KitchenSink.makeCompilerMessage(String.format("%s cannot be assigned to %s",
-                        exprType,
-                        returnType));
-                    compileContext.reportError(context.start, message, CompileErrorCode.E3006);
-                    return;
-                }
-                statements.add(new ReturnStatement(expr, TokenSlice.from(compileContext, context)));
+        final var exprContext = context.expr();
+        if (exprContext != null) {
+            final var expr = ExpressionParser.parse(compiler, compileContext, capturedScopeStack, exprContext, parent);
+            if (expr == null) {
                 return;
             }
-            statements.add(new ReturnStatement(TokenSlice.from(compileContext, context)));
+            final var exprType = expr.getType();
+            if (!expectedReturnType.canAccept(exprType)) {
+                final var message = KitchenSink.makeCompilerMessage(String.format("%s cannot be assigned to %s",
+                    exprType,
+                    expectedReturnType));
+                compileContext.reportError(context.start, message, CompileErrorCode.E3006);
+                return;
+            }
+            statements.add(new ReturnStatement(expr, TokenSlice.from(compileContext, context)));
+            return;
         }
-        finally {
-            super.enterReturnStatement(context);
-        }
+        statements.add(new ReturnStatement(TokenSlice.from(compileContext, context)));
     }
 
     public List<Statement> getStatements() {

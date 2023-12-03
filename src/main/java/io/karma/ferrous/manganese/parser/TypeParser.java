@@ -19,15 +19,11 @@ import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.CompileErrorCode;
 import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.scope.ScopeStack;
-import io.karma.ferrous.manganese.ocm.type.Type;
-import io.karma.ferrous.manganese.ocm.type.TypeAttribute;
-import io.karma.ferrous.manganese.ocm.type.Types;
+import io.karma.ferrous.manganese.ocm.type.*;
 import io.karma.ferrous.manganese.util.Identifier;
-import io.karma.ferrous.manganese.util.Logger;
 import io.karma.ferrous.manganese.util.TokenSlice;
 import io.karma.ferrous.vanadium.FerrousParser.*;
 import io.karma.kommons.function.Functions;
-import org.antlr.v4.runtime.ParserRuleContext;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 
@@ -49,43 +45,12 @@ public final class TypeParser extends ParseAdapter {
     }
 
     @Override
-    public void enterPointerType(final PointerTypeContext context) {
+    public void enterType(final TypeContext context) {
         if (type != null) {
             return;
         }
-        type = Types.parse(compiler, compileContext, capturedScopeStack, context.type());
-        if (type == null) {
-            return;
-        }
-        if (type.isReference()) {
-            compileContext.reportError(context.start, CompileErrorCode.E3007);
-            return;
-        }
-        type = type.derive(TypeAttribute.POINTER);
-        super.enterPointerType(context);
-    }
-
-    @Override
-    public void enterRefType(final RefTypeContext context) {
-        if (type != null) {
-            return;
-        }
-        type = Types.parse(compiler, compileContext, capturedScopeStack, context.type());
-        if (type == null) {
-            return;
-        }
-        if (type.isReference()) {
-            compileContext.reportError(context.start, CompileErrorCode.E3002);
-            return;
-        }
-        type = type.derive(TypeAttribute.REFERENCE);
-        super.enterRefType(context);
-    }
-
-    @Override
-    public void enterSimpleType(final SimpleTypeContext context) {
+        // Handle user defined types
         final var moduleData = compileContext.getOrCreateModuleData();
-        // Parse named types
         final var qualifiedIdentContext = context.qualifiedIdent();
         if (qualifiedIdentContext != null) {
             if (type != null) {
@@ -114,44 +79,91 @@ public final class TypeParser extends ParseAdapter {
                     Collections.emptyList());
             }
         }
-        super.enterSimpleType(context);
+        // Handle derived types
+        final var typeContext = context.type();
+        if (typeContext == null) {
+            return;
+        }
+        final var type = Types.parse(compiler, compileContext, capturedScopeStack, typeContext);
+        if (type == null) {
+            return; // TODO: handle error
+        }
+        if (context.ASTERISK() != null) {
+            if (type.isReference()) {
+                compileContext.reportError(context.start, CompileErrorCode.E3007);
+                return;
+            }
+            this.type = type.asPtr();
+        }
+        if (context.AMP() != null) {
+            if (type.isReference()) {
+                compileContext.reportError(context.start, CompileErrorCode.E3002);
+                return;
+            }
+            this.type = type.asRef();
+        }
     }
 
     @Override
     public void enterMiscType(final MiscTypeContext context) {
-        parsePrimitiveType(context, "Unknown miscellaneous kind");
-        super.enterMiscType(context);
+        if (type != null) {
+            return;
+        }
+        if (context.KW_VOID() != null) {
+            type = VoidType.INSTANCE;
+        }
+        else if (context.KW_BOOL() != null) {
+            type = BoolType.INSTANCE;
+        }
+        else if (context.KW_CHAR() != null) {
+            type = CharType.INSTANCE;
+        }
+        else if (context.KW_STRING() != null) {
+            type = ImaginaryType.STRING;
+        }
     }
 
     @Override
     public void enterSintType(final SintTypeContext context) {
-        parsePrimitiveType(context, "Unknown signed integer kind");
-        super.enterSintType(context);
+        if (type != null) {
+            return;
+        }
+        if (context.KW_ISIZE() != null) {
+            type = SizeType.ISIZE;
+            return;
+        }
+        type = Types.integer(Integer.parseInt(context.getText().substring(1)), false, Functions.castingIdentity());
     }
 
     @Override
     public void enterUintType(final UintTypeContext context) {
-        parsePrimitiveType(context, "Unknown unsigned integer kind");
-        super.enterUintType(context);
+        if (type != null) {
+            return;
+        }
+        if (context.KW_USIZE() != null) {
+            type = SizeType.USIZE;
+            return;
+        }
+        type = Types.integer(Integer.parseInt(context.getText().substring(1)), true, Functions.castingIdentity());
     }
 
     @Override
     public void enterFloatType(final FloatTypeContext context) {
-        parsePrimitiveType(context, "Unknown floating point kind");
-        super.enterFloatType(context);
-    }
-
-    private void parsePrimitiveType(final ParserRuleContext context, final String errorMessage) {
-        final var text = context.getText();
         if (type != null) {
             return;
         }
-        final var type = Types.builtin(Identifier.parse(text));
-        if (type.isEmpty()) {
-            Logger.INSTANCE.errorln("Could not parse primitive kind '%s'", text);
-            return;
+        if (context.KW_F16() != null) {
+            type = RealType.F16;
         }
-        this.type = type.get();
+        else if (context.KW_F32() != null) {
+            type = RealType.F32;
+        }
+        else if (context.KW_F64() != null) {
+            type = RealType.F64;
+        }
+        else if (context.KW_F128() != null) {
+            type = RealType.F128;
+        }
     }
 
     public Type getType() {

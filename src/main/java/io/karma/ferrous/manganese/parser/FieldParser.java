@@ -22,7 +22,6 @@ import io.karma.ferrous.manganese.ocm.field.Field;
 import io.karma.ferrous.manganese.ocm.scope.ScopeStack;
 import io.karma.ferrous.manganese.ocm.type.Types;
 import io.karma.ferrous.manganese.util.Identifier;
-import io.karma.ferrous.manganese.util.StorageMod;
 import io.karma.ferrous.manganese.util.TokenSlice;
 import io.karma.ferrous.vanadium.FerrousParser.FieldContext;
 import io.karma.ferrous.vanadium.FerrousParser.UdtContext;
@@ -70,7 +69,6 @@ public final class FieldParser extends ParseAdapter {
             Identifier.parse(context.ident()),
             Types.parse(compiler, compileContext, capturedScopeStack, context.type()),
             Access.parse(compiler, compileContext, scopeStack, context.accessMod()),
-            StorageMod.parse(context.storageMod()),
             context.KW_MUT() != null,
             context.KW_STATIC() != null,
             capturedScopeStack.peek().getScopeType().isGlobal(),

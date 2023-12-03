@@ -34,12 +34,7 @@ public final class Mangler {
     public static String mangleSequence(final Collection<Type> types) {
         final var builder = new StringBuilder();
         for (final var type : types) {
-            final var typeName = type.getMangledName();
-            if (type.isBuiltin()) {
-                builder.append('\'').append(typeName);
-                continue;
-            }
-            builder.append('@').append(typeName);
+            builder.append(type.getMangledSequencePrefix()).append(type.getMangledName());
         }
         return builder.toString();
     }

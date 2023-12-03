@@ -33,7 +33,7 @@ public final class MonomorphizedFunction extends Function {
         super(function.getName(),
             function.getCallConv(),
             function.getType(),
-            function.isExtern(),
+            function.getModifiers(),
             function.getTokenSlice(),
             function.getParameters(),
             function.getGenericParameters(),
@@ -48,7 +48,7 @@ public final class MonomorphizedFunction extends Function {
 
     @Override
     public MonomorphizedFunction monomorphize(final List<Type> genericTypes) {
-        throw new UnsupportedOperationException("Function is already monomorphized");
+        return this;
     }
 
     // Mangleable

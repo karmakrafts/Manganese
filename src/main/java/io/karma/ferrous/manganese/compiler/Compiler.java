@@ -236,9 +236,7 @@ public final class Compiler {
         }
 
         for (final var future : futures) {
-            while (!future.isDone()) {
-                Thread.onSpinWait();
-            }
+            future.join();
         }
 
         final var moduleName = KitchenSink.getRawFileName(in);

@@ -22,13 +22,10 @@ import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.ocm.scope.Scoped;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.util.Identifier;
-import io.karma.ferrous.manganese.util.StorageMod;
 import io.karma.ferrous.manganese.util.TokenSlice;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.EnumSet;
 
 /**
  * @author Alexander Hinze
@@ -41,20 +38,17 @@ public final class Field implements Named, AccessProvider, Scoped {
     private final Type type;
     private final Access access;
     private final TokenSlice tokenSlice;
-    private final EnumSet<StorageMod> storageMods;
     private final boolean isMutable;
     private final boolean isStatic;
     private final boolean isGlobal;
     private Scope enclosingScope;
 
-    public Field(final int index, final Identifier name, final Type type, final Access access,
-                 final EnumSet<StorageMod> storageMods, final boolean isMutable, final boolean isStatic,
-                 final boolean isGlobal, final TokenSlice tokenSlice) {
+    public Field(final int index, final Identifier name, final Type type, final Access access, final boolean isMutable,
+                 final boolean isStatic, final boolean isGlobal, final TokenSlice tokenSlice) {
         this.index = index;
         this.name = name;
         this.type = type;
         this.access = access;
-        this.storageMods = storageMods;
         this.isMutable = isMutable;
         this.isStatic = isStatic;
         this.isGlobal = isGlobal;
@@ -63,10 +57,6 @@ public final class Field implements Named, AccessProvider, Scoped {
 
     public int getIndex() {
         return index;
-    }
-
-    public EnumSet<StorageMod> getStorageMods() {
-        return storageMods;
     }
 
     public Type getType() {

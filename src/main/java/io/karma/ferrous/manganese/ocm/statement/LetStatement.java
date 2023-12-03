@@ -25,13 +25,11 @@ import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.ocm.type.UserDefinedType;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Identifier;
-import io.karma.ferrous.manganese.util.StorageMod;
 import io.karma.ferrous.manganese.util.TokenSlice;
 import org.apiguardian.api.API;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
-import java.util.EnumSet;
 import java.util.List;
 
 import static org.lwjgl.llvm.LLVMCore.LLVMSetValueName2;
@@ -46,7 +44,6 @@ public final class LetStatement implements Statement, Named, ValueStorage {
     private final Identifier name;
     private final Type type;
     private final boolean isMutable;
-    private final EnumSet<StorageMod> storageMods;
     private final TokenSlice tokenSlice;
     private final List<FieldStorage> fieldValues;
     private final Expression value;
@@ -57,14 +54,12 @@ public final class LetStatement implements Statement, Named, ValueStorage {
     private boolean hasChanged;
 
     public LetStatement(final Identifier name, final Type type, final Expression value, final boolean isMutable,
-                        final boolean isInitialized, final EnumSet<StorageMod> storageMods,
-                        final TokenSlice tokenSlice) {
+                        final boolean isInitialized, final TokenSlice tokenSlice) {
         this.name = name;
         this.type = type;
         this.value = value;
         this.isMutable = isMutable;
         this.isInitialized = isInitialized;
-        this.storageMods = storageMods;
         this.tokenSlice = tokenSlice;
         if (type instanceof UserDefinedType udt) {
             fieldValues = udt.fields().stream().map(f -> new FieldStorage(f, this)).toList();
@@ -75,13 +70,8 @@ public final class LetStatement implements Statement, Named, ValueStorage {
     }
 
     public LetStatement(final Identifier name, final Expression value, final boolean isMutable,
-                        final boolean isInitialized, final EnumSet<StorageMod> storageMods,
-                        final TokenSlice tokenSlice) {
-        this(name, value.getType(), value, isMutable, isInitialized, storageMods, tokenSlice);
-    }
-
-    public EnumSet<StorageMod> getStorageMods() {
-        return storageMods;
+                        final boolean isInitialized, final TokenSlice tokenSlice) {
+        this(name, value.getType(), value, isMutable, isInitialized, tokenSlice);
     }
 
     public long getImmutableAddress() {

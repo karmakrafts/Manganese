@@ -19,9 +19,9 @@ import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.CompileErrorCode;
 import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.module.Module;
-import io.karma.ferrous.manganese.module.ModuleData;
 import io.karma.ferrous.manganese.ocm.AttributeUsage;
 import io.karma.ferrous.manganese.ocm.function.Function;
+import io.karma.ferrous.manganese.ocm.function.FunctionModifier;
 import io.karma.ferrous.manganese.ocm.function.Parameter;
 import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
 import io.karma.ferrous.manganese.parser.ParseAdapter;
@@ -48,15 +48,15 @@ public final class FunctionDeclarationPass implements CompilePass {
     public void run(final Compiler compiler, final CompileContext compileContext, final Module module,
                     final ExecutorService executor) {
         Profiler.INSTANCE.push();
-        final var moduleData = compileContext.getOrCreateModuleData(module.getName());
-        compileContext.walkParseTree(new ParseListenerImpl(compiler, compileContext, moduleData));
-        resolveFunctionTypes(compileContext, moduleData);
-        materializeFunctionTypes(compiler, module, moduleData);
+        compileContext.walkParseTree(new ParseListenerImpl(compiler, compileContext));
+        resolveFunctionTypes(compileContext);
+        materializeFunctionTypes(compiler, compileContext, module);
         Profiler.INSTANCE.pop();
     }
 
-    private void resolveFunctionTypes(final CompileContext compileContext, final ModuleData moduleData) {
+    private void resolveFunctionTypes(final CompileContext compileContext) {
         Profiler.INSTANCE.push();
+        final var moduleData = compileContext.getOrCreateModuleData();
         final var overloadSets = moduleData.getFunctions().values();
         for (final var overloadSet : overloadSets) {
             for (final var function : overloadSet.values()) {
@@ -75,9 +75,11 @@ public final class FunctionDeclarationPass implements CompilePass {
         Profiler.INSTANCE.pop();
     }
 
-    public void materializeFunctionTypes(final Compiler compiler, final Module module, final ModuleData moduleData) {
+    public void materializeFunctionTypes(final Compiler compiler, final CompileContext compileContext,
+                                         final Module module) {
         Logger.INSTANCE.debugln("Pre-materializing function prototypes");
         Profiler.INSTANCE.push();
+        final var moduleData = compileContext.getOrCreateModuleData();
         final var overloadSets = moduleData.getFunctions().values();
         for (final var overloadSet : overloadSets) {
             final var functions = overloadSet.values();
@@ -89,12 +91,8 @@ public final class FunctionDeclarationPass implements CompilePass {
     }
 
     private static final class ParseListenerImpl extends ParseAdapter {
-        private final ModuleData moduleData;
-
-        public ParseListenerImpl(final Compiler compiler, final CompileContext compileContext,
-                                 final ModuleData moduleData) {
+        public ParseListenerImpl(final Compiler compiler, final CompileContext compileContext) {
             super(compiler, compileContext);
-            this.moduleData = moduleData;
         }
 
         @Override
@@ -133,15 +131,16 @@ public final class FunctionDeclarationPass implements CompilePass {
                 compileContext,
                 scopeStack,
                 context.attributeList());
+            final var modifiers = FunctionModifier.parse(compileContext, context.functionMod());
             final var function = scopeStack.applyEnclosingScopes(new Function(name,
                 callConv,
                 type,
-                context.KW_EXTERN() != null,
+                modifiers,
                 TokenSlice.from(compileContext, context),
                 params,
                 genericParams,
                 attributeUsages));
-            moduleData.getFunctions().computeIfAbsent(function.getQualifiedName(),
+            compileContext.getOrCreateModuleData().getFunctions().computeIfAbsent(function.getQualifiedName(),
                 n -> new HashMap<>()).put(function.getType(), function);
             super.enterProtoFunction(context); // Make sure we pick up the default scope for function prototypes
         }
@@ -149,7 +148,7 @@ public final class FunctionDeclarationPass implements CompilePass {
         private boolean checkIsFunctionAlreadyDefined(final ProtoFunctionContext context) {
             final var identContext = context.functionIdent();
             final var name = FunctionUtils.parseFunctionName(identContext);
-            final var overloadSet = moduleData.getFunctions().get(name);
+            final var overloadSet = compileContext.getOrCreateModuleData().getFunctions().get(name);
             if (overloadSet != null) {
                 final var type = FunctionUtils.parseFunctionType(compiler, compileContext, scopeStack, context);
                 final var function = overloadSet.get(type);

@@ -38,7 +38,6 @@ public final class FieldStorage implements ValueStorage {
     private final Field field;
     private final ValueStorage parent;
     private final List<FieldStorage> fieldValues;
-    private Expression value;
     private boolean hasChanged;
     private boolean isInitialized;
 
@@ -46,9 +45,6 @@ public final class FieldStorage implements ValueStorage {
         this.field = field;
         this.parent = parent;
         isInitialized = parent != null && parent.isInitialized();
-        if (isInitialized) {
-            value = field.getType().makeDefaultValue();
-        }
         if (field.getType() instanceof UserDefinedType udt) {
             fieldValues = udt.fields().stream().map(f -> new FieldStorage(f, this)).toList();
         }
@@ -93,7 +89,7 @@ public final class FieldStorage implements ValueStorage {
 
     @Override
     public @Nullable Expression getValue() {
-        return value;
+        return null; // TODO: fixme
     }
 
     @Override

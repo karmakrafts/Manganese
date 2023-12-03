@@ -15,7 +15,6 @@
 
 package io.karma.ferrous.manganese.ee;
 
-import io.karma.ferrous.manganese.ocm.type.BuiltinType;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import org.apiguardian.api.API;
@@ -30,18 +29,18 @@ import static org.lwjgl.system.MemoryUtil.NULL;
  */
 @API(status = API.Status.INTERNAL)
 public final class RealValue implements GenericValue {
-    private final BuiltinType type;
+    private final Type type;
     private final long address;
     private final boolean isAllocated;
     private boolean isDisposed;
 
-    RealValue(final BuiltinType type, final long address) {
+    RealValue(final Type type, final long address) {
         this.type = type;
         this.address = address;
         isAllocated = false;
     }
 
-    RealValue(final TargetMachine targetMachine, final BuiltinType type, final double value) {
+    RealValue(final TargetMachine targetMachine, final Type type, final double value) {
         this.type = type;
         final var typeAddress = type.materialize(targetMachine);
         address = LLVMCreateGenericValueOfFloat(typeAddress, value);

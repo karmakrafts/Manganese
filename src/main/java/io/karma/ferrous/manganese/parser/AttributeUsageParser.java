@@ -57,7 +57,7 @@ public final class AttributeUsageParser extends ParseAdapter {
             compileContext.reportError(context.start, CompileErrorCode.E3002);
             return;
         }
-        if(udt.kind() != UserDefinedTypeKind.ATTRIBUTE) {
+        if (udt.kind() != UserDefinedTypeKind.ATTRIBUTE) {
             compileContext.reportError(context.start, CompileErrorCode.E4016);
             return;
         }

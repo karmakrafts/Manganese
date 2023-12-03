@@ -20,9 +20,9 @@ import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.ocm.scope.ScopeType;
 import io.karma.ferrous.manganese.ocm.statement.ReturnStatement;
 import io.karma.ferrous.manganese.ocm.statement.Statement;
-import io.karma.ferrous.manganese.ocm.type.BuiltinType;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.ocm.type.Types;
+import io.karma.ferrous.manganese.ocm.type.VoidType;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.TokenSlice;
@@ -63,12 +63,12 @@ public final class ScopeExpression implements Expression, Scope {
                 continue;
             }
             final var type = returnStatement.getValue().getType();
-            if (type == BuiltinType.VOID) {
+            if (type == VoidType.INSTANCE) {
                 continue;
             }
             types.add(type);
         }
-        return types.isEmpty() ? BuiltinType.VOID : Types.findCommonType(types);
+        return types.isEmpty() ? VoidType.INSTANCE : Types.findCommonType(types);
     }
 
     public UUID getUUID() {

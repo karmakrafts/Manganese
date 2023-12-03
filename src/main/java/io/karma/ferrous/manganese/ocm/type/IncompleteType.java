@@ -75,7 +75,7 @@ public final class IncompleteType implements Type {
     }
 
     @Override
-    public Expression makeDefaultValue() {
+    public Expression makeDefaultValue(final TargetMachine targetMachine) {
         throw new IllegalStateException("Incomplete type does not have default value");
     }
 

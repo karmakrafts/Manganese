@@ -18,8 +18,8 @@ package io.karma.ferrous.manganese.ocm.expr;
 import io.karma.ferrous.manganese.ocm.ir.IRBuilder;
 import io.karma.ferrous.manganese.ocm.ir.IRContext;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
-import io.karma.ferrous.manganese.ocm.type.BuiltinType;
 import io.karma.ferrous.manganese.ocm.type.Type;
+import io.karma.ferrous.manganese.ocm.type.TypeKind;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Operator;
 import io.karma.ferrous.manganese.util.TokenSlice;
@@ -50,10 +50,10 @@ public final class UnaryExpression implements Expression {
     }
 
     private long emitNegate(final long address, final TargetMachine targetMachine, final IRContext irContext,
-                            final BuiltinType type) {
+                            final Type type) {
         final var builder = irContext.getCurrentOrCreate();
-        final var zero = type.makeDefaultValue().emit(targetMachine, irContext);
-        if (type.isFloatType()) {
+        final var zero = type.makeDefaultValue(targetMachine).emit(targetMachine, irContext);
+        if (type.getKind() == TypeKind.REAL) {
             return builder.fsub(zero, address);
         }
         return builder.sub(zero, address);
@@ -109,12 +109,12 @@ public final class UnaryExpression implements Expression {
         if (type.isReference()) {
             type = type.getBaseType();
         }
-        if (!(type instanceof BuiltinType builtinType)) {
+        if (!type.getKind().isBuiltin()) {
             return NULL; // TODO: implement user defined operator calls
         }
         final var address = value.emit(targetMachine, irContext);
         return switch(op) { // @formatter:off
-            case MINUS, PLUS    -> emitNegate(address, targetMachine, irContext, builtinType);
+            case MINUS, PLUS    -> emitNegate(address, targetMachine, irContext, type);
             case INV            -> builder.xor(address, LLVMConstInt(type.materialize(targetMachine), -1, false));
             case NOT            -> builder.xor(address, LLVMConstInt(type.materialize(targetMachine), 1, false));
             case PRE_INC        -> emitPreIncrement(address, builder);

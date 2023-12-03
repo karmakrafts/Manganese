@@ -19,7 +19,7 @@ import io.karma.ferrous.manganese.ocm.constant.VoidConstant;
 import io.karma.ferrous.manganese.ocm.expr.Expression;
 import io.karma.ferrous.manganese.ocm.ir.IRContext;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
-import io.karma.ferrous.manganese.ocm.type.BuiltinType;
+import io.karma.ferrous.manganese.ocm.type.VoidType;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.TokenSlice;
 import org.jetbrains.annotations.Nullable;
@@ -72,7 +72,7 @@ public final class ReturnStatement implements Statement {
         if (type.isImaginary()) {
             return 0L; // We don't emit anything for imaginary types
         }
-        if (type == BuiltinType.VOID) {
+        if (type == VoidType.INSTANCE) {
             return builder.ret();
         }
         return builder.ret(value.emit(targetMachine, irContext));

@@ -87,13 +87,13 @@ public final class DerivedType implements Type {
     }
 
     @Override
-    public Expression makeDefaultValue() {
+    public Expression makeDefaultValue(final TargetMachine targetMachine) {
         if (isPointer()) {
             final var value = new NullConstant(TokenSlice.EMPTY);
             value.setContextualType(baseType);
             return value;
         }
-        return baseType.makeDefaultValue();
+        return baseType.makeDefaultValue(targetMachine);
     }
 
     @Override

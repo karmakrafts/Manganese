@@ -41,10 +41,10 @@ public record CompileError(@Nullable Token token, @Nullable List<Token> lineToke
     private static void handleTokenColor(final Token token, final Ansi buffer) {
         final var tokenType = token.getType();
         // @formatter:off
-        if (tokenType >= FerrousLexer.KW_STACKALLOC && tokenType <= FerrousLexer.KW_F64) {
+        if (tokenType >= FerrousLexer.KW_STACKALLOC && tokenType <= FerrousLexer.KW_UTYPE) {
             buffer.fgBright(Color.MAGENTA);
         }
-        else if (tokenType >= FerrousLexer.LITERAL_I8 && tokenType <= FerrousLexer.LITERAL_F64) {
+        else if (tokenType >= FerrousLexer.LITERAL_INT && tokenType <= FerrousLexer.LITERAL_F128) {
             buffer.fgBright(Color.BLUE);
         }
         else if ((tokenType >= FerrousLexer.ML_STRING_END && tokenType <= FerrousLexer.ML_STRING_BEGIN)

@@ -15,63 +15,84 @@
 
 package io.karma.ferrous.manganese.ocm.type;
 
+import io.karma.ferrous.manganese.ocm.constant.BoolConstant;
 import io.karma.ferrous.manganese.ocm.expr.Expression;
+import io.karma.ferrous.manganese.ocm.scope.DefaultScope;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Identifier;
-import io.karma.ferrous.manganese.util.Mangler;
+import io.karma.ferrous.manganese.util.TokenSlice;
+import io.karma.ferrous.manganese.util.TokenUtils;
+import io.karma.ferrous.vanadium.FerrousLexer;
 import org.apiguardian.api.API;
-import org.jetbrains.annotations.Nullable;
-
-import java.util.List;
+import org.lwjgl.llvm.LLVMCore;
 
 /**
  * @author Alexander Hinze
- * @since 27/11/2023
+ * @since 03/12/2023
  */
 @API(status = API.Status.INTERNAL)
-public final class MonomorphizedType implements Type {
-    private final Type baseType;
-    private final List<Type> genericTypes;
-    private Scope enclosingScope;
+public final class BoolType implements Type {
+    public static final char SEQUENCE_PREFIX = '\'';
+    public static final BoolType INSTANCE = new BoolType();
+    private static final Identifier NAME = new Identifier(TokenUtils.getLiteral(FerrousLexer.KW_BOOL));
+    private static final String MANGLED_NAME = "B";
 
-    MonomorphizedType(final Type baseType, final List<Type> genericTypes) {
-        this.baseType = baseType;
-        this.genericTypes = genericTypes;
+    // @formatter:off
+    private BoolType() {}
+    // @formatter:on
+
+    @Override
+    public char getMangledSequencePrefix() {
+        return SEQUENCE_PREFIX;
     }
 
     @Override
     public String getMangledName() {
-        return String.format("%s<%s>", Type.super.getMangledName(), Mangler.mangleSequence(genericTypes));
+        return MANGLED_NAME;
+    }
+
+    @Override
+    public boolean isBuiltin() {
+        return true;
+    }
+
+    @Override
+    public TypeKind getKind() {
+        return TypeKind.BOOL;
     }
 
     @Override
     public Identifier getName() {
-        return baseType.getName();
+        return NAME;
     }
 
     @Override
-    public @Nullable Scope getEnclosingScope() {
-        return enclosingScope;
+    public Scope getEnclosingScope() {
+        return DefaultScope.GLOBAL;
     }
 
     @Override
     public void setEnclosingScope(final Scope enclosingScope) {
-        this.enclosingScope = enclosingScope;
     }
 
     @Override
     public long materialize(final TargetMachine machine) {
-        return 0L;
+        return LLVMCore.LLVMInt1Type();
     }
 
     @Override
     public Type getBaseType() {
-        return baseType;
+        return this;
     }
 
     @Override
     public Expression makeDefaultValue(final TargetMachine targetMachine) {
-        return null;
+        return new BoolConstant(false, TokenSlice.EMPTY);
+    }
+
+    @Override
+    public String toString() {
+        return getName().toString();
     }
 }
