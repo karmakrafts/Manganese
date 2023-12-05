@@ -16,7 +16,6 @@
 package io.karma.ferrous.manganese.parser;
 
 import io.karma.ferrous.manganese.compiler.CompileContext;
-import io.karma.ferrous.manganese.compiler.Compiler;
 import org.apiguardian.api.API;
 
 /**
@@ -25,9 +24,7 @@ import org.apiguardian.api.API;
  */
 @API(status = API.Status.INTERNAL)
 public final class StringLiteralParser extends ParseAdapter {
-    public StringLiteralParser(final Compiler compiler, final CompileContext compileContext) {
-        super(compiler, compileContext);
+    public StringLiteralParser(final CompileContext compileContext) {
+        super(compileContext);
     }
-
-
 }

@@ -16,7 +16,6 @@
 package io.karma.ferrous.manganese.ocm;
 
 import io.karma.ferrous.manganese.compiler.CompileContext;
-import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.expr.Expression;
 import io.karma.ferrous.manganese.ocm.scope.ScopeStack;
 import io.karma.ferrous.manganese.ocm.type.UserDefinedType;
@@ -38,22 +37,22 @@ import java.util.Map;
  */
 @API(status = API.Status.INTERNAL)
 public record AttributeUsage(UserDefinedType attribute, Map<Identifier, Expression> values) {
-    public static AttributeUsage parse(final Compiler compiler, final CompileContext compileContext,
-                                       final ScopeStack capturedScopeStack, final AttribUsageContext context) {
-        final var parser = new AttributeUsageParser(compiler, compileContext, capturedScopeStack);
+    public static AttributeUsage parse(final CompileContext compileContext, final ScopeStack capturedScopeStack,
+                                       final AttribUsageContext context) {
+        final var parser = new AttributeUsageParser(compileContext, capturedScopeStack);
         ParseTreeWalker.DEFAULT.walk(parser, context);
         return parser.getUsage();
     }
 
-    public static List<AttributeUsage> parse(final Compiler compiler, final CompileContext compileContext,
-                                             final ScopeStack capturedScopeStack, final AttributeListContext context) {
+    public static List<AttributeUsage> parse(final CompileContext compileContext, final ScopeStack capturedScopeStack,
+                                             final AttributeListContext context) {
         final var usageContexts = context.attribUsage();
         if (usageContexts == null || usageContexts.isEmpty()) {
             return Collections.emptyList();
         }
         final var usages = new ArrayList<AttributeUsage>();
         for (final var usageContext : usageContexts) {
-            usages.add(parse(compiler, compileContext, capturedScopeStack, usageContext));
+            usages.add(parse(compileContext, capturedScopeStack, usageContext));
         }
         return usages;
     }

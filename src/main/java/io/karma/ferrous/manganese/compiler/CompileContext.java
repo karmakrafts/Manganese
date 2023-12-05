@@ -44,6 +44,15 @@ public final class CompileContext implements AutoCloseable {
     private final ConcurrentHashMap<String, ModuleData> moduleData = new ConcurrentHashMap<>();
     private final AtomicReference<CompileStatus> status = new AtomicReference<>(CompileStatus.SUCCESS);
     private final ThreadLocal<ThreadLocals> threadLocals = ThreadLocal.withInitial(ThreadLocals::new);
+    private Compiler compiler;
+
+    public Compiler getCompiler() {
+        return Objects.requireNonNull(compiler);
+    }
+
+    public void setCompiler(final @Nullable Compiler compiler) {
+        this.compiler = compiler;
+    }
 
     public void addModule(final Module module) {
         modules.put(module.getName(), module);

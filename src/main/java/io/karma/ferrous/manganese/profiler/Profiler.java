@@ -15,141 +15,26 @@
 
 package io.karma.ferrous.manganese.profiler;
 
-import io.karma.ferrous.manganese.util.Logger;
 import org.apiguardian.api.API;
-import org.barfuin.texttree.api.DefaultNode;
-import org.barfuin.texttree.api.TextTree;
-import org.barfuin.texttree.api.TreeOptions;
-import org.barfuin.texttree.api.style.TreeStyles;
-import org.fusesource.jansi.Ansi;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Stack;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author Alexander Hinze
- * @since 01/11/2023
+ * @since 05/12/2023
  */
 @API(status = API.Status.INTERNAL)
-public final class Profiler {
-    public static final Profiler INSTANCE = new Profiler();
-    private final ThreadLocal<Stack<ProfilerSection>> sectionStack = ThreadLocal.withInitial(Stack::new);
-    private final ConcurrentHashMap<Long, ArrayList<ProfilerSection>> sections = new ConcurrentHashMap<>();
+public interface Profiler extends AutoCloseable {
+    void init();
 
-    // @formatter:off
-    private Profiler() {}
-    // @formatter:on
+    void push();
 
-    public void reset() {
-        sections.clear();
-    }
+    void push(final String sectionName);
 
-    public void push(final String name) {
-        try {
-            final var traceElements = Thread.currentThread().getStackTrace();
-            if (traceElements.length < 3) {
-                throw new IllegalStateException("Cannot create trace for profiler section");
-            }
-            final var element = traceElements[2];
-            final var stack = sectionStack.get();
-            final var text = String.format("%s:%d#%s - %s",
-                element.getFileName(),
-                element.getLineNumber(),
-                element.getMethodName(),
-                name);
-            stack.push(new ProfilerSection(text, stack.size()));
-        }
-        catch (Exception error) {
-            Logger.INSTANCE.errorln("Could not push profiler section: %s", error.getMessage());
-        }
-    }
+    void pop();
 
-    public void push() {
-        try {
-            final var traceElements = Thread.currentThread().getStackTrace();
-            if (traceElements.length < 3) {
-                throw new IllegalStateException("Cannot create trace for profiler section");
-            }
-            final var element = traceElements[2];
-            final var stack = sectionStack.get();
-            final var text = String.format("%s:%d#%s",
-                element.getFileName(),
-                element.getLineNumber(),
-                element.getMethodName());
-            stack.push(new ProfilerSection(text, stack.size()));
-        }
-        catch (Exception error) {
-            Logger.INSTANCE.errorln("Could not push profiler section: %s", error.getMessage());
-        }
-    }
+    void dispose();
 
-    public void pop() {
-        final var section = sectionStack.get().pop();
-        section.setEndTime(); // Update end-time when popping a section
-        sections.computeIfAbsent(section.getThreadId(), id -> new ArrayList<>()).add(section);
-    }
-
-    public long[] getRecordedThreads() {
-        final var result = new long[sections.size()];
-        final var keys = sections.keySet();
-        var index = 0;
-        for (final var key : keys) {
-            result[index++] = key;
-        }
-        return result;
-    }
-
-    public List<ProfilerSection> getSections(final long threadId) {
-        if (!sections.containsKey(threadId)) {
-            return Collections.emptyList();
-        }
-        return sections.get(threadId);
-    }
-
-    public String renderSection(final long threadId) {
-        final var node = new DefaultNode(String.format("Thread %d", threadId));
-        for (final var section : getSections(threadId)) {
-            final var time = section.getTime(TimeUnit.MILLISECONDS);
-            var color = Ansi.Color.BLUE;
-            if (time > 2) {
-                color = Ansi.Color.GREEN;
-            }
-            if (time > 20) {
-                color = Ansi.Color.YELLOW;
-            }
-            if (time > 200) {
-                color = Ansi.Color.RED;
-            }
-            // @formatter:off
-            node.addChild(new DefaultNode(Ansi.ansi()
-                .fg(color)
-                .a(section)
-                .a(Ansi.Attribute.RESET)
-                .toString()));
-            // @formatter:on
-        }
-        final var options = new TreeOptions();
-        options.setStyle(TreeStyles.UNICODE_ROUNDED);
-        return TextTree.newInstance(options).render(node);
-    }
-
-    public String renderSections() {
-        final var builder = new StringBuilder();
-        final var threadIds = getRecordedThreads();
-        final var numThreads = threadIds.length;
-        for (var i = 0; i < numThreads; i++) {
-            final var threadId = threadIds[i];
-            builder.append(renderSection(threadId));
-            if (i < numThreads - 1) {
-                builder.append("\n");
-            }
-        }
-        return builder.toString();
+    @Override
+    default void close() {
+        dispose();
     }
 }
-
-

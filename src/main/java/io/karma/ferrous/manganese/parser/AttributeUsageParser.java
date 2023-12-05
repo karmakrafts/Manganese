@@ -17,7 +17,6 @@ package io.karma.ferrous.manganese.parser;
 
 import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.CompileErrorCode;
-import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.AttributeUsage;
 import io.karma.ferrous.manganese.ocm.expr.Expression;
 import io.karma.ferrous.manganese.ocm.scope.ScopeStack;
@@ -41,9 +40,8 @@ public final class AttributeUsageParser extends ParseAdapter {
     private final LinkedHashMap<Identifier, Expression> values = new LinkedHashMap<>();
     private UserDefinedType attribute;
 
-    public AttributeUsageParser(final Compiler compiler, final CompileContext compileContext,
-                                final ScopeStack capturedScopeStack) {
-        super(compiler, compileContext);
+    public AttributeUsageParser(final CompileContext compileContext, final ScopeStack capturedScopeStack) {
+        super(compileContext);
         this.capturedScopeStack = capturedScopeStack;
     }
 

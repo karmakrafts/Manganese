@@ -16,7 +16,6 @@
 package io.karma.ferrous.manganese.parser;
 
 import io.karma.ferrous.manganese.compiler.CompileContext;
-import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.function.Function;
 import io.karma.ferrous.manganese.ocm.scope.DefaultScope;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
@@ -43,19 +42,13 @@ import java.util.UUID;
  */
 @API(status = Status.INTERNAL)
 public abstract class ParseAdapter implements FerrousParserListener {
-    protected final Compiler compiler;
     protected final CompileContext compileContext;
     protected ScopeStack scopeStack = new ScopeStack();
     protected Scope lastScope;
 
-    protected ParseAdapter(final Compiler compiler, final CompileContext compileContext) {
-        this.compiler = compiler;
+    protected ParseAdapter(final CompileContext compileContext) {
         this.compileContext = compileContext;
         scopeStack.push(DefaultScope.GLOBAL);
-    }
-
-    public Compiler getCompiler() {
-        return compiler;
     }
 
     public CompileContext getCompileContext() {
@@ -81,7 +74,7 @@ public abstract class ParseAdapter implements FerrousParserListener {
     protected @Nullable Function getFunction(final ProtoFunctionContext context) {
         final var name = FunctionUtils.parseFunctionName(context.functionIdent());
         final var scopeName = scopeStack.getScopeName();
-        final var type = FunctionUtils.parseFunctionType(compiler, compileContext, scopeStack, context);
+        final var type = FunctionUtils.parseFunctionType(compileContext, scopeStack, context);
         return compileContext.getOrCreateModuleData().findFunction(name, scopeName, type);
     }
 

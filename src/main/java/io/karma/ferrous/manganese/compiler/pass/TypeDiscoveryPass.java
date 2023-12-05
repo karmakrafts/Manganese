@@ -17,7 +17,6 @@ package io.karma.ferrous.manganese.compiler.pass;
 
 import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.CompileErrorCode;
-import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.module.Module;
 import io.karma.ferrous.manganese.ocm.field.Field;
 import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
@@ -27,7 +26,6 @@ import io.karma.ferrous.manganese.ocm.type.UserDefinedType;
 import io.karma.ferrous.manganese.ocm.type.UserDefinedTypeKind;
 import io.karma.ferrous.manganese.parser.ParseAdapter;
 import io.karma.ferrous.manganese.parser.UserDefinedTypeParser;
-import io.karma.ferrous.manganese.profiler.Profiler;
 import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.KitchenSink;
 import io.karma.ferrous.manganese.util.Logger;
@@ -48,17 +46,17 @@ import java.util.concurrent.ExecutorService;
 @API(status = API.Status.INTERNAL)
 public final class TypeDiscoveryPass implements CompilePass {
     @Override
-    public void run(final Compiler compiler, final CompileContext compileContext, final Module module,
-                    final ExecutorService executor) {
-        Profiler.INSTANCE.push();
+    public void run(final CompileContext compileContext, final Module module, final ExecutorService executor) {
+        final var profiler = compileContext.getCompiler().getProfiler();
+        profiler.push();
         BuiltinAttributes.inject(compileContext); // Inject builtin attributes
-        compileContext.walkParseTree(new ParseListenerImpl(compiler, compileContext));
-        Profiler.INSTANCE.pop();
+        compileContext.walkParseTree(new ParseListenerImpl(compileContext));
+        profiler.pop();
     }
 
     private static final class ParseListenerImpl extends ParseAdapter {
-        public ParseListenerImpl(final Compiler compiler, final CompileContext compileContext) {
-            super(compiler, compileContext);
+        public ParseListenerImpl(final CompileContext compileContext) {
+            super(compileContext);
         }
 
         @Override
@@ -67,11 +65,8 @@ public final class TypeDiscoveryPass implements CompilePass {
             if (checkIsTypeAlreadyDefined(identContext)) {
                 return;
             }
-            final var type = Types.parse(compiler, compileContext, scopeStack, context.type());
-            final var genericParams = GenericParameter.parse(compiler,
-                compileContext,
-                scopeStack,
-                context.genericParamList());
+            final var type = Types.parse(compileContext, scopeStack, context.type());
+            final var genericParams = GenericParameter.parse(compileContext, scopeStack, context.genericParamList());
             final var aliasedType = Types.aliased(Identifier.parse(identContext),
                 type,
                 scopeStack::applyEnclosingScopes,
@@ -86,10 +81,7 @@ public final class TypeDiscoveryPass implements CompilePass {
             if (checkIsTypeAlreadyDefined(identContext)) {
                 return;
             }
-            final var genericParams = GenericParameter.parse(compiler,
-                compileContext,
-                scopeStack,
-                context.genericParamList());
+            final var genericParams = GenericParameter.parse(compileContext, scopeStack, context.genericParamList());
             pushScope(analyzeFieldLayout(context,
                 Identifier.parse(identContext),
                 genericParams,
@@ -102,10 +94,7 @@ public final class TypeDiscoveryPass implements CompilePass {
             if (checkIsTypeAlreadyDefined(identContext)) {
                 return;
             }
-            final var genericParams = GenericParameter.parse(compiler,
-                compileContext,
-                scopeStack,
-                context.genericParamList());
+            final var genericParams = GenericParameter.parse(compileContext, scopeStack, context.genericParamList());
             pushScope(analyzeFieldLayout(context,
                 Identifier.parse(identContext),
                 genericParams,
@@ -130,10 +119,7 @@ public final class TypeDiscoveryPass implements CompilePass {
             if (checkIsTypeAlreadyDefined(identContext)) {
                 return;
             }
-            final var genericParams = GenericParameter.parse(compiler,
-                compileContext,
-                scopeStack,
-                context.genericParamList());
+            final var genericParams = GenericParameter.parse(compileContext, scopeStack, context.genericParamList());
             pushScope(analyzeFieldLayout(context,
                 Identifier.parse(identContext),
                 genericParams,
@@ -155,7 +141,7 @@ public final class TypeDiscoveryPass implements CompilePass {
         private UserDefinedType analyzeFieldLayout(final ParserRuleContext parent, final Identifier name,
                                                    final List<GenericParameter> genericParams,
                                                    final UserDefinedTypeKind kind) {
-            final var layoutAnalyzer = new UserDefinedTypeParser(compiler, compileContext, scopeStack);
+            final var layoutAnalyzer = new UserDefinedTypeParser(compileContext, scopeStack);
             ParseTreeWalker.DEFAULT.walk(layoutAnalyzer, parent);
 
             final var fields = layoutAnalyzer.getFields();

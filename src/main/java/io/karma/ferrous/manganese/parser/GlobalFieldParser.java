@@ -16,7 +16,6 @@
 package io.karma.ferrous.manganese.parser;
 
 import io.karma.ferrous.manganese.compiler.CompileContext;
-import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.field.Field;
 import org.apiguardian.api.API;
 
@@ -30,7 +29,7 @@ import java.util.ArrayList;
 public final class GlobalFieldParser extends ParseAdapter {
     private final ArrayList<Field> fields = new ArrayList<>();
 
-    public GlobalFieldParser(final Compiler compiler, final CompileContext compileContext) {
-        super(compiler, compileContext);
+    public GlobalFieldParser(final CompileContext compileContext) {
+        super(compileContext);
     }
 }

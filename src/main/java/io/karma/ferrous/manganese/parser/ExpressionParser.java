@@ -17,7 +17,6 @@ package io.karma.ferrous.manganese.parser;
 
 import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.CompileErrorCode;
-import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.ValueStorage;
 import io.karma.ferrous.manganese.ocm.constant.*;
 import io.karma.ferrous.manganese.ocm.expr.*;
@@ -59,16 +58,15 @@ public final class ExpressionParser extends ParseAdapter {
     private Expression expression;
     private boolean isAtEnd;
 
-    public ExpressionParser(final Compiler compiler, final CompileContext compileContext,
-                            final ScopeStack capturedScopeStack, final @Nullable Object parent) {
-        super(compiler, compileContext);
+    public ExpressionParser(final CompileContext compileContext, final ScopeStack capturedScopeStack,
+                            final @Nullable Object parent) {
+        super(compileContext);
         this.capturedScopeStack = capturedScopeStack;
         this.parent = parent;
     }
 
-    public static List<Expression> parse(final Compiler compiler, final CompileContext compileContext,
-                                         final ScopeStack scopeStack, final @Nullable ExprListContext context,
-                                         final @Nullable Object parent) {
+    public static List<Expression> parse(final CompileContext compileContext, final ScopeStack scopeStack,
+                                         final @Nullable ExprListContext context, final @Nullable Object parent) {
         if (context == null) {
             return Collections.emptyList();
         }
@@ -79,7 +77,7 @@ public final class ExpressionParser extends ParseAdapter {
         // @formatter:off
         return contexts.stream()
             .map(exprContext -> {
-                final var expression = parse(compiler, compileContext, scopeStack, exprContext, parent);
+                final var expression = parse(compileContext, scopeStack, exprContext, parent);
                 if(expression == null) {
                     compileContext.reportError(exprContext.start, CompileErrorCode.E2001);
                 }
@@ -89,13 +87,12 @@ public final class ExpressionParser extends ParseAdapter {
         // @formatter:on
     }
 
-    public static @Nullable Expression parse(final Compiler compiler, final CompileContext compileContext,
-                                             final ScopeStack scopeStack, final @Nullable ParseTree context,
-                                             final @Nullable Object parent) {
+    public static @Nullable Expression parse(final CompileContext compileContext, final ScopeStack scopeStack,
+                                             final @Nullable ParseTree context, final @Nullable Object parent) {
         if (context == null) {
             return null;
         }
-        final var parser = new ExpressionParser(compiler, compileContext, scopeStack, parent);
+        final var parser = new ExpressionParser(compileContext, scopeStack, parent);
         ParseTreeWalker.DEFAULT.walk(parser, context);
         return parser.getExpression();
     }
@@ -139,7 +136,7 @@ public final class ExpressionParser extends ParseAdapter {
             compileContext.reportError(context.start, CompileErrorCode.E2001);
             return null;
         }
-        final var expr = parse(compiler, compileContext, capturedScopeStack, exprOpt.get(), parent);
+        final var expr = parse(compileContext, capturedScopeStack, exprOpt.get(), parent);
         if (expr == null) {
             compileContext.reportError(context.start, CompileErrorCode.E2001);
             return null;
@@ -159,12 +156,12 @@ public final class ExpressionParser extends ParseAdapter {
             compileContext.reportError(context.start, opText, CompileErrorCode.E4014);
             return null;
         }
-        final var lhs = parse(compiler, compileContext, capturedScopeStack, children.get(0), parent);
+        final var lhs = parse(compileContext, capturedScopeStack, children.get(0), parent);
         if (lhs == null) {
             compileContext.reportError(context.start, CompileErrorCode.E2001);
             return null;
         }
-        final var rhs = parse(compiler, compileContext, capturedScopeStack, children.get(2), parent);
+        final var rhs = parse(compileContext, capturedScopeStack, children.get(2), parent);
         if (rhs == null) {
             compileContext.reportError(context.start, CompileErrorCode.E2001);
             return null;
@@ -200,7 +197,7 @@ public final class ExpressionParser extends ParseAdapter {
     private @Nullable CallExpression parseCallExpr(final ExprContext exprContext,
                                                    final @Nullable ExprListContext argsContext,
                                                    final List<ParseTree> children) {
-        final var expr = parse(compiler, compileContext, capturedScopeStack, exprContext, parent);
+        final var expr = parse(compileContext, capturedScopeStack, exprContext, parent);
         if (!(expr instanceof ReferenceExpression refExpr)) {
             return null;
         }
@@ -208,7 +205,7 @@ public final class ExpressionParser extends ParseAdapter {
         if (genericListOpt.isPresent()) {
             // TODO: parse generic list
         }
-        final var args = parse(compiler, compileContext, capturedScopeStack, argsContext, parent);
+        final var args = parse(compileContext, capturedScopeStack, argsContext, parent);
         final var function = switch (refExpr.getReference()) {
             case UnresolvedFunctionReference unresolvedRef -> {
                 unresolvedRef.setContextualParamTypes(args.stream().map(Expression::getType).toList());
@@ -281,7 +278,7 @@ public final class ExpressionParser extends ParseAdapter {
 
     private @Nullable ReferenceExpression parseBinaryReference(final ParserRuleContext context,
                                                                final List<ParseTree> children) {
-        final var expr = parse(compiler, compileContext, capturedScopeStack, children.get(0), parent);
+        final var expr = parse(compileContext, capturedScopeStack, children.get(0), parent);
         if (expr == null) {
             return null;
         }
@@ -340,7 +337,7 @@ public final class ExpressionParser extends ParseAdapter {
                 }
             }
             if (children.get(0) instanceof ExprContext exprContext) {
-                final var expr = parse(compiler, compileContext, scopeStack, exprContext, parent);
+                final var expr = parse(compileContext, scopeStack, exprContext, parent);
                 if (expr == null) {
                     compileContext.reportError(exprContext.start, CompileErrorCode.E2001);
                     return;
@@ -388,7 +385,7 @@ public final class ExpressionParser extends ParseAdapter {
         if (isAtEnd) {
             return;
         }
-        final var targetMachine = compiler.getTargetMachine();
+        final var targetMachine = compileContext.getCompiler().getTargetMachine();
         final var sizeContext = context.LITERAL_ISIZE();
         // Size type
         if (sizeContext != null) {
@@ -430,7 +427,7 @@ public final class ExpressionParser extends ParseAdapter {
         if (isAtEnd) {
             return;
         }
-        final var targetMachine = compiler.getTargetMachine();
+        final var targetMachine = compileContext.getCompiler().getTargetMachine();
         final var sizeContext = context.LITERAL_USIZE();
         // Size type
         if (sizeContext != null) {

@@ -23,7 +23,7 @@ import io.karma.ferrous.manganese.ocm.scope.Scoped;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.ocm.type.Types;
 import io.karma.ferrous.manganese.util.TokenSlice;
-import io.karma.ferrous.vanadium.FerrousParser;
+import io.karma.ferrous.vanadium.FerrousParser.AccessModContext;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 
@@ -34,15 +34,15 @@ import org.apiguardian.api.API.Status;
  */
 @API(status = Status.INTERNAL)
 public interface Access {
-    static Access parse(final Compiler compiler, final CompileContext compileContext, final ScopeStack scopeStack,
-                        final FerrousParser.AccessModContext context) {
+    static Access parse(final CompileContext compileContext, final ScopeStack scopeStack,
+                        final AccessModContext context) {
         if (context == null || context.KW_PUB() == null) {
             return DefaultAccess.PRIVATE;
         }
         final var typeContext = context.typeList();
         if (typeContext != null) {
             return new ScopedAccess(TokenSlice.from(compileContext, context),
-                Types.parse(compiler, compileContext, scopeStack, typeContext).toArray(Type[]::new));
+                Types.parse(compileContext, scopeStack, typeContext).toArray(Type[]::new));
         }
         if (context.KW_MOD() != null) {
             return DefaultAccess.MODULE;

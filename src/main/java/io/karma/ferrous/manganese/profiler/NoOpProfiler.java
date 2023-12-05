@@ -13,20 +13,38 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.compiler.pass;
+package io.karma.ferrous.manganese.profiler;
 
-import io.karma.ferrous.manganese.compiler.CompileContext;
-import io.karma.ferrous.manganese.module.Module;
 import org.apiguardian.api.API;
-
-import java.util.concurrent.ExecutorService;
 
 /**
  * @author Alexander Hinze
- * @since 16/11/2023
+ * @since 05/12/2023
  */
-@FunctionalInterface
 @API(status = API.Status.INTERNAL)
-public interface CompilePass {
-    void run(final CompileContext compileContext, final Module module, final ExecutorService executor);
+public final class NoOpProfiler implements Profiler {
+    @Override
+    public void init() {
+
+    }
+
+    @Override
+    public void push() {
+
+    }
+
+    @Override
+    public void push(final String sectionName) {
+
+    }
+
+    @Override
+    public void pop() {
+
+    }
+
+    @Override
+    public void dispose() {
+
+    }
 }

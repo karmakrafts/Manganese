@@ -16,7 +16,6 @@
 package io.karma.ferrous.manganese.ocm.generic;
 
 import io.karma.ferrous.manganese.compiler.CompileContext;
-import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.Named;
 import io.karma.ferrous.manganese.ocm.constant.TypeConstant;
 import io.karma.ferrous.manganese.ocm.expr.Expression;
@@ -53,8 +52,7 @@ public final class GenericParameter implements Named {
         this(name, GenericConstraint.TRUE, null);
     }
 
-    public static @Nullable GenericParameter parse(final Compiler compiler, final CompileContext compileContext,
-                                                   final ScopeStack scopeStack,
+    public static @Nullable GenericParameter parse(final CompileContext compileContext, final ScopeStack scopeStack,
                                                    final @Nullable GenericParamContext context) {
         if (context == null) {
             return null;
@@ -62,14 +60,13 @@ public final class GenericParameter implements Named {
         final var name = new Identifier(context.IDENT().getText());
         final var constraints = GenericConstraint.parse(compileContext, context.genericExpr());
         final var typeContext = context.type();
-        final var defaultValue = Types.parse(compiler, compileContext, scopeStack, typeContext);
+        final var defaultValue = Types.parse(compileContext, scopeStack, typeContext);
         return new GenericParameter(name,
             constraints,
             defaultValue != null ? new TypeConstant(defaultValue, TokenSlice.from(compileContext, typeContext)) : null);
     }
 
-    public static List<GenericParameter> parse(final Compiler compiler, final CompileContext compileContext,
-                                               final ScopeStack scopeStack,
+    public static List<GenericParameter> parse(final CompileContext compileContext, final ScopeStack scopeStack,
                                                final @Nullable GenericParamListContext context) {
         if (context == null) {
             return Collections.emptyList();
@@ -77,7 +74,7 @@ public final class GenericParameter implements Named {
         final var paramContexts = context.genericParam();
         final var params = new ArrayList<GenericParameter>(paramContexts.size()); // Pre-allocate
         for (final var paramContext : paramContexts) {
-            params.add(parse(compiler, compileContext, scopeStack, paramContext));
+            params.add(parse(compileContext, scopeStack, paramContext));
         }
         return params;
     }

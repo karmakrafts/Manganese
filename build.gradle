@@ -1,3 +1,5 @@
+import org.apache.tools.ant.taskdefs.condition.Os
+
 buildscript {
     def config = new Properties()
     file('build.properties').withInputStream(config.&load)
@@ -28,6 +30,7 @@ repositories {
     mavenCentral()
     google()
     maven { url = 'https://maven.covers1624.net' }
+    maven { url = 'https://repo1.maven.org/maven2' }
 }
 
 dependencies {
@@ -38,14 +41,18 @@ dependencies {
         implementation group: 'org.lwjgl', name: moduleName, version: config.lwjgl_version, classifier: 'natives-linux', changing: true
         implementation group: 'org.lwjgl', name: moduleName, version: config.lwjgl_version, classifier: 'natives-macos-arm64', changing: true
         implementation group: 'org.lwjgl', name: moduleName, version: config.lwjgl_version, classifier: 'natives-macos', changing: true
-        implementation group: 'org.lwjgl', name: moduleName, version: config.lwjgl_version, classifier: 'natives-windows-arm64', changing: true
         implementation group: 'org.lwjgl', name: moduleName, version: config.lwjgl_version, classifier: 'natives-windows-x86', changing: true
         implementation group: 'org.lwjgl', name: moduleName, version: config.lwjgl_version, classifier: 'natives-windows', changing: true
+        if(moduleName != 'lwjgl-remotery') {
+            // Remotery is not available for Windows on ARM..
+            implementation group: 'org.lwjgl', name: moduleName, version: config.lwjgl_version, classifier: 'natives-windows-arm64', changing: true
+        }
     }
 
-    addLwjglModule("lwjgl")
-    addLwjglModule("lwjgl-rpmalloc")
-    addLwjglModule("lwjgl-llvm")
+    addLwjglModule('lwjgl')
+    addLwjglModule('lwjgl-rpmalloc')
+    addLwjglModule('lwjgl-llvm')
+    addLwjglModule('lwjgl-remotery')
 
     implementation group: 'org.jetbrains', name: 'annotations', version: config.annotations_version, changing: true
     implementation group: 'it.unimi.dsi', name: 'fastutil', version: config.fastutil_version, changing: true

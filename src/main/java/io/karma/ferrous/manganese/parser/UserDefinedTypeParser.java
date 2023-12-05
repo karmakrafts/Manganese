@@ -16,7 +16,6 @@
 package io.karma.ferrous.manganese.parser;
 
 import io.karma.ferrous.manganese.compiler.CompileContext;
-import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.AttributeUsage;
 import io.karma.ferrous.manganese.ocm.access.Access;
 import io.karma.ferrous.manganese.ocm.field.Field;
@@ -43,9 +42,8 @@ public final class UserDefinedTypeParser extends ParseAdapter {
     private final ScopeStack capturedScopeStack;
     private int nestedScopes = 0;
 
-    public UserDefinedTypeParser(final Compiler compiler, final CompileContext compileContext,
-                                 final ScopeStack capturedScopeStack) {
-        super(compiler, compileContext);
+    public UserDefinedTypeParser(final CompileContext compileContext, final ScopeStack capturedScopeStack) {
+        super(compileContext);
         this.capturedScopeStack = capturedScopeStack;
     }
 
@@ -68,7 +66,7 @@ public final class UserDefinedTypeParser extends ParseAdapter {
         if (isOutOfScope()) {
             return;
         }
-        attributeUsages.addAll(AttributeUsage.parse(compiler, compileContext, capturedScopeStack, context));
+        attributeUsages.addAll(AttributeUsage.parse(compileContext, capturedScopeStack, context));
     }
 
     @Override
@@ -78,8 +76,8 @@ public final class UserDefinedTypeParser extends ParseAdapter {
         }
         fields.add(new Field(fields.size(),
             Identifier.parse(context.ident()),
-            Types.parse(compiler, compileContext, capturedScopeStack, context.type()),
-            Access.parse(compiler, compileContext, scopeStack, context.accessMod()),
+            Types.parse(compileContext, capturedScopeStack, context.type()),
+            Access.parse(compileContext, scopeStack, context.accessMod()),
             context.KW_MUT() != null,
             context.KW_STATIC() != null,
             capturedScopeStack.peek().getScopeType().isGlobal(),

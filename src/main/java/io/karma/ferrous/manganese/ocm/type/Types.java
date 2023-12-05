@@ -16,7 +16,6 @@
 package io.karma.ferrous.manganese.ocm.type;
 
 import io.karma.ferrous.manganese.compiler.CompileContext;
-import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
 import io.karma.ferrous.manganese.ocm.scope.ScopeStack;
 import io.karma.ferrous.manganese.parser.TypeParser;
@@ -143,25 +142,25 @@ public final class Types {
         }; // @formatter:on
     }
 
-    public static List<Type> parse(final Compiler compiler, final CompileContext compileContext,
-                                   final ScopeStack scopeStack, final @Nullable FerrousParser.TypeListContext context) {
+    public static List<Type> parse(final CompileContext compileContext, final ScopeStack scopeStack,
+                                   final @Nullable FerrousParser.TypeListContext context) {
         if (context == null) {
             return Collections.emptyList();
         }
         // @formatter:off
         return context.type().stream()
-            .map(ctx -> parse(compiler, compileContext, scopeStack, ctx))
+            .map(ctx -> parse(compileContext, scopeStack, ctx))
             .filter(Objects::nonNull)
             .toList();
         // @formatter:on
     }
 
-    public static @Nullable Type parse(final Compiler compiler, final CompileContext compileContext,
-                                       final ScopeStack scopeStack, final @Nullable FerrousParser.TypeContext context) {
+    public static @Nullable Type parse(final CompileContext compileContext, final ScopeStack scopeStack,
+                                       final @Nullable FerrousParser.TypeContext context) {
         if (context == null) {
             return null;
         }
-        final TypeParser unit = new TypeParser(compiler, compileContext, scopeStack);
+        final TypeParser unit = new TypeParser(compileContext, scopeStack);
         ParseTreeWalker.DEFAULT.walk(unit, context);
         return unit.getType();
     }

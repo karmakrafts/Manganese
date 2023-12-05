@@ -17,7 +17,6 @@ package io.karma.ferrous.manganese.util;
 
 import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.CompileErrorCode;
-import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.function.CallingConvention;
 import io.karma.ferrous.manganese.ocm.scope.ScopeStack;
 import io.karma.ferrous.manganese.ocm.type.FunctionType;
@@ -93,8 +92,7 @@ public final class FunctionUtils {
         return Identifier.parse(context.ident());
     }
 
-    public static List<Type> parseParameterTypes(final Compiler compiler, final CompileContext compileContext,
-                                                 final ScopeStack scopeStack,
+    public static List<Type> parseParameterTypes(final CompileContext compileContext, final ScopeStack scopeStack,
                                                  final @Nullable ProtoFunctionContext context) {
         if (context == null) {
             return Collections.emptyList();
@@ -107,7 +105,7 @@ public final class FunctionUtils {
         return paramList.functionParam().stream()
             .map(FerrousParser.FunctionParamContext::type)
             .filter(type -> type != null && !type.getText().equals(TokenUtils.getLiteral(FerrousLexer.TRIPLE_DOT)))
-            .map(type -> Types.parse(compiler, compileContext, scopeStack, type))
+            .map(type -> Types.parse(compileContext, scopeStack, type))
             .peek(type -> {
                 if(type == VoidType.INSTANCE) {
                     compileContext.reportError(type.getTokenSlice().getFirstToken(), CompileErrorCode.E4002);
@@ -117,17 +115,17 @@ public final class FunctionUtils {
         // @formatter:on
     }
 
-    public static FunctionType parseFunctionType(final Compiler compiler, final CompileContext compileContext,
-                                                 final ScopeStack scopeStack, final ProtoFunctionContext context) {
+    public static FunctionType parseFunctionType(final CompileContext compileContext, final ScopeStack scopeStack,
+                                                 final ProtoFunctionContext context) {
         final var type = context.type();
         // @formatter:off
         final var returnType = type == null
             ? VoidType.INSTANCE
-            : Objects.requireNonNull(Types.parse(compiler, compileContext, scopeStack, type));
+            : Objects.requireNonNull(Types.parse(compileContext, scopeStack, type));
         // @formatter:on
         final var paramList = context.functionParamList();
         final var isVarArg = paramList != null && paramList.TRIPLE_DOT() != null;
-        final var paramTypes = parseParameterTypes(compiler, compileContext, scopeStack, context);
+        final var paramTypes = parseParameterTypes(compileContext, scopeStack, context);
         return Types.function(returnType,
             paramTypes,
             isVarArg,

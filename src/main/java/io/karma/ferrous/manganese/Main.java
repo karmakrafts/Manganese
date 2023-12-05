@@ -21,7 +21,6 @@ import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.linker.LinkModel;
 import io.karma.ferrous.manganese.linker.LinkTargetType;
 import io.karma.ferrous.manganese.linker.LinkerType;
-import io.karma.ferrous.manganese.profiler.Profiler;
 import io.karma.ferrous.manganese.target.*;
 import io.karma.ferrous.manganese.util.KitchenSink;
 import io.karma.ferrous.manganese.util.Logger;
@@ -255,7 +254,10 @@ final class Main {
             final var linker = linkerType.get().create();
             linker.addRawOptions(options.valueOf(linkerOptionsOpt));
 
-            final var compiler = Manganese.createCompiler(targetMachine, linker, options.valueOf(threadsOpt));
+            final var compiler = Manganese.createCompiler(targetMachine,
+                linker,
+                options.valueOf(threadsOpt),
+                options.has(profilerOpt));
             compiler.setDisassemble(options.has(disassembleOpt));
             compiler.setTokenView(options.has(tokenViewOpt), false);
             compiler.setReportParserWarnings(options.has(parseWarningsOpt));
@@ -286,10 +288,6 @@ final class Main {
                 final var errors = result.errors();
                 Collections.sort(errors);
                 errors.forEach(error -> error.print(System.out));
-            }
-
-            if (options.has(profilerOpt)) {
-                System.out.printf("\n%s\n", Profiler.INSTANCE.renderSections());
             }
         }
         catch (OptionException | NoArgsException error) {

@@ -13,64 +13,31 @@
  * limitations under the License.
  */
 
-package io.karma.ferrous.manganese.ocm.expr;
+package io.karma.ferrous.manganese.ocm.statement;
 
 import io.karma.ferrous.manganese.ocm.ir.IRContext;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
-import io.karma.ferrous.manganese.ocm.scope.ScopeType;
-import io.karma.ferrous.manganese.ocm.statement.Statement;
-import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.target.TargetMachine;
-import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.TokenSlice;
 import org.apiguardian.api.API;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.ArrayList;
-import java.util.UUID;
 
 /**
  * @author Alexander Hinze
  * @since 03/12/2023
  */
 @API(status = API.Status.INTERNAL)
-public final class LoopExpression implements Expression, Scope {
-    private final Identifier scopeName;
+public final class YieldStatement implements Statement {
     private final TokenSlice tokenSlice;
-    private final ArrayList<Statement> statements = new ArrayList<>();
     private Scope enclosingScope;
 
-    public LoopExpression(final String scopeName, final TokenSlice tokenSlice) {
-        this.scopeName = new Identifier(scopeName);
+    public YieldStatement(final TokenSlice tokenSlice) {
         this.tokenSlice = tokenSlice;
-    }
-
-    public LoopExpression(final TokenSlice tokenSlice) {
-        this(String.format("loop%s", UUID.randomUUID()), tokenSlice);
-    }
-
-    // Scope
-
-    @Override
-    public Identifier getName() {
-        return scopeName;
-    }
-
-    @Override
-    public ScopeType getScopeType() {
-        return ScopeType.LOOP;
-    }
-
-    // Expression
-
-    @Override
-    public Type getType() {
-        return null;
     }
 
     @Override
     public long emit(final TargetMachine targetMachine, final IRContext irContext) {
-        return 0L;
+        return 0;
     }
 
     @Override

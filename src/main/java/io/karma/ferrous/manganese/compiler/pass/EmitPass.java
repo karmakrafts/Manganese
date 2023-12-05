@@ -16,9 +16,7 @@
 package io.karma.ferrous.manganese.compiler.pass;
 
 import io.karma.ferrous.manganese.compiler.CompileContext;
-import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.module.Module;
-import io.karma.ferrous.manganese.profiler.Profiler;
 import org.apiguardian.api.API;
 
 import java.util.concurrent.ExecutorService;
@@ -30,9 +28,10 @@ import java.util.concurrent.ExecutorService;
 @API(status = API.Status.INTERNAL)
 public final class EmitPass implements CompilePass {
     @Override
-    public void run(final Compiler compiler, final CompileContext compileContext, final Module module,
-                    final ExecutorService executor) {
-        Profiler.INSTANCE.push();
+    public void run(final CompileContext compileContext, final Module module, final ExecutorService executor) {
+        final var compiler = compileContext.getCompiler();
+        final var profiler = compiler.getProfiler();
+        profiler.push();
         final var moduleData = compileContext.getOrCreateModuleData();
         final var overloadSets = moduleData.getFunctions().values();
         for (final var overloadSet : overloadSets) {
@@ -44,6 +43,6 @@ public final class EmitPass implements CompilePass {
                 function.emit(compileContext, module, compiler.getTargetMachine());
             }
         }
-        Profiler.INSTANCE.pop();
+        profiler.pop();
     }
 }

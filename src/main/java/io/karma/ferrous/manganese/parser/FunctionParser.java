@@ -17,7 +17,6 @@ package io.karma.ferrous.manganese.parser;
 
 import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.CompileErrorCode;
-import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.function.Function;
 import io.karma.ferrous.manganese.ocm.statement.ReturnStatement;
 import io.karma.ferrous.manganese.ocm.type.VoidType;
@@ -35,8 +34,8 @@ import org.apiguardian.api.API.Status;
 public final class FunctionParser extends ParseAdapter {
     private final Function function;
 
-    public FunctionParser(final Compiler compiler, final CompileContext compileContext, final Function function) {
-        super(compiler, compileContext);
+    public FunctionParser(final CompileContext compileContext, final Function function) {
+        super(compileContext);
         this.function = function;
     }
 
@@ -48,7 +47,7 @@ public final class FunctionParser extends ParseAdapter {
         }
         final var scopeStack = function.rebuildScopeStack(); // Reconstruct scope stack from prototype
         final var type = function.getType();
-        final var parser = new StatementParser(compiler, compileContext, type.getReturnType(), scopeStack, function);
+        final var parser = new StatementParser(compileContext, type.getReturnType(), scopeStack, function);
         ParseTreeWalker.DEFAULT.walk(parser, context);
         final var statements = parser.getStatements();
         function.createBody(statements);

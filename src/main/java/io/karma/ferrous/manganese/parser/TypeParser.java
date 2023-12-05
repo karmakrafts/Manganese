@@ -17,7 +17,6 @@ package io.karma.ferrous.manganese.parser;
 
 import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.CompileErrorCode;
-import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.scope.ScopeStack;
 import io.karma.ferrous.manganese.ocm.type.*;
 import io.karma.ferrous.manganese.util.Identifier;
@@ -38,9 +37,8 @@ public final class TypeParser extends ParseAdapter {
     private final ScopeStack capturedScopeStack;
     private Type type;
 
-    public TypeParser(final Compiler compiler, final CompileContext compileContext,
-                      final ScopeStack capturedScopeStack) {
-        super(compiler, compileContext);
+    public TypeParser(final CompileContext compileContext, final ScopeStack capturedScopeStack) {
+        super(compileContext);
         this.capturedScopeStack = capturedScopeStack;
     }
 
@@ -84,7 +82,7 @@ public final class TypeParser extends ParseAdapter {
         if (typeContext == null) {
             return;
         }
-        final var type = Types.parse(compiler, compileContext, capturedScopeStack, typeContext);
+        final var type = Types.parse(compileContext, capturedScopeStack, typeContext);
         if (type == null) {
             return; // TODO: handle error
         }

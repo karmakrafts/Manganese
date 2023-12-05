@@ -117,11 +117,12 @@ public final class Manganese {
         return new TargetMachine(target, features, level, reloc, model, cpu);
     }
 
-    public static Compiler createCompiler(final TargetMachine machine, final Linker linker, final int numThreads) {
+    public static Compiler createCompiler(final TargetMachine machine, final Linker linker, final int numThreads,
+                                          final boolean enableProfiler) {
         if (!IS_INITIALIZED.get()) {
             throw new IllegalStateException("Not initialized");
         }
-        return new Compiler(machine, linker, numThreads);
+        return new Compiler(machine, linker, numThreads, enableProfiler);
     }
 
     public static Compiler createCompiler() {
@@ -134,6 +135,6 @@ public final class Manganese {
             OptimizationLevel.DEFAULT,
             Relocation.DEFAULT,
             CodeModel.DEFAULT,
-            cpu), linker, numThreads);
+            cpu), linker, numThreads, false);
     }
 }

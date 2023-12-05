@@ -16,7 +16,6 @@
 package io.karma.ferrous.manganese.parser;
 
 import io.karma.ferrous.manganese.compiler.CompileContext;
-import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.generic.GenericConstraint;
 import io.karma.ferrous.vanadium.FerrousParser.GenericGroupedExprContext;
 import io.karma.ferrous.vanadium.FerrousParser.TypeContext;
@@ -31,8 +30,8 @@ public final class GenericExpressionParser extends ParseAdapter {
     private final GenericConstraint constraints = GenericConstraint.TRUE;
     private int groupLevel = 0;
 
-    public GenericExpressionParser(final Compiler compiler, final CompileContext compileContext) {
-        super(compiler, compileContext);
+    public GenericExpressionParser(final CompileContext compileContext) {
+        super(compileContext);
     }
 
     @Override

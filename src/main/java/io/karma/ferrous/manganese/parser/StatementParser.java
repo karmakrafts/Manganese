@@ -17,7 +17,6 @@ package io.karma.ferrous.manganese.parser;
 
 import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.compiler.CompileErrorCode;
-import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.ocm.constant.NullConstant;
 import io.karma.ferrous.manganese.ocm.function.Function;
 import io.karma.ferrous.manganese.ocm.scope.ScopeStack;
@@ -46,9 +45,9 @@ public final class StatementParser extends ParseAdapter {
     private final ScopeStack capturedScopeStack;
     private final Object parent;
 
-    public StatementParser(final Compiler compiler, final CompileContext compileContext, final Type expectedReturnType,
+    public StatementParser(final CompileContext compileContext, final Type expectedReturnType,
                            final ScopeStack capturedScopeStack, final Object parent) {
-        super(compiler, compileContext);
+        super(compileContext);
         this.expectedReturnType = expectedReturnType;
         this.capturedScopeStack = capturedScopeStack;
         this.parent = parent;
@@ -71,7 +70,7 @@ public final class StatementParser extends ParseAdapter {
         // Account for expressions-as-statements
         final var exprContext = context.expr();
         if (exprContext != null) {
-            final var expr = ExpressionParser.parse(compiler, compileContext, capturedScopeStack, exprContext, parent);
+            final var expr = ExpressionParser.parse(compileContext, capturedScopeStack, exprContext, parent);
             if (expr == null) {
                 compileContext.reportError(exprContext.start, CompileErrorCode.E2001);
                 return;
@@ -104,7 +103,7 @@ public final class StatementParser extends ParseAdapter {
         if (literalContext == null) {
             return;
         }
-        final var literal = ExpressionParser.parse(compiler, compileContext, capturedScopeStack, literalContext, null);
+        final var literal = ExpressionParser.parse(compileContext, capturedScopeStack, literalContext, null);
         if (literal == null) {
             return;
         }
@@ -127,7 +126,7 @@ public final class StatementParser extends ParseAdapter {
         final var isMutable = context.KW_MUT() != null;
         Type type = null;
         if (typeContext != null) {
-            type = Types.parse(compiler, compileContext, scopeStack, typeContext);
+            type = Types.parse(compileContext, scopeStack, typeContext);
             if (type == null || !type.isComplete()) {
                 compileContext.reportError(typeContext.start, CompileErrorCode.E3002);
                 return;
@@ -143,7 +142,7 @@ public final class StatementParser extends ParseAdapter {
             if (exprContext == null) {
                 addStatement(new LetStatement(name,
                     type,
-                    type.makeDefaultValue(compiler.getTargetMachine()),
+                    type.makeDefaultValue(compileContext.getCompiler().getTargetMachine()),
                     isMutable,
                     true,
                     TokenSlice.from(compileContext, context)));
@@ -154,7 +153,7 @@ public final class StatementParser extends ParseAdapter {
             compileContext.reportError(context.start, CompileErrorCode.E4006);
             return;
         }
-        final var expr = ExpressionParser.parse(compiler, compileContext, capturedScopeStack, exprContext, parent);
+        final var expr = ExpressionParser.parse(compileContext, capturedScopeStack, exprContext, parent);
         if (expr == null) {
             compileContext.reportError(exprContext.start, CompileErrorCode.E2001);
             return;
@@ -172,7 +171,7 @@ public final class StatementParser extends ParseAdapter {
     public void enterReturnStatement(final ReturnStatementContext context) {
         final var exprContext = context.expr();
         if (exprContext != null) {
-            final var expr = ExpressionParser.parse(compiler, compileContext, capturedScopeStack, exprContext, parent);
+            final var expr = ExpressionParser.parse(compileContext, capturedScopeStack, exprContext, parent);
             if (expr == null) {
                 return;
             }

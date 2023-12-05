@@ -16,11 +16,9 @@
 package io.karma.ferrous.manganese.compiler.pass;
 
 import io.karma.ferrous.manganese.compiler.CompileContext;
-import io.karma.ferrous.manganese.compiler.Compiler;
 import io.karma.ferrous.manganese.module.Module;
 import io.karma.ferrous.manganese.parser.FunctionParser;
 import io.karma.ferrous.manganese.parser.ParseAdapter;
-import io.karma.ferrous.manganese.profiler.Profiler;
 import io.karma.ferrous.vanadium.FerrousParser.FunctionContext;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import org.apiguardian.api.API;
@@ -34,16 +32,16 @@ import java.util.concurrent.ExecutorService;
 @API(status = API.Status.INTERNAL)
 public final class FunctionDefinitionPass implements CompilePass {
     @Override
-    public void run(final Compiler compiler, final CompileContext compileContext, final Module module,
-                    final ExecutorService executor) {
-        Profiler.INSTANCE.push();
-        compileContext.walkParseTree(new ParseListenerImpl(compiler, compileContext));
-        Profiler.INSTANCE.pop();
+    public void run(final CompileContext compileContext, final Module module, final ExecutorService executor) {
+        final var profiler = compileContext.getCompiler().getProfiler();
+        profiler.push();
+        compileContext.walkParseTree(new ParseListenerImpl(compileContext));
+        profiler.pop();
     }
 
     private static final class ParseListenerImpl extends ParseAdapter {
-        public ParseListenerImpl(final Compiler compiler, final CompileContext compileContext) {
-            super(compiler, compileContext);
+        public ParseListenerImpl(final CompileContext compileContext) {
+            super(compileContext);
         }
 
         @Override
@@ -60,7 +58,7 @@ public final class FunctionDefinitionPass implements CompilePass {
             }
 
             super.enterFunction(context);
-            ParseTreeWalker.DEFAULT.walk(new FunctionParser(compiler, compileContext, function), bodyContext);
+            ParseTreeWalker.DEFAULT.walk(new FunctionParser(compileContext, function), bodyContext);
             popScope();
             pushScope(function.getBody());
         }

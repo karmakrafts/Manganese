@@ -20,7 +20,9 @@ import io.karma.ferrous.manganese.linker.LinkModel;
 import io.karma.ferrous.manganese.linker.LinkTargetType;
 import io.karma.ferrous.manganese.linker.Linker;
 import io.karma.ferrous.manganese.module.Module;
+import io.karma.ferrous.manganese.profiler.NoOpProfiler;
 import io.karma.ferrous.manganese.profiler.Profiler;
+import io.karma.ferrous.manganese.profiler.RemoteryProfiler;
 import io.karma.ferrous.manganese.target.FileType;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.KitchenSink;
@@ -68,6 +70,7 @@ public final class Compiler {
     private final Linker linker;
     private final ExecutorService executorService;
     private final ArrayList<CompilePass> passes = new ArrayList<>();
+    private final Profiler profiler;
 
     private boolean tokenView = false;
     private boolean extendedTokenView = false;
@@ -75,7 +78,8 @@ public final class Compiler {
     private boolean disassemble = false;
 
     @API(status = Status.INTERNAL)
-    public Compiler(final TargetMachine targetMachine, final Linker linker, final int numThreads) {
+    public Compiler(final TargetMachine targetMachine, final Linker linker, final int numThreads,
+                    final boolean enableProfiler) {
         this.targetMachine = targetMachine;
         this.linker = linker;
         executorService = Executors.newWorkStealingPool(numThreads);
@@ -86,6 +90,7 @@ public final class Compiler {
             }
         })));
         addDefaultPasses();
+        profiler = enableProfiler ? new RemoteryProfiler() : new NoOpProfiler();
     }
 
     public ArrayList<CompilePass> getPasses() {
@@ -146,13 +151,13 @@ public final class Compiler {
             context.setCurrentModuleName(name);
             final var moduleData = context.getOrCreateModuleData();
             // Tokenize
-            Profiler.INSTANCE.push("Tokenize");
+            profiler.push("Tokenize");
             final var lexer = new FerrousLexer(CharStreams.fromChannel(in, StandardCharsets.UTF_8));
             moduleData.setLexer(lexer);
             final var tokenStream = new CommonTokenStream(lexer);
             tokenStream.fill();
             moduleData.setTokenStream(tokenStream);
-            Profiler.INSTANCE.pop();
+            profiler.pop();
             if (tokenView) {
                 System.out.printf("\n%s\n",
                     TokenUtils.renderTokenTree(context.getCurrentModuleName(),
@@ -165,23 +170,23 @@ public final class Compiler {
             parser.removeErrorListeners(); // Remove default error listener
             parser.addErrorListener(new ErrorListener(context));
             moduleData.setParser(parser);
-            Profiler.INSTANCE.push("Parse");
+            profiler.push("Parse");
             moduleData.setFileContext(parser.file());
-            Profiler.INSTANCE.pop();
+            profiler.pop();
         }
         catch (IOException error) {
             context.reportError(CompileErrorCode.E0002);
         }
     }
 
-    public Module compile(final String name, final @Nullable Path sourcePath, final CompileContext context) {
+    private Module compile(final String name, final @Nullable Path sourcePath, final CompileContext context) {
         context.setCurrentModuleName(name);
         context.setCurrentSourceFile(sourcePath);
         final var module = targetMachine.createModule(name);
         for (final var pass : passes) {
             Logger.INSTANCE.debugln("Invoking pass %s", pass.getClass().getName());
             context.setCurrentPass(pass);
-            pass.run(this, context, module, executorService);
+            pass.run(context, module, executorService);
             context.setCurrentPass(null);
         }
         return module;
@@ -189,6 +194,7 @@ public final class Compiler {
 
     public CompileResult compile(final Path in, final Path out, final CompileContext context, final LinkModel linkModel,
                                  final LinkTargetType targetType) {
+        context.setCompiler(this);
         final var outDirectory = out.getParent();
         if (!Files.exists(outDirectory)) {
             try {
@@ -287,10 +293,11 @@ public final class Compiler {
         // @formatter:on
         linker.link(this, context, out, objectFile, linkModel, targetMachine, targetType);
 
+        context.setCompiler(null);
         return context.makeResult();
     }
 
-    public void setEnableOpaquePointers(boolean enableOpaquePointers) {
+    public void setEnableOpaquePointers(final boolean enableOpaquePointers) {
         LLVMContextSetOpaquePointers(LLVMGetGlobalContext(), enableOpaquePointers);
     }
 
@@ -313,6 +320,10 @@ public final class Compiler {
 
     public Linker getLinker() {
         return linker;
+    }
+
+    public Profiler getProfiler() {
+        return profiler;
     }
 
     private final class ErrorListener implements ANTLRErrorListener {

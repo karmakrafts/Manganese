@@ -21,7 +21,6 @@ import io.karma.ferrous.manganese.ocm.statement.LetStatement;
 import io.karma.ferrous.manganese.ocm.type.AliasedType;
 import io.karma.ferrous.manganese.ocm.type.FunctionType;
 import io.karma.ferrous.manganese.ocm.type.Type;
-import io.karma.ferrous.manganese.profiler.Profiler;
 import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.ScopeUtils;
 import io.karma.ferrous.vanadium.FerrousLexer;
@@ -41,8 +40,6 @@ import java.util.*;
 @API(status = Status.STABLE)
 public final class ModuleData {
     private final String name;
-    // @formatter:off
-    // Non-synchronized data
     private final LinkedHashMap<Identifier, Type> types = new LinkedHashMap<>();
     private final HashMap<Identifier, HashMap<FunctionType, Function>> functions = new HashMap<>();
     private final HashMap<Function, LinkedHashMap<Identifier, LetStatement>> locals = new HashMap<>();
@@ -51,7 +48,6 @@ public final class ModuleData {
     private FileContext fileContext;
     private FerrousLexer lexer;
     private FerrousParser parser;
-    // @formatter:on
 
     public ModuleData(final String name) {
         this.name = name;
@@ -134,7 +130,6 @@ public final class ModuleData {
     }
 
     public @Nullable Type findCompleteType(final Identifier name, final Identifier scopeName) {
-        Profiler.INSTANCE.push();
         Type type = ScopeUtils.findInScope(types, name, scopeName);
         if (type == null) {
             return null;
@@ -146,7 +141,6 @@ public final class ModuleData {
             final var typeName = type.getQualifiedName();
             type = ScopeUtils.findInScope(types, typeName, scopeName);
         }
-        Profiler.INSTANCE.pop();
         return type;
     }
 
@@ -158,36 +152,24 @@ public final class ModuleData {
     }
 
     public @Nullable Type findType(final Identifier name, final Identifier scopeName) {
-        try {
-            Profiler.INSTANCE.push();
-            return ScopeUtils.findInScope(types, name, scopeName);
-        }
-        finally {
-            Profiler.INSTANCE.pop();
-        }
+        return ScopeUtils.findInScope(types, name, scopeName);
     }
 
     // TODO: implement matching against C-variadic functions
     public @Nullable Function findFunction(final Identifier name, final Identifier scopeName,
                                            final List<Type> paramTypes) {
-        try {
-            Profiler.INSTANCE.push();
-            final var overloadSet = ScopeUtils.findInScope(functions, name, scopeName);
-            if (overloadSet == null) {
-                return null;
-            }
-            final var types = overloadSet.keySet();
-            for (final var type : types) {
-                if (!type.getParamTypes().equals(paramTypes)) {
-                    continue;
-                }
-                return overloadSet.get(type);
-            }
+        final var overloadSet = ScopeUtils.findInScope(functions, name, scopeName);
+        if (overloadSet == null) {
             return null;
         }
-        finally {
-            Profiler.INSTANCE.pop();
+        final var types = overloadSet.keySet();
+        for (final var type : types) {
+            if (!type.getParamTypes().equals(paramTypes)) {
+                continue;
+            }
+            return overloadSet.get(type);
         }
+        return null;
     }
 
     public @Nullable Function findFunction(final Identifier name, final Identifier scopeName, final FunctionType type) {
