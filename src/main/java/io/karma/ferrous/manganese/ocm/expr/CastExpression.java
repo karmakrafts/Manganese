@@ -31,13 +31,20 @@ import org.jetbrains.annotations.Nullable;
 public final class CastExpression implements Expression {
     private final Type castType;
     private final Expression value;
+    private final boolean isImplicit;
     private final TokenSlice tokenSlice;
     private Scope enclosingScope;
 
-    public CastExpression(final Type castType, final Expression value, final TokenSlice tokenSlice) {
+    public CastExpression(final Type castType, final Expression value, final boolean isImplicit,
+                          final TokenSlice tokenSlice) {
         this.castType = castType;
         this.value = value;
+        this.isImplicit = isImplicit;
         this.tokenSlice = tokenSlice;
+    }
+
+    public boolean isImplicit() {
+        return isImplicit;
     }
 
     // Scoped

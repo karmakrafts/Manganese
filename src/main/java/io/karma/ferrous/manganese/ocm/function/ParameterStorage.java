@@ -51,6 +51,11 @@ public final class ParameterStorage implements ValueStorage {
     }
 
     @Override
+    public @Nullable ValueStorage getField(final Identifier name) {
+        return null;
+    }
+
+    @Override
     public Identifier getName() {
         return parameter.getName();
     }

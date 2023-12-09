@@ -31,6 +31,11 @@ import org.jetbrains.annotations.Nullable;
 @API(status = API.Status.INTERNAL)
 public final class GlobalFieldStorage implements ValueStorage {
     @Override
+    public @Nullable ValueStorage getField(Identifier name) {
+        return null;
+    }
+
+    @Override
     public Identifier getName() {
         return null;
     }

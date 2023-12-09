@@ -47,7 +47,6 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * @author Alexander Hinze
@@ -316,6 +315,13 @@ public final class ExpressionParser extends ParseAdapter {
                 return new ReferenceExpression(local, false, TokenSlice.from(compileContext, context));
             }
         }
+        else if (parent instanceof ReferenceExpression refExpr) {
+            return switch (refExpr.getReference()) {
+                case ValueStorage storage ->
+                    new ReferenceExpression(storage.getField(name), false, TokenSlice.from(compileContext, context));
+                default -> null;
+            };
+        }
         if (!moduleData.functionExists(name, scopeName)) {
             compileContext.reportError(context.start, CompileErrorCode.E4007);
             return null;
@@ -326,8 +332,7 @@ public final class ExpressionParser extends ParseAdapter {
             TokenSlice.from(compileContext, context));
     }
 
-    private @Nullable ReferenceExpression parseBinaryReference(final ParserRuleContext context,
-                                                               final List<ParseTree> children) {
+    private @Nullable ReferenceExpression parseBinaryReference(final List<ParseTree> children) {
         final var expr = parse(compileContext, capturedScopeStack, children.get(0), parent);
         if (expr == null) {
             return null;
@@ -382,7 +387,7 @@ public final class ExpressionParser extends ParseAdapter {
                     ExprContext.class,
                     TerminalNodeImpl.class,
                     IdentContext.class)) {
-                    setExpression(context, parseBinaryReference(context, children));
+                    setExpression(context, parseBinaryReference(children));
                     return;
                 }
             }

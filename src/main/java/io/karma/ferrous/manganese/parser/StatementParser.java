@@ -126,7 +126,7 @@ public final class StatementParser extends ParseAdapter {
         final var isMutable = context.KW_MUT() != null;
         Type type = null;
         if (typeContext != null) {
-            type = Types.parse(compileContext, scopeStack, typeContext);
+            type = Types.parse(compileContext, capturedScopeStack, typeContext);
             if (type == null || !type.isComplete()) {
                 compileContext.reportError(typeContext.start, CompileErrorCode.E3002);
                 return;

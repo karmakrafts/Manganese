@@ -47,8 +47,8 @@ public final class TypeParser extends ParseAdapter {
         if (type != null) {
             return;
         }
-        // Handle user defined types
         final var moduleData = compileContext.getOrCreateModuleData();
+        // Handle user defined types
         final var qualifiedIdentContext = context.qualifiedIdent();
         if (qualifiedIdentContext != null) {
             if (type != null) {
@@ -62,6 +62,7 @@ public final class TypeParser extends ParseAdapter {
                     TokenSlice.from(compileContext, context),
                     Collections.emptyList());
             }
+            return;
         }
         final var identContext = context.ident();
         if (identContext != null) {
@@ -76,6 +77,7 @@ public final class TypeParser extends ParseAdapter {
                     TokenSlice.from(compileContext, context),
                     Collections.emptyList());
             }
+            return;
         }
         // Handle derived types recursively
         final var typeContext = context.type();

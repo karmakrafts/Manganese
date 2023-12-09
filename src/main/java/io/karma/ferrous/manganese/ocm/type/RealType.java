@@ -40,21 +40,23 @@ import java.util.function.Supplier;
 @API(status = API.Status.INTERNAL)
 public enum RealType implements Type, Mangleable {
     // @formatter:off
-    F16 (FerrousLexer.KW_F16,  "H", LLVMCore::LLVMHalfType,   RealType::makeDefaultHalfValue),
-    F32 (FerrousLexer.KW_F32,  "F", LLVMCore::LLVMFloatType,  RealType::makeDefaultSingleValue),
-    F64 (FerrousLexer.KW_F64,  "D", LLVMCore::LLVMDoubleType, RealType::makeDefaultDoubleValue),
-    F128(FerrousLexer.KW_F128, "Q", LLVMCore::LLVMFP128Type,  RealType::makeDefaultQuadValue);
+    F16 (16,  FerrousLexer.KW_F16,  "H", LLVMCore::LLVMHalfType,   RealType::makeDefaultHalfValue),
+    F32 (32,  FerrousLexer.KW_F32,  "F", LLVMCore::LLVMFloatType,  RealType::makeDefaultSingleValue),
+    F64 (64,  FerrousLexer.KW_F64,  "D", LLVMCore::LLVMDoubleType, RealType::makeDefaultDoubleValue),
+    F128(128, FerrousLexer.KW_F128, "Q", LLVMCore::LLVMFP128Type,  RealType::makeDefaultQuadValue);
     // @formatter:on
 
     public static final char SEQUENCE_PREFIX = '\'';
 
+    private final int width;
     private final Identifier name;
     private final String mangledName;
     private final LongSupplier factory;
     private final Supplier<Expression> defaultSupplier;
 
-    RealType(final int token, final String mangledName, final LongSupplier factory,
+    RealType(final int width, final int token, final String mangledName, final LongSupplier factory,
              final Supplier<Expression> defaultSupplier) {
+        this.width = width;
         name = new Identifier(TokenUtils.getLiteral(token));
         this.mangledName = mangledName;
         this.factory = factory;
@@ -75,6 +77,10 @@ public enum RealType implements Type, Mangleable {
 
     private static Expression makeDefaultQuadValue() {
         return new BigRealConstant(F128, BigDecimal.ZERO, TokenSlice.EMPTY);
+    }
+
+    public int getWidth() {
+        return width;
     }
 
     @Override

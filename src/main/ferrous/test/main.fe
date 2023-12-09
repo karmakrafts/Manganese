@@ -4,9 +4,9 @@ fun testing(): i32 {
 
 @Packed // Omits any padding and allows specifying bitfields in a struct
 pub struct Foo {
-    pub x: i20
-    pub y: i10
-    pub z: i2
+    pub mut x: i20
+    pub mut y: i10
+    pub mut z: i2
 
     pub struct Bar { // Nested type declarations
         value: bool
@@ -29,8 +29,10 @@ pub attrib AnotherAttrib {
 @NoMangle
 @Test(flag = true, value = 100)
 fun main(num_args: i32, args: char**): i32 {
+    let mut f: Foo
+    f.x = 10
     let mut x: i32 = num_args
     let mut y: mut i32* = &x
     let mut cond = false
-    return cond ? x : 0
+    return cond ? x : f.x
 }

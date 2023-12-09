@@ -101,12 +101,12 @@ public final class BinaryExpression implements Expression {
         lhsRefExpr.setIsWrite(true); // This is always a write to the left side of the expression
         return switch (lhsRefExpr.getReference()) {
             case ValueStorage storage -> {
-                //storage.store(rhs, targetMachine, irContext);
-                //if (isResultDiscarded) {
-                //    yield NULL; // Omit
-                //}
-                //yield storage.load(targetMachine, irContext);
-                yield NULL;
+                storage.store(rhs.emit(targetMachine, irContext), targetMachine, irContext);
+                storage.setValue(rhs);
+                if (isResultDiscarded) {
+                    yield NULL; // Omit
+                }
+                yield storage.load(targetMachine, irContext);
             }
             default -> NULL;
         };

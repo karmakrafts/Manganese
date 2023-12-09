@@ -19,6 +19,7 @@ import io.karma.ferrous.manganese.ocm.Mangleable;
 import io.karma.ferrous.manganese.ocm.constant.BigIntConstant;
 import io.karma.ferrous.manganese.ocm.constant.IntConstant;
 import io.karma.ferrous.manganese.ocm.expr.Expression;
+import io.karma.ferrous.manganese.ocm.ir.IRContext;
 import io.karma.ferrous.manganese.ocm.scope.DefaultScope;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.target.TargetMachine;
@@ -66,6 +67,54 @@ public final class IntType implements Type, Mangleable {
 
     public boolean isUnsigned() {
         return isUnsigned;
+    }
+
+    @Override
+    public long cast(final Type type, final long value, final TargetMachine targetMachine, final IRContext irContext) {
+        final var builder = irContext.getCurrentOrCreate();
+        final var typeAddress = type.materialize(targetMachine);
+        return switch (type) {
+            case IntType intType -> {
+                final var otherWidth = intType.getWidth();
+                if (otherWidth == width) {
+                    yield value; // If the width is the same, we don't do anything to it
+                }
+                if (otherWidth < width) {
+                    yield builder.trunc(typeAddress, value);
+                }
+                if (intType.isUnsigned) {
+                    yield builder.zext(typeAddress, value);
+                }
+                yield builder.sext(typeAddress, value);
+            }
+            case RealType realType -> {
+                final var realWidth = realType.getWidth();
+                // @formatter:off
+                final var intValue = isUnsigned
+                    ? builder.floatToUint(typeAddress, value)
+                    : builder.floatToSint(typeAddress, value);
+                // @formatter:on
+                if (width == realWidth) {
+                    yield intValue;
+                }
+                if (width < realWidth) {
+                    yield builder.trunc(typeAddress, intValue);
+                }
+                if (isUnsigned) {
+                    yield builder.zext(typeAddress, intValue);
+                }
+                yield builder.sext(typeAddress, intValue);
+            }
+            default -> value;
+        };
+    }
+
+    @Override
+    public boolean canAccept(final Type type) {
+        return switch(type) { // @formatter:off
+            case IntType intType -> intType.getWidth() <= width;
+            default              -> false;
+        }; // @formatter:on
     }
 
     @Override

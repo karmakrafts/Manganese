@@ -123,7 +123,7 @@ public final class Types {
             case 1  -> types.getFirst();
             default -> {
                 Type result = null;
-                for(var i = 0; i < numTypes; i++) {
+                for(var i = 0; i < numTypes; i++) outer: {
                     final var baseType = types.get(i);
                     for(var j = 0; j < numTypes; j++) {
                         if(i == j) {
@@ -135,6 +135,7 @@ public final class Types {
                             continue;
                         }
                         result = baseType;
+                        break outer;
                     }
                 }
                 yield result;

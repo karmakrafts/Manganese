@@ -72,9 +72,10 @@ public final class TernaryExpression implements Expression, Named {
 
     @Override
     public long emit(final TargetMachine targetMachine, final IRContext irContext) {
+        final var commonType = getType();
         final var condition = this.condition.emit(targetMachine, irContext);
-        final var trueValue = this.trueValue.emit(targetMachine, irContext);
-        final var falseValue = this.falseValue.emit(targetMachine, irContext);
+        var trueValue = this.trueValue.emit(targetMachine, irContext);
+        var falseValue = this.falseValue.emit(targetMachine, irContext);
         return irContext.getCurrentOrCreate().select(condition, trueValue, falseValue);
     }
 

@@ -18,6 +18,7 @@ package io.karma.ferrous.manganese.ocm.type;
 import io.karma.ferrous.manganese.ocm.Mangleable;
 import io.karma.ferrous.manganese.ocm.expr.Expression;
 import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
+import io.karma.ferrous.manganese.ocm.ir.IRContext;
 import io.karma.ferrous.manganese.ocm.scope.Scoped;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.TokenSlice;
@@ -41,6 +42,10 @@ public interface Type extends Scoped, Mangleable {
     Expression makeDefaultValue(final TargetMachine targetMachine);
 
     Type getBaseType();
+
+    default long cast(final Type type, final long value, final TargetMachine targetMachine, final IRContext irContext) {
+        return value;
+    }
 
     default TypeKind getKind() {
         return TypeKind.UDT;

@@ -19,6 +19,7 @@ import io.karma.ferrous.manganese.ocm.expr.Expression;
 import io.karma.ferrous.manganese.ocm.ir.IRContext;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.target.TargetMachine;
+import io.karma.ferrous.manganese.util.Identifier;
 import org.apiguardian.api.API;
 import org.jetbrains.annotations.Nullable;
 
@@ -35,6 +36,8 @@ public interface ValueStorage extends Named {
     default @Nullable ValueStorage getParent() {
         return null;
     }
+
+    @Nullable ValueStorage getField(final Identifier name);
 
     void setInitialized();
 

@@ -26,11 +26,13 @@ import io.karma.ferrous.manganese.ocm.type.UserDefinedType;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.TokenSlice;
+import io.karma.kommons.tuple.Pair;
 import org.apiguardian.api.API;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
-import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.lwjgl.llvm.LLVMCore.LLVMSetValueName2;
 import static org.lwjgl.system.MemoryUtil.NULL;
@@ -45,7 +47,7 @@ public final class LetStatement implements Statement, Named, ValueStorage {
     private final Type type;
     private final boolean isMutable;
     private final TokenSlice tokenSlice;
-    private final List<FieldStorage> fieldValues;
+    private final Map<Identifier, FieldStorage> fieldStorages;
     private Expression value;
     private boolean isInitialized;
     private Scope enclosingScope;
@@ -61,11 +63,14 @@ public final class LetStatement implements Statement, Named, ValueStorage {
         this.isMutable = isMutable;
         this.isInitialized = isInitialized;
         this.tokenSlice = tokenSlice;
-        if (type instanceof UserDefinedType udt) {
-            fieldValues = udt.fields().stream().map(f -> new FieldStorage(f, this)).toList();
-        }
+        if (type instanceof UserDefinedType udt) { // @formatter:off
+            fieldStorages = udt.fields()
+                .stream()
+                .map(f -> Pair.of(f.getName(), new FieldStorage(f, this)))
+                .collect(Collectors.toMap(Pair::getLeft, Pair::getRight));
+        } // @formatter:off
         else {
-            fieldValues = Collections.emptyList();
+            fieldStorages = Collections.emptyMap();
         }
     }
 
@@ -95,6 +100,12 @@ public final class LetStatement implements Statement, Named, ValueStorage {
     }
 
     // ValueStorage
+
+
+    @Override
+    public @Nullable ValueStorage getField(final Identifier name) {
+        return fieldStorages.get(name);
+    }
 
     @Override
     public Type getType() {

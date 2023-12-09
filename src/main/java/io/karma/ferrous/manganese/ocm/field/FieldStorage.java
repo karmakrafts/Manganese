@@ -22,12 +22,14 @@ import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.ocm.type.UserDefinedType;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Identifier;
+import io.karma.kommons.tuple.Pair;
 import org.apiguardian.api.API;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
-import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * @author Alexander Hinze
@@ -37,7 +39,8 @@ import java.util.Objects;
 public final class FieldStorage implements ValueStorage {
     private final Field field;
     private final ValueStorage parent;
-    private final List<FieldStorage> fieldValues;
+    private final Map<Identifier, FieldStorage> fieldStorages;
+    private Expression value;
     private boolean hasChanged;
     private boolean isInitialized;
 
@@ -45,15 +48,21 @@ public final class FieldStorage implements ValueStorage {
         this.field = field;
         this.parent = parent;
         isInitialized = parent != null && parent.isInitialized();
-        if (field.getType() instanceof UserDefinedType udt) {
-            fieldValues = udt.fields().stream().map(f -> new FieldStorage(f, this)).toList();
-        }
+        if (field.getType() instanceof UserDefinedType udt) { // @formatter:off
+            fieldStorages = udt.fields()
+                .stream()
+                .map(f -> Pair.of(f.getName(), new FieldStorage(f, this)))
+                .collect(Collectors.toMap(Pair::getLeft, Pair::getRight));
+        } // @formatter:on
         else {
-            fieldValues = Collections.emptyList();
+            fieldStorages = Collections.emptyMap();
         }
     }
 
-    // ValueCarrier
+    @Override
+    public @Nullable ValueStorage getField(final Identifier name) {
+        return fieldStorages.get(name);
+    }
 
     @Override
     public void setInitialized() {
@@ -80,8 +89,6 @@ public final class FieldStorage implements ValueStorage {
         return field.getType();
     }
 
-    // ValueStorage
-
     @Override
     public void notifyMutation() {
         hasChanged = true;
@@ -89,11 +96,12 @@ public final class FieldStorage implements ValueStorage {
 
     @Override
     public @Nullable Expression getValue() {
-        return null;
+        return value;
     }
 
     @Override
     public void setValue(final @Nullable Expression value) {
+        this.value = value;
     }
 
     @Override
