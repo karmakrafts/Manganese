@@ -79,14 +79,6 @@ public final class LetStatement implements Statement, Named, ValueStorage {
         this(name, value.getType(), value, isMutable, isInitialized, tokenSlice);
     }
 
-    public long getImmutableAddress() {
-        return immutableAddress;
-    }
-
-    public long getMutableAddress() {
-        return mutableAddress;
-    }
-
     // ValueCarrier
 
     @Override
