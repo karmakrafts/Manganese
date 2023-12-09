@@ -63,19 +63,20 @@ import static org.lwjgl.llvm.LLVMCore.LLVMGetGlobalContext;
  * @since 02/07/2022
  */
 @API(status = Status.STABLE)
-public final class Compiler {
+public final class Compiler implements AutoCloseable {
     private static final String[] IN_EXTENSIONS = {"ferrous", "fe"};
 
     private final TargetMachine targetMachine;
     private final Linker linker;
     private final ExecutorService executorService;
-    private final ArrayList<CompilePass> passes = new ArrayList<>();
     private final Profiler profiler;
+    private final ArrayList<CompilePass> passes = new ArrayList<>();
 
-    private boolean tokenView = false;
-    private boolean extendedTokenView = false;
-    private boolean reportParserWarnings = false;
-    private boolean disassemble = false;
+    private boolean tokenView;
+    private boolean extendedTokenView;
+    private boolean reportParserWarnings;
+    private boolean disassemble;
+    private boolean isDisposed;
 
     @API(status = Status.INTERNAL)
     public Compiler(final TargetMachine targetMachine, final Linker linker, final int numThreads,
@@ -91,6 +92,20 @@ public final class Compiler {
         })));
         addDefaultPasses();
         profiler = enableProfiler ? new RemoteryProfiler() : new NoOpProfiler();
+        profiler.init();
+    }
+
+    @Override
+    public void close() throws Exception {
+        dispose();
+    }
+
+    private void dispose() {
+        if (isDisposed) {
+            return;
+        }
+        profiler.dispose();
+        isDisposed = true;
     }
 
     public ArrayList<CompilePass> getPasses() {
@@ -175,7 +190,7 @@ public final class Compiler {
             profiler.pop();
         }
         catch (IOException error) {
-            context.reportError(CompileErrorCode.E0002);
+            context.reportError(error.getMessage(), CompileErrorCode.E0002);
         }
     }
 

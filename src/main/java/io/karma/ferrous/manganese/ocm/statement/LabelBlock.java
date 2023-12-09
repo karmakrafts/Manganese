@@ -25,6 +25,8 @@ import org.apiguardian.api.API;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.llvm.LLVMCore;
 
+import java.util.ArrayList;
+
 /**
  * @author Alexander Hinze
  * @since 03/12/2023
@@ -34,6 +36,7 @@ public final class LabelBlock implements LabeledStatement, Scope {
     private final Identifier scopeName;
     private final String name;
     private final TokenSlice tokenSlice;
+    private final ArrayList<Statement> statements = new ArrayList<>();
     private Scope enclosingScope;
 
     public LabelBlock(final String name, final TokenSlice tokenSlice) {
@@ -54,7 +57,7 @@ public final class LabelBlock implements LabeledStatement, Scope {
 
     @Override
     public long emit(final TargetMachine targetMachine, final IRContext irContext) {
-        return LLVMCore.LLVMBasicBlockAsValue(irContext.getOrCreate(name).getBlockAddress());
+        return LLVMCore.LLVMBasicBlockAsValue(irContext.getAndPush(name).getBlockAddress());
     }
 
     @Override

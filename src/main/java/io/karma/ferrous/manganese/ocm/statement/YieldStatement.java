@@ -15,6 +15,7 @@
 
 package io.karma.ferrous.manganese.ocm.statement;
 
+import io.karma.ferrous.manganese.ocm.expr.Expression;
 import io.karma.ferrous.manganese.ocm.ir.IRContext;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.target.TargetMachine;
@@ -22,22 +23,30 @@ import io.karma.ferrous.manganese.util.TokenSlice;
 import org.apiguardian.api.API;
 import org.jetbrains.annotations.Nullable;
 
+import static org.lwjgl.system.MemoryUtil.NULL;
+
 /**
  * @author Alexander Hinze
  * @since 03/12/2023
  */
 @API(status = API.Status.INTERNAL)
 public final class YieldStatement implements Statement {
+    private final Expression value;
     private final TokenSlice tokenSlice;
     private Scope enclosingScope;
 
-    public YieldStatement(final TokenSlice tokenSlice) {
+    public YieldStatement(final Expression value, final TokenSlice tokenSlice) {
+        this.value = value;
         this.tokenSlice = tokenSlice;
+    }
+
+    public Expression getValue() {
+        return value;
     }
 
     @Override
     public long emit(final TargetMachine targetMachine, final IRContext irContext) {
-        return 0;
+        return NULL;
     }
 
     @Override

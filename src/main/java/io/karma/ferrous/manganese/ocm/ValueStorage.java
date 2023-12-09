@@ -30,6 +30,8 @@ import org.jetbrains.annotations.Nullable;
 public interface ValueStorage extends Named {
     @Nullable Expression getValue();
 
+    void setValue(final @Nullable Expression value);
+
     default @Nullable ValueStorage getParent() {
         return null;
     }
@@ -63,6 +65,15 @@ public interface ValueStorage extends Named {
 
     long getAddress(final TargetMachine targetMachine, final IRContext irContext);
 
-    default void init(final TargetMachine targetMachine, final IRContext irContext) {
+    default long load(final TargetMachine targetMachine, final IRContext irContext) {
+        final var address = getAddress(targetMachine, irContext);
+        final var typeAddress = getType().materialize(targetMachine);
+        return irContext.getCurrentOrCreate().load(typeAddress, address);
+    }
+
+    default long store(final long value, final TargetMachine targetMachine, final IRContext irContext) {
+        final var address = getAddress(targetMachine, irContext);
+        notifyMutation();
+        return irContext.getCurrentOrCreate().store(value, address);
     }
 }

@@ -23,7 +23,9 @@ import io.karma.ferrous.manganese.ocm.scope.ScopeStack;
 import io.karma.ferrous.manganese.ocm.type.UserDefinedType;
 import io.karma.ferrous.manganese.ocm.type.UserDefinedTypeKind;
 import io.karma.ferrous.manganese.util.Identifier;
+import io.karma.ferrous.vanadium.FerrousParser.ExprListContext;
 import io.karma.ferrous.vanadium.FerrousParser.IdentContext;
+import io.karma.ferrous.vanadium.FerrousParser.NamedExprListContext;
 import io.karma.ferrous.vanadium.FerrousParser.QualifiedIdentContext;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.apiguardian.api.API;
@@ -63,15 +65,31 @@ public final class AttributeUsageParser extends ParseAdapter {
     }
 
     @Override
+    public void enterExprList(final ExprListContext context) {
+        final var expressions = ExpressionParser.parse(compileContext, capturedScopeStack, context, attribute);
+        final var fields = attribute.fields();
+        final var numFields = fields.size();
+        for (var i = 0; i < numFields; i++) {
+            values.put(fields.get(i).getName(), expressions.get(i));
+        }
+    }
+
+    @Override
+    public void enterNamedExprList(final NamedExprListContext context) {
+        final var expressions = ExpressionParser.parseNamed(compileContext, capturedScopeStack, context, attribute);
+        for (final var expr : expressions) {
+            values.put(expr.getLeft(), expr.getRight());
+        }
+    }
+
+    @Override
     public void enterQualifiedIdent(final QualifiedIdentContext context) {
         parseType(context);
-        super.enterQualifiedIdent(context);
     }
 
     @Override
     public void enterIdent(final IdentContext context) {
         parseType(context);
-        super.enterIdent(context);
     }
 
     public AttributeUsage getUsage() {

@@ -249,7 +249,7 @@ public abstract class ParseAdapter implements FerrousParserListener {
 
     @Override
     public void enterFile(final FileContext context) {
-        pushScope(ScopeType.FILE, Identifier.parse(Objects.requireNonNull(compileContext.getCurrentModuleName())));
+        pushScope(ScopeType.MODULE, Identifier.parse(Objects.requireNonNull(compileContext.getCurrentModuleName())));
     }
 
     @Override
@@ -272,21 +272,6 @@ public abstract class ParseAdapter implements FerrousParserListener {
 
     @Override
     public void exitModule(ModuleContext moduleContext) {}
-
-    @Override
-    public void enterModBlock(final ModBlockContext context) {
-        final var qualifiedIdent = context.qualifiedIdent();
-        if(qualifiedIdent != null) {
-            pushScope(ScopeType.MODULE, Identifier.parse(qualifiedIdent));
-            return;
-        }
-        pushScope(ScopeType.MODULE, Identifier.parse(context.ident()));
-    }
-
-    @Override
-    public void exitModBlock(final ModBlockContext context) {
-        popScope();
-    }
 
     @Override
     public void enterModUseStatement(ModUseStatementContext modUseStatementContext) {}
@@ -743,18 +728,6 @@ public abstract class ParseAdapter implements FerrousParserListener {
 
     @Override
     public void exitSizeofExpr(SizeofExprContext sizeofExprContext) {}
-
-    @Override
-    public void enterSpreadExpr(SpreadExprContext spreadExprContext) {}
-
-    @Override
-    public void exitSpreadExpr(SpreadExprContext spreadExprContext) {}
-
-    @Override
-    public void enterGroupedExpr(GroupedExprContext groupedExprContext) {}
-
-    @Override
-    public void exitGroupedExpr(GroupedExprContext groupedExprContext) {}
 
     @Override
     public void enterExhaustiveIfExpr(ExhaustiveIfExprContext exhaustiveIfExprContext) {}

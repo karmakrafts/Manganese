@@ -30,14 +30,14 @@ import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.Mangler;
 import io.karma.ferrous.manganese.util.TokenSlice;
+import io.karma.kommons.tuple.Pair;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 import org.jetbrains.annotations.Nullable;
+import org.lwjgl.llvm.LLVMCore;
 
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.lwjgl.llvm.LLVMCore.*;
 import static org.lwjgl.system.MemoryUtil.NULL;
@@ -57,6 +57,7 @@ public class Function implements Scoped, Mangleable {
     protected final TokenSlice tokenSlice;
     protected final FunctionType type;
     protected final HashMap<String, MonomorphizedFunction> monomorphizationCache = new HashMap<>();
+    protected final Map<Identifier, ParameterStorage> paramStorages;
     protected FunctionBody body;
     protected Scope enclosingScope;
     protected long materializedPrototype;
@@ -73,6 +74,27 @@ public class Function implements Scoped, Mangleable {
         this.parameters = params;
         this.genericParams = genericParams;
         this.attributeUsages = attributeUsages;
+
+        // @formatter:off
+        paramStorages = parameters.stream()
+            .map(param -> Pair.of(param.getName(), new ParameterStorage(param,
+                compileContext -> {
+                    final var module = compileContext.getModule(compileContext.getCurrentModuleName());
+                    final var targetMachine = compileContext.getCompiler().getTargetMachine();
+                    final var fnAddress = materialize(module, targetMachine);
+                    return LLVMCore.LLVMGetParam(fnAddress, parameters.indexOf(param));
+                }))
+            )
+            .collect(Collectors.toMap(Pair::getLeft, Pair::getRight));
+        // @formatter:on
+    }
+
+    public @Nullable ParameterStorage getParamStorage(final Identifier name) {
+        return paramStorages.get(name);
+    }
+
+    public Map<Identifier, ParameterStorage> getParamStorages() {
+        return paramStorages;
     }
 
     public void createBody(final List<Statement> statements) {

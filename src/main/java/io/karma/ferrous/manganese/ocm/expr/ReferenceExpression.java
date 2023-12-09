@@ -80,7 +80,7 @@ public final class ReferenceExpression implements Expression {
             case FunctionReference funRef -> Objects.requireNonNull(funRef.get()).getType();
             case ValueStorage storage     -> Objects.requireNonNull(storage.getType());
             case Parameter param          -> param.getType();
-            default                       -> throw new IllegalStateException("Unknown reference kind");
+            default                       -> throw new IllegalStateException("Unknown reference type");
         }; // @formatter:on
     }
 
@@ -99,10 +99,8 @@ public final class ReferenceExpression implements Expression {
                 final var fnAddress = function.materialize(irContext.getModule(), targetMachine);
                 yield builder.intToPtr(typeAddress, fnAddress);
             }
-            //case ValueStorage storage -> FIXME: FIXMEEEEEEEEEEEEEEE
-            //    isWrite ? storage.getAddress(targetMachine, irContext) : storage.load(targetMachine, irContext);
-            case Parameter param -> irContext.getParameter(param.getName());
-            default -> throw new IllegalStateException("Unknown reference kind");
+            case ValueStorage storage -> storage.load(targetMachine, irContext);
+            default -> throw new IllegalStateException("Unknown reference type");
         };
     }
 

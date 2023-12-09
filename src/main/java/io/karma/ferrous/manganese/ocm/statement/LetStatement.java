@@ -46,7 +46,7 @@ public final class LetStatement implements Statement, Named, ValueStorage {
     private final boolean isMutable;
     private final TokenSlice tokenSlice;
     private final List<FieldStorage> fieldValues;
-    private final Expression value;
+    private Expression value;
     private boolean isInitialized;
     private Scope enclosingScope;
     private long immutableAddress;
@@ -103,7 +103,18 @@ public final class LetStatement implements Statement, Named, ValueStorage {
 
     @Override
     public long getAddress(final TargetMachine targetMachine, final IRContext irContext) {
+        if (!isMutable) {
+            throw new IllegalStateException("Cannot retrieve writable address of immutable local");
+        }
         return mutableAddress;
+    }
+
+    @Override
+    public long load(final TargetMachine targetMachine, final IRContext irContext) {
+        if (!isMutable) {
+            return immutableAddress; // Load from GPR directly
+        }
+        return ValueStorage.super.load(targetMachine, irContext);
     }
 
     @Override
@@ -114,6 +125,11 @@ public final class LetStatement implements Statement, Named, ValueStorage {
     @Override
     public Expression getValue() {
         return value;
+    }
+
+    @Override
+    public void setValue(final @Nullable Expression value) {
+        this.value = value;
     }
 
     @Override
@@ -160,14 +176,22 @@ public final class LetStatement implements Statement, Named, ValueStorage {
     @Override
     public long emit(final TargetMachine targetMachine, final IRContext irContext) {
         final var internalName = name.toInternalName();
-        if (value != null) {
+        final var hasDefaultValue = value != null;
+        if (hasDefaultValue) {
             immutableAddress = value.emit(targetMachine, irContext);
         }
-        if (!isMutable) {
+        if (isMutable) {
+            final var builder = irContext.getCurrentOrCreate();
+            final var typeAddress = type.materialize(targetMachine);
+            mutableAddress = builder.alloca(typeAddress);
+            if (hasDefaultValue) {
+                builder.store(immutableAddress, mutableAddress); // Store default value immediately after alloc
+            }
+        }
+        else if (!irContext.isParameter(immutableAddress)) {
             LLVMSetValueName2(immutableAddress, internalName);
             return NULL;
         }
-        init(targetMachine, irContext);
         return NULL;
     }
 }

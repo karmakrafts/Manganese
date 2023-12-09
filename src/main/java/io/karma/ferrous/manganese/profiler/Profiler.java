@@ -22,7 +22,7 @@ import org.apiguardian.api.API;
  * @since 05/12/2023
  */
 @API(status = API.Status.INTERNAL)
-public interface Profiler extends AutoCloseable {
+public interface Profiler {
     void init();
 
     void push();
@@ -32,9 +32,4 @@ public interface Profiler extends AutoCloseable {
     void pop();
 
     void dispose();
-
-    @Override
-    default void close() {
-        dispose();
-    }
 }

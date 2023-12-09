@@ -47,7 +47,7 @@ public final class ScopeStack extends Stack<Scope> {
         var result = Identifier.EMPTY.copy();
         for (final var scope : this) {
             final var type = scope.getScopeType();
-            if (type == ScopeType.GLOBAL || type == ScopeType.FILE || type == ScopeType.MODULE_FILE) {
+            if (type == ScopeType.GLOBAL) {
                 continue;
             }
             result = result.join(scope.getName());

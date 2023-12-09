@@ -18,6 +18,7 @@ package io.karma.ferrous.manganese.ocm.ir;
 import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.module.Module;
 import io.karma.ferrous.manganese.ocm.function.Function;
+import io.karma.ferrous.manganese.ocm.function.ParameterStorage;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Identifier;
 import org.apiguardian.api.API;
@@ -25,10 +26,10 @@ import org.jetbrains.annotations.Nullable;
 import org.lwjgl.llvm.LLVMCore;
 
 import java.util.HashMap;
+import java.util.Stack;
 
 import static org.lwjgl.llvm.LLVMCore.LLVMAppendBasicBlockInContext;
 import static org.lwjgl.llvm.LLVMCore.LLVMDeleteBasicBlock;
-import static org.lwjgl.system.MemoryUtil.NULL;
 
 /**
  * @author Alexander Hinze
@@ -41,7 +42,7 @@ public final class FunctionIRContext implements IRContext {
     private final TargetMachine targetMachine;
     private final Function function;
     private final HashMap<String, IRBuilder> builders = new HashMap<>();
-    private IRBuilder currentBuilder;
+    private final Stack<IRBuilder> builderStack = new Stack<>();
     private boolean isDropped;
 
     public FunctionIRContext(final CompileContext compileContext, final Module module,
@@ -62,18 +63,23 @@ public final class FunctionIRContext implements IRContext {
     }
 
     @Override
-    public long getParameter(final Identifier name) {
+    public @Nullable ParameterStorage getParameter(final Identifier name) {
+        return function.getParamStorage(name);
+    }
+
+    @Override
+    public boolean isParameter(final long value) {
         final var params = function.getParameters();
         final var numParams = params.size();
         final var address = function.materialize(module, targetMachine);
         for (var i = 0; i < numParams; i++) {
-            final var param = params.get(i);
-            if (!param.getName().equals(name)) {
+            final var param = LLVMCore.LLVMGetParam(address, i);
+            if (param != value) {
                 continue;
             }
-            return LLVMCore.LLVMGetParam(address, i);
+            return true;
         }
-        return NULL;
+        return false;
     }
 
     @Override
@@ -88,17 +94,40 @@ public final class FunctionIRContext implements IRContext {
 
     @Override
     public @Nullable IRBuilder getCurrent() {
-        return currentBuilder;
+        if (builderStack.isEmpty()) {
+            return null;
+        }
+        return builderStack.peek();
     }
 
     @Override
-    public IRBuilder getOrCreate(final String name) {
-        return currentBuilder = builders.computeIfAbsent(name, n -> {
+    public void pushCurrent(final IRBuilder builder) {
+        builderStack.push(builder);
+    }
+
+    @Override
+    public @Nullable IRBuilder popCurrent() {
+        if (builderStack.isEmpty()) {
+            return null;
+        }
+        return builderStack.pop();
+    }
+
+    @Override
+    public IRBuilder get(final String name) {
+        return builders.computeIfAbsent(name, n -> {
             final var fnAddress = function.materialize(module, targetMachine);
             final var context = module.getContext();
             final var blockAddress = LLVMAppendBasicBlockInContext(context, fnAddress, String.format(".%s", name));
             return new IRBuilder(this, targetMachine, blockAddress, context);
         });
+    }
+
+    @Override
+    public IRBuilder getAndPush(final String name) {
+        final var builder = get(name);
+        builderStack.push(builder);
+        return builder;
     }
 
     @Override
@@ -110,5 +139,11 @@ public final class FunctionIRContext implements IRContext {
             LLVMDeleteBasicBlock(builder.getBlockAddress());
         }
         isDropped = true;
+    }
+
+    @Override
+    public void reset() {
+        builderStack.clear();
+        getAndPush(DEFAULT_BLOCK); // Restore default block
     }
 }

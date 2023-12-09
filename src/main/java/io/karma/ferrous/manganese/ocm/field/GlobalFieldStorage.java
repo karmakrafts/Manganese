@@ -41,6 +41,11 @@ public final class GlobalFieldStorage implements ValueStorage {
     }
 
     @Override
+    public void setValue(final @Nullable Expression value) {
+
+    }
+
+    @Override
     public void setInitialized() {
 
     }
@@ -71,7 +76,7 @@ public final class GlobalFieldStorage implements ValueStorage {
     }
 
     @Override
-    public long getAddress(TargetMachine targetMachine, IRContext irContext) {
+    public long getAddress(final TargetMachine targetMachine, final IRContext irContext) {
         return 0;
     }
 }

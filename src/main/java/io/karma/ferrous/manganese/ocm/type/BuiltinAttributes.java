@@ -30,11 +30,11 @@ import java.util.Collections;
  */
 @API(status = API.Status.INTERNAL)
 public final class BuiltinAttributes {
-    public static final UserDefinedType NOMANGLE = create("nomangle");
-    public static final UserDefinedType NORETURN = create("noreturn");
-    public static final UserDefinedType NODISCARD = create("nodiscard");
-    public static final UserDefinedType NOOPT = create("noopt");
-    public static final UserDefinedType PACKED = create("packed");
+    public static final UserDefinedType NOMANGLE = create("NoMangle");
+    public static final UserDefinedType NORETURN = create("NoReturn");
+    public static final UserDefinedType NODISCARD = create("NoDiscard");
+    public static final UserDefinedType NOOPT = create("NoOpt");
+    public static final UserDefinedType PACKED = create("Packed");
 
     // @formatter:off
     private BuiltinAttributes() {}

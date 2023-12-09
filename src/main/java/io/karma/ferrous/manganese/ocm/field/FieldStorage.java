@@ -89,7 +89,11 @@ public final class FieldStorage implements ValueStorage {
 
     @Override
     public @Nullable Expression getValue() {
-        return null; // TODO: fixme
+        return null;
+    }
+
+    @Override
+    public void setValue(final @Nullable Expression value) {
     }
 
     @Override

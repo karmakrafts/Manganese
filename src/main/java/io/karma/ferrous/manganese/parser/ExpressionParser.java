@@ -34,6 +34,7 @@ import io.karma.ferrous.manganese.util.*;
 import io.karma.ferrous.vanadium.FerrousLexer;
 import io.karma.ferrous.vanadium.FerrousParser.*;
 import io.karma.kommons.function.Functions;
+import io.karma.kommons.tuple.Pair;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
@@ -46,6 +47,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * @author Alexander Hinze
@@ -94,7 +96,43 @@ public final class ExpressionParser extends ParseAdapter {
         }
         final var parser = new ExpressionParser(compileContext, scopeStack, parent);
         ParseTreeWalker.DEFAULT.walk(parser, context);
-        return parser.getExpression();
+        return parser.expression;
+    }
+
+    public static @Nullable Pair<Identifier, Expression> parseNamed(final CompileContext compileContext,
+                                                                    final ScopeStack scopeStack,
+                                                                    final @Nullable NamedExprContext context,
+                                                                    final @Nullable Object parent) {
+        if (context == null) {
+            return null;
+        }
+        final var parser = new ExpressionParser(compileContext, scopeStack, parent);
+        ParseTreeWalker.DEFAULT.walk(parser, context.expr());
+        return Pair.of(Identifier.parse(context.ident()), parser.expression);
+    }
+
+    public static List<Pair<Identifier, Expression>> parseNamed(final CompileContext compileContext,
+                                                                final ScopeStack scopeStack,
+                                                                final @Nullable NamedExprListContext context,
+                                                                final @Nullable Object parent) {
+        if (context == null) {
+            return Collections.emptyList();
+        }
+        final var contexts = context.namedExpr();
+        if (contexts == null) {
+            return Collections.emptyList();
+        }
+        // @formatter:off
+        return contexts.stream()
+            .map(exprContext -> {
+                final var expression = parseNamed(compileContext, scopeStack, exprContext, parent);
+                if(expression == null) {
+                    compileContext.reportError(exprContext.start, CompileErrorCode.E2001);
+                }
+                return expression;
+            })
+            .toList();
+        // @formatter:on
     }
 
     private void setExpression(final ParserRuleContext context, final @Nullable Expression expression) {
@@ -117,7 +155,7 @@ public final class ExpressionParser extends ParseAdapter {
         }
         final var opContext = opContextOpt.get();
         final var opText = opContext.getText();
-        final var opOpt = Operator.findByText(opText);
+        final var opOpt = Operator.unaryByText(opText);
         if (opOpt.isEmpty()) {
             compileContext.reportError(context.start, opText, CompileErrorCode.E4013);
             return null;
@@ -151,7 +189,7 @@ public final class ExpressionParser extends ParseAdapter {
             return null;
         }
         final var opText = opContextOpt.get().getText();
-        final var opOpt = Operator.findByText(opText);
+        final var opOpt = Operator.binaryByText(opText);
         if (opOpt.isEmpty()) {
             compileContext.reportError(context.start, opText, CompileErrorCode.E4014);
             return null;
@@ -231,12 +269,33 @@ public final class ExpressionParser extends ParseAdapter {
         return null;
     }
 
-    private @Nullable IndexExpression parseIndexExpr(final List<ParseTree> children) {
+    private @Nullable SubscriptExpression parseSubscriptExpr(final List<ParseTree> children) {
         final var genericListOpt = children.stream().filter(GenericListContext.class::isInstance).findFirst();
         if (genericListOpt.isPresent()) {
             // TODO: parse generic list
         }
         return null;
+    }
+
+    private @Nullable TernaryExpression parseTernaryExpr(final ParserRuleContext context,
+                                                         final List<ParseTree> children) {
+        final var conditionContext = children.getFirst();
+        final var condition = parse(compileContext, capturedScopeStack, conditionContext, parent);
+        if (condition == null) {
+            compileContext.reportError(context.start, CompileErrorCode.E2001);
+            return null;
+        }
+        final var trueValue = parse(compileContext, capturedScopeStack, children.get(2), parent);
+        if (trueValue == null) {
+            compileContext.reportError(context.start, CompileErrorCode.E2001);
+            return null;
+        }
+        final var falseValue = parse(compileContext, capturedScopeStack, children.getLast(), parent);
+        if (falseValue == null) {
+            compileContext.reportError(context.start, CompileErrorCode.E2001);
+            return null;
+        }
+        return new TernaryExpression(condition, trueValue, falseValue, TokenSlice.from(compileContext, context));
     }
 
     private @Nullable ReferenceExpression parseReference(final ParserRuleContext context, final Object parent) {
@@ -248,23 +307,14 @@ public final class ExpressionParser extends ParseAdapter {
         final var name = Identifier.parse(context);
         Logger.INSTANCE.debugln("Looking for reference to %s", name);
         if (parent instanceof Function function) {
-            final var param = function.getParameters().stream().filter(p -> p.getName().equals(name)).findFirst();
-            if (param.isPresent()) {
-                return new ReferenceExpression(param.get(), false, TokenSlice.from(compileContext, context));
+            final var param = function.getParamStorage(name);
+            if (param != null) {
+                return new ReferenceExpression(param, false, TokenSlice.from(compileContext, context));
             }
             final var local = moduleData.findLocalIn(function, name, scopeName);
             if (local != null) {
                 return new ReferenceExpression(local, false, TokenSlice.from(compileContext, context));
             }
-        }
-        if (parent instanceof ReferenceExpression parentRef) {
-            // FIXME: FIXMEEEE
-            //if (parentRef.getReference() instanceof FieldStorageProvider provider) {
-            //    final var storage = provider.getFieldValue(name);
-            //    if (storage != null) {
-            //        return new ReferenceExpression(storage, false, TokenSlice.from(compileContext, context));
-            //    }
-            //}
         }
         if (!moduleData.functionExists(name, scopeName)) {
             compileContext.reportError(context.start, CompileErrorCode.E4007);
@@ -283,7 +333,7 @@ public final class ExpressionParser extends ParseAdapter {
             return null;
         }
         final var opContext = children.get(1);
-        final var opOpt = Operator.findByText(opContext.getText());
+        final var opOpt = Operator.binaryByText(opContext.getText());
         if (opOpt.isEmpty()) {
             return null;
         }
@@ -342,6 +392,16 @@ public final class ExpressionParser extends ParseAdapter {
                     compileContext.reportError(exprContext.start, CompileErrorCode.E2001);
                     return;
                 }
+                // Ternary expressions
+                if (KitchenSink.containsAssignableTypeSequence(children,
+                    ExprContext.class,
+                    TerminalNodeImpl.class,
+                    ExprContext.class,
+                    TerminalNodeImpl.class,
+                    ExprContext.class)) {
+                    setExpression(context, parseTernaryExpr(context, children));
+                    return;
+                }
                 // Call with named arguments
                 if (KitchenSink.containsAssignableTypeSequence(children,
                     TerminalNodeImpl.class,
@@ -362,7 +422,7 @@ public final class ExpressionParser extends ParseAdapter {
                         return;
                     }
                     // Otherwise it has to be an indexing expression
-                    setExpression(context, parseIndexExpr(children));
+                    setExpression(context, parseSubscriptExpr(children));
                     return;
                 }
                 // Call without arguments

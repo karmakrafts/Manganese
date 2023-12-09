@@ -33,7 +33,6 @@ import io.karma.ferrous.vanadium.FerrousParser;
 import io.karma.ferrous.vanadium.FerrousParser.ProtoFunctionContext;
 import org.apiguardian.api.API;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.concurrent.ExecutorService;
 
@@ -115,16 +114,7 @@ public final class FunctionDeclarationPass implements CompilePass {
             final var name = FunctionUtils.parseFunctionName(context.functionIdent());
             final var callConv = FunctionUtils.parseCallingConvention(compileContext, context);
             final var type = FunctionUtils.parseFunctionType(compileContext, scopeStack, context);
-            final var paramNames = FunctionUtils.parseParameterNames(context);
-            final var paramTypes = type.getParamTypes();
-            final var numParams = paramTypes.size();
-            if (numParams != paramNames.length) {
-                throw new IllegalStateException("Invalid function parser state");
-            }
-            final var params = new ArrayList<Parameter>(numParams);
-            for (var i = 0; i < numParams; i++) {
-                params.add(new Parameter(paramNames[i], paramTypes.get(i), null));
-            }
+            final var params = Parameter.parse(compileContext, scopeStack, context.functionParamList());
             final var genericParams = GenericParameter.parse(compileContext, scopeStack, context.genericParamList());
             final var attributeUsages = AttributeUsage.parse(compileContext, scopeStack, context.attributeList());
             final var modifiers = FunctionModifier.parse(compileContext, context.functionMod());

@@ -18,7 +18,6 @@ package io.karma.ferrous.manganese.parser;
 import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.ocm.generic.GenericConstraint;
 import io.karma.ferrous.vanadium.FerrousParser.GenericGroupedExprContext;
-import io.karma.ferrous.vanadium.FerrousParser.TypeContext;
 import org.apiguardian.api.API;
 
 /**
@@ -44,13 +43,6 @@ public final class GenericExpressionParser extends ParseAdapter {
     public void exitGenericGroupedExpr(final GenericGroupedExprContext context) {
         groupLevel--;
         super.exitGenericGroupedExpr(context);
-    }
-
-    // TODO: implement me
-
-    @Override
-    public void enterType(final TypeContext context) {
-        super.enterType(context);
     }
 
     public GenericConstraint getConstraints() {

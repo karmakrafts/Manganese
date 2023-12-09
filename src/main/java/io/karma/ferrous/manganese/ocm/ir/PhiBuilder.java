@@ -15,7 +15,7 @@
 
 package io.karma.ferrous.manganese.ocm.ir;
 
-import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
+import it.unimi.dsi.fastutil.longs.Long2LongLinkedOpenHashMap;
 import org.apiguardian.api.API;
 import org.lwjgl.system.MemoryStack;
 
@@ -30,7 +30,7 @@ import static org.lwjgl.llvm.LLVMCore.LLVMBuildPhi;
 public final class PhiBuilder {
     private final long builderAddress;
     private final IRContext irContext;
-    private final Long2LongOpenHashMap targets = new Long2LongOpenHashMap();
+    private final Long2LongLinkedOpenHashMap targets = new Long2LongLinkedOpenHashMap();
     private long type;
 
     PhiBuilder(final long builderAddress, final IRContext irContext) {
@@ -52,7 +52,7 @@ public final class PhiBuilder {
     }
 
     public PhiBuilder addIncoming(final String name, final long value) {
-        final var blockAddress = irContext.getOrCreate(name).getBlockAddress();
+        final var blockAddress = irContext.get(name).getBlockAddress();
         if (targets.containsKey(blockAddress)) {
             return this;
         }

@@ -26,9 +26,8 @@ import org.apiguardian.api.API.Status;
 public enum ScopeType {
     // @formatter:off
     GLOBAL      (true),
-    FILE        (true),
-    MODULE_FILE (true),
     MODULE      (true),
+    MODULE_FILE (true),
     STRUCT      (false),
     CLASS       (false),
     ENUM_CLASS  (false),

@@ -28,11 +28,11 @@ import org.jetbrains.annotations.Nullable;
  * @since 08/11/2023
  */
 @API(status = API.Status.INTERNAL)
-public final class IndexExpression implements Expression {
+public final class SubscriptExpression implements Expression {
     private final TokenSlice tokenSlice;
     private Scope enclosingScope;
 
-    public IndexExpression(final TokenSlice tokenSlice) {
+    public SubscriptExpression(final TokenSlice tokenSlice) {
         this.tokenSlice = tokenSlice;
     }
 

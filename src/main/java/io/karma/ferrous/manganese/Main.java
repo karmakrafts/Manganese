@@ -254,40 +254,41 @@ final class Main {
             final var linker = linkerType.get().create();
             linker.addRawOptions(options.valueOf(linkerOptionsOpt));
 
-            final var compiler = Manganese.createCompiler(targetMachine,
+            try (final var compiler = Manganese.createCompiler(targetMachine,
                 linker,
                 options.valueOf(threadsOpt),
-                options.has(profilerOpt));
-            compiler.setDisassemble(options.has(disassembleOpt));
-            compiler.setTokenView(options.has(tokenViewOpt), false);
-            compiler.setReportParserWarnings(options.has(parseWarningsOpt));
-            compiler.setEnableOpaquePointers(!options.has(opaquePointerOpt));
+                options.has(profilerOpt))) {
+                compiler.setDisassemble(options.has(disassembleOpt));
+                compiler.setTokenView(options.has(tokenViewOpt), false);
+                compiler.setReportParserWarnings(options.has(parseWarningsOpt));
+                compiler.setEnableOpaquePointers(!options.has(opaquePointerOpt));
 
-            // Update the log level if we are in verbose mode.
-            final var debugMode = options.has(debugOpt);
-            if (debugMode) {
-                Logger.INSTANCE.setLogLevel(LogLevel.DEBUG);
-            }
-            if (options.has(silentOpt)) {
-                for (final var level : LogLevel.values()) {
-                    Logger.INSTANCE.disableLogLevel(level);
+                // Update the log level if we are in verbose mode.
+                final var debugMode = options.has(debugOpt);
+                if (debugMode) {
+                    Logger.INSTANCE.setLogLevel(LogLevel.DEBUG);
                 }
-            }
+                if (options.has(silentOpt)) {
+                    for (final var level : LogLevel.values()) {
+                        Logger.INSTANCE.disableLogLevel(level);
+                    }
+                }
 
-            final var in = Path.of(options.valueOf(inOpt));
-            // @formatter:off
-            final var out = options.has(outOpt)
-                ? Path.of(options.valueOf(outOpt))
-                : Path.of(KitchenSink.getRawFileName(in));
-            // @formatter:on
+                final var in = Path.of(options.valueOf(inOpt));
+                // @formatter:off
+                final var out = options.has(outOpt)
+                    ? Path.of(options.valueOf(outOpt))
+                    : Path.of(KitchenSink.getRawFileName(in));
+                // @formatter:on
 
-            try (final var context = new CompileContext()) {
-                final var result = compiler.compile(in, out, context, linkModel.get(), linkTargetType.get());
-                targetMachine.dispose();
-                status = status.worse(result.status());
-                final var errors = result.errors();
-                Collections.sort(errors);
-                errors.forEach(error -> error.print(System.out));
+                try (final var context = new CompileContext()) {
+                    final var result = compiler.compile(in, out, context, linkModel.get(), linkTargetType.get());
+                    targetMachine.dispose();
+                    status = status.worse(result.status());
+                    final var errors = result.errors();
+                    Collections.sort(errors);
+                    errors.forEach(error -> error.print(System.out));
+                }
             }
         }
         catch (OptionException | NoArgsException error) {

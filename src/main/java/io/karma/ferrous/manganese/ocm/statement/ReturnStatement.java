@@ -24,6 +24,8 @@ import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.TokenSlice;
 import org.jetbrains.annotations.Nullable;
 
+import static org.lwjgl.system.MemoryUtil.NULL;
+
 /**
  * @author Alexander Hinze
  * @since 22/10/2023
@@ -70,7 +72,7 @@ public final class ReturnStatement implements Statement {
         final var builder = irContext.getCurrentOrCreate();
         final var type = value.getType();
         if (type.isImaginary()) {
-            return 0L; // We don't emit anything for imaginary types
+            return NULL; // We don't emit anything for imaginary types
         }
         if (type == VoidType.INSTANCE) {
             return builder.ret();

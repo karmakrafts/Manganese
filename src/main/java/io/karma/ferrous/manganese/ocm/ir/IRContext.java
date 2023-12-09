@@ -17,6 +17,7 @@ package io.karma.ferrous.manganese.ocm.ir;
 
 import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.module.Module;
+import io.karma.ferrous.manganese.ocm.function.ParameterStorage;
 import io.karma.ferrous.manganese.util.Identifier;
 import org.apiguardian.api.API;
 import org.jetbrains.annotations.Nullable;
@@ -29,7 +30,9 @@ import org.jetbrains.annotations.Nullable;
 public interface IRContext extends AutoCloseable {
     String DEFAULT_BLOCK = ".entry";
 
-    long getParameter(final Identifier name);
+    @Nullable ParameterStorage getParameter(final Identifier name);
+
+    boolean isParameter(final long value);
 
     Module getModule();
 
@@ -37,19 +40,23 @@ public interface IRContext extends AutoCloseable {
 
     @Nullable IRBuilder getCurrent();
 
-    IRBuilder getOrCreate(final String name);
+    void pushCurrent(final IRBuilder builder);
+
+    @Nullable IRBuilder popCurrent();
+
+    IRBuilder get(final String name);
+
+    IRBuilder getAndPush(final String name);
 
     void drop();
+
+    void reset();
 
     default IRBuilder getCurrentOrCreate() {
         var current = getCurrent();
         if (current != null) {
             return current;
         }
-        return getOrCreate(DEFAULT_BLOCK);
-    }
-
-    default void reset() {
-        getOrCreate(DEFAULT_BLOCK);
+        return get(DEFAULT_BLOCK);
     }
 }

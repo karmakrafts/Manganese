@@ -83,7 +83,8 @@ public enum Operator {
     SAFE_DEREF      (FerrousLexer.OP_SAFE_DEREF,       "fe.op.deref.safe",     true,   false, false, false),
     PTR_REF         (FerrousLexer.ARROW,               "fe.op.ptrref",         false,  true,  false, true ),
     SAFE_PTR_REF    (FerrousLexer.OP_SAFE_PTR_REF,     "fe.op.ptrref.safe",    false,  true,  false, true ),
-    REF             (FerrousLexer.DOT,                 "fe.op.ref",            false,  true,  false, true )
+    MEMBER_REF      (FerrousLexer.DOT,                 "fe.op.memberref",      false,  true,  false, true ),
+    REF             (FerrousLexer.AMP,                 "fe.op.ref",            true,   false, false, false)
     ;
     // @formatter:on
 
@@ -104,8 +105,12 @@ public enum Operator {
         this.isReference = isReference;
     }
 
-    public static Optional<Operator> findByText(final String text) {
-        return Arrays.stream(values()).filter(op -> op.text.equals(text)).findFirst();
+    public static Optional<Operator> unaryByText(final String text) {
+        return Arrays.stream(values()).filter(op -> op.text.equals(text) && op.isUnary).findFirst();
+    }
+
+    public static Optional<Operator> binaryByText(final String text) {
+        return Arrays.stream(values()).filter(op -> op.text.equals(text) && op.isBinary).findFirst();
     }
 
     public boolean isUnary() {

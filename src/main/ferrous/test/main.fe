@@ -2,7 +2,7 @@ fun testing(): i32 {
     return 2
 }
 
-@packed // Omits any padding and allows specifying bitfields in a struct
+@Packed // Omits any padding and allows specifying bitfields in a struct
 pub struct Foo {
     pub x: i20
     pub y: i10
@@ -16,15 +16,21 @@ pub struct Foo {
 fun bar(value: Foo&, value2: Foo::Bar&) {
 }
 
-@nomangle
+pub attrib Test {
+    pub value: i32
+    pub flag: bool
+}
+
+@Test(flag = true, value = 100)
+pub attrib AnotherAttrib {
+    pub value: string
+}
+
+@NoMangle
+@Test(flag = true, value = 100)
 fun main(num_args: i32, args: char**): i32 {
-    goto:testing // Terminates entry block, omits everything beyond this point
-    return 0
-    testing2: {
-        return testing()
-    }
-    testing: {
-        goto:testing2 // Terminates testing block, omits everything beyond this point
-        return 1
-    }
+    let mut x: i32 = num_args
+    let mut y: mut i32* = &x
+    let mut cond = false
+    return cond ? x : 0
 }

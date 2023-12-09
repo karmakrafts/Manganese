@@ -47,7 +47,7 @@ public final class Label implements Statement, LabeledStatement {
 
     @Override
     public long emit(final TargetMachine targetMachine, final IRContext irContext) {
-        return LLVMCore.LLVMBasicBlockAsValue(irContext.getOrCreate(name).getBlockAddress());
+        return LLVMCore.LLVMBasicBlockAsValue(irContext.getAndPush(name).getBlockAddress());
     }
 
     @Override

@@ -15,6 +15,8 @@
 
 package io.karma.ferrous.manganese.ocm.expr;
 
+import io.karma.ferrous.manganese.ocm.ValueStorage;
+import io.karma.ferrous.manganese.ocm.function.FunctionReference;
 import io.karma.ferrous.manganese.ocm.ir.IRBuilder;
 import io.karma.ferrous.manganese.ocm.ir.IRContext;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
@@ -83,6 +85,27 @@ public final class UnaryExpression implements Expression {
         return value;
     }
 
+    private long emitReference(final TargetMachine targetMachine, final IRContext irContext, final IRBuilder builder) {
+        if (!(value instanceof ReferenceExpression refExpr)) {
+            return NULL; // TODO: check/report error
+        }
+        return switch(refExpr.getReference()) { // @formatter:off
+            case FunctionReference fnRef -> {
+                final var function = fnRef.get();
+                if(function == null) {
+                    yield NULL; // TODO: check/report error
+                }
+                yield function.materialize(irContext.getModule(), targetMachine);
+            }
+            case ValueStorage storage    -> storage.getAddress(targetMachine, irContext);
+            default                      -> throw new IllegalStateException("Unsupported reference type");
+        }; // @formatter:on
+    }
+
+    private long emitDereference(final IRBuilder builder) {
+        return NULL;
+    }
+
     // Scoped
 
     @Override
@@ -106,6 +129,10 @@ public final class UnaryExpression implements Expression {
     public long emit(final TargetMachine targetMachine, final IRContext irContext) {
         final var builder = irContext.getCurrentOrCreate();
         var type = value.getType();
+        switch(op) { // @formatter:off
+            case REF:   return emitReference(targetMachine, irContext, builder);
+            case DEREF: return emitDereference(builder);
+        } // @formatter:on
         if (type.isReference()) {
             type = type.getBaseType();
         }

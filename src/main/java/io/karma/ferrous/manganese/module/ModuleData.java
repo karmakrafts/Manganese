@@ -31,7 +31,9 @@ import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
 
 /**
  * @author Alexander Hinze
@@ -184,12 +186,8 @@ public final class ModuleData {
         return ScopeUtils.findInScope(globalFields, name, scopeName);
     }
 
-    public Map<Identifier, LetStatement> getLocalsFor(final Function function) {
-        final var map = locals.get(function);
-        if (map != null) {
-            return map;
-        }
-        return Collections.emptyMap();
+    public LinkedHashMap<Identifier, LetStatement> getLocalsFor(final Function function) {
+        return locals.computeIfAbsent(function, fn -> new LinkedHashMap<>());
     }
 
     public LetStatement findLocalIn(final Function function, final Identifier name, final Identifier scopeName) {
