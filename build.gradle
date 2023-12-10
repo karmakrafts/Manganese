@@ -151,7 +151,7 @@ publishing {
 
                 licenses {
                     license {
-                        name = "The MIT License"
+                        name = "Apache 2.0"
                         url = "https://git.karmakrafts.dev/kk/${config.project_id}/-/blob/master/LICENSE"
                         distribution = 'repo'
                     }

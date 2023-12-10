@@ -16,6 +16,7 @@
 package io.karma.ferrous.manganese.ocm.function;
 
 import io.karma.ferrous.manganese.ocm.AttributeUsage;
+import io.karma.ferrous.manganese.ocm.statement.Statement;
 import io.karma.ferrous.manganese.ocm.type.*;
 import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.TokenSlice;
@@ -100,5 +101,15 @@ public final class IntrinsicFunction extends Function {
             params.add(new Parameter(name, paramTypes[i], false, null));
         }
         return params;
+    }
+
+    @Override
+    public void createBody(final List<Statement> statements) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean isIntrinsic() {
+        return true;
     }
 }

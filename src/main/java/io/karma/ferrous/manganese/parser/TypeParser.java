@@ -89,14 +89,14 @@ public final class TypeParser extends ParseAdapter {
             return; // TODO: handle error
         }
         if (context.ASTERISK() != null) {
-            if (type.isReference()) {
+            if (type.isRef()) {
                 compileContext.reportError(context.start, CompileErrorCode.E3007);
                 return;
             }
             this.type = type.asPtr();
         }
         if (context.AMP() != null) {
-            if (type.isReference()) {
+            if (type.isRef()) {
                 compileContext.reportError(context.start, CompileErrorCode.E3002);
                 return;
             }

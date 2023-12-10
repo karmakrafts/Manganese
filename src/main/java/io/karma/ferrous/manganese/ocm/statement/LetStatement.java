@@ -55,13 +55,13 @@ public final class LetStatement implements Statement, Named, ValueStorage {
     private long mutableAddress;
     private boolean hasChanged;
 
-    public LetStatement(final Identifier name, final Type type, final Expression value, final boolean isMutable,
-                        final boolean isInitialized, final TokenSlice tokenSlice) {
+    public LetStatement(final Identifier name, final Type type, final @Nullable Expression value,
+                        final boolean isMutable, final TokenSlice tokenSlice) {
         this.name = name;
         this.type = type;
         this.value = value;
         this.isMutable = isMutable;
-        this.isInitialized = isInitialized;
+        this.isInitialized = value != null;
         this.tokenSlice = tokenSlice;
         if (type instanceof UserDefinedType udt) { // @formatter:off
             fieldStorages = udt.fields()
@@ -72,11 +72,6 @@ public final class LetStatement implements Statement, Named, ValueStorage {
         else {
             fieldStorages = Collections.emptyMap();
         }
-    }
-
-    public LetStatement(final Identifier name, final Expression value, final boolean isMutable,
-                        final boolean isInitialized, final TokenSlice tokenSlice) {
-        this(name, value.getType(), value, isMutable, isInitialized, tokenSlice);
     }
 
     // ValueCarrier
@@ -93,7 +88,6 @@ public final class LetStatement implements Statement, Named, ValueStorage {
 
     // ValueStorage
 
-
     @Override
     public @Nullable ValueStorage getField(final Identifier name) {
         return fieldStorages.get(name);
@@ -106,8 +100,12 @@ public final class LetStatement implements Statement, Named, ValueStorage {
 
     @Override
     public long getAddress(final TargetMachine targetMachine, final IRContext irContext) {
-        if (!isMutable) {
-            throw new IllegalStateException("Cannot retrieve writable address of immutable local");
+        if (!isMutable && mutableAddress == NULL) {
+            // Allocate value on stack as needed so we can take its address, cache it
+            final var builder = irContext.getCurrentOrCreate();
+            mutableAddress = builder.alloca(getType().materialize(targetMachine));
+            builder.store(value.emit(targetMachine, irContext), mutableAddress);
+            LLVMSetValueName2(mutableAddress, String.format("%s.immaddr", name.toInternalName()));
         }
         return mutableAddress;
     }
@@ -187,13 +185,13 @@ public final class LetStatement implements Statement, Named, ValueStorage {
             final var builder = irContext.getCurrentOrCreate();
             final var typeAddress = type.materialize(targetMachine);
             mutableAddress = builder.alloca(typeAddress);
+            LLVMSetValueName2(mutableAddress, internalName);
             if (hasDefaultValue) {
                 builder.store(immutableAddress, mutableAddress); // Store default value immediately after alloc
             }
         }
         else if (!irContext.isParameter(immutableAddress)) {
             LLVMSetValueName2(immutableAddress, internalName);
-            return NULL;
         }
         return NULL;
     }

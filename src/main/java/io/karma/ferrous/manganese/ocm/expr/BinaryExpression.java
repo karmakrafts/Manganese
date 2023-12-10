@@ -184,7 +184,7 @@ public final class BinaryExpression implements Expression {
             return emitSwap(targetMachine, irContext);
         }
         var lhsType = lhs.getType();
-        if (lhsType != null && lhsType.isReference()) {
+        if (lhsType != null && lhsType.isRef()) {
             lhsType = lhsType.getBaseType();
         }
         if (lhsType == null || !lhsType.getKind().isBuiltin()) {

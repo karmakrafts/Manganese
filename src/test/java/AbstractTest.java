@@ -14,16 +14,51 @@
  */
 
 import io.karma.ferrous.manganese.Manganese;
+import io.karma.ferrous.manganese.compiler.CompileContext;
+import io.karma.ferrous.manganese.module.Module;
+import io.karma.ferrous.manganese.target.*;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.TestInstance;
 
 /**
  * @author Alexander Hinze
  * @since 06/11/2023
  */
 public abstract class AbstractTest {
+    private static AbstractTest INSTANCE;
+    protected CompileContext compileContext;
+    protected TargetMachine targetMachine;
+    protected Module module;
+
+    protected AbstractTest() {
+        INSTANCE = this;
+    }
+
+    private void initInstance() {
+        compileContext = new CompileContext();
+        targetMachine = new TargetMachine(Target.getHostTarget(),
+            "",
+            OptimizationLevel.DEFAULT,
+            Relocation.DEFAULT,
+            CodeModel.DEFAULT,
+            "");
+        module = INSTANCE.targetMachine.createModule("test");
+    }
+
+    private void disposeInstance() {
+        compileContext.dispose();
+        targetMachine.dispose();
+        module.dispose();
+    }
+
     @BeforeAll
     static void init() {
         Manganese.init();
+        INSTANCE.initInstance();
+    }
+
+    @AfterAll
+    static void dispose() {
+        INSTANCE.disposeInstance();
     }
 }

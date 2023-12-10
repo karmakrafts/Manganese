@@ -23,7 +23,7 @@ import io.karma.ferrous.manganese.ocm.scope.ScopeStack;
 import io.karma.ferrous.manganese.ocm.type.Types;
 import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.TokenSlice;
-import io.karma.ferrous.vanadium.FerrousParser.AttributeListContext;
+import io.karma.ferrous.vanadium.FerrousParser.AttribUsageContext;
 import io.karma.ferrous.vanadium.FerrousParser.FieldContext;
 import io.karma.ferrous.vanadium.FerrousParser.UdtContext;
 import org.apiguardian.api.API;
@@ -62,11 +62,11 @@ public final class UserDefinedTypeParser extends ParseAdapter {
     }
 
     @Override
-    public void enterAttributeList(final AttributeListContext context) {
+    public void enterAttribUsage(final AttribUsageContext context) {
         if (isOutOfScope()) {
             return;
         }
-        attributeUsages.addAll(AttributeUsage.parse(compileContext, capturedScopeStack, context));
+        attributeUsages.add(AttributeUsage.parse(compileContext, capturedScopeStack, context));
     }
 
     @Override

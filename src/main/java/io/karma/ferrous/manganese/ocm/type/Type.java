@@ -26,10 +26,7 @@ import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.List;
+import java.util.*;
 
 /**
  * @author Alexander Hinze
@@ -63,8 +60,8 @@ public interface Type extends Scoped, Mangleable {
         return Collections.emptyList();
     }
 
-    default EnumSet<TypeModifier> getModifiers() {
-        return getBaseType().getModifiers();
+    default List<TypeModifier> getModifiers() {
+        return Collections.emptyList();
     }
 
     default Type monomorphize(final List<Type> genericTypes) {
@@ -90,53 +87,33 @@ public interface Type extends Scoped, Mangleable {
         return targetMachine.getTypeAlignment(materialize(targetMachine));
     }
 
-    /**
-     * @param type The type to check against.
-     * @return True if the given type may be assigned or
-     * implicitly casted to this type. False otherwise.
-     */
     default boolean canAccept(final Type type) {
-        if (type.isReference()) {
+        if (type.isRef()) {
             return type.getBaseType() == this;
         }
         return type == this;
     }
 
-    /**
-     * @return True if this type is imaginary and cannot be materialized
-     * into a runtime structure.
-     */
+    default boolean canBeCastFrom(final Type type) {
+        return canAccept(type);
+    }
+
     default boolean isImaginary() {
         return false;
     }
 
-    /**
-     * @return True if this type is aliased and refers to another
-     * type or alias.
-     */
     default boolean isAliased() {
         return false;
     }
 
-    /**
-     * @return True if this is a builtin type.
-     */
     default boolean isBuiltin() {
         return false;
     }
 
-    /**
-     * @return True if this is a complete type.
-     * False if this type is incomplete and missing and associated data layout.
-     */
     default boolean isComplete() {
         return true;
     }
 
-    /**
-     * @return True if this is a monomorphic type
-     * (when it has no generic parameters associated with it).
-     */
     default boolean isMonomorphic() {
         return getBaseType().isMonomorphic();
     }
@@ -145,8 +122,12 @@ public interface Type extends Scoped, Mangleable {
         return false;
     }
 
-    default Type derive(final TypeAttribute attribute) {
-        return Types.cached(new DerivedType(this, attribute));
+    default Type derive(final TypeAttribute attribute, final TypeModifier... modifiers) {
+        // @formatter:off
+        return Types.cached(new DerivedType(this, attribute, modifiers.length > 0
+            ? EnumSet.copyOf(Arrays.asList(modifiers))
+            : EnumSet.noneOf(TypeModifier.class)));
+        // @formatter:on
     }
 
     default Type derive(final Collection<TypeAttribute> attributes) {
@@ -157,15 +138,15 @@ public interface Type extends Scoped, Mangleable {
         return type;
     }
 
-    default Type asPtr() {
-        return derive(TypeAttribute.POINTER);
+    default Type asPtr(final TypeModifier... modifiers) {
+        return derive(TypeAttribute.POINTER, modifiers);
     }
 
-    default Type asRef() {
-        return derive(TypeAttribute.REFERENCE);
+    default Type asRef(final TypeModifier... modifiers) {
+        return derive(TypeAttribute.REFERENCE, modifiers);
     }
 
-    default boolean isReference() {
+    default boolean isRef() {
         final var attributes = getAttributes();
         if (attributes.isEmpty()) {
             return false;
@@ -173,7 +154,7 @@ public interface Type extends Scoped, Mangleable {
         return attributes.getLast() == TypeAttribute.REFERENCE;
     }
 
-    default boolean isPointer() {
+    default boolean isPtr() {
         final var attributes = getAttributes();
         if (attributes.isEmpty()) {
             return false;

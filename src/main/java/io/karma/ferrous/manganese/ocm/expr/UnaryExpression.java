@@ -102,8 +102,22 @@ public final class UnaryExpression implements Expression {
         }; // @formatter:on
     }
 
-    private long emitDereference(final IRBuilder builder) {
-        return NULL;
+    private long emitDereference(final TargetMachine targetMachine, final IRContext irContext,
+                                 final IRBuilder builder) {
+        if (!(value instanceof ReferenceExpression refExpr)) {
+            return NULL; // TODO: check/report error
+        }
+        return switch (refExpr.getReference()) { // @formatter:off
+            case ValueStorage storage    -> {
+                if (!storage.getType().isPtr()) {
+                    throw new IllegalStateException("Cannot dereference non-pointer");
+                }
+                final var address = storage.load(targetMachine, irContext);
+                final var typeAddress = storage.getType().getBaseType().materialize(targetMachine);
+                yield irContext.getCurrentOrCreate().load(typeAddress, address);
+            }
+            default                      -> throw new IllegalStateException("Unsupported reference type");
+        }; // @formatter:on
     }
 
     // Scoped
@@ -131,9 +145,9 @@ public final class UnaryExpression implements Expression {
         var type = value.getType();
         switch(op) { // @formatter:off
             case REF:   return emitReference(targetMachine, irContext, builder);
-            case DEREF: return emitDereference(builder);
+            case DEREF: return emitDereference(targetMachine, irContext, builder);
         } // @formatter:on
-        if (type.isReference()) {
+        if (type.isRef()) {
             type = type.getBaseType();
         }
         if (!type.getKind().isBuiltin()) {
@@ -156,7 +170,14 @@ public final class UnaryExpression implements Expression {
 
     @Override
     public Type getType() {
-        return value.getType();
+        final var type = value.getType();
+        if (op == Operator.REF) {
+            return type.asPtr();
+        }
+        if (op == Operator.DEREF) {
+            return type.getBaseType();
+        }
+        return type;
     }
 
     @Override

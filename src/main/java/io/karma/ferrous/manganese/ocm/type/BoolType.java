@@ -17,6 +17,7 @@ package io.karma.ferrous.manganese.ocm.type;
 
 import io.karma.ferrous.manganese.ocm.constant.BoolConstant;
 import io.karma.ferrous.manganese.ocm.expr.Expression;
+import io.karma.ferrous.manganese.ocm.ir.IRContext;
 import io.karma.ferrous.manganese.ocm.scope.DefaultScope;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.target.TargetMachine;
@@ -41,6 +42,27 @@ public final class BoolType implements Type {
     // @formatter:off
     private BoolType() {}
     // @formatter:on
+
+    @Override
+    public long cast(final Type type, final long value, final TargetMachine targetMachine, final IRContext irContext) {
+        return switch(type) { // @formatter:off
+            case IntType intType -> IntType.I1.sizeCast(intType, value, targetMachine, irContext);
+            default              -> throw new UnsupportedOperationException();
+        }; // @formatter:on
+    }
+
+    @Override
+    public boolean canBeCastFrom(final Type type) {
+        if (type == INSTANCE) {
+            return true;
+        }
+        return type.getKind() == TypeKind.INT;
+    }
+
+    @Override
+    public boolean canAccept(final Type type) {
+        return type == INSTANCE;
+    }
 
     @Override
     public char getMangledSequencePrefix() {

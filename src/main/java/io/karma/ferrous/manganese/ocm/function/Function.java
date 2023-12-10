@@ -122,6 +122,10 @@ public class Function implements Scoped, Mangleable {
         return genericParams.isEmpty();
     }
 
+    public boolean isIntrinsic() {
+        return false;
+    }
+
     public @Nullable FunctionBody getBody() {
         return body;
     }

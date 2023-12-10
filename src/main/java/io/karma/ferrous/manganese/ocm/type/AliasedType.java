@@ -125,13 +125,13 @@ public final class AliasedType implements Type {
     }
 
     @Override
-    public boolean isReference() {
-        return backingType.isReference();
+    public boolean isRef() {
+        return backingType.isRef();
     }
 
     @Override
-    public boolean isPointer() {
-        return backingType.isPointer();
+    public boolean isPtr() {
+        return backingType.isPtr();
     }
 
     @Override

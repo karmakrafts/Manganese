@@ -34,7 +34,6 @@ import org.apiguardian.api.API.Status;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
-import java.util.UUID;
 
 /**
  * @author Alexander Hinze
@@ -90,6 +89,24 @@ public abstract class ParseAdapter implements FerrousParserListener {
 
     // @formatter:off
     @Override
+    public void enterGotoAddressStatement(GotoAddressStatementContext gotoAddressStatementContext) {}
+
+    @Override
+    public void exitGotoAddressStatement(GotoAddressStatementContext gotoAddressStatementContext) {}
+
+    @Override
+    public void enterAnonScope(AnonScopeContext anonScopeContext) {}
+
+    @Override
+    public void exitAnonScope(AnonScopeContext anonScopeContext) {}
+
+    @Override
+    public void enterParamRef(ParamRefContext paramRefContext) {}
+
+    @Override
+    public void exitParamRef(ParamRefContext paramRefContext) {}
+
+    @Override
     public void enterLabel(LabelContext labelContext) {}
 
     @Override
@@ -126,16 +143,6 @@ public abstract class ParseAdapter implements FerrousParserListener {
 
     @Override
     public void exitLabelBlock(final LabelBlockContext context) {
-        popScope();
-    }
-
-    @Override
-    public void enterUnsafeBlock(final UnsafeBlockContext context) {
-        pushScope(ScopeType.UNSAFE_BLOCK, new Identifier(String.format("scope%s", UUID.randomUUID())));
-    }
-
-    @Override
-    public void exitUnsafeBlock(final UnsafeBlockContext context) {
         popScope();
     }
 
@@ -416,12 +423,6 @@ public abstract class ParseAdapter implements FerrousParserListener {
     public void exitTrait(final TraitContext context) {
         popScope();
     }
-
-    @Override
-    public void enterAttributeList(AttributeListContext attributeListContext) {}
-
-    @Override
-    public void exitAttributeList(AttributeListContext attributeListContext) {}
 
     @Override
     public void enterAttribUsage(AttribUsageContext attribUsageContext) {}

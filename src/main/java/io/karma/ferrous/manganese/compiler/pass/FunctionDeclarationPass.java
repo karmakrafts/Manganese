@@ -116,7 +116,7 @@ public final class FunctionDeclarationPass implements CompilePass {
             final var type = FunctionUtils.parseFunctionType(compileContext, scopeStack, context);
             final var params = Parameter.parse(compileContext, scopeStack, context.functionParamList());
             final var genericParams = GenericParameter.parse(compileContext, scopeStack, context.genericParamList());
-            final var attributeUsages = AttributeUsage.parse(compileContext, scopeStack, context.attributeList());
+            final var attributeUsages = AttributeUsage.parse(compileContext, scopeStack, context.attribUsage());
             final var modifiers = FunctionModifier.parse(compileContext, context.functionMod());
             final var function = scopeStack.applyEnclosingScopes(new Function(name,
                 callConv,

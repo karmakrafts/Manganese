@@ -39,14 +39,15 @@ import java.math.BigInteger;
 @API(status = API.Status.INTERNAL)
 public final class IntType implements Type, Mangleable {
     public static final char SEQUENCE_PREFIX = '\'';
-    public static final Type I8 = Types.integer(8, false, Functions.castingIdentity());
-    public static final Type I16 = Types.integer(16, false, Functions.castingIdentity());
-    public static final Type I32 = Types.integer(32, false, Functions.castingIdentity());
-    public static final Type I64 = Types.integer(64, false, Functions.castingIdentity());
-    public static final Type U8 = Types.integer(8, true, Functions.castingIdentity());
-    public static final Type U16 = Types.integer(16, true, Functions.castingIdentity());
-    public static final Type U32 = Types.integer(32, true, Functions.castingIdentity());
-    public static final Type U64 = Types.integer(64, true, Functions.castingIdentity());
+    public static final IntType I1 = Types.integer(1, false, Functions.castingIdentity());
+    public static final IntType I8 = Types.integer(8, false, Functions.castingIdentity());
+    public static final IntType I16 = Types.integer(16, false, Functions.castingIdentity());
+    public static final IntType I32 = Types.integer(32, false, Functions.castingIdentity());
+    public static final IntType I64 = Types.integer(64, false, Functions.castingIdentity());
+    public static final IntType U8 = Types.integer(8, true, Functions.castingIdentity());
+    public static final IntType U16 = Types.integer(16, true, Functions.castingIdentity());
+    public static final IntType U32 = Types.integer(32, true, Functions.castingIdentity());
+    public static final IntType U64 = Types.integer(64, true, Functions.castingIdentity());
 
     private final int width;
     private final boolean isUnsigned;
@@ -69,44 +70,52 @@ public final class IntType implements Type, Mangleable {
         return isUnsigned;
     }
 
+    public long sizeCast(final IntType type, final long value, final TargetMachine targetMachine,
+                         final IRContext irContext) {
+        final var builder = irContext.getCurrentOrCreate();
+        final var typeAddress = type.materialize(targetMachine);
+        final var otherWidth = type.getWidth();
+        if (otherWidth == width) {
+            return value; // If the width is the same, we don't do anything to it
+        }
+        if (otherWidth < width) {
+            return builder.trunc(typeAddress, value);
+        }
+        if (type.isUnsigned) {
+            return builder.zext(typeAddress, value);
+        }
+        return builder.sext(typeAddress, value);
+    }
+
     @Override
     public long cast(final Type type, final long value, final TargetMachine targetMachine, final IRContext irContext) {
         final var builder = irContext.getCurrentOrCreate();
         final var typeAddress = type.materialize(targetMachine);
         return switch (type) {
-            case IntType intType -> {
-                final var otherWidth = intType.getWidth();
-                if (otherWidth == width) {
-                    yield value; // If the width is the same, we don't do anything to it
-                }
-                if (otherWidth < width) {
-                    yield builder.trunc(typeAddress, value);
-                }
-                if (intType.isUnsigned) {
-                    yield builder.zext(typeAddress, value);
-                }
-                yield builder.sext(typeAddress, value);
-            }
+            case BoolType ignored -> sizeCast(IntType.I1, value, targetMachine, irContext);
+            case CharType ignored -> sizeCast(IntType.I8, value, targetMachine, irContext);
+            case IntType intType -> sizeCast(intType, value, targetMachine, irContext);
             case RealType realType -> {
                 final var realWidth = realType.getWidth();
+                final var intType = Types.integer(realWidth, isUnsigned, Functions.castingIdentity());
                 // @formatter:off
                 final var intValue = isUnsigned
                     ? builder.floatToUint(typeAddress, value)
                     : builder.floatToSint(typeAddress, value);
                 // @formatter:on
-                if (width == realWidth) {
-                    yield intValue;
-                }
-                if (width < realWidth) {
-                    yield builder.trunc(typeAddress, intValue);
-                }
-                if (isUnsigned) {
-                    yield builder.zext(typeAddress, intValue);
-                }
-                yield builder.sext(typeAddress, intValue);
+                yield sizeCast(intType, intValue, targetMachine, irContext);
             }
             default -> value;
         };
+    }
+
+    @Override
+    public boolean canBeCastFrom(final Type type) {
+        if (type.isPtr()) { // Ints can be cast from pointers
+            return true;
+        }
+        final var kind = type.getKind();
+        return kind == TypeKind.BOOL || kind == TypeKind.CHAR || kind == TypeKind.REAL || kind == TypeKind.INT;
     }
 
     @Override

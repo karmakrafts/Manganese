@@ -1,22 +1,13 @@
-pub mod std::libc {
-    extern fun abort()
-    extern fun exit()
+// stdio.h
+type FileHandle = void*
 
-    extern fun malloc(size: usize): mut void*
-    extern fun calloc(size: usize, num: usize): mut void*
-    extern fun realloc(mem: mut void*, size: usize): mut void*
-    extern fun free(mem: mut void*)
-
-    extern fun memchr(mem: void*, value: i32, num: usize): void*
-    extern fun memcmp(mem1: void*, mem2: void*, num: usize): i32
-    extern fun memcpy(dst: mut void*, src: void*, size: usize): mut void*
-    extern fun memmove(dst: mut void*, src: void*, size: usize): mut void*
-    extern fun memset(mem: void*, value: i32, size: usize): void*
-    extern fun strcat(dst: mut char*, src: char*): mut char*
-    extern fun strncat(dst: mut char*, src: char*, num: usize): mut char*
-    extern fun strchr(str: char*, value: i32): char*
-    extern fun strcmp(str1: char*, str2: char*): i32
-    extern fun strncmp(str1: char*, str2: char*, num: usize): i32
-    extern fun strcoll(str1: char*, str2: char*): i32
-    extern fun strcpy(dst: mut char*, src: char*): mut char*
-}
+fun remove(name: char*): i32
+fun rename(old_name: char*, new_name: char*): i32
+fun tmpfile(): FileHandle
+fun tmpnam(str: mut char*): mut char*
+fun fclose(handle: FileHandle): i32
+fun fflush(handle: FileHandle): i32
+fun fopen(name: char*, mode: char*): FileHandle
+fun freopen(name: char*, mode: char*, handle: FileHandle): FileHandle
+fun setbuf(handle: FileHandle, buffer: char*)
+fun setvbuf(handle: FileHandle, buffer: char*, mode: i32, size: usize): i32

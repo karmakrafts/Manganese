@@ -19,6 +19,7 @@ import io.karma.ferrous.manganese.ocm.Mangleable;
 import io.karma.ferrous.manganese.ocm.constant.BigRealConstant;
 import io.karma.ferrous.manganese.ocm.constant.RealConstant;
 import io.karma.ferrous.manganese.ocm.expr.Expression;
+import io.karma.ferrous.manganese.ocm.ir.IRContext;
 import io.karma.ferrous.manganese.ocm.scope.DefaultScope;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.target.TargetMachine;
@@ -81,6 +82,26 @@ public enum RealType implements Type, Mangleable {
 
     public int getWidth() {
         return width;
+    }
+
+    public long sizeCast(final RealType type, final long value, final TargetMachine targetMachine,
+                         final IRContext irContext) {
+        final var builder = irContext.getCurrentOrCreate();
+        final var typeAddress = type.materialize(targetMachine);
+        final var otherWidth = type.getWidth();
+        if (otherWidth == width) {
+            return value; // If the width is the same, we don't do anything to it
+        }
+        if (otherWidth < width) {
+            return builder.floatTrunc(typeAddress, value);
+        }
+        return builder.floatExt(typeAddress, value);
+    }
+
+    @Override
+    public boolean canAccept(final Type type) {
+        final var kind = type.getKind();
+        return kind == TypeKind.REAL || kind == TypeKind.INT;
     }
 
     @Override

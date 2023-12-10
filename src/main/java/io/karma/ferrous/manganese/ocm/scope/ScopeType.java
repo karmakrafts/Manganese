@@ -47,7 +47,7 @@ public enum ScopeType {
     DO          (false),
     LOOP        (false),
     LABEL_BLOCK (false),
-    UNSAFE_BLOCK(false);
+    ANON_SCOPE  (false);
     // @formatter:on
 
     private final boolean isGlobal;

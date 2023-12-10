@@ -26,17 +26,23 @@ import org.apiguardian.api.API;
 @API(status = API.Status.INTERNAL)
 public enum TypeModifier {
     // @formatter:off
-    ATOMIC (FerrousLexer.KW_ATOMIC),
-    TLS    (FerrousLexer.KW_TLS),
-    MUT    (FerrousLexer.KW_MUT);
+    ATOMIC ('$', FerrousLexer.KW_ATOMIC),
+    TLS    ('^', FerrousLexer.KW_TLS),
+    MUT    ('!', FerrousLexer.KW_MUT);
     // @formatter:on
 
+    private final char mangledSymbol;
     private final int token;
     private final String text;
 
-    TypeModifier(final int token) {
+    TypeModifier(final char mangledSymbol, final int token) {
+        this.mangledSymbol = mangledSymbol;
         this.token = token;
         text = TokenUtils.getLiteral(token);
+    }
+
+    public char getMangledSymbol() {
+        return mangledSymbol;
     }
 
     public String getText() {

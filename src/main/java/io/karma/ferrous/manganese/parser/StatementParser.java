@@ -136,7 +136,7 @@ public final class StatementParser extends ParseAdapter {
                     compileContext.reportError(context.QMK().getSymbol(), CompileErrorCode.E4010);
                     return;
                 }
-                addStatement(new LetStatement(name, type, null, true, false, TokenSlice.from(compileContext, context)));
+                addStatement(new LetStatement(name, type, null, true, TokenSlice.from(compileContext, context)));
                 return;
             }
             if (exprContext == null) {
@@ -144,7 +144,6 @@ public final class StatementParser extends ParseAdapter {
                     type,
                     type.makeDefaultValue(compileContext.getCompiler().getTargetMachine()),
                     isMutable,
-                    true,
                     TokenSlice.from(compileContext, context)));
                 return;
             }
@@ -164,7 +163,7 @@ public final class StatementParser extends ParseAdapter {
         if (expr instanceof NullConstant nll) {
             nll.setContextualType(type); // Give null contextual type information about our variable
         }
-        addStatement(new LetStatement(name, type, expr, isMutable, true, TokenSlice.from(compileContext, context)));
+        addStatement(new LetStatement(name, type, expr, isMutable, TokenSlice.from(compileContext, context)));
     }
 
     @Override
