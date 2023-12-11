@@ -58,7 +58,7 @@ public final class DefaultScope implements Scope {
     }
 
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
         return switch(obj) { // @formatter:off
             case DefaultScope defScope  -> type == defScope.type && name.equals(defScope.name);
             case Scope scope            -> type == scope.getScopeType() && name.equals(scope.getName());
