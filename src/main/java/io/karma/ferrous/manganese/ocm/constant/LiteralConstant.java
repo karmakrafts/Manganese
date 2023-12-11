@@ -57,7 +57,7 @@ public final class LiteralConstant implements Constant {
     }
 
     @Override
-    public Type getType() {
+    public Type getType(final TargetMachine targetMachine) {
         return ImaginaryType.LITERAL;
     }
 

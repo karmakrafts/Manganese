@@ -19,6 +19,7 @@ import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.ocm.generic.GenericParameter;
 import io.karma.ferrous.manganese.ocm.scope.ScopeStack;
 import io.karma.ferrous.manganese.parser.TypeParser;
+import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.TokenSlice;
 import io.karma.ferrous.vanadium.FerrousParser;
@@ -112,11 +113,11 @@ public final class Types {
         return cached(callback.apply(new IncompleteType(name, tokenSlice, genericParameters)));
     }
 
-    public static @Nullable Type findCommonType(final Type... types) {
-        return findCommonType(Arrays.asList(types));
+    public static @Nullable Type findCommonType(final TargetMachine targetMachine, final Type... types) {
+        return findCommonType(targetMachine, Arrays.asList(types));
     }
 
-    public static @Nullable Type findCommonType(final List<Type> types) {
+    public static @Nullable Type findCommonType(final TargetMachine targetMachine, final List<Type> types) {
         final var numTypes = types.size();
         return switch(numTypes) { // @formatter:off
             case 0  -> null;
@@ -130,7 +131,7 @@ public final class Types {
                             continue; // If we are at the same index, skip this iteration
                         }
                         final var type = types.get(j);
-                        if(!baseType.canAccept(type)) {
+                        if(!baseType.canAccept(targetMachine, type)) {
                             result = null; // Reset result if kind was not compatible
                             continue;
                         }

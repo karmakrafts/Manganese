@@ -70,7 +70,7 @@ public final class ReturnStatement implements Statement {
     @Override
     public long emit(final TargetMachine targetMachine, final IRContext irContext) {
         final var builder = irContext.getCurrentOrCreate();
-        final var type = value.getType();
+        final var type = value.getType(targetMachine);
         if (type.isImaginary()) {
             return NULL; // We don't emit anything for imaginary types
         }

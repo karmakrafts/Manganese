@@ -92,11 +92,11 @@ public final class DerivedType implements Type {
     }
 
     @Override
-    public boolean canAccept(final Type type) {
+    public boolean canAccept(final TargetMachine targetMachine, final Type type) {
         if (type instanceof DerivedType derivedType) {
             return baseType == derivedType.baseType && getAttributes().equals(derivedType.getAttributes());
         }
-        return Type.super.canAccept(type);
+        return Type.super.canAccept(targetMachine, type);
     }
 
     @Override

@@ -99,7 +99,7 @@ public enum RealType implements Type, Mangleable {
     }
 
     @Override
-    public boolean canAccept(final Type type) {
+    public boolean canAccept(final TargetMachine targetMachine, final Type type) {
         final var kind = type.getKind();
         return kind == TypeKind.REAL || kind == TypeKind.INT;
     }

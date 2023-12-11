@@ -58,7 +58,7 @@ public final class ExpressionConstant implements Constant {
     }
 
     @Override
-    public Type getType() {
+    public Type getType(final TargetMachine targetMachine) {
         return ImaginaryType.EXPR;
     }
 

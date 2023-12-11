@@ -75,7 +75,7 @@ public final class ReferenceExpression implements Expression {
     // Expression
 
     @Override
-    public Type getType() {
+    public Type getType(final TargetMachine targetMachine) {
         return switch (reference) { // @formatter:off
             case FunctionReference funRef -> Objects.requireNonNull(funRef.get()).getType();
             case ValueStorage storage     -> Objects.requireNonNull(storage.getType());
@@ -95,7 +95,7 @@ public final class ReferenceExpression implements Expression {
         return switch (reference) {
             case FunctionReference funRef -> {
                 final var function = Objects.requireNonNull(funRef.get());
-                final var typeAddress = getType().derive(TypeAttribute.POINTER).materialize(targetMachine);
+                final var typeAddress = getType(targetMachine).derive(TypeAttribute.POINTER).materialize(targetMachine);
                 final var fnAddress = function.materialize(irContext.getModule(), targetMachine);
                 yield builder.intToPtr(typeAddress, fnAddress);
             }

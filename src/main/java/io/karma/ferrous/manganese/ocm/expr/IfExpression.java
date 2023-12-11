@@ -23,7 +23,6 @@ import io.karma.ferrous.manganese.ocm.type.Types;
 import io.karma.ferrous.manganese.ocm.type.VoidType;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.TokenSlice;
-import io.karma.kommons.lazy.Lazy;
 import io.karma.kommons.tuple.Pair;
 import org.apiguardian.api.API;
 import org.jetbrains.annotations.Nullable;
@@ -39,7 +38,6 @@ import static org.lwjgl.system.MemoryUtil.NULL;
 @API(status = API.Status.INTERNAL)
 public final class IfExpression implements Expression {
     private final List<Pair<Expression, List<Statement>>> branches;
-    private final Lazy<Type> type;
     private final TokenSlice tokenSlice;
     private Scope enclosingScope;
 
@@ -48,17 +46,6 @@ public final class IfExpression implements Expression {
             throw new IllegalArgumentException("If expression requires at least one block");
         }
         this.branches = branches;
-        // @formatter:off
-        type = new Lazy<>(() -> Types.findCommonType(branches.stream()
-            .map(pair -> {
-                final var statement = pair.getRight();
-                if(statement instanceof Expression expr) {
-                    return expr.getType();
-                }
-                return VoidType.INSTANCE;
-            })
-            .toList()));
-        // @formatter:on
         this.tokenSlice = tokenSlice;
     }
 
@@ -82,8 +69,14 @@ public final class IfExpression implements Expression {
     }
 
     @Override
-    public Type getType() {
-        return type.getOrCreate();
+    public Type getType(final TargetMachine targetMachine) {
+        return Types.findCommonType(targetMachine, branches.stream().map(pair -> {
+            final var statement = pair.getRight();
+            if (statement instanceof Expression expr) {
+                return expr.getType(targetMachine);
+            }
+            return VoidType.INSTANCE;
+        }).toList());
     }
 
     @Override

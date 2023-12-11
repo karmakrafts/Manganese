@@ -62,7 +62,7 @@ public final class StructConstant implements Constant {
     // Constant
 
     @Override
-    public Type getType() {
+    public Type getType(final TargetMachine targetMachine) {
         return type;
     }
 

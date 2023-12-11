@@ -90,8 +90,8 @@ public final class AliasedType implements Type {
     }
 
     @Override
-    public boolean canAccept(final Type type) {
-        return backingType.canAccept(type);
+    public boolean canAccept(final TargetMachine targetMachine, final Type type) {
+        return backingType.canAccept(targetMachine, type);
     }
 
     @Override

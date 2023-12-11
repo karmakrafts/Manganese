@@ -245,7 +245,7 @@ public final class ExpressionParser extends ParseAdapter {
         final var args = parse(compileContext, capturedScopeStack, argsContext, parent);
         final var function = switch (refExpr.getReference()) {
             case UnresolvedFunctionReference unresolvedRef -> {
-                unresolvedRef.setContextualParamTypes(args.stream().map(Expression::getType).toList());
+                unresolvedRef.setContextualParamTypes(args.stream().map(e -> e.getType(compileContext.getCompiler().getTargetMachine())).toList());
                 yield unresolvedRef.get();
             }
             case FunctionReference ref -> ref.get();

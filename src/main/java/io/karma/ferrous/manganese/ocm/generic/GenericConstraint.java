@@ -17,33 +17,34 @@ package io.karma.ferrous.manganese.ocm.generic;
 
 import io.karma.ferrous.manganese.compiler.CompileContext;
 import io.karma.ferrous.manganese.ocm.type.Type;
+import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.vanadium.FerrousParser.GenericExprContext;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.function.Predicate;
+import java.util.function.BiPredicate;
 
 /**
  * @author Alexander Hinze
  * @since 29/10/2023
  */
 @FunctionalInterface
-public interface GenericConstraint extends Predicate<Type> {
-    GenericConstraint TRUE = type -> true;
-    GenericConstraint FALSE = type -> false;
+public interface GenericConstraint extends BiPredicate<TargetMachine, Type> {
+    GenericConstraint TRUE = (targetMachine, type) -> true;
+    GenericConstraint FALSE = (targetMachine, type) -> false;
 
     static GenericConstraint parse(final CompileContext compileContext, final GenericExprContext context) {
         return GenericConstraint.TRUE; // TODO: implement this
     }
 
     default @NotNull GenericConstraint or(final GenericConstraint other) {
-        return type -> test(type) || other.test(type);
+        return (targetMachine, type) -> test(targetMachine, type) || other.test(targetMachine, type);
     }
 
     default @NotNull GenericConstraint and(final GenericConstraint other) {
-        return type -> test(type) && other.test(type);
+        return (targetMachine, type) -> test(targetMachine, type) && other.test(targetMachine, type);
     }
 
     default @NotNull GenericConstraint negate() {
-        return type -> !test(type);
+        return (targetMachine, type) -> !test(targetMachine, type);
     }
 }

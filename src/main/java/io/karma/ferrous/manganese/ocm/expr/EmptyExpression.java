@@ -38,7 +38,7 @@ public final class EmptyExpression implements Expression {
     }
 
     @Override
-    public Type getType() {
+    public Type getType(final TargetMachine targetMachine) {
         return VoidType.INSTANCE;
     }
 

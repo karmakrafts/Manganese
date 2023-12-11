@@ -61,7 +61,7 @@ public final class IntConstant implements Constant {
     // Expressions
 
     @Override
-    public Type getType() {
+    public Type getType(final TargetMachine targetMachine) {
         return type;
     }
 

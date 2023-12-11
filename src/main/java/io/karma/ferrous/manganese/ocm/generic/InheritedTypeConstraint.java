@@ -16,6 +16,7 @@
 package io.karma.ferrous.manganese.ocm.generic;
 
 import io.karma.ferrous.manganese.ocm.type.Type;
+import io.karma.ferrous.manganese.target.TargetMachine;
 import org.apiguardian.api.API;
 
 /**
@@ -25,7 +26,7 @@ import org.apiguardian.api.API;
 @API(status = API.Status.INTERNAL)
 public record InheritedTypeConstraint(Type value) implements GenericConstraint {
     @Override
-    public boolean test(final Type type) {
-        return type.canAccept(value);
+    public boolean test(final TargetMachine targetMachine, final Type type) {
+        return type.canAccept(targetMachine, value);
     }
 }

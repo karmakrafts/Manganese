@@ -49,7 +49,7 @@ public final class BigRealConstant implements Constant {
     }
 
     @Override
-    public Type getType() {
+    public Type getType(final TargetMachine targetMachine) {
         return type;
     }
 

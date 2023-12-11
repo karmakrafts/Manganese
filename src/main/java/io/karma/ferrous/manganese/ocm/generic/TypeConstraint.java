@@ -16,6 +16,7 @@
 package io.karma.ferrous.manganese.ocm.generic;
 
 import io.karma.ferrous.manganese.ocm.type.Type;
+import io.karma.ferrous.manganese.target.TargetMachine;
 
 /**
  * @author Alexander Hinze
@@ -23,7 +24,7 @@ import io.karma.ferrous.manganese.ocm.type.Type;
  */
 public record TypeConstraint(Type value) implements GenericConstraint {
     @Override
-    public boolean test(final Type type) {
+    public boolean test(final TargetMachine targetMachine, final Type type) {
         return type.equals(value);
     }
 }

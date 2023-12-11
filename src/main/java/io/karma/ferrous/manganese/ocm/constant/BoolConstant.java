@@ -65,12 +65,12 @@ public final class BoolConstant implements Constant {
     }
 
     @Override
-    public Type getType() {
+    public Type getType(final TargetMachine targetMachine) {
         return BoolType.INSTANCE;
     }
 
     @Override
     public long emit(final TargetMachine targetMachine, final IRContext irContext) {
-        return LLVMCore.LLVMConstInt(getType().materialize(targetMachine), value ? 1 : 0, false);
+        return LLVMCore.LLVMConstInt(getType(targetMachine).materialize(targetMachine), value ? 1 : 0, false);
     }
 }

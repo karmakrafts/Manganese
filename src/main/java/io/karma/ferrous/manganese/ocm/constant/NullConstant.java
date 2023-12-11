@@ -68,7 +68,7 @@ public final class NullConstant implements Constant {
     }
 
     @Override
-    public Type getType() {
+    public Type getType(final TargetMachine targetMachine) {
         return NullType.INSTANCE;
     }
 

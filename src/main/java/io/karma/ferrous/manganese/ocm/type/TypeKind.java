@@ -26,6 +26,6 @@ public enum TypeKind {
     INT, UINT, REAL, BOOL, CHAR, VOID, UDT;
 
     public boolean isBuiltin() {
-        return this == UDT;
+        return this != UDT;
     }
 }

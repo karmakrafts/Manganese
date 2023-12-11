@@ -18,6 +18,7 @@ package io.karma.ferrous.manganese.ocm.expr;
 import io.karma.ferrous.manganese.ocm.constant.Constant;
 import io.karma.ferrous.manganese.ocm.statement.Statement;
 import io.karma.ferrous.manganese.ocm.type.Type;
+import io.karma.ferrous.manganese.target.TargetMachine;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 
@@ -27,7 +28,7 @@ import org.apiguardian.api.API.Status;
  */
 @API(status = Status.INTERNAL)
 public interface Expression extends Statement {
-    Type getType();
+    Type getType(final TargetMachine targetMachine);
 
     default boolean isConst() {
         return false;

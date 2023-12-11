@@ -26,7 +26,6 @@ import io.karma.ferrous.manganese.ocm.type.Types;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.TokenSlice;
-import io.karma.kommons.lazy.Lazy;
 import org.apiguardian.api.API;
 import org.jetbrains.annotations.Nullable;
 
@@ -46,7 +45,6 @@ public final class ForExpression implements Expression, Scope {
     private final Identifier scopeName;
     private final TokenSlice tokenSlice;
     private final ArrayList<Statement> statements = new ArrayList<>();
-    private final Lazy<Type> type = new Lazy<>(this::findType);
     private Scope enclosingScope;
 
     public ForExpression(final LetStatement variable, final Expression condition, final Statement action,
@@ -64,20 +62,6 @@ public final class ForExpression implements Expression, Scope {
         this.tokenSlice = tokenSlice;
     }
 
-    private Type findType() {
-        final var types = new ArrayList<Type>();
-        if (defaultValue != null) {
-            types.add(defaultValue.getType());
-        }
-        for (final var statement : statements) {
-            if (!(statement instanceof YieldStatement yieldStatement)) {
-                continue;
-            }
-            types.add(yieldStatement.getValue().getType());
-        }
-        return Types.findCommonType(types);
-    }
-
     // Scope
 
     @Override
@@ -93,8 +77,18 @@ public final class ForExpression implements Expression, Scope {
     // Expression
 
     @Override
-    public Type getType() {
-        return type.getOrCreate();
+    public Type getType(final TargetMachine targetMachine) {
+        final var types = new ArrayList<Type>();
+        if (defaultValue != null) {
+            types.add(defaultValue.getType(targetMachine));
+        }
+        for (final var statement : statements) {
+            if (!(statement instanceof YieldStatement yieldStatement)) {
+                continue;
+            }
+            types.add(yieldStatement.getValue().getType(targetMachine));
+        }
+        return Types.findCommonType(targetMachine, types);
     }
 
     @Override

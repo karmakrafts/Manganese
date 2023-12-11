@@ -53,7 +53,7 @@ public final class VoidConstant implements Constant {
     }
 
     @Override
-    public Type getType() {
+    public Type getType(final TargetMachine targetMachine) {
         return VoidType.INSTANCE;
     }
 

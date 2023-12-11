@@ -19,6 +19,7 @@ import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.ocm.statement.Statement;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.ocm.type.Types;
+import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.TokenSlice;
 import org.apiguardian.api.API;
@@ -59,12 +60,12 @@ public abstract class AbstractScopeExpression implements Expression, Scope {
     // Expression
 
     @Override
-    public Type getType() {
+    public Type getType(final TargetMachine targetMachine) {
         // @formatter:off
-        return Types.findCommonType(statements.stream()
+        return Types.findCommonType(targetMachine, statements.stream()
             .filter(Expression.class::isInstance)
             .map(Expression.class::cast)
-            .map(Expression::getType)
+            .map(expr -> expr.getType(targetMachine))
             .toList());
         // @formatter:on
     }

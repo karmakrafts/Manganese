@@ -61,7 +61,7 @@ public final class RealConstant implements Constant {
     // Expressions
 
     @Override
-    public Type getType() {
+    public Type getType(final TargetMachine targetMachine) {
         return type;
     }
 

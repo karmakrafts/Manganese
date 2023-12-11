@@ -29,9 +29,12 @@ pub attrib AnotherAttrib {
 @NoMangle
 @Test(flag = true, value = 100)
 fun main(num_args: i32, args: char**): i32 {
-    let x: i32 = num_args
+    let x = num_args
     let mut y = &x
-    let z = *y
+    let mut f = 2.0
+    let mut i_f = -f
+    let z = &y
     let mut cond = true
-    return cond ? z : 0
+    let ptr = !cond ? *z : y
+    return cond ? *ptr : 0
 }

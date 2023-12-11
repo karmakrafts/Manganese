@@ -41,7 +41,7 @@ public final class IdentConstant implements Constant {
     }
 
     @Override
-    public Type getType() {
+    public Type getType(final TargetMachine targetMachine) {
         return ImaginaryType.IDENT;
     }
 

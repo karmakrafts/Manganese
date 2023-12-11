@@ -62,7 +62,7 @@ public final class CastExpression implements Expression {
     // Expression
 
     @Override
-    public Type getType() {
+    public Type getType(final TargetMachine targetMachine) {
         return castType;
     }
 

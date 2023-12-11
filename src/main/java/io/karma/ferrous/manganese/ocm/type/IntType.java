@@ -110,7 +110,7 @@ public final class IntType implements Type, Mangleable {
     }
 
     @Override
-    public boolean canBeCastFrom(final Type type) {
+    public boolean canBeCastFrom(final TargetMachine targetMachine, final Type type) {
         if (type.isPtr()) { // Ints can be cast from pointers
             return true;
         }
@@ -119,7 +119,7 @@ public final class IntType implements Type, Mangleable {
     }
 
     @Override
-    public boolean canAccept(final Type type) {
+    public boolean canAccept(final TargetMachine targetMachine, final Type type) {
         return switch(type) { // @formatter:off
             case IntType intType -> intType.getWidth() <= width;
             default              -> false;

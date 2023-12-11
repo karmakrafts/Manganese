@@ -183,7 +183,7 @@ public final class BinaryExpression implements Expression {
         if (op == Operator.SWAP) {
             return emitSwap(targetMachine, irContext);
         }
-        var lhsType = lhs.getType();
+        var lhsType = lhs.getType(targetMachine);
         if (lhsType != null && lhsType.isRef()) {
             lhsType = lhsType.getBaseType();
         }
@@ -194,8 +194,8 @@ public final class BinaryExpression implements Expression {
     }
 
     @Override
-    public Type getType() {
-        return lhs.getType(); // TODO: add type resolution for overloaded operator function calls
+    public Type getType(final TargetMachine targetMachine) {
+        return lhs.getType(targetMachine); // TODO: add type resolution for overloaded operator function calls
     }
 
     @Override

@@ -40,7 +40,7 @@ public final class CharConstant implements Constant {
     }
 
     @Override
-    public Type getType() {
+    public Type getType(final TargetMachine targetMachine) {
         return CharType.INSTANCE;
     }
 
@@ -60,6 +60,6 @@ public final class CharConstant implements Constant {
 
     @Override
     public long emit(final TargetMachine targetMachine, final IRContext irContext) {
-        return LLVMCore.LLVMConstInt(getType().materialize(targetMachine), value, false);
+        return LLVMCore.LLVMConstInt(getType(targetMachine).materialize(targetMachine), value, false);
     }
 }

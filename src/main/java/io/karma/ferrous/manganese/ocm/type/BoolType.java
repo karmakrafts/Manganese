@@ -52,7 +52,7 @@ public final class BoolType implements Type {
     }
 
     @Override
-    public boolean canBeCastFrom(final Type type) {
+    public boolean canBeCastFrom(final TargetMachine targetMachine, final Type type) {
         if (type == INSTANCE) {
             return true;
         }
@@ -60,7 +60,7 @@ public final class BoolType implements Type {
     }
 
     @Override
-    public boolean canAccept(final Type type) {
+    public boolean canAccept(final TargetMachine targetMachine, final Type type) {
         return type == INSTANCE;
     }
 

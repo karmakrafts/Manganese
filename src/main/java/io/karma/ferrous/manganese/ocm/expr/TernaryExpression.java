@@ -23,7 +23,6 @@ import io.karma.ferrous.manganese.ocm.type.Types;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.TokenSlice;
-import io.karma.kommons.lazy.Lazy;
 import org.apiguardian.api.API;
 import org.jetbrains.annotations.Nullable;
 
@@ -39,7 +38,6 @@ public final class TernaryExpression implements Expression, Named {
     private final Expression trueValue;
     private final Expression falseValue;
     private final TokenSlice tokenSlice;
-    private final Lazy<Type> type = new Lazy<>(this::findType);
     private final Identifier name;
     private Scope enclosingScope;
 
@@ -52,10 +50,6 @@ public final class TernaryExpression implements Expression, Named {
         name = new Identifier(String.format("ternary.%s", UUID.randomUUID()));
     }
 
-    private Type findType() {
-        return Types.findCommonType(trueValue.getType(), falseValue.getType());
-    }
-
     // Named
 
     @Override
@@ -66,8 +60,8 @@ public final class TernaryExpression implements Expression, Named {
     // Expression
 
     @Override
-    public Type getType() {
-        return type.getOrCreate();
+    public Type getType(final TargetMachine targetMachine) {
+        return Types.findCommonType(targetMachine, trueValue.getType(targetMachine), falseValue.getType(targetMachine));
     }
 
     @Override

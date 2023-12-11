@@ -63,7 +63,7 @@ public final class CallExpression implements Expression {
     }
 
     @Override
-    public Type getType() {
+    public Type getType(final TargetMachine targetMachine) {
         return function.getType().getReturnType();
     }
 

@@ -64,7 +64,7 @@ public final class LoopExpression implements Expression, Scope {
     // Expression
 
     @Override
-    public Type getType() {
+    public Type getType(final TargetMachine targetMachine) {
         return null;
     }
 

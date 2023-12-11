@@ -87,15 +87,15 @@ public interface Type extends Scoped, Mangleable {
         return targetMachine.getTypeAlignment(materialize(targetMachine));
     }
 
-    default boolean canAccept(final Type type) {
+    default boolean canAccept(final TargetMachine targetMachine, final Type type) {
         if (type.isRef()) {
             return type.getBaseType() == this;
         }
         return type == this;
     }
 
-    default boolean canBeCastFrom(final Type type) {
-        return canAccept(type);
+    default boolean canBeCastFrom(final TargetMachine targetMachine, final Type type) {
+        return canAccept(targetMachine, type);
     }
 
     default boolean isImaginary() {
@@ -107,7 +107,7 @@ public interface Type extends Scoped, Mangleable {
     }
 
     default boolean isBuiltin() {
-        return false;
+        return getKind().isBuiltin();
     }
 
     default boolean isComplete() {

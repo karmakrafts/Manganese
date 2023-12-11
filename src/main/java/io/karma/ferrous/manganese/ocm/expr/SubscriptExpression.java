@@ -37,7 +37,7 @@ public final class SubscriptExpression implements Expression {
     }
 
     @Override
-    public Type getType() {
+    public Type getType(final TargetMachine targetMachine) {
         return null;
     }
 

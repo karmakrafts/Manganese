@@ -107,7 +107,7 @@ public final class StatementParser extends ParseAdapter {
         if (literal == null) {
             return;
         }
-        if (literal.getType() != ImaginaryType.STRING) {
+        if (literal.getType(compileContext.getCompiler().getTargetMachine()) != ImaginaryType.STRING) {
             return; // TODO: add error
         }
         final var isConst = context.KW_CONST() != null;
@@ -158,7 +158,7 @@ public final class StatementParser extends ParseAdapter {
             return;
         }
         if (type == null) {
-            type = expr.getType(); // Deduce variable kind from expression
+            type = expr.getType(compileContext.getCompiler().getTargetMachine()); // Deduce variable kind from expression
         }
         if (expr instanceof NullConstant nll) {
             nll.setContextualType(type); // Give null contextual type information about our variable
@@ -174,8 +174,9 @@ public final class StatementParser extends ParseAdapter {
             if (expr == null) {
                 return;
             }
-            final var exprType = expr.getType();
-            if (!expectedReturnType.canAccept(exprType)) {
+            final var targetMachine = compileContext.getCompiler().getTargetMachine();
+            final var exprType = expr.getType(targetMachine);
+            if (!expectedReturnType.canAccept(targetMachine, exprType)) {
                 final var message = KitchenSink.makeCompilerMessage(String.format("%s cannot be assigned to %s",
                     exprType,
                     expectedReturnType));

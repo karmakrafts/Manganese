@@ -105,7 +105,9 @@ public final class UnaryExpression implements Expression {
     private long emitDereference(final TargetMachine targetMachine, final IRContext irContext,
                                  final IRBuilder builder) {
         if (!(value instanceof ReferenceExpression refExpr)) {
-            return NULL; // TODO: check/report error
+            final var address = value.emit(targetMachine, irContext);
+            final var typeAddress = value.getType(targetMachine).getBaseType().materialize(targetMachine);
+            return builder.load(typeAddress, address);
         }
         return switch (refExpr.getReference()) { // @formatter:off
             case ValueStorage storage    -> {
@@ -114,7 +116,7 @@ public final class UnaryExpression implements Expression {
                 }
                 final var address = storage.load(targetMachine, irContext);
                 final var typeAddress = storage.getType().getBaseType().materialize(targetMachine);
-                yield irContext.getCurrentOrCreate().load(typeAddress, address);
+                yield builder.load(typeAddress, address);
             }
             default                      -> throw new IllegalStateException("Unsupported reference type");
         }; // @formatter:on
@@ -142,7 +144,7 @@ public final class UnaryExpression implements Expression {
     @Override
     public long emit(final TargetMachine targetMachine, final IRContext irContext) {
         final var builder = irContext.getCurrentOrCreate();
-        var type = value.getType();
+        var type = value.getType(targetMachine);
         switch(op) { // @formatter:off
             case REF:   return emitReference(targetMachine, irContext, builder);
             case DEREF: return emitDereference(targetMachine, irContext, builder);
@@ -150,7 +152,7 @@ public final class UnaryExpression implements Expression {
         if (type.isRef()) {
             type = type.getBaseType();
         }
-        if (!type.getKind().isBuiltin()) {
+        if (!type.isBuiltin()) {
             return NULL; // TODO: implement user defined operator calls
         }
         final var address = value.emit(targetMachine, irContext);
@@ -169,8 +171,8 @@ public final class UnaryExpression implements Expression {
     }
 
     @Override
-    public Type getType() {
-        final var type = value.getType();
+    public Type getType(final TargetMachine targetMachine) {
+        final var type = value.getType(targetMachine);
         if (op == Operator.REF) {
             return type.asPtr();
         }
