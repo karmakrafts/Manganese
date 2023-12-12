@@ -130,10 +130,6 @@ public interface Type extends Scoped, Mangleable {
         // @formatter:on
     }
 
-    default Type derive(final TypeModifier... modifiers) {
-        return derive(null, modifiers);
-    }
-
     default Type derive(final Collection<TypeAttribute> attributes) {
         var type = this;
         for (final var attrib : attributes) {
@@ -148,6 +144,22 @@ public interface Type extends Scoped, Mangleable {
 
     default Type asRef(final TypeModifier... modifiers) {
         return derive(TypeAttribute.REFERENCE, modifiers);
+    }
+
+    default Type withMods(final TypeModifier... modifiers) {
+        // @formatter:off
+        return Types.cached(new ModifiedType(this, modifiers.length > 0
+            ? EnumSet.copyOf(Arrays.asList(modifiers))
+            : EnumSet.noneOf(TypeModifier.class)));
+        // @formatter:on
+    }
+
+    default Type withMods(final Collection<TypeModifier> modifiers) {
+        // @formatter:off
+        return Types.cached(new ModifiedType(this, !modifiers.isEmpty()
+            ? EnumSet.copyOf(modifiers)
+            : EnumSet.noneOf(TypeModifier.class)));
+        // @formatter:on
     }
 
     default boolean isRef() {

@@ -24,11 +24,13 @@ import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.TokenSlice;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
-import org.jetbrains.annotations.Nullable;
 import org.lwjgl.llvm.LLVMCore;
 import org.lwjgl.system.MemoryUtil;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Objects;
 
 /**
  * @author Alexander Hinze
@@ -42,7 +44,7 @@ public final class DerivedType implements Type {
     private final TokenSlice tokenSlice;
     private long materializedType = MemoryUtil.NULL;
 
-    DerivedType(final Type baseType, final @Nullable TypeAttribute attribute, final EnumSet<TypeModifier> modifiers) {
+    DerivedType(final Type baseType, final TypeAttribute attribute, final EnumSet<TypeModifier> modifiers) {
         this.baseType = baseType;
         this.attribute = attribute;
         this.modifiers = modifiers;
@@ -81,20 +83,18 @@ public final class DerivedType implements Type {
 
     @Override
     public String getMangledName() {
-        final var builder = new StringBuilder(Type.super.getMangledName());
+        final var builder = new StringBuilder(baseType.getMangledName());
         for (final var modifier : modifiers) {
             builder.append(modifier.getMangledSymbol());
         }
-        if (attribute != null) {
-            builder.append(attribute.getText());
-        }
+        builder.append(attribute.getText());
         return builder.toString();
     }
 
     @Override
     public boolean canAccept(final TargetMachine targetMachine, final Type type) {
         if (type instanceof DerivedType derivedType) {
-            return baseType == derivedType.baseType && getAttributes().equals(derivedType.getAttributes());
+            return baseType == derivedType.baseType; // TODO: fixme!!!
         }
         return Type.super.canAccept(targetMachine, type);
     }
@@ -134,9 +134,6 @@ public final class DerivedType implements Type {
 
     @Override
     public List<TypeAttribute> getAttributes() {
-        if (attribute == null) {
-            return Collections.emptyList();
-        }
         final var attribs = new ArrayList<>(baseType.getAttributes());
         attribs.add(attribute);
         return attribs;
@@ -153,7 +150,7 @@ public final class DerivedType implements Type {
     public boolean equals(final Object obj) {
         if (obj instanceof DerivedType type) { // @formatter:off
             return baseType.equals(type.baseType)
-                && Objects.equals(attribute, type.attribute)
+                && attribute == type.attribute
                 && modifiers.equals(type.modifiers);
         } // @formatter:on
         return false;
@@ -162,8 +159,8 @@ public final class DerivedType implements Type {
     @Override
     public String toString() {
         if (attribute == null) {
-            return String.format("%s%s", baseType.toString(), modifiers);
+            return String.format("%s %s", baseType.toString(), modifiers);
         }
-        return String.format("%s%s%s", attribute.getText(), baseType.toString(), modifiers);
+        return String.format("%s %s %s", attribute.getText(), baseType.toString(), modifiers);
     }
 }

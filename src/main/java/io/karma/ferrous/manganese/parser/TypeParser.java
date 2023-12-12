@@ -25,8 +25,7 @@ import io.karma.ferrous.vanadium.FerrousParser.*;
 import io.karma.kommons.function.Functions;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
-
-import java.util.Collections;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * @author Alexander Hinze
@@ -43,12 +42,12 @@ public final class TypeParser extends ParseAdapter {
     }
 
     @Override
-    public void enterPrimaryType(PrimaryTypeContext context) {
+    public void enterPrimaryType(final PrimaryTypeContext context) {
         if (type != null) {
             return;
         }
         final var moduleData = compileContext.getOrCreateModuleData();
-        // Qualified user defined type
+        // Qualified ident
         final var qualifiedIdentContext = context.qualifiedIdent();
         if (qualifiedIdentContext != null) {
             final var name = Identifier.parse(qualifiedIdentContext);
@@ -56,12 +55,11 @@ public final class TypeParser extends ParseAdapter {
             if (type == null) {
                 type = Types.incomplete(name,
                     capturedScopeStack::applyEnclosingScopes,
-                    TokenSlice.from(compileContext, qualifiedIdentContext),
-                    Collections.emptyList());
+                    TokenSlice.from(compileContext, qualifiedIdentContext));
             }
             return;
         }
-        // Ident user defined type
+        // Ident
         final var identContext = context.IDENT();
         if (identContext != null) {
             final var name = Identifier.parse(identContext.getText());
@@ -69,8 +67,7 @@ public final class TypeParser extends ParseAdapter {
             if (type == null) {
                 type = Types.incomplete(name,
                     capturedScopeStack::applyEnclosingScopes,
-                    TokenSlice.from(compileContext, identContext),
-                    Collections.emptyList());
+                    TokenSlice.from(compileContext, identContext));
             }
         }
     }
@@ -95,14 +92,16 @@ public final class TypeParser extends ParseAdapter {
                 compileContext.reportError(context.start, CompileErrorCode.E3007);
                 return;
             }
-            this.type = type.asPtr();
+            final var mods = TypeModifier.parse(context.typeMod());
+            this.type = type.derive(TypeAttribute.POINTER, mods.toArray(TypeModifier[]::new));
         }
         if (context.AMP() != null) {
             if (type.isRef()) {
                 compileContext.reportError(context.start, CompileErrorCode.E3001);
                 return;
             }
-            this.type = type.asRef();
+            final var mods = TypeModifier.parse(context.typeMod());
+            this.type = type.derive(TypeAttribute.REFERENCE, mods.toArray(TypeModifier[]::new));
         }
     }
 
@@ -165,7 +164,7 @@ public final class TypeParser extends ParseAdapter {
         }
     }
 
-    public Type getType() {
+    public @Nullable Type getType() {
         return type;
     }
 }

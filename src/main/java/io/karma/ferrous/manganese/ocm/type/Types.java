@@ -108,9 +108,8 @@ public final class Types {
 
     public static IncompleteType incomplete(final Identifier name,
                                             final Function<IncompleteType, IncompleteType> callback,
-                                            final TokenSlice tokenSlice,
-                                            final List<GenericParameter> genericParameters) {
-        return cached(callback.apply(new IncompleteType(name, tokenSlice, genericParameters)));
+                                            final TokenSlice tokenSlice) {
+        return cached(callback.apply(new IncompleteType(name, tokenSlice)));
     }
 
     public static @Nullable Type findCommonType(final TargetMachine targetMachine, final Type... types) {
@@ -162,8 +161,8 @@ public final class Types {
         if (context == null) {
             return null;
         }
-        final TypeParser unit = new TypeParser(compileContext, scopeStack);
-        ParseTreeWalker.DEFAULT.walk(unit, context);
-        return unit.getType();
+        final TypeParser parser = new TypeParser(compileContext, scopeStack);
+        ParseTreeWalker.DEFAULT.walk(parser, context);
+        return parser.getType();
     }
 }
