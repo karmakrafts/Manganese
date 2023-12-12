@@ -5,7 +5,7 @@ This is a temporary compiler implementation used for self-hosting and thus it
 only supports LLVM as its backend. **Other backends will not be supported**.
 
 ### Running
-You can run the Manganese compiler by simple running the following command:
+You can run the Manganese compiler by simply running the following command:
 
 ```shell
 java -jar manganese-<version>.jar [options]
@@ -68,6 +68,3 @@ gradlew build --info --no-daemon
 This will produce three different `JAR` files under `build/libs` in the
 project directory. The `slim` version can be used for development/embedding
 since it does not contain all the shadowed dependencies.
-
-### Environment Variables
-
