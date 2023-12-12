@@ -89,6 +89,66 @@ public abstract class ParseAdapter implements FerrousParserListener {
 
     // @formatter:off
     @Override
+    public void enterTypeExpr(TypeExprContext typeExprContext) {}
+
+    @Override
+    public void exitTypeExpr(TypeExprContext typeExprContext) {}
+
+    @Override
+    public void enterIdentExpr(IdentExprContext identExprContext) {}
+
+    @Override
+    public void exitIdentExpr(IdentExprContext identExprContext) {}
+
+    @Override
+    public void enterLiteralExpr(LiteralExprContext literalExprContext) {}
+
+    @Override
+    public void exitLiteralExpr(LiteralExprContext literalExprContext) {}
+
+    @Override
+    public void enterExpressionExpr(ExpressionExprContext expressionExprContext) {}
+
+    @Override
+    public void exitExpressionExpr(ExpressionExprContext expressionExprContext) {}
+
+    @Override
+    public void enterTokenExpr(TokenExprContext tokenExprContext) {}
+
+    @Override
+    public void exitTokenExpr(TokenExprContext tokenExprContext) {}
+
+    @Override
+    public void enterPrimaryGenericExpr(PrimaryGenericExprContext primaryGenericExprContext) {}
+
+    @Override
+    public void exitPrimaryGenericExpr(PrimaryGenericExprContext primaryGenericExprContext) {}
+
+    @Override
+    public void enterImaginaryType(ImaginaryTypeContext imaginaryTypeContext) {}
+
+    @Override
+    public void exitImaginaryType(ImaginaryTypeContext imaginaryTypeContext) {}
+
+    @Override
+    public void enterPrimaryType(PrimaryTypeContext primaryTypeContext) {}
+
+    @Override
+    public void exitPrimaryType(PrimaryTypeContext primaryTypeContext) {}
+
+    @Override
+    public void enterSoftKeyword(SoftKeywordContext softKeywordContext) {}
+
+    @Override
+    public void exitSoftKeyword(SoftKeywordContext softKeywordContext) {}
+
+    @Override
+    public void enterAnyIdent(AnyIdentContext anyIdentContext) {}
+
+    @Override
+    public void exitAnyIdent(AnyIdentContext anyIdentContext) {}
+
+    @Override
     public void enterGotoAddressStatement(GotoAddressStatementContext gotoAddressStatementContext) {}
 
     @Override
@@ -138,7 +198,7 @@ public abstract class ParseAdapter implements FerrousParserListener {
 
     @Override
     public void enterLabelBlock(final LabelBlockContext context) {
-        pushScope(ScopeType.LABEL_BLOCK, new Identifier(context.IDENT().getText()));
+        pushScope(ScopeType.LABEL_BLOCK, new Identifier(context.ident().getText()));
     }
 
     @Override
@@ -151,12 +211,6 @@ public abstract class ParseAdapter implements FerrousParserListener {
 
     @Override
     public void exitUnsafeExpr(UnsafeExprContext unsafeExprContext) {}
-
-    @Override
-    public void enterModifiedType(ModifiedTypeContext modifiedTypeContext) {}
-
-    @Override
-    public void exitModifiedType(ModifiedTypeContext modifiedTypeContext) {}
 
     @Override
     public void enterStructBody(StructBodyContext structBodyContext) {}
@@ -695,16 +749,16 @@ public abstract class ParseAdapter implements FerrousParserListener {
     public void exitProtoFunction(ProtoFunctionContext protoFunctionContext) {}
 
     @Override
-    public void enterFunctionParamList(FunctionParamListContext functionParamListContext) {}
+    public void enterParamList(ParamListContext functionParamListContext) {}
 
     @Override
-    public void exitFunctionParamList(FunctionParamListContext functionParamListContext) {}
+    public void exitParamList(ParamListContext functionParamListContext) {}
 
     @Override
-    public void enterFunctionParam(FunctionParamContext functionParamContext) {}
+    public void enterParam(ParamContext functionParamContext) {}
 
     @Override
-    public void exitFunctionParam(FunctionParamContext functionParamContext) {}
+    public void exitParam(ParamContext functionParamContext) {}
 
     @Override
     public void enterExprList(ExprListContext exprListContext) {}
@@ -953,22 +1007,10 @@ public abstract class ParseAdapter implements FerrousParserListener {
     public void exitQualifiedIdent(QualifiedIdentContext qualifiedIdentContext) {}
 
     @Override
-    public void enterLerpIdent(LerpIdentContext lerpIdentContext) {}
-
-    @Override
-    public void exitLerpIdent(LerpIdentContext lerpIdentContext) {}
-
-    @Override
     public void enterIdent(IdentContext identContext) {}
 
     @Override
     public void exitIdent(IdentContext identContext) {}
-
-    @Override
-    public void enterSpecialToken(SpecialTokenContext specialTokenContext) {}
-
-    @Override
-    public void exitSpecialToken(SpecialTokenContext specialTokenContext) {}
 
     @Override
     public void enterEnd(EndContext endContext) {}

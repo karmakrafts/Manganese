@@ -1,40 +1,20 @@
-fun testing(): i32 {
-    return 2
+pub struct Test {
+    pub value: bool
 }
 
-@Packed // Omits any padding and allows specifying bitfields in a struct
-pub struct Foo {
-    pub mut x: i20
-    pub mut y: i10
-    pub mut z: i2
-
-    pub struct Bar { // Nested type declarations
-        value: bool
-    }
-}
-
-fun bar(value: Foo&, value2: Foo::Bar&) {
-}
-
-pub attrib Test {
-    pub value: i32
-    pub flag: bool
-}
-
-@Test(flag = true, value = 100)
-pub attrib AnotherAttrib {
-    pub value: string
+pub fun foo(value: mut Test*): bool {
+    return false
 }
 
 @NoMangle
-@Test(flag = true, value = 100)
 fun main(num_args: i32, args: char**): i32 {
     let x = num_args
     let mut y = &x
     let mut f = 2.0
     let mut i_f = -f
-    let z = &y
+    let mut z = &y
     let mut cond = true
+    let mut atom: atomic i32 = 0
     let ptr = !cond ? *z : y
     return cond ? *ptr : 0
 }

@@ -81,7 +81,7 @@ public final class DerivedType implements Type {
 
     @Override
     public String getMangledName() {
-        final var builder = new StringBuilder(baseType.getMangledName());
+        final var builder = new StringBuilder(Type.super.getMangledName());
         for (final var modifier : modifiers) {
             builder.append(modifier.getMangledSymbol());
         }

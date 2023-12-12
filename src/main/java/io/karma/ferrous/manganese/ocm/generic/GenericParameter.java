@@ -57,7 +57,7 @@ public final class GenericParameter implements Named {
         if (context == null) {
             return null;
         }
-        final var name = new Identifier(context.IDENT().getText());
+        final var name = new Identifier(context.ident().getText());
         final var constraints = GenericConstraint.parse(compileContext, context.genericExpr());
         final var typeContext = context.type();
         final var defaultValue = Types.parse(compileContext, scopeStack, typeContext);

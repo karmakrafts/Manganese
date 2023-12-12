@@ -43,40 +43,41 @@ public final class TypeParser extends ParseAdapter {
     }
 
     @Override
-    public void enterType(final TypeContext context) {
+    public void enterPrimaryType(PrimaryTypeContext context) {
         if (type != null) {
             return;
         }
         final var moduleData = compileContext.getOrCreateModuleData();
-        // Handle user defined types
+        // Qualified user defined type
         final var qualifiedIdentContext = context.qualifiedIdent();
         if (qualifiedIdentContext != null) {
-            if (type != null) {
-                return;
-            }
             final var name = Identifier.parse(qualifiedIdentContext);
             type = moduleData.findCompleteType(name, capturedScopeStack.getScopeName());
             if (type == null) {
                 type = Types.incomplete(name,
-                    Functions.castingIdentity(),
-                    TokenSlice.from(compileContext, context),
+                    capturedScopeStack::applyEnclosingScopes,
+                    TokenSlice.from(compileContext, qualifiedIdentContext),
                     Collections.emptyList());
             }
             return;
         }
-        final var identContext = context.ident();
+        // Ident user defined type
+        final var identContext = context.IDENT();
         if (identContext != null) {
-            if (type != null) {
-                return;
-            }
-            final var name = Identifier.parse(identContext);
+            final var name = Identifier.parse(identContext.getText());
             type = moduleData.findCompleteType(name, capturedScopeStack.getScopeName());
             if (type == null) {
                 type = Types.incomplete(name,
-                    Functions.castingIdentity(),
-                    TokenSlice.from(compileContext, context),
+                    capturedScopeStack::applyEnclosingScopes,
+                    TokenSlice.from(compileContext, identContext),
                     Collections.emptyList());
             }
+        }
+    }
+
+    @Override
+    public void enterType(final TypeContext context) {
+        if (type != null) {
             return;
         }
         // Handle derived types recursively
@@ -86,7 +87,8 @@ public final class TypeParser extends ParseAdapter {
         }
         final var type = Types.parse(compileContext, capturedScopeStack, typeContext);
         if (type == null) {
-            return; // TODO: handle error
+            compileContext.reportError(context.start, CompileErrorCode.E3002);
+            return;
         }
         if (context.ASTERISK() != null) {
             if (type.isRef()) {
@@ -97,7 +99,7 @@ public final class TypeParser extends ParseAdapter {
         }
         if (context.AMP() != null) {
             if (type.isRef()) {
-                compileContext.reportError(context.start, CompileErrorCode.E3002);
+                compileContext.reportError(context.start, CompileErrorCode.E3001);
                 return;
             }
             this.type = type.asRef();
@@ -117,9 +119,6 @@ public final class TypeParser extends ParseAdapter {
         }
         else if (context.KW_CHAR() != null) {
             type = CharType.INSTANCE;
-        }
-        else if (context.KW_STRING() != null) {
-            type = ImaginaryType.STRING;
         }
     }
 

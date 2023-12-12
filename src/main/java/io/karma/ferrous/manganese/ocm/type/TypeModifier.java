@@ -17,7 +17,10 @@ package io.karma.ferrous.manganese.ocm.type;
 
 import io.karma.ferrous.manganese.util.TokenUtils;
 import io.karma.ferrous.vanadium.FerrousLexer;
+import io.karma.ferrous.vanadium.FerrousParser;
 import org.apiguardian.api.API;
+
+import java.util.*;
 
 /**
  * @author Alexander Hinze
@@ -26,19 +29,37 @@ import org.apiguardian.api.API;
 @API(status = API.Status.INTERNAL)
 public enum TypeModifier {
     // @formatter:off
-    ATOMIC ('$', FerrousLexer.KW_ATOMIC),
-    TLS    ('^', FerrousLexer.KW_TLS),
-    MUT    ('!', FerrousLexer.KW_MUT);
+    ATOMIC  ('$', FerrousLexer.KW_ATOMIC),
+    TLS     ('^', FerrousLexer.KW_TLS),
+    MUT     ('=', FerrousLexer.KW_MUT),
+    VOLATILE('!', FerrousLexer.KW_VOLATILE);
     // @formatter:on
 
     private final char mangledSymbol;
-    private final int token;
     private final String text;
 
     TypeModifier(final char mangledSymbol, final int token) {
         this.mangledSymbol = mangledSymbol;
-        this.token = token;
         text = TokenUtils.getLiteral(token);
+    }
+
+    public static Optional<TypeModifier> parse(final FerrousParser.TypeModContext context) {
+        return Arrays.stream(values()).filter(mod -> mod.text.equals(context.getText())).findFirst();
+    }
+
+    public static List<TypeModifier> parse(final List<FerrousParser.TypeModContext> contexts) {
+        if (contexts.isEmpty()) {
+            return Collections.emptyList();
+        }
+        final var mods = new ArrayList<TypeModifier>();
+        for (final var context : contexts) {
+            final var mod = parse(context);
+            if (mod.isEmpty()) {
+                return Collections.emptyList(); // TODO: log error?
+            }
+            mods.add(mod.get());
+        }
+        return mods;
     }
 
     public char getMangledSymbol() {

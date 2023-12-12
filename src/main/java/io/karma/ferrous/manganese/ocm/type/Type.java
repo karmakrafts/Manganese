@@ -122,12 +122,16 @@ public interface Type extends Scoped, Mangleable {
         return false;
     }
 
-    default Type derive(final TypeAttribute attribute, final TypeModifier... modifiers) {
+    default Type derive(final @Nullable TypeAttribute attribute, final TypeModifier... modifiers) {
         // @formatter:off
         return Types.cached(new DerivedType(this, attribute, modifiers.length > 0
             ? EnumSet.copyOf(Arrays.asList(modifiers))
             : EnumSet.noneOf(TypeModifier.class)));
         // @formatter:on
+    }
+
+    default Type derive(final TypeModifier... modifiers) {
+        return derive(null, modifiers);
     }
 
     default Type derive(final Collection<TypeAttribute> attributes) {

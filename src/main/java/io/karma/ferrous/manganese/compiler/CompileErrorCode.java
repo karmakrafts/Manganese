@@ -44,6 +44,7 @@ public enum CompileErrorCode {
     E3005("The given signature type cannot be resolved", CompileStatus.TYPE_ERROR),
     E3006("The given type cannot be assigned or casted implicitly", CompileStatus.TYPE_ERROR),
     E3007("Cannot form a pointer to a reference", CompileStatus.TYPE_ERROR),
+    E3008("Type modifier cannot be found", CompileStatus.TYPE_ERROR),
     // Semantic errors
     E4000("The given calling convention does not exist", CompileStatus.SEMANTIC_ERROR),
     E4001("The given element cannot be accessed from this scope", CompileStatus.SEMANTIC_ERROR),

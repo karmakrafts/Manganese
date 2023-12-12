@@ -23,8 +23,8 @@ import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.ocm.type.Types;
 import io.karma.ferrous.manganese.parser.ExpressionParser;
 import io.karma.ferrous.manganese.util.Identifier;
-import io.karma.ferrous.vanadium.FerrousParser.FunctionParamContext;
-import io.karma.ferrous.vanadium.FerrousParser.FunctionParamListContext;
+import io.karma.ferrous.vanadium.FerrousParser.ParamContext;
+import io.karma.ferrous.vanadium.FerrousParser.ParamListContext;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 import org.jetbrains.annotations.Nullable;
@@ -54,7 +54,7 @@ public final class Parameter implements Named {
     }
 
     public static @Nullable Parameter parse(final CompileContext compileContext, final ScopeStack scopeStack,
-                                            final @Nullable FunctionParamContext context) {
+                                            final @Nullable ParamContext context) {
         if (context == null) {
             return null;
         }
@@ -68,11 +68,11 @@ public final class Parameter implements Named {
     }
 
     public static List<Parameter> parse(final CompileContext compileContext, final ScopeStack scopeStack,
-                                        final @Nullable FunctionParamListContext context) {
+                                        final @Nullable ParamListContext context) {
         if (context == null) {
             return Collections.emptyList();
         }
-        final var paramContexts = context.functionParam();
+        final var paramContexts = context.param();
         final var params = new ArrayList<Parameter>();
         for (final var paramContext : paramContexts) {
             params.add(parse(compileContext, scopeStack, paramContext));

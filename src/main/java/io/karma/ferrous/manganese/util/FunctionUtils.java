@@ -48,8 +48,8 @@ public final class FunctionUtils {
     // @formatter:on
 
     public static Identifier[] parseParameterNames(final ProtoFunctionContext context) {
-        final var paramList = context.functionParamList();
-        final var params = paramList.functionParam();
+        final var paramList = context.paramList();
+        final var params = paramList.param();
         if (params.isEmpty()) {
             return new Identifier[0];
         }
@@ -66,7 +66,7 @@ public final class FunctionUtils {
         if (convContext == null) {
             return CallingConvention.CDECL;
         }
-        final var identifier = convContext.IDENT();
+        final var identifier = convContext.ident();
         final var name = identifier.getText();
         final var conv = CallingConvention.findByText(name);
         if (conv.isEmpty()) {
@@ -74,7 +74,7 @@ public final class FunctionUtils {
                 "'%s' is not a valid calling convention, expected one of the following values",
                 name);
             final var formattedMessage = KitchenSink.makeCompilerMessage(message, CallingConvention.EXPECTED_VALUES);
-            compileContext.reportError(identifier.getSymbol(), formattedMessage, CompileErrorCode.E4000);
+            compileContext.reportError(identifier.start, formattedMessage, CompileErrorCode.E4000);
             return CallingConvention.CDECL;
         }
         return conv.get();
@@ -97,13 +97,13 @@ public final class FunctionUtils {
         if (context == null) {
             return Collections.emptyList();
         }
-        final var paramList = context.functionParamList();
+        final var paramList = context.paramList();
         if (paramList == null) {
             return Collections.emptyList();
         }
         // @formatter:off
-        return paramList.functionParam().stream()
-            .map(FerrousParser.FunctionParamContext::type)
+        return paramList.param().stream()
+            .map(FerrousParser.ParamContext::type)
             .filter(type -> type != null && !type.getText().equals(TokenUtils.getLiteral(FerrousLexer.TRIPLE_DOT)))
             .map(type -> Types.parse(compileContext, scopeStack, type))
             .peek(type -> {
@@ -123,7 +123,7 @@ public final class FunctionUtils {
             ? VoidType.INSTANCE
             : Objects.requireNonNull(Types.parse(compileContext, scopeStack, type));
         // @formatter:on
-        final var paramList = context.functionParamList();
+        final var paramList = context.paramList();
         final var isVarArg = paramList != null && paramList.TRIPLE_DOT() != null;
         final var paramTypes = parseParameterTypes(compileContext, scopeStack, context);
         return Types.function(returnType,

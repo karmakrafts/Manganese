@@ -82,17 +82,17 @@ public final class StatementParser extends ParseAdapter {
 
     @Override
     public void enterGotoStatement(final GotoStatementContext context) {
-        addStatement(new GotoStatement(context.IDENT().getText(), TokenSlice.from(compileContext, context)));
+        addStatement(new GotoStatement(context.ident().getText(), TokenSlice.from(compileContext, context)));
     }
 
     @Override
     public void enterLabel(final LabelContext context) {
-        addStatement(new Label(context.IDENT().getText(), TokenSlice.from(compileContext, context)));
+        addStatement(new Label(context.ident().getText(), TokenSlice.from(compileContext, context)));
     }
 
     @Override
     public void enterLabelBlock(final LabelBlockContext context) {
-        final var block = new LabelBlock(context.IDENT().getText(), TokenSlice.from(compileContext, context));
+        final var block = new LabelBlock(context.ident().getText(), TokenSlice.from(compileContext, context));
         addStatement(block);
         pushScope(block);
     }
