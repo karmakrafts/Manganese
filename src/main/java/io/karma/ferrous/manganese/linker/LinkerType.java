@@ -53,7 +53,7 @@ public enum LinkerType {
     }
 
     public @Nullable String findCommand() {
-        final var command = String.format("%s-%s", alias, LLVMUtils.getLLVMVersion());
+        final var command = STR."\{alias}-\{LLVMUtils.getLLVMVersion()}";
         if (KitchenSink.hasCommand(command, "-help")) {
             return command;
         }

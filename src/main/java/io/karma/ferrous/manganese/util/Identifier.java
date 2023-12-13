@@ -40,7 +40,7 @@ public record Identifier(String... components) {
 
     public static Identifier generate(final String prefix, final Identifier scopeName, boolean inheritScope,
                                       final Object... hashArgs) {
-        var result = new Identifier(String.format("%s%d", prefix, Objects.hash(Objects.hash(hashArgs), scopeName)));
+        var result = new Identifier(STR."\{prefix}\{Objects.hash(Objects.hash(hashArgs), scopeName)}");
         if (inheritScope) {
             return scopeName.join(result);
         }
@@ -87,7 +87,7 @@ public record Identifier(String... components) {
         if (isBlank()) {
             return other;
         }
-        return parse(String.format("%s%s%s", this, DELIMITER, other));
+        return parse(STR."\{this}\{DELIMITER}\{other}");
     }
 
     public boolean isBlank() {

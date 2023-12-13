@@ -56,7 +56,7 @@ public final class ForExpression implements Expression, Scope {
         this.defaultValue = defaultValue;
         // @formatter:off
         this.scopeName = scopeName == null
-            ? new Identifier(String.format("for.%s", UUID.randomUUID()))
+            ? new Identifier(STR."for\{UUID.randomUUID()}")
             : scopeName;
         // @formatter:on
         this.tokenSlice = tokenSlice;
@@ -94,9 +94,9 @@ public final class ForExpression implements Expression, Scope {
     @Override
     public long emit(final TargetMachine targetMachine, final IRContext irContext) {
         final var internalName = scopeName.toInternalName();
-        final var condLabel = String.format("%s.cond", internalName);
-        final var bodyLabel = String.format("%s.body", internalName);
-        final var exitLabel = String.format("%s.exit", internalName);
+        final var condLabel = STR."\{internalName}.cond";
+        final var bodyLabel = STR."\{internalName}.body";
+        final var exitLabel = STR."\{internalName}.exit";
 
         final var condBuilder = irContext.getAndPush(condLabel);
         final var condAddress = condition.emit(targetMachine, irContext);

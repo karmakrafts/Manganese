@@ -108,9 +108,9 @@ public final class Parameter implements Named {
     @Override
     public String toString() {
         if (defaultValue == null) {
-            return String.format("%s:%s", name, type);
+            return STR."\{name}:\{type}";
         }
-        return String.format("%s:%s=%s", name, type, defaultValue);
+        return STR."\{name}:\{type}=\{defaultValue}";
     }
 
     @Override

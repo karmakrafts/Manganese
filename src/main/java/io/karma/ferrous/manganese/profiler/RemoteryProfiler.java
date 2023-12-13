@@ -47,7 +47,7 @@ public final class RemoteryProfiler implements Profiler {
             Thread.sleep(TimeUnit.MILLISECONDS.convert(6, TimeUnit.SECONDS));
         }
         catch (Throwable error) {
-            Logger.INSTANCE.warn("Could not initialize profiler: %s", error);
+            Logger.INSTANCE.warn(STR."Could not initialize profiler: \{error}");
         }
     }
 
@@ -67,10 +67,10 @@ public final class RemoteryProfiler implements Profiler {
                 return;
             }
             final var trace = traces[2];
-            push(String.format("%s#%s", trace.getClassName(), trace.getMethodName()));
+            push(STR."\{trace.getClassName()}#\{trace.getMethodName()}");
         }
         catch (Throwable error) {
-            Logger.INSTANCE.warn("Could not push profiler section: %s", error);
+            Logger.INSTANCE.warn(STR."Could not push profiler section: \{error}");
         }
     }
 

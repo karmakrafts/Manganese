@@ -304,7 +304,7 @@ public final class ExpressionParser extends ParseAdapter {
         final var moduleData = compileContext.getOrCreateModuleData();
         final var scopeName = scoped.getScopeName();
         final var name = Identifier.parse(context);
-        Logger.INSTANCE.debugln("Looking for reference to %s", name);
+        Logger.INSTANCE.debugln(STR."Looking for reference to \{name}");
         if (parent instanceof Function function) {
             final var param = function.getParamStorage(name);
             if (param != null) {

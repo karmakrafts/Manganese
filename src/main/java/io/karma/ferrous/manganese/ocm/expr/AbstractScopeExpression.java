@@ -47,7 +47,7 @@ public abstract class AbstractScopeExpression implements Expression, Scope {
     }
 
     protected AbstractScopeExpression(final TokenSlice tokenSlice) {
-        this(String.format("scope%s", UUID.randomUUID()), tokenSlice);
+        this(STR."scope\{UUID.randomUUID()}", tokenSlice);
     }
 
     public void addStatement(final Statement statement) {

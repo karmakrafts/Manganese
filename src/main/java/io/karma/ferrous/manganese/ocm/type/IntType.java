@@ -58,8 +58,8 @@ public final class IntType implements Type, Mangleable {
     public IntType(final int width, final boolean isUnsigned) {
         this.width = width;
         this.isUnsigned = isUnsigned;
-        name = new Identifier(String.format("%c%d", isUnsigned ? 'u' : 'i', width));
-        mangledName = String.format("%c%d", isUnsigned ? 'U' : 'S', width);
+        name = new Identifier(STR."\{isUnsigned ? 'u' : 'i'}\{width}");
+        mangledName = STR."\{isUnsigned ? 'U' : 'S'}\{width}";
     }
 
     public int getWidth() {

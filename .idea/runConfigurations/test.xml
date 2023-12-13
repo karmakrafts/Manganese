@@ -3,6 +3,7 @@
     <option name="MAIN_CLASS_NAME" value="io.karma.ferrous.manganese.Main" />
     <module name="manganese.main" />
     <option name="PROGRAM_PARAMETERS" value="-i src/main/ferrous/test -o build/ferrous/test/test -d -Dd -DP" />
+    <option name="VM_PARAMETERS" value="--enable-preview" />
     <method v="2">
       <option name="Make" enabled="true" />
     </method>

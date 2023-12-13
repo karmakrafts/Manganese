@@ -130,8 +130,7 @@ public final class TypeDiscoveryPass implements CompilePass {
             final var name = Identifier.parse(identContext);
             final var type = compileContext.getOrCreateModuleData().getTypes().get(name);
             if (type != null) {
-                final var message = KitchenSink.makeCompilerMessage(String.format("Type '%s' is already defined",
-                    name));
+                final var message = KitchenSink.makeCompilerMessage(STR."Type '\{name}' is already defined");
                 compileContext.reportError(identContext.start, message, CompileErrorCode.E3000);
                 return true;
             }
@@ -157,7 +156,7 @@ public final class TypeDiscoveryPass implements CompilePass {
             final var udt = new UserDefinedType(kind, type, fields, attributeUsages, tokenSlice);
             compileContext.getOrCreateModuleData().getTypes().put(type.getQualifiedName(), udt);
 
-            Logger.INSTANCE.debugln("Captured field layout for type '%s'", type.getQualifiedName());
+            Logger.INSTANCE.debugln(STR."Captured field layout for type '\{type.getQualifiedName()}'");
             return udt;
         }
     }

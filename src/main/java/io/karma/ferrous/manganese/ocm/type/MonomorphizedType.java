@@ -42,7 +42,7 @@ public final class MonomorphizedType implements Type {
 
     @Override
     public String getMangledName() {
-        return String.format("%s<%s>", Type.super.getMangledName(), Mangler.mangleSequence(genericTypes));
+        return STR."\{Type.super.getMangledName()}<\{Mangler.mangleSequence(genericTypes)}>";
     }
 
     @Override

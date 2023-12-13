@@ -177,9 +177,7 @@ public final class StatementParser extends ParseAdapter {
             final var targetMachine = compileContext.getCompiler().getTargetMachine();
             final var exprType = expr.getType(targetMachine);
             if (!expectedReturnType.canAccept(targetMachine, exprType)) {
-                final var message = KitchenSink.makeCompilerMessage(String.format("%s cannot be assigned to %s",
-                    exprType,
-                    expectedReturnType));
+                final var message = KitchenSink.makeCompilerMessage(STR."\{exprType} cannot be assigned to \{expectedReturnType}");
                 compileContext.reportError(context.start, message, CompileErrorCode.E3006);
                 return;
             }

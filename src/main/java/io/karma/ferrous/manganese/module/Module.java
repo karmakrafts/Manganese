@@ -59,17 +59,19 @@ public final class Module {
         if (address == MemoryUtil.NULL) {
             throw new RuntimeException("Could not allocate module");
         }
-        Logger.INSTANCE.debugln("Allocated module '%s' at 0x%08X in context 0x%08X", name, address, context);
+        Logger.INSTANCE.debugln(STR."Allocated module '\{name}' at \{String.format("0x%08X",
+            address)} in context \{String.format("0x%08X", context)}");
     }
 
     public Module(final String name) {
         this(name, LLVMGetGlobalContext());
     }
 
-    private Module(final String name, final long context, final long address) {
+    private Module(final long context, final long address) {
         this.context = context;
         this.address = address;
-        Logger.INSTANCE.debugln("Created external module at 0x%08X in context 0x%08X", address, context);
+        Logger.INSTANCE.debugln(STR."Created external module at \{String.format("0x%08X",
+            address)} in context \{String.format("0x%08X", context)}");
     }
 
     public static Module fromIR(final long context, final String name, final String source) throws RuntimeException {
@@ -91,11 +93,11 @@ public final class Module {
                 throw new RuntimeException("Could not retrieve module address");
             }
 
-            final var module = new Module(name, context, moduleAddr);
+            final var module = new Module(context, moduleAddr);
             module.setName(name);
             final var verifyStatus = module.verify();
             if (verifyStatus != null) {
-                throw new RuntimeException(String.format("Failed to verify module %s", name));
+                throw new RuntimeException(STR."Failed to verify module \{name}");
             }
             return module;
         }
@@ -103,7 +105,7 @@ public final class Module {
 
     public static Module loadEmbedded(final long context, final String name) throws IOException {
         // @formatter:off
-        try(final var stream = Module.class.getResourceAsStream(String.format("/%s.ll", name));
+        try(final var stream = Module.class.getResourceAsStream(STR."/\{name}.ll");
             final var reader = new BufferedReader(new InputStreamReader(Objects.requireNonNull(stream)))) {
             // @formatter:on
             final var source = reader.lines().collect(Collectors.joining("\n"));
@@ -171,7 +173,8 @@ public final class Module {
         if (isDisposed) {
             return;
         }
-        Logger.INSTANCE.debugln("Disposing module '%s' at 0x%08X in context 0x%08X", getName(), address, context);
+        Logger.INSTANCE.debugln(STR."Disposing module '\{getName()}' at \{String.format("0x%08X",
+            address)} in context \{String.format("0x%08X", context)}");
         LLVMDisposeModule(address);
         isDisposed = true;
     }
@@ -220,7 +223,7 @@ public final class Module {
 
     public @Nullable ByteBuffer getBitcode() {
         final var buffer = LLVMWriteBitcodeToMemoryBuffer(address);
-        Logger.INSTANCE.debugln("Wrote bitcode to memory at 0x%08X", buffer);
+        Logger.INSTANCE.debugln(STR."Wrote bitcode to memory at \{String.format("0x%08X", buffer)}");
         if (buffer == NULL) {
             return null;
         }

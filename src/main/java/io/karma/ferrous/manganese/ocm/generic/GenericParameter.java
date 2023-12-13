@@ -116,8 +116,8 @@ public final class GenericParameter implements Named {
     @Override
     public String toString() {
         if (value != null) {
-            return String.format("%s:%s=%s", name, constraints, value);
+            return STR."\{name}:\{constraints}=\{value}";
         }
-        return String.format("%s:%s", name, constraints);
+        return STR."\{name}:\{constraints}";
     }
 }

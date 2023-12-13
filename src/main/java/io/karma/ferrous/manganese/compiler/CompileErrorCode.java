@@ -101,6 +101,6 @@ public enum CompileErrorCode {
 
     @Override
     public String toString() {
-        return String.format("[%s] %s", name(), message);
+        return STR."[\{name()}] \{message}";
     }
 }

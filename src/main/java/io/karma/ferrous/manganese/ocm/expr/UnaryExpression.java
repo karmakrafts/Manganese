@@ -44,7 +44,7 @@ public final class UnaryExpression implements Expression {
 
     public UnaryExpression(final Operator op, final Expression value, final TokenSlice tokenSlice) {
         if (!op.isUnary()) {
-            throw new IllegalArgumentException(String.format("%s is not a unary operator", op));
+            throw new IllegalArgumentException(STR."\{op} is not a unary operator");
         }
         this.op = op;
         this.value = value;
@@ -197,6 +197,6 @@ public final class UnaryExpression implements Expression {
 
     @Override
     public String toString() {
-        return String.format("%s%s", op, value);
+        return STR."\{op}\{value}";
     }
 }

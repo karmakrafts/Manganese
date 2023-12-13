@@ -119,7 +119,7 @@ public final class KitchenSink {
         Logger.INSTANCE.infoln(message);
         final var values = type.getEnumConstants();
         for (final var value : values) {
-            Logger.INSTANCE.infoln("  - %s", value);
+            Logger.INSTANCE.infoln(STR."  - \{value}");
         }
     }
 
@@ -145,7 +145,7 @@ public final class KitchenSink {
     }
 
     public static ProcessBuilder createProcess(final String... command) {
-        Logger.INSTANCE.debugln("Spawning process: %s", String.join(" ", command));
+        Logger.INSTANCE.debugln(STR."Spawning process: \{String.join(" ", command)}");
         final var builder = new ProcessBuilder(getSystemShell()).command(command);
         builder.environment().putAll(System.getenv());
         return builder;
@@ -170,7 +170,7 @@ public final class KitchenSink {
             Files.walkFileTree(path, new SimpleFileVisitor(filePath -> {
                 final var fileName = filePath.getFileName().toString();
                 for (final var ext : extensions) {
-                    if (!fileName.endsWith(String.format(".%s", ext))) {
+                    if (!fileName.endsWith(STR.".\{ext}")) {
                         continue;
                     }
                     files.add(filePath);
@@ -193,7 +193,7 @@ public final class KitchenSink {
     }
 
     public static Path derivePathExtension(final Path path, final String ext) {
-        return path.getParent().resolve(String.format("%s.%s", getRawFileName(path), ext));
+        return path.getParent().resolve(STR."\{getRawFileName(path)}.\{ext}");
     }
 
     public static String capitalize(final String value) {

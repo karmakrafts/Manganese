@@ -189,8 +189,7 @@ public final class StructureType implements Type {
 
     @Override
     public String toString() {
-        return String.format("%s{%s}",
-            getQualifiedName(),
-            String.join(", ", fieldTypes.stream().map(Type::toString).toArray(String[]::new)));
+        return STR."\{getQualifiedName()}{\{String.join(", ",
+            fieldTypes.stream().map(Type::toString).toArray(String[]::new))}}";
     }
 }

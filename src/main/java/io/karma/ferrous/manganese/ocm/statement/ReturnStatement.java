@@ -102,6 +102,6 @@ public final class ReturnStatement implements Statement {
 
     @Override
     public String toString() {
-        return String.format("return %s", value);
+        return STR."return \{value}";
     }
 }

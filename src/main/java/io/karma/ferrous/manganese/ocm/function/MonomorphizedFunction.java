@@ -55,10 +55,9 @@ public final class MonomorphizedFunction extends Function {
 
     @Override
     public String getMangledName() {
-        return String.format("%s<%s>(%s)",
-            getQualifiedName().toInternalName(),
-            Mangler.mangleSequence(genericTypes),
-            Mangler.mangleSequence(parameters.stream().map(Parameter::getType).toList()));
+        final var paramTypes = parameters.stream().map(Parameter::getType).toList();
+        return STR."\{getQualifiedName().toInternalName()}<\{Mangler.mangleSequence(genericTypes)}>(\{Mangler.mangleSequence(
+            paramTypes)})";
     }
 
     public List<Type> getGenericTypes() {

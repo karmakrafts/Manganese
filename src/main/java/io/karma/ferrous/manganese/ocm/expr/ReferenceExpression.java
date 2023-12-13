@@ -121,6 +121,6 @@ public final class ReferenceExpression implements Expression {
 
     @Override
     public String toString() {
-        return String.format("%s:%s", reference, isWrite);
+        return STR."\{reference}:\{isWrite}";
     }
 }

@@ -166,7 +166,7 @@ public final class ExecutionEngine {
      * @return The result of the expression evaluation.
      */
     public GenericValue eval(final Expression expression) {
-        final var functionName = new Identifier(String.format("eval%s", expression.hashCode()));
+        final var functionName = new Identifier(STR."eval\{expression.hashCode()}");
         final var tokenSlice = expression.getTokenSlice();
         final var functionType = Types.function(expression.getType(targetMachine),
             Collections.emptyList(),

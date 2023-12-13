@@ -112,7 +112,7 @@ public final class TypeResolutionPass implements CompilePass {
 
         parentNode.addDependency(childNode);
         buffer.a('D').fg(Ansi.Color.CYAN).a(" > ").a(childType);
-        Logger.INSTANCE.debugln("Resolved type graph: %s", buffer.toString());
+        Logger.INSTANCE.debugln(STR."Resolved type graph: \{buffer}");
 
         return true;
     }
@@ -152,12 +152,12 @@ public final class TypeResolutionPass implements CompilePass {
                 continue;
             }
             final var fieldTypeName = fieldType.getQualifiedName();
-            Logger.INSTANCE.debugln("Found incomplete field type '%s' in '%s'", fieldTypeName, scopeName);
+            Logger.INSTANCE.debugln(STR."Found incomplete field type '\{fieldTypeName}' in '\{scopeName}'");
             final var completeType = moduleData.findCompleteType(fieldTypeName, scopeName);
             if (completeType == null) {
                 return false;
             }
-            Logger.INSTANCE.debugln("  > Resolved to complete type '%s'", completeType);
+            Logger.INSTANCE.debugln(STR."  > Resolved to complete type '\{completeType}'");
             structType.setFieldType(i, completeType.derive(fieldType.getAttributes()));
         }
         profiler.pop();
@@ -196,11 +196,12 @@ public final class TypeResolutionPass implements CompilePass {
                 continue; // Don't need to waste time on doing nothing..
             }
             if (!type.isComplete()) {
-                Logger.INSTANCE.errorln("Cannot materialize type '%s' as it is incomplete", type.getQualifiedName());
+                Logger.INSTANCE.errorln(STR."Cannot materialize type '\{type.getQualifiedName()}' as it is incomplete");
                 continue;
             }
             final var address = type.materialize(compiler.getTargetMachine());
-            Logger.INSTANCE.debugln("Materialized type %s at 0x%08X", type.getQualifiedName(), address);
+            Logger.INSTANCE.debugln(STR."Materialized type \{type.getQualifiedName()} at \{String.format("0x%08X",
+                address)}");
         }
         profiler.pop();
     }
@@ -237,7 +238,7 @@ public final class TypeResolutionPass implements CompilePass {
             rootNode.addDependency(node);
         }
 
-        Logger.INSTANCE.debugln("Reordering %d type entries", namedTypes.size());
+        Logger.INSTANCE.debugln(STR."Reordering \{namedTypes.size()} type entries");
         final var sortedNodes = new TopoSorter<>(rootNode).sort(ArrayList::new);
         final var sortedMap = new LinkedHashMap<Identifier, Type>();
 
@@ -285,7 +286,7 @@ public final class TypeResolutionPass implements CompilePass {
                         continue;
                     }
                     types[i] = completeType;
-                    Logger.INSTANCE.debugln("Resolved scoped access kind '%s'", completeType);
+                    Logger.INSTANCE.debugln(STR."Resolved scoped access kind '\{completeType}'");
                 }
             }
         }

@@ -80,6 +80,6 @@ public final class Label implements Statement, LabeledStatement {
 
     @Override
     public String toString() {
-        return String.format("%s:", name);
+        return STR."\{name}:";
     }
 }

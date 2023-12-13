@@ -107,6 +107,6 @@ public final class ModifiedType implements Type {
 
     @Override
     public String toString() {
-        return String.format("%s %s", baseType.toString(), modifiers);
+        return STR."\{baseType} \{modifiers}";
     }
 }

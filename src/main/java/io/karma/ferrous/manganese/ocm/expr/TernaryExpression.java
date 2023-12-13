@@ -47,7 +47,7 @@ public final class TernaryExpression implements Expression, Named {
         this.trueValue = trueValue;
         this.falseValue = falseValue;
         this.tokenSlice = tokenSlice;
-        name = new Identifier(String.format("ternary.%s", UUID.randomUUID()));
+        name = new Identifier(STR."ternary\{UUID.randomUUID()}");
     }
 
     // Named

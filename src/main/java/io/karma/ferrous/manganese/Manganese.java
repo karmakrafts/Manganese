@@ -83,7 +83,7 @@ public final class Manganese {
             final var severityValue = LLVMGetDiagInfoSeverity(info);
             final var severity = DiagnosticSeverity.byValue(severityValue);
             if (severity.isEmpty()) {
-                Logger.INSTANCE.errorln("Unknown diagnostic severity %d", severityValue);
+                Logger.INSTANCE.errorln(STR."Unknown diagnostic severity \{severityValue}");
                 return;
             }
             if (severity.get() != DiagnosticSeverity.ERROR) {

@@ -46,7 +46,7 @@ import static org.lwjgl.system.MemoryUtil.NULL;
 @API(status = Status.INTERNAL)
 public final class LLVMUtils {
     private static final String[] VERSIONS = {"15", "14", "13", "12", "11"};
-    private static final Pattern VERSION_PATTERN = Pattern.compile(String.format(".+(%s)", String.join("|", VERSIONS)));
+    private static final Pattern VERSION_PATTERN = Pattern.compile(STR.".+(\{String.join("|", VERSIONS)})");
     private static final String[] BASE_PATHS = {"/usr/share/lib", "/usr/local/opt", "/usr/lib", "/"};
     private static final String[] SUB_PATHS = { // @formatter:off
         "llvm-{}/build/Release",

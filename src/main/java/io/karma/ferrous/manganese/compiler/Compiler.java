@@ -199,7 +199,7 @@ public final class Compiler implements AutoCloseable {
         context.setCurrentSourceFile(sourcePath);
         final var module = targetMachine.createModule(name);
         for (final var pass : passes) {
-            Logger.INSTANCE.debugln("Invoking pass %s", pass.getClass().getName());
+            Logger.INSTANCE.debugln(STR."Invoking pass \{pass.getClass().getName()}");
             context.setCurrentPass(pass);
             pass.run(context, module, executorService);
             context.setCurrentPass(null);
@@ -245,7 +245,7 @@ public final class Compiler implements AutoCloseable {
 
             futures.add(CompletableFuture.runAsync(() -> {
                 context.setCurrentSourceFile(file);
-                Logger.INSTANCE.debugln("Input: %s (Thread %d)", file, Thread.currentThread().threadId());
+                Logger.INSTANCE.debugln(STR."Input: \{file} (Thread \{Thread.currentThread().threadId()})");
                 try (final var stream = Files.newInputStream(file); final var channel = Channels.newChannel(stream)) {
                     tokenizeAndParse(rawFileName, channel, context);
                 }
@@ -262,7 +262,7 @@ public final class Compiler implements AutoCloseable {
 
         final var moduleName = KitchenSink.getRawFileName(in);
         final var projectModule = targetMachine.createModule(moduleName);
-        projectModule.setSourceFileName(String.format("%s.o", moduleName));
+        projectModule.setSourceFileName(STR."\{moduleName}.o");
 
         for (var i = 0; i < numFiles; ++i) {
             final var file = inputFiles.get(i);
@@ -286,11 +286,11 @@ public final class Compiler implements AutoCloseable {
         }
 
         if (disassemble) {
-            Logger.INSTANCE.infoln("Linked disassembly:\n\n%s", projectModule.disassembleBitcode());
-            Logger.INSTANCE.infoln("Native disassembly:\n\n%s", projectModule.disassembleAssembly(targetMachine));
+            Logger.INSTANCE.infoln(STR."Linked disassembly:\n\n\{projectModule.disassembleBitcode()}");
+            Logger.INSTANCE.infoln(STR."Native disassembly:\n\n\{projectModule.disassembleAssembly(targetMachine)}");
         }
 
-        final var objectFile = out.getParent().resolve(String.format("%s.o", KitchenSink.getRawFileName(out)));
+        final var objectFile = out.getParent().resolve(STR."\{KitchenSink.getRawFileName(out)}.o");
         projectModule.generateAssembly(targetMachine, FileType.OBJECT, objectFile);
         projectModule.dispose();
 
@@ -360,7 +360,7 @@ public final class Compiler implements AutoCloseable {
         public void reportAmbiguity(final Parser recognizer, final DFA dfa, final int startIndex, final int stopIndex,
                                     final boolean exact, final BitSet ambigAlts, final ATNConfigSet configs) {
             if (reportParserWarnings) {
-                Logger.INSTANCE.debugln("Detected ambiguity at %d:%d (%d)", startIndex, stopIndex, dfa.decision);
+                Logger.INSTANCE.debugln(STR."Detected ambiguity at \{startIndex}:\{stopIndex} (\{dfa.decision})");
             }
         }
 
@@ -369,7 +369,7 @@ public final class Compiler implements AutoCloseable {
                                                 final int stopIndex, final BitSet conflictingAlts,
                                                 final ATNConfigSet configs) {
             if (reportParserWarnings) {
-                Logger.INSTANCE.debugln("Detected full context at %d:%d (%d)", startIndex, stopIndex, dfa.decision);
+                Logger.INSTANCE.debugln(STR."Detected full context at \{startIndex}:\{stopIndex} (\{dfa.decision})");
             }
         }
 
@@ -377,10 +377,7 @@ public final class Compiler implements AutoCloseable {
         public void reportContextSensitivity(final Parser recognizer, final DFA dfa, final int startIndex,
                                              final int stopIndex, final int prediction, final ATNConfigSet configs) {
             if (reportParserWarnings) {
-                Logger.INSTANCE.debugln("Detected abnormally high context sensitivity at %d:%d (%d)",
-                    startIndex,
-                    stopIndex,
-                    dfa.decision);
+                Logger.INSTANCE.debugln(STR."Detected abnormally high context sensitivity at \{startIndex}:\{stopIndex} (\{dfa.decision})");
             }
         }
     }

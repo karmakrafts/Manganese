@@ -52,7 +52,7 @@ public final class ELFLinker extends AbstractLinker {
         if (usesSystemRuntime) {
             final var sysLibDir = Objects.requireNonNull(findSystemLibraryDirectory(architecture));
             final var path = sysLibDir.resolve("lib").toAbsolutePath().normalize().toString();
-            buffer.add(String.format("-L%s", path));
+            buffer.add(STR."-L\{path}");
             buffer.add("-lc");
         }
     }
@@ -67,7 +67,7 @@ public final class ELFLinker extends AbstractLinker {
                 compileContext.reportError("CRT", CompileErrorCode.E6009);
                 return;
             }
-            Logger.INSTANCE.debugln("Located CRT implementation at %s", crtImplPath);
+            Logger.INSTANCE.debugln(STR."Located CRT implementation at \{crtImplPath}");
             buffer.add(crtImplPath.toAbsolutePath().normalize().toString());
             // Prologue object
             final var crtProloguePath = findSystemLibrary(architecture, path -> path.resolve("lib"), "crti\\.o");
@@ -75,7 +75,7 @@ public final class ELFLinker extends AbstractLinker {
                 compileContext.reportError("CRT Prologue", CompileErrorCode.E6009);
                 return;
             }
-            Logger.INSTANCE.debugln("Located CRT prologue at %s", crtProloguePath);
+            Logger.INSTANCE.debugln(STR."Located CRT prologue at \{crtProloguePath}");
             buffer.add(crtProloguePath.toAbsolutePath().normalize().toString());
         }
     }
@@ -90,7 +90,7 @@ public final class ELFLinker extends AbstractLinker {
                 compileContext.reportError("CRT Epilogue", CompileErrorCode.E6009);
                 return;
             }
-            Logger.INSTANCE.debugln("Located CRT epilogue at %s", crtEpiloguePath);
+            Logger.INSTANCE.debugln(STR."Located CRT epilogue at \{crtEpiloguePath}");
             buffer.add(crtEpiloguePath.toAbsolutePath().normalize().toString());
         }
     }
@@ -101,7 +101,7 @@ public final class ELFLinker extends AbstractLinker {
         }
         for (var directory : LIB_DIRS) {
             for (final var alias : architecture.getAliases()) {
-                final var path = Path.of(directory).resolve(String.format("%s-linux-gnu", alias));
+                final var path = Path.of(directory).resolve(STR."\{alias}-linux-gnu");
                 if (!Files.exists(path)) {
                     continue;
                 }
@@ -162,12 +162,12 @@ public final class ELFLinker extends AbstractLinker {
             buffer.add("-dynamic-linker");
             final var path = findSystemLibrary(architecture,
                 Functions.castingIdentity(),
-                String.format("ld[\\-_.]linux[\\-_.](%s)(\\.so(\\.[0-9])?)", architecture.makePattern()));
+                STR."ld[\\-_.]linux[\\-_.](\{architecture.makePattern()})(\\.so(\\.[0-9])?)");
             if (path == null) {
                 compileContext.reportError(CompileErrorCode.E6007);
                 return;
             }
-            Logger.INSTANCE.debugln("Located dynamic linker at %s", path);
+            Logger.INSTANCE.debugln(STR."Located dynamic linker at \{path}");
             buffer.add(path.toAbsolutePath().normalize().toString());
         }
         buffer.addAll(options);

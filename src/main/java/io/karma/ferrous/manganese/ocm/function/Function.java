@@ -199,9 +199,8 @@ public class Function implements Scoped, Mangleable {
         if (!shouldMangle()) {
             return getName().toInternalName();
         }
-        return String.format("%s(%s)",
-            getQualifiedName().toInternalName(),
-            Mangler.mangleSequence(parameters.stream().map(Parameter::getType).toList()));
+        final var paramTypes = parameters.stream().map(Parameter::getType).toList();
+        return STR."\{getQualifiedName().toInternalName()}(\{Mangler.mangleSequence(paramTypes)})";
     }
 
     // NameProvider
@@ -244,6 +243,6 @@ public class Function implements Scoped, Mangleable {
 
     @Override
     public String toString() {
-        return String.format("%s %s(%s)", type.getReturnType(), name, parameters);
+        return STR."\{type.getReturnType()} \{name}(\{parameters})";
     }
 }

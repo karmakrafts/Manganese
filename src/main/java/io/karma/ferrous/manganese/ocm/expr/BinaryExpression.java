@@ -45,7 +45,7 @@ public final class BinaryExpression implements Expression {
     public BinaryExpression(final Operator op, final Expression lhs, final Expression rhs,
                             final TokenSlice tokenSlice) {
         if (!op.isBinary()) {
-            throw new IllegalArgumentException(String.format("%s is not a binary operator", op));
+            throw new IllegalArgumentException(STR."\{op} is not a binary operator");
         }
         this.op = op;
         this.lhs = lhs;
@@ -213,6 +213,6 @@ public final class BinaryExpression implements Expression {
 
     @Override
     public String toString() {
-        return String.format("%s%s%s", lhs, op, rhs);
+        return STR."\{lhs}\{op}\{rhs}";
     }
 }

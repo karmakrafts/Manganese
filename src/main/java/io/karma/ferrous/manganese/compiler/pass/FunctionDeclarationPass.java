@@ -139,8 +139,7 @@ public final class FunctionDeclarationPass implements CompilePass {
                 final var type = FunctionUtils.parseFunctionType(compileContext, scopeStack, context);
                 final var function = overloadSet.get(type);
                 if (function != null) {
-                    final var message = KitchenSink.makeCompilerMessage(String.format("Function '%s' is already defined",
-                        name));
+                    final var message = KitchenSink.makeCompilerMessage(STR."Function '\{name}' is already defined");
                     compileContext.reportError(identContext.start, message, CompileErrorCode.E4003);
                     return true;
                 }

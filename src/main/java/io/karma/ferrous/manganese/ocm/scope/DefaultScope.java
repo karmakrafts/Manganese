@@ -69,7 +69,7 @@ public final class DefaultScope implements Scope {
     @Override
     public String toString() {
         if (name != null) {
-            return String.format("%s [%s]", type, name);
+            return STR."\{type} [\{name}]";
         }
         return type.name();
     }

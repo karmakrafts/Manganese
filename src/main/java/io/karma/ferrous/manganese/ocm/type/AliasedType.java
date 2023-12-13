@@ -168,6 +168,6 @@ public final class AliasedType implements Type {
 
     @Override
     public String toString() {
-        return String.format("%s (%s)", getQualifiedName(), backingType);
+        return STR."\{getQualifiedName()} (\{backingType})";
     }
 }

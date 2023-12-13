@@ -61,13 +61,13 @@ public final class TargetMachine {
         if (address == NULL) {
             throw new RuntimeException("Could not create target machine");
         }
-        Logger.INSTANCE.debugln("Allocated target machine %s at 0x%08X", toString(), address);
+        Logger.INSTANCE.debugln(STR."Allocated target machine \{this} at \{String.format("0x%08X", address)}");
 
         dataAddress = LLVMCreateTargetDataLayout(address);
         if (dataAddress == NULL) {
             throw new RuntimeException("Could not allocate target machine data");
         }
-        Logger.INSTANCE.debugln("Allocated target machine data at 0x%08X", toString(), dataAddress);
+        Logger.INSTANCE.debugln(STR."Allocated target machine data at \{String.format("0x%08X", dataAddress)}");
     }
 
     public Module loadEmbeddedModule(final String name, final long context) throws IOException {
@@ -144,9 +144,9 @@ public final class TargetMachine {
             return;
         }
         LLVMDisposeTargetData(dataAddress);
-        Logger.INSTANCE.debugln("Disposed target machine data at 0x%08X", dataAddress);
+        Logger.INSTANCE.debugln(STR."Disposed target machine data at \{String.format("0x%08X", dataAddress)}");
         LLVMDisposeTargetMachine(address);
-        Logger.INSTANCE.debugln("Disposed target machine %s at 0x%08X", toString(), address);
+        Logger.INSTANCE.debugln(STR."Disposed target machine \{this} at \{String.format("0x%08X", address)}");
         isDisposed = true;
     }
 
@@ -169,6 +169,6 @@ public final class TargetMachine {
 
     @Override
     public String toString() {
-        return String.format("%s (%s/%s/%s/%s)", target, features, level, relocation, codeModel);
+        return STR."\{target} (\{features}/\{level}/\{relocation}/\{codeModel})";
     }
 }

@@ -174,7 +174,7 @@ final class Main {
                     Arrays.stream(Objects.requireNonNull(LLVMGetHostCPUFeatures()).split(","))
                         .filter(feat -> feat.startsWith("+"))
                         .map(feat -> feat.substring(1))
-                        .forEach(feat -> Logger.INSTANCE.infoln("  - %s", feat));
+                        .forEach(feat -> Logger.INSTANCE.infoln(STR."  - \{feat}"));
                     // @formatter:on
                     return;
                 }
@@ -219,8 +219,8 @@ final class Main {
                     final var manifest = new Manifest(stream);
                     final var attribs = manifest.getMainAttributes();
                     Logger.INSTANCE.printLogo();
-                    Logger.INSTANCE.infoln("Manganese Version %s", attribs.getValue("Implementation-Version"));
-                    Logger.INSTANCE.infoln("Running on %s", SystemInfo.getPlatformPair());
+                    Logger.INSTANCE.infoln(STR."Manganese Version \{attribs.getValue("Implementation-Version")}");
+                    Logger.INSTANCE.infoln(STR."Running on \{SystemInfo.getPlatformPair()}");
                 }
                 return;
             }
@@ -297,15 +297,15 @@ final class Main {
             System.exit(0);
         }
         catch (IOException error) {
-            Logger.INSTANCE.errorln("%s", error.toString());
+            Logger.INSTANCE.errorln(error.toString());
             status = status.worse(CompileStatus.IO_ERROR);
         }
         catch (Throwable error) {
-            Logger.INSTANCE.errorln("%s", error.toString());
+            Logger.INSTANCE.errorln(error.toString());
             status = status.worse(CompileStatus.UNKNOWN_ERROR);
         }
 
-        Logger.INSTANCE.infoln("%s", status.getFormattedMessage());
+        Logger.INSTANCE.infoln(status.getFormattedMessage());
         System.exit(status.getExitCode());
     }
 

@@ -96,71 +96,71 @@ public final class Logger extends Writer {
         this.logConsumer = logConsumer;
     }
 
-    public void logln(final LogLevel level, final String fmt, final Object... params) {
+    public void logln(final LogLevel level, final String message) {
         if (!activeLevels.contains(level)) {
             return; // Prioritize this condition over the current log level
         }
         if (logConsumer != null && level.ordinal() >= logLevel.ordinal()) {
-            logConsumer.accept(String.format("%s\n", level.format(String.format(fmt, params))));
+            logConsumer.accept(STR."\{level.format(message)}\n");
         }
     }
 
-    public void debugln(final String fmt, final Object... params) {
-        logln(LogLevel.DEBUG, fmt, params);
+    public void debugln(final String message) {
+        logln(LogLevel.DEBUG, message);
     }
 
-    public void infoln(final String fmt, final Object... params) {
-        logln(LogLevel.INFO, fmt, params);
+    public void infoln(final String message) {
+        logln(LogLevel.INFO, message);
     }
 
-    public void warnln(final String fmt, final Object... params) {
-        logln(LogLevel.WARN, fmt, params);
+    public void warnln(final String message) {
+        logln(LogLevel.WARN, message);
     }
 
-    public void errorln(final String fmt, final Object... params) {
-        logln(LogLevel.ERROR, fmt, params);
+    public void errorln(final String message) {
+        logln(LogLevel.ERROR, message);
     }
 
-    public void fatalln(final String fmt, final Object... params) {
-        logln(LogLevel.FATAL, fmt, params);
+    public void fatalln(final String message) {
+        logln(LogLevel.FATAL, message);
     }
 
-    public void log(final LogLevel level, final String fmt, final Object... params) {
+    public void log(final LogLevel level, final String message) {
         if (!activeLevels.contains(level)) {
             return; // Prioritize this condition over the current log level
         }
         if (logConsumer != null && level.ordinal() >= logLevel.ordinal()) {
-            logConsumer.accept(level.format(String.format(fmt, params)));
+            logConsumer.accept(level.format(message));
         }
     }
 
-    public void debug(final String fmt, final Object... params) {
-        log(LogLevel.DEBUG, fmt, params);
+    public void debug(final String message) {
+        log(LogLevel.DEBUG, message);
     }
 
-    public void info(final String fmt, final Object... params) {
-        log(LogLevel.INFO, fmt, params);
+    public void info(final String message) {
+        log(LogLevel.INFO, message);
     }
 
-    public void warn(final String fmt, final Object... params) {
-        log(LogLevel.WARN, fmt, params);
+    public void warn(final String message) {
+        log(LogLevel.WARN, message);
     }
 
-    public void error(final String fmt, final Object... params) {
-        log(LogLevel.ERROR, fmt, params);
+    public void error(final String message) {
+        log(LogLevel.ERROR, message);
     }
 
-    public void fatal(final String fmt, final Object... params) {
-        log(LogLevel.FATAL, fmt, params);
+    public void fatal(final String message) {
+        log(LogLevel.FATAL, message);
     }
 
     public void printLogo() {
-        infoln("%s", Ansi.ansi().fg(Color.RED).a(LOGO_LINES[0]).a(Attribute.RESET).toString());
-        infoln("%s", Ansi.ansi().fgBright(Color.RED).a(LOGO_LINES[1]).a(Attribute.RESET).toString());
-        infoln("%s", Ansi.ansi().fgBright(Color.YELLOW).a(LOGO_LINES[2]).a(Attribute.RESET).toString());
-        infoln("%s", Ansi.ansi().fg(Color.GREEN).a(LOGO_LINES[3]).a(Attribute.RESET).toString());
-        infoln("%s", Ansi.ansi().fg(Color.BLUE).a(LOGO_LINES[4]).a(Attribute.RESET).toString());
-        infoln("%s", Ansi.ansi().fg(Color.MAGENTA).a(LOGO_LINES[5]).a(Attribute.RESET).toString());
+        infoln(Ansi.ansi().fg(Color.RED).a(LOGO_LINES[0]).a(Attribute.RESET).toString());
+        infoln(Ansi.ansi().fgBright(Color.RED).a(LOGO_LINES[1]).a(Attribute.RESET).toString());
+        infoln(Ansi.ansi().fgBright(Color.YELLOW).a(LOGO_LINES[2]).a(Attribute.RESET).toString());
+        infoln(Ansi.ansi().fg(Color.GREEN).a(LOGO_LINES[3]).a(Attribute.RESET).toString());
+        infoln(Ansi.ansi().fg(Color.BLUE).a(LOGO_LINES[4]).a(Attribute.RESET).toString());
+        infoln(Ansi.ansi().fg(Color.MAGENTA).a(LOGO_LINES[5]).a(Attribute.RESET).toString());
     }
 
     public enum LogLevel {

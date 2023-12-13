@@ -70,9 +70,7 @@ public final class FunctionUtils {
         final var name = identifier.getText();
         final var conv = CallingConvention.findByText(name);
         if (conv.isEmpty()) {
-            final var message = String.format(
-                "'%s' is not a valid calling convention, expected one of the following values",
-                name);
+            final var message = STR."'\{name}' is not a valid calling convention, expected one of the following values";
             final var formattedMessage = KitchenSink.makeCompilerMessage(message, CallingConvention.EXPECTED_VALUES);
             compileContext.reportError(identifier.start, formattedMessage, CompileErrorCode.E4000);
             return CallingConvention.CDECL;

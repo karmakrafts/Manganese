@@ -109,6 +109,6 @@ public final class Field implements Named, AccessProvider, Scoped {
 
     @Override
     public String toString() {
-        return String.format("%s: %s", name, type);
+        return STR."\{name}: \{type}";
     }
 }

@@ -108,6 +108,7 @@ tasks.withType(Jar) {
 
 tasks.withType(JavaCompile) {
     options.encoding = 'UTF-8'
+    options.compilerArgs << '--enable-preview'
     sourceCompatibility = config.java_version
     targetCompatibility = config.java_version
 }

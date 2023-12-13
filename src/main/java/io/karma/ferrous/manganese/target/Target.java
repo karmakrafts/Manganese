@@ -57,7 +57,7 @@ public final class Target {
                 throw new RuntimeException("Could not retrieve target address");
             }
         }
-        Logger.INSTANCE.debugln("Allocated target %s at 0x%08X", triple, address);
+        Logger.INSTANCE.debugln(STR."Allocated target \{triple} at \{String.format("0x%08X", address)}");
     }
 
     public static Target getHostTarget() {
@@ -65,10 +65,7 @@ public final class Target {
     }
 
     public static String getHostTargetTriple() {
-        return String.format("%s-%s-%s",
-            Architecture.getHostArchitecture().getName(),
-            Platform.getHostPlatform().getName(),
-            ABI.getHostABI().getName());
+        return STR."\{Architecture.getHostArchitecture().getName()}-\{Platform.getHostPlatform().getName()}-\{ABI.getHostABI().getName()}";
     }
 
     public static Optional<Target> parse(final String value) {
@@ -128,6 +125,6 @@ public final class Target {
 
     @Override
     public String toString() {
-        return String.format("%s-%s-%s", architecture.getName(), platform.getName(), abi.getName());
+        return STR."\{architecture.getName()}-\{platform.getName()}-\{abi.getName()}";
     }
 }

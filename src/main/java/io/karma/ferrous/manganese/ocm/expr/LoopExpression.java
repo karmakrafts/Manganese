@@ -46,7 +46,7 @@ public final class LoopExpression implements Expression, Scope {
     }
 
     public LoopExpression(final TokenSlice tokenSlice) {
-        this(String.format("loop%s", UUID.randomUUID()), tokenSlice);
+        this(STR."loop\{UUID.randomUUID()}", tokenSlice);
     }
 
     // Scope

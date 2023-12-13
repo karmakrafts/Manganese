@@ -97,7 +97,7 @@ public final class IntrinsicFunction extends Function {
         }
         final var params = new ArrayList<Parameter>(numParams);
         for (var i = 0; i < numParams; i++) {
-            final var name = new Identifier(String.format("p%d", i));
+            final var name = new Identifier(STR."p\{i}");
             params.add(new Parameter(name, paramTypes[i], false, null));
         }
         return params;

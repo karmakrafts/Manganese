@@ -105,7 +105,7 @@ public final class LetStatement implements Statement, Named, ValueStorage {
             final var builder = irContext.getCurrentOrCreate();
             mutableAddress = builder.alloca(getType().materialize(targetMachine));
             builder.store(value.emit(targetMachine, irContext), mutableAddress);
-            LLVMSetValueName2(mutableAddress, String.format("%s.immaddr", name.toInternalName()));
+            LLVMSetValueName2(mutableAddress, STR."\{name.toInternalName()}.immaddr");
         }
         return mutableAddress;
     }

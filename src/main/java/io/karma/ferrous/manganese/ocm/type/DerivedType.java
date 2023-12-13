@@ -158,9 +158,6 @@ public final class DerivedType implements Type {
 
     @Override
     public String toString() {
-        if (attribute == null) {
-            return String.format("%s %s", baseType.toString(), modifiers);
-        }
-        return String.format("%s %s %s", attribute.getText(), baseType.toString(), modifiers);
+        return STR."\{baseType}\{attribute.getText()} \{modifiers}";
     }
 }
