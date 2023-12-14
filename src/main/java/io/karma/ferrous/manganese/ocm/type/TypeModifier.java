@@ -15,6 +15,8 @@
 
 package io.karma.ferrous.manganese.ocm.type;
 
+import io.karma.ferrous.manganese.compiler.CompileContext;
+import io.karma.ferrous.manganese.compiler.CompileErrorCode;
 import io.karma.ferrous.manganese.util.TokenUtils;
 import io.karma.ferrous.vanadium.FerrousLexer;
 import io.karma.ferrous.vanadium.FerrousParser;
@@ -47,7 +49,7 @@ public enum TypeModifier {
         return Arrays.stream(values()).filter(mod -> mod.text.equals(context.getText())).findFirst();
     }
 
-    public static List<TypeModifier> parse(final List<FerrousParser.TypeModContext> contexts) {
+    public static List<TypeModifier> parse(final CompileContext compileContext, final List<FerrousParser.TypeModContext> contexts) {
         if (contexts.isEmpty()) {
             return Collections.emptyList();
         }
@@ -55,7 +57,8 @@ public enum TypeModifier {
         for (final var context : contexts) {
             final var mod = parse(context);
             if (mod.isEmpty()) {
-                return Collections.emptyList(); // TODO: log error?
+                compileContext.reportError(context.start, CompileErrorCode.E3008);
+                continue; // Report error but keep parsing
             }
             mods.add(mod.get());
         }

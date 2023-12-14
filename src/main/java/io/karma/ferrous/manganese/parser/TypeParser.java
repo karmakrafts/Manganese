@@ -92,7 +92,7 @@ public final class TypeParser extends ParseAdapter {
                 compileContext.reportError(context.start, CompileErrorCode.E3007);
                 return;
             }
-            final var mods = TypeModifier.parse(context.typeMod());
+            final var mods = TypeModifier.parse(compileContext, context.typeMod());
             this.type = type.derive(TypeAttribute.POINTER, mods.toArray(TypeModifier[]::new));
         }
         if (context.AMP() != null) {
@@ -100,7 +100,7 @@ public final class TypeParser extends ParseAdapter {
                 compileContext.reportError(context.start, CompileErrorCode.E3001);
                 return;
             }
-            final var mods = TypeModifier.parse(context.typeMod());
+            final var mods = TypeModifier.parse(compileContext, context.typeMod());
             this.type = type.derive(TypeAttribute.REFERENCE, mods.toArray(TypeModifier[]::new));
         }
     }

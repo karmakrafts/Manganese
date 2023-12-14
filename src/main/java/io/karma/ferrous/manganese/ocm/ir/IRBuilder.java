@@ -17,6 +17,7 @@ package io.karma.ferrous.manganese.ocm.ir;
 
 import io.karma.ferrous.manganese.ocm.function.Function;
 import io.karma.ferrous.manganese.ocm.function.IntrinsicFunction;
+import io.karma.ferrous.manganese.ocm.type.TypeModifier;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import org.apiguardian.api.API;
 import org.lwjgl.system.MemoryStack;
@@ -102,12 +103,20 @@ public final class IRBuilder implements AutoCloseable {
 
     // Load/store
 
-    public long load(final long type, final long ptr) {
+    public long load(final long type, final long ptr, final TypeModifier... modifiers) {
         return LLVMBuildLoad2(address, type, ptr, "");
+    }
+
+    public long loadAtomic(final long value, final long ptr, final int ordering) {
+        return LLVMBuildAtomicRMW(address, LLVMLoad, ptr, NULL, ordering, false);
     }
 
     public long store(final long value, final long ptr) {
         return LLVMBuildStore(address, value, ptr);
+    }
+
+    public long storeAtomic(final long value, final long ptr, final int ordering) {
+        return LLVMBuildAtomicRMW(address, LLVMStore, ptr, value, ordering, false);
     }
 
     // Conversions
