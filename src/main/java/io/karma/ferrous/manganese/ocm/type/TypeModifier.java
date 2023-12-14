@@ -49,7 +49,8 @@ public enum TypeModifier {
         return Arrays.stream(values()).filter(mod -> mod.text.equals(context.getText())).findFirst();
     }
 
-    public static List<TypeModifier> parse(final CompileContext compileContext, final List<FerrousParser.TypeModContext> contexts) {
+    public static List<TypeModifier> parse(final CompileContext compileContext,
+                                           final List<FerrousParser.TypeModContext> contexts) {
         if (contexts.isEmpty()) {
             return Collections.emptyList();
         }

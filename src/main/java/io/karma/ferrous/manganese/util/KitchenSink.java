@@ -15,6 +15,7 @@
 
 package io.karma.ferrous.manganese.util;
 
+import io.karma.kommons.io.SimpleFileVisitor;
 import io.karma.kommons.util.ArrayUtils;
 import io.karma.kommons.util.SystemInfo;
 import it.unimi.dsi.fastutil.chars.CharPredicate;
@@ -167,7 +168,7 @@ public final class KitchenSink {
             return files;
         }
         try {
-            Files.walkFileTree(path, new SimpleFileVisitor(filePath -> {
+            Files.walkFileTree(path, new SimpleFileVisitor<>(filePath -> {
                 final var fileName = filePath.getFileName().toString();
                 for (final var ext : extensions) {
                     if (!fileName.endsWith(STR.".\{ext}")) {

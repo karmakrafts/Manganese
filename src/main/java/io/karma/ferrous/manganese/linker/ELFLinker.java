@@ -21,8 +21,8 @@ import io.karma.ferrous.manganese.target.Architecture;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.KitchenSink;
 import io.karma.ferrous.manganese.util.Logger;
-import io.karma.ferrous.manganese.util.SimpleFileVisitor;
 import io.karma.kommons.function.Functions;
+import io.karma.kommons.io.SimpleFileVisitor;
 import org.apiguardian.api.API;
 import org.jetbrains.annotations.Nullable;
 
@@ -120,7 +120,7 @@ public final class ELFLinker extends AbstractLinker {
         try {
             final var predicate = Pattern.compile(pattern).asMatchPredicate();
             final var pathRef = new Path[1];
-            Files.walkFileTree(mapper.apply(sysLibDir), new SimpleFileVisitor(path -> {
+            Files.walkFileTree(mapper.apply(sysLibDir), new SimpleFileVisitor<>(path -> {
                 if (Files.isDirectory(path) || !predicate.test(path.getFileName().toString())) {
                     return FileVisitResult.CONTINUE;
                 }

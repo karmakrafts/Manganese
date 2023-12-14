@@ -15,6 +15,7 @@
 
 package io.karma.ferrous.manganese.util;
 
+import io.karma.kommons.util.ExceptionUtils;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 import org.fusesource.jansi.Ansi;
@@ -62,6 +63,10 @@ public final class Logger extends Writer {
     // @formatter:off
     private Logger() {}
     // @formatter:on
+
+    public <X extends Throwable> void handleException(final X error) {
+        ExceptionUtils.handleError(error, this::errorln);
+    }
 
     // Writer overrides
 
