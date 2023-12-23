@@ -26,10 +26,8 @@ import io.karma.ferrous.manganese.ocm.function.FunctionResolver;
 import io.karma.ferrous.manganese.ocm.function.UnresolvedFunctionReference;
 import io.karma.ferrous.manganese.ocm.scope.ScopeStack;
 import io.karma.ferrous.manganese.ocm.scope.Scoped;
-import io.karma.ferrous.manganese.ocm.type.IntType;
-import io.karma.ferrous.manganese.ocm.type.RealType;
-import io.karma.ferrous.manganese.ocm.type.SizeType;
-import io.karma.ferrous.manganese.ocm.type.Types;
+import io.karma.ferrous.manganese.ocm.statement.Statement;
+import io.karma.ferrous.manganese.ocm.type.*;
 import io.karma.ferrous.manganese.util.*;
 import io.karma.ferrous.vanadium.FerrousLexer;
 import io.karma.ferrous.vanadium.FerrousParser.*;
@@ -45,11 +43,11 @@ import org.jetbrains.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 /**
  * @author Alexander Hinze
+ * @author Cedric Hammes, Cach30verfl0w
  * @since 05/11/2023
  */
 @API(status = API.Status.INTERNAL)
@@ -159,6 +157,40 @@ public final class ExpressionParser extends ParseAdapter {
         final var labelBlock = context.whileBody().labelBlock();
         final var labelLiteral = labelBlock != null ? Identifier.parse(labelBlock.ident()) : null;
 
+    }
+
+    @Override
+    public void enterIfExpr(IfExprContext context) {
+        final var branches = new LinkedList<Pair<Expression, List<Statement>>>();
+        final var firstBlockCondition = ExpressionParser.parse(this.compileContext, this.capturedScopeStack,
+                context.expr(), this.parent);
+        final var firstBlockStatements = StatementParser.parse(this.compileContext, null,
+                this.capturedScopeStack, context.ifBody(), this.parent);
+        branches.add(Pair.of(firstBlockCondition, firstBlockStatements));
+
+        // Parse else if branches
+        System.out.println(context.elseIfExpr().size());
+        for (ElseIfExprContext elseIfBranchContext : context.elseIfExpr()) {
+            final var condition = ExpressionParser.parse(this.compileContext, this.capturedScopeStack,
+                    elseIfBranchContext.expr(), this.parent);
+            final var statements = StatementParser.parse(this.compileContext, null,
+                    this.capturedScopeStack, elseIfBranchContext.ifBody(), this.parent);
+
+            branches.add(Pair.of(condition, statements));
+        }
+
+        // Parse else branch
+        final var elseExprContext = context.elseExpr();
+        if (elseExprContext != null) {
+            final var statements = StatementParser.parse(this.compileContext, null,
+                    this.capturedScopeStack, elseExprContext, this.parent);
+            branches.add(Pair.of(null, statements));
+        }
+
+        // Push if expression
+        final var ifExpr = new IfExpression(branches, TokenSlice.from(this.compileContext, context));
+        this.setExpression(context, ifExpr);
+        this.pushScope(ifExpr);
     }
 
     private @Nullable UnaryExpression parseUnaryExpression(final ExprContext context, final List<ParseTree> children) {

@@ -1,17 +1,13 @@
 @NoMangle
 fun main(num_args: i32, args: char**): i32 {
-    let mut i = 0
-    i += 1
-    return i
-
-    let x = num_args
-    let mut y = &x
-    let mut f = 2.0
-    let mut i_f = -f
-    let mut z = &y
-    let mut cond = false
-    let mut atom: atomic i32
-    let ptr = !cond ? *z : y
-
-    return x == 1 ? *ptr : 0
+    if (num_args == 1) {
+        return 1i32
+    } else if (num_args == 2) {
+        return 2i32
+    } else if (num_args == 3) {
+        return 3i32
+    } else if (num_args == 4) {
+             return 3i32
+    }
+    return 69i32
 }
