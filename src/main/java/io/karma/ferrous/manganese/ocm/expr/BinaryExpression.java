@@ -136,6 +136,7 @@ public final class BinaryExpression implements Expression {
         if (!(this.lhs instanceof ReferenceExpression refExpr)) {
             return 0L;
         }
+        refExpr.setIsWrite(true); // Left side is always a write here
 
         if (!(refExpr.getReference() instanceof ValueStorage valueStorage)) {
             return 0L;
