@@ -15,9 +15,11 @@
 
 package io.karma.ferrous.manganese.util;
 
+import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.vanadium.FerrousLexer;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
+import org.lwjgl.llvm.LLVMCore;
 
 import java.util.Arrays;
 import java.util.Optional;
@@ -111,6 +113,47 @@ public enum Operator {
 
     public static Optional<Operator> binaryByText(final String text) {
         return Arrays.stream(values()).filter(op -> op.text.equals(text) && op.isBinary).findFirst();
+    }
+
+    public int getLLVMType(final Type type) {
+        final var typeKind = type.getKind();
+        return switch (this) {
+            case EQ -> switch (typeKind) {
+                case INT, UINT, CHAR, BOOL -> LLVMCore.LLVMIntEQ;
+                case REAL -> LLVMCore.LLVMRealUEQ;
+                default -> 0;
+            };
+            case NEQ -> switch (typeKind) {
+                case INT, UINT, CHAR, BOOL -> LLVMCore.LLVMIntNE;
+                case REAL -> LLVMCore.LLVMRealUNE;
+                default -> 0;
+            };
+            case CMP_GTH -> switch (typeKind) {
+                case INT, CHAR -> LLVMCore.LLVMIntSGT;
+                case UINT -> LLVMCore.LLVMIntUGT;
+                case REAL -> LLVMCore.LLVMRealUGT;
+                default -> 0;
+            };
+            case CMP_GEQ -> switch (typeKind) {
+                case INT, CHAR -> LLVMCore.LLVMIntSGE;
+                case UINT -> LLVMCore.LLVMIntUGE;
+                case REAL -> LLVMCore.LLVMRealUGE;
+                default -> 0;
+            };
+            case CMP_LTH -> switch (typeKind) {
+                case INT, CHAR -> LLVMCore.LLVMIntSLT;
+                case UINT -> LLVMCore.LLVMIntULT;
+                case REAL -> LLVMCore.LLVMRealULT;
+                default -> 0;
+            };
+            case CMP_LEQ -> switch (typeKind) {
+                case INT, CHAR -> LLVMCore.LLVMIntSLE;
+                case UINT -> LLVMCore.LLVMIntULE;
+                case REAL -> LLVMCore.LLVMRealULE;
+                default -> 0;
+            };
+            default -> 0;
+        };
     }
 
     public boolean isUnary() {

@@ -17,9 +17,11 @@ package io.karma.ferrous.manganese.ocm.ir;
 
 import io.karma.ferrous.manganese.ocm.function.Function;
 import io.karma.ferrous.manganese.ocm.function.IntrinsicFunction;
+import io.karma.ferrous.manganese.ocm.type.BoolType;
 import io.karma.ferrous.manganese.ocm.type.TypeModifier;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import org.apiguardian.api.API;
+import org.lwjgl.llvm.LLVMCore;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 
@@ -376,6 +378,22 @@ public final class IRBuilder implements AutoCloseable {
 
     public void vaCopy(final long srcPtr, final long dstPtr) {
         call(IntrinsicFunction.VA_COPY, srcPtr, dstPtr);
+    }
+
+    // Constants
+
+    public long constBool(final boolean value) {
+        return LLVMCore.LLVMConstInt(BoolType.INSTANCE.materialize(targetMachine), value ? 1 : 0, false);
+    }
+
+    // Comparison
+
+    public long icmp(final long left, final long right, final int op) {
+        return LLVMCore.LLVMBuildICmp(this.address, op, right, left, "");
+    }
+
+    public long fcmp(final long left, final long right, final int op) {
+        return LLVMCore.LLVMBuildFCmp(this.address, op, right, left, "");
     }
 
     // Non-instruction related functions

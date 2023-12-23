@@ -40,7 +40,7 @@ import java.util.regex.Pattern;
  */
 @API(status = API.Status.INTERNAL)
 public final class ELFLinker extends AbstractLinker {
-    private static final String[] LIB_DIRS = {"/usr", "/usr/local"};
+    private static final String[] LIB_DIRS = {"/usr", "/usr/local", "/usr/lib"};
     private Path systemLibDir;
 
     ELFLinker() {
@@ -52,7 +52,11 @@ public final class ELFLinker extends AbstractLinker {
         if (usesSystemRuntime) {
             final var sysLibDir = Objects.requireNonNull(findSystemLibraryDirectory(architecture));
             final var path = sysLibDir.resolve("lib").toAbsolutePath().normalize().toString();
-            buffer.add(STR."-L\{path}");
+            if (Files.exists(Path.of(path))) {
+                buffer.add(STR."-L\{path}");
+            } else {
+                buffer.add(STR."-L\{sysLibDir.toAbsolutePath().normalize()}");
+            }
             buffer.add("-lc");
         }
     }
@@ -62,18 +66,25 @@ public final class ELFLinker extends AbstractLinker {
                                  final boolean usesSystemRuntime) {
         if (usesSystemRuntime) {
             // CRT implementation
-            final var crtImplPath = findSystemLibrary(architecture, path -> path.resolve("lib"), "crt[012]\\.o");
+            var crtImplPath = findSystemLibrary(architecture, path -> path.resolve("lib"), "crt[012]\\.o");
             if (crtImplPath == null) {
-                compileContext.reportError("CRT", CompileErrorCode.E6009);
+                crtImplPath = findSystemLibrary(architecture, Function.identity(), "crt[012]\\.o");
+                if (crtImplPath == null) {
+                    compileContext.reportError("CRT", CompileErrorCode.E6009);
+                    return;
+                }
                 return;
             }
             Logger.INSTANCE.debugln(STR."Located CRT implementation at \{crtImplPath}");
             buffer.add(crtImplPath.toAbsolutePath().normalize().toString());
             // Prologue object
-            final var crtProloguePath = findSystemLibrary(architecture, path -> path.resolve("lib"), "crti\\.o");
+            var crtProloguePath = findSystemLibrary(architecture, path -> path.resolve("lib"), "crti\\.o");
             if (crtProloguePath == null) {
-                compileContext.reportError("CRT Prologue", CompileErrorCode.E6009);
-                return;
+                crtProloguePath = findSystemLibrary(architecture, Function.identity(), "crti\\0");
+                if (crtProloguePath == null) {
+                    compileContext.reportError("CRT Prologue", CompileErrorCode.E6009);
+                    return;
+                }
             }
             Logger.INSTANCE.debugln(STR."Located CRT prologue at \{crtProloguePath}");
             buffer.add(crtProloguePath.toAbsolutePath().normalize().toString());
@@ -85,10 +96,13 @@ public final class ELFLinker extends AbstractLinker {
                                   final boolean usesSystemRuntime) {
         if (usesSystemRuntime) {
             // Epilogue object
-            final var crtEpiloguePath = findSystemLibrary(architecture, path -> path.resolve("lib"), "crtn\\.o");
+            var crtEpiloguePath = findSystemLibrary(architecture, path -> path.resolve("lib"), "crtn\\.o");
             if (crtEpiloguePath == null) {
-                compileContext.reportError("CRT Epilogue", CompileErrorCode.E6009);
-                return;
+                 crtEpiloguePath = findSystemLibrary(architecture, Function.identity(), "crtn\\.o");
+                if (crtEpiloguePath == null) {
+                    compileContext.reportError("CRT Epilogue", CompileErrorCode.E6009);
+                    return;
+                }
             }
             Logger.INSTANCE.debugln(STR."Located CRT epilogue at \{crtEpiloguePath}");
             buffer.add(crtEpiloguePath.toAbsolutePath().normalize().toString());
@@ -160,9 +174,9 @@ public final class ELFLinker extends AbstractLinker {
         }
         if (isDynamic) {
             buffer.add("-dynamic-linker");
-            final var path = findSystemLibrary(architecture,
-                Functions.castingIdentity(),
+            final var path = findSystemLibrary(architecture, Functions.castingIdentity(),
                 STR."ld[\\-_.]linux[\\-_.](\{architecture.makePattern()})(\\.so(\\.[0-9])?)");
+
             if (path == null) {
                 compileContext.reportError(CompileErrorCode.E6007);
                 return;

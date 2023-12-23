@@ -131,7 +131,8 @@ public final class BinaryExpression implements Expression {
         };
     }
 
-    private long emitAssign(final Expression lhs, final Expression rhs, final ArithmeticEmitter emitter, final TargetMachine targetMachine, final IRContext irContext) {
+    private long emitAssign(final Expression lhs, final Expression rhs, final ArithmeticEmitter emitter,
+                            final TargetMachine targetMachine, final IRContext irContext) {
         if (!(this.lhs instanceof ReferenceExpression refExpr)) {
             return 0L;
         }
@@ -143,7 +144,10 @@ public final class BinaryExpression implements Expression {
         final long lhsAddress = lhs.emit(targetMachine, irContext);
         final long rhsAddress = rhs.emit(targetMachine, irContext);
 
-        final long result = emitter.emit(lhsAddress, rhsAddress, lhs.getType(targetMachine), irContext.getCurrentOrCreate());
+        final long result = emitter.emit(lhsAddress,
+            rhsAddress,
+            lhs.getType(targetMachine),
+            irContext.getCurrentOrCreate());
 
         return valueStorage.store(result, targetMachine, irContext);
     }
@@ -165,7 +169,7 @@ public final class BinaryExpression implements Expression {
             case REAL -> builder.fdiv(lhs, rhs);
             case UINT -> builder.udiv(lhs, rhs);
             default   -> builder.sdiv(lhs, rhs);
-        }; // @formmatter:on
+        }; // @formatter:on
     }
 
     private long emitMod(final long lhs, final long rhs, final Type type, final IRBuilder builder) {
@@ -173,7 +177,22 @@ public final class BinaryExpression implements Expression {
             case REAL -> builder.frem(lhs, rhs);
             case UINT -> builder.urem(lhs, rhs);
             default   -> builder.srem(lhs, rhs);
-        }; // @formmatter:on
+        }; // @formatter:on
+    }
+
+    private long emitComparison(Operator op, final long lhs, final long rhs, final Type type, final IRBuilder builder) {
+        final var opType = op.getLLVMType(type);
+        if (type.isBuiltin()) {
+            return switch (type.getKind()) {
+                case INT, UINT, CHAR, BOOL -> builder.icmp(lhs, rhs, opType);
+                case REAL -> builder.fcmp(lhs, rhs, opType);
+                default -> NULL;
+            };
+        }
+        else {
+            // TODO: Implement compare on user defined types
+            return builder.constBool(false);
+        }
     }
 
     private long emitAnd(final long lhs, final long rhs, final Type type, final IRBuilder builder) {
@@ -203,8 +222,7 @@ public final class BinaryExpression implements Expression {
         return lhsRef.getReference() == rhsRef.getReference();
     }
 
-    private long emitBuiltin(final TargetMachine targetMachine, final IRContext irContext,
-                             final Type type) {
+    private long emitBuiltin(final TargetMachine targetMachine, final IRContext irContext, final Type type) {
         final var kind = type.getKind();
         final var builder = irContext.getCurrentOrCreate();
         final var lhs = this.lhs.emit(targetMachine, irContext);
@@ -230,6 +248,7 @@ public final class BinaryExpression implements Expression {
             case SHL_ASSIGN   -> emitAssign(this.lhs, this.rhs, this::emitShl, targetMachine, irContext);
             case SHR          -> emitShr(lhs, rhs, type, builder);
             case SHR_ASSIGN   -> emitAssign(this.lhs, this.rhs, this::emitShr, targetMachine, irContext);
+            case CMP_GTH, CMP_GEQ, CMP_LTH, CMP_LEQ, EQ, NEQ -> emitComparison(op, lhs, rhs, type, builder);
             default           -> throw new IllegalStateException("Unsupported operator");
         }; // @formatter:on
     }
