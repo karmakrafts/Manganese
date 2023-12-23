@@ -15,11 +15,11 @@
 
 package io.karma.ferrous.manganese.ocm.type;
 
+import io.karma.ferrous.manganese.mangler.Mangler;
 import io.karma.ferrous.manganese.ocm.expr.Expression;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Identifier;
-import io.karma.ferrous.manganese.util.Mangler;
 import org.apiguardian.api.API;
 import org.jetbrains.annotations.Nullable;
 

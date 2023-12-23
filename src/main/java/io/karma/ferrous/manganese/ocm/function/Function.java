@@ -16,6 +16,7 @@
 package io.karma.ferrous.manganese.ocm.function;
 
 import io.karma.ferrous.manganese.compiler.CompileContext;
+import io.karma.ferrous.manganese.mangler.Mangler;
 import io.karma.ferrous.manganese.module.Module;
 import io.karma.ferrous.manganese.ocm.AttributeUsage;
 import io.karma.ferrous.manganese.ocm.Mangleable;
@@ -28,7 +29,6 @@ import io.karma.ferrous.manganese.ocm.type.FunctionType;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Identifier;
-import io.karma.ferrous.manganese.util.Mangler;
 import io.karma.ferrous.manganese.util.TokenSlice;
 import io.karma.kommons.tuple.Pair;
 import org.apiguardian.api.API;

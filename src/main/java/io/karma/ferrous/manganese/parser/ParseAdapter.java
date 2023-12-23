@@ -371,12 +371,6 @@ public abstract class ParseAdapter implements FerrousParserListener {
     public void exitUseStatement(UseStatementContext useStatementContext) {}
 
     @Override
-    public void enterUseList(UseListContext useListContext) {}
-
-    @Override
-    public void exitUseList(UseListContext useListContext) {}
-
-    @Override
     public void enterUdt(UdtContext udtDeclContext) {}
 
     @Override
