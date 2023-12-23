@@ -389,11 +389,11 @@ public final class IRBuilder implements AutoCloseable {
     // Comparison
 
     public long icmp(final long left, final long right, final int op) {
-        return LLVMCore.LLVMBuildICmp(this.address, op, right, left, "");
+        return LLVMCore.LLVMBuildICmp(this.address, op, left, right, "");
     }
 
     public long fcmp(final long left, final long right, final int op) {
-        return LLVMCore.LLVMBuildFCmp(this.address, op, right, left, "");
+        return LLVMCore.LLVMBuildFCmp(this.address, op, left, right, "");
     }
 
     // Non-instruction related functions

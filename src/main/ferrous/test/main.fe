@@ -1,13 +1,8 @@
 @NoMangle
 fun main(num_args: i32, args: char**): i32 {
-    if (num_args == 1) {
-        return 1i32
-    } else if (num_args == 2) {
-        return 2i32
-    } else if (num_args == 3) {
-        return 3i32
-    } else if (num_args == 4) {
-             return 3i32
+    let mut var = 0u32
+    while (var < 9) {
+        var += 1
     }
-    return 69i32
+    return 0
 }

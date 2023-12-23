@@ -154,9 +154,27 @@ public final class ExpressionParser extends ParseAdapter {
             return;
         }
 
+        final var statements = StatementParser.parse(this.compileContext, VoidType.INSTANCE,
+                this.capturedScopeStack, context, this.parent);
         final var labelBlock = context.whileBody().labelBlock();
         final var labelLiteral = labelBlock != null ? Identifier.parse(labelBlock.ident()) : null;
+        this.setExpression(context, new WhileExpression(statements, condition,
+                TokenSlice.from(this.compileContext, context), labelLiteral, false));
+    }
 
+    @Override
+    public void enterDoWhileLoop(DoWhileLoopContext context) {
+        final var condition = parse(this.compileContext, this.capturedScopeStack, context.whileHead().expr(),
+                this.parent);
+        if (condition == null) {
+            this.compileContext.reportError(context.start, CompileErrorCode.E2001);
+            return;
+        }
+
+        final var statements = StatementParser.parse(this.compileContext, VoidType.INSTANCE,
+                this.capturedScopeStack, context, this.parent);
+        this.setExpression(context, new WhileExpression(statements, condition,
+                TokenSlice.from(this.compileContext, context), null, true));
     }
 
     @Override
@@ -169,7 +187,6 @@ public final class ExpressionParser extends ParseAdapter {
         branches.add(Pair.of(firstBlockCondition, firstBlockStatements));
 
         // Parse else if branches
-        System.out.println(context.elseIfExpr().size());
         for (ElseIfExprContext elseIfBranchContext : context.elseIfExpr()) {
             final var condition = ExpressionParser.parse(this.compileContext, this.capturedScopeStack,
                     elseIfBranchContext.expr(), this.parent);
