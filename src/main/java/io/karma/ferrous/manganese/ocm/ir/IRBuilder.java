@@ -383,8 +383,8 @@ public final class IRBuilder implements AutoCloseable {
 
     // Constants
 
-    public void constBool(final boolean value) {
-        LLVMCore.LLVMConstInt(BoolType.INSTANCE.materialize(targetMachine), value ? 1 : 0, false);
+    public long constBool(final boolean value) {
+        return LLVMCore.LLVMConstInt(BoolType.INSTANCE.materialize(targetMachine), value ? 1 : 0, false);
     }
 
     // Comparison

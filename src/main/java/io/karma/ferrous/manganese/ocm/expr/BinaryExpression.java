@@ -20,9 +20,9 @@ import io.karma.ferrous.manganese.ocm.constant.BoolConstant;
 import io.karma.ferrous.manganese.ocm.ir.IRBuilder;
 import io.karma.ferrous.manganese.ocm.ir.IRContext;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
-import io.karma.ferrous.manganese.ocm.type.Type;
-import io.karma.ferrous.manganese.ocm.type.TypeKind;
+import io.karma.ferrous.manganese.ocm.type.*;
 import io.karma.ferrous.manganese.target.TargetMachine;
+import io.karma.ferrous.manganese.util.EnumCompareOp;
 import io.karma.ferrous.manganese.util.Operator;
 import io.karma.ferrous.manganese.util.TokenSlice;
 import org.jetbrains.annotations.Nullable;
@@ -149,13 +149,19 @@ public final class BinaryExpression implements Expression {
         }; // @formatter:on
     }
 
-    private long emitGreater(final long lhs, final long rhs, final Type type, final IRBuilder builder) {
+    private long emitComparison(EnumCompareOp op, final long lhs, final long rhs, final Type type, final IRBuilder builder) {
         if (type.isBuiltin()) {
-            // TODO: Finish
+            if (type instanceof IntType intType)
+                return builder.compareInt(lhs, rhs, op, !intType.isUnsigned());
+            else if (type instanceof SizeType sizeType)
+                return builder.compareInt(lhs, rhs, op, !sizeType.isUnsigned());
+            else if (type instanceof RealType)
+                return builder.compareDecimal(lhs, rhs, op, true);
+            return NULL;
         } else {
-            builder.constBool(false);
+            // TODO: Implement compare
+            return builder.constBool(false);
         }
-        return NULL;
     }
 
     private boolean needsLoadDedup() {
@@ -172,17 +178,23 @@ public final class BinaryExpression implements Expression {
         final var lhs = this.lhs.emit(targetMachine, irContext);
         final var rhs = needsLoadDedup() ? lhs : this.rhs.emit(targetMachine, irContext);
         return switch (op) { // @formatter:off
-            case PLUS  -> kind == TypeKind.REAL ? builder.fadd(lhs, rhs) : builder.add(lhs, rhs);
-            case MINUS -> kind == TypeKind.REAL ? builder.fsub(lhs, rhs) : builder.sub(lhs, rhs);
-            case TIMES -> kind == TypeKind.REAL ? builder.fmul(lhs, rhs) : builder.mul(lhs, rhs);
-            case DIV   -> emitDiv(lhs, rhs, type, builder);
-            case MOD   -> emitMod(lhs, rhs, type, builder);
-            case AND   -> builder.and(lhs, rhs);
-            case OR    -> builder.or(lhs, rhs);
-            case XOR   -> builder.xor(lhs, rhs);
-            case SHL   -> builder.shl(lhs, rhs);
-            case SHR   -> kind == TypeKind.UINT ? builder.lshr(lhs, rhs) : builder.ashr(lhs, rhs);
-            default    -> throw new IllegalStateException("Unsupported operator");
+            case PLUS    -> kind == TypeKind.REAL ? builder.fadd(lhs, rhs) : builder.add(lhs, rhs);
+            case MINUS   -> kind == TypeKind.REAL ? builder.fsub(lhs, rhs) : builder.sub(lhs, rhs);
+            case TIMES   -> kind == TypeKind.REAL ? builder.fmul(lhs, rhs) : builder.mul(lhs, rhs);
+            case DIV     -> emitDiv(lhs, rhs, type, builder);
+            case MOD     -> emitMod(lhs, rhs, type, builder);
+            case CMP_GTH -> emitComparison(EnumCompareOp.GREATER_THAN, lhs, rhs, type, builder);
+            case CMP_GEQ -> emitComparison(EnumCompareOp.GREATER_THAN_EQUAL, lhs, rhs, type, builder);
+            case CMP_LTH -> emitComparison(EnumCompareOp.LESS_THAN, lhs, rhs, type, builder);
+            case CMP_LEQ -> emitComparison(EnumCompareOp.LESS_THAN_EQUAL, lhs, rhs, type, builder);
+            case EQ      -> emitComparison(EnumCompareOp.EQUALS, lhs, rhs, type, builder);
+            case NEQ     -> emitComparison(EnumCompareOp.NOT_EQUALS, lhs, rhs, type, builder);
+            case AND     -> builder.and(lhs, rhs);
+            case OR      -> builder.or(lhs, rhs);
+            case XOR     -> builder.xor(lhs, rhs);
+            case SHL     -> builder.shl(lhs, rhs);
+            case SHR     -> kind == TypeKind.UINT ? builder.lshr(lhs, rhs) : builder.ashr(lhs, rhs);
+            default      -> throw new IllegalStateException("Unsupported operator");
         }; // @formatter:on
     }
 

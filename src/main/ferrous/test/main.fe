@@ -16,6 +16,5 @@ fun main(num_args: i32, args: char**): i32 {
     let mut cond = false
     let mut atom: atomic i32
     let ptr = !cond ? *z : y
-
-    return cond ? *ptr : 0
+    return x == 1 ? *ptr : 0
 }
