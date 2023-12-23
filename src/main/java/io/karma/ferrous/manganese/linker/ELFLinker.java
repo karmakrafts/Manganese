@@ -73,14 +73,13 @@ public final class ELFLinker extends AbstractLinker {
                     compileContext.reportError("CRT", CompileErrorCode.E6009);
                     return;
                 }
-                return;
             }
             Logger.INSTANCE.debugln(STR."Located CRT implementation at \{crtImplPath}");
             buffer.add(crtImplPath.toAbsolutePath().normalize().toString());
             // Prologue object
             var crtProloguePath = findSystemLibrary(architecture, path -> path.resolve("lib"), "crti\\.o");
             if (crtProloguePath == null) {
-                crtProloguePath = findSystemLibrary(architecture, Function.identity(), "crti\\0");
+                crtProloguePath = findSystemLibrary(architecture, Function.identity(), "crti\\.o");
                 if (crtProloguePath == null) {
                     compileContext.reportError("CRT Prologue", CompileErrorCode.E6009);
                     return;
