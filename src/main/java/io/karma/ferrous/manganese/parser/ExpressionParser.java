@@ -147,6 +147,20 @@ public final class ExpressionParser extends ParseAdapter {
         return new StringConstant("", TokenSlice.from(compileContext, context));
     }
 
+    @Override
+    public void enterSimpleWhileLoop(final SimpleWhileLoopContext context) {
+        final var condition = parse(this.compileContext, this.capturedScopeStack, context.whileHead().expr(),
+                this.parent);
+        if (condition == null) {
+            this.compileContext.reportError(context.start, CompileErrorCode.E2001);
+            return;
+        }
+
+        final var labelBlock = context.whileBody().labelBlock();
+        final var labelLiteral = labelBlock != null ? Identifier.parse(labelBlock.ident()) : null;
+
+    }
+
     private @Nullable UnaryExpression parseUnaryExpression(final ExprContext context, final List<ParseTree> children) {
         final var opContextOpt = children.stream().filter(TerminalNode.class::isInstance).findFirst();
         if (opContextOpt.isEmpty()) {

@@ -103,6 +103,15 @@ public final class TypeParser extends ParseAdapter {
             final var mods = TypeModifier.parse(compileContext, context.typeMod());
             this.type = type.derive(TypeAttribute.REFERENCE, mods.toArray(TypeModifier[]::new));
         }
+        final var genericTypeList = context.typeList();
+        if (genericTypeList != null) {
+            final var genericTypes = Types.parse(compileContext, capturedScopeStack, genericTypeList);
+            final var expectedCount = type.getGenericParamCount() - type.getDefaultedGenericParamCount();
+            if (expectedCount < genericTypes.size()) {
+                return; // TODO: handle error
+            }
+            this.type = type.monomorphize(genericTypes);
+        }
     }
 
     @Override

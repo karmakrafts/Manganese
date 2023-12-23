@@ -79,12 +79,12 @@ public abstract class ParseAdapter implements FerrousParserListener {
 
     protected @Nullable Type getType(final IdentContext context) {
         return compileContext.getOrCreateModuleData().findCompleteType(Identifier.parse(context),
-            scopeStack.getScopeName());
+                scopeStack.getScopeName());
     }
 
     protected @Nullable Type getType(final QualifiedIdentContext context) {
         return compileContext.getOrCreateModuleData().findCompleteType(Identifier.parse(context),
-            scopeStack.getScopeName());
+                scopeStack.getScopeName());
     }
 
     // @formatter:off
@@ -369,12 +369,6 @@ public abstract class ParseAdapter implements FerrousParserListener {
 
     @Override
     public void exitUseStatement(UseStatementContext useStatementContext) {}
-
-    @Override
-    public void enterUseList(UseListContext useListContext) {}
-
-    @Override
-    public void exitUseList(UseListContext useListContext) {}
 
     @Override
     public void enterUdt(UdtContext udtDeclContext) {}

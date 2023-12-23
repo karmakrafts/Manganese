@@ -45,6 +45,10 @@ public enum TypeModifier {
         text = TokenUtils.getLiteral(token);
     }
 
+    public static Optional<TypeModifier> byMangledSymbol(final char symbol) {
+        return Arrays.stream(values()).filter(mod -> mod.mangledSymbol == symbol).findFirst();
+    }
+
     public static Optional<TypeModifier> parse(final FerrousParser.TypeModContext context) {
         return Arrays.stream(values()).filter(mod -> mod.text.equals(context.getText())).findFirst();
     }

@@ -60,12 +60,28 @@ public interface Type extends Scoped, Mangleable {
         return Collections.emptyList();
     }
 
+    default int getGenericParamCount() {
+        return getGenericParams().size();
+    }
+
+    default int getDefaultedGenericParamCount() {
+        final var params = getGenericParams();
+        var count = 0;
+        for (final var param : params) {
+            if (param.getValue() == null) {
+                continue;
+            }
+            ++count;
+        }
+        return count;
+    }
+
     default List<TypeModifier> getModifiers() {
         return Collections.emptyList();
     }
 
     default Type monomorphize(final List<Type> genericTypes) {
-        return this;
+        return Types.cached(new MonomorphizedType(this, genericTypes));
     }
 
     default @Nullable GenericParameter getGenericParam(final String name) {
@@ -115,7 +131,7 @@ public interface Type extends Scoped, Mangleable {
     }
 
     default boolean isMonomorphic() {
-        return getBaseType().isMonomorphic();
+        return true;
     }
 
     default boolean isDerived() {
