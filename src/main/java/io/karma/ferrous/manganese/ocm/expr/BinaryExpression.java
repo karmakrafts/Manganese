@@ -16,6 +16,7 @@
 package io.karma.ferrous.manganese.ocm.expr;
 
 import io.karma.ferrous.manganese.ocm.ValueStorage;
+import io.karma.ferrous.manganese.ocm.constant.BoolConstant;
 import io.karma.ferrous.manganese.ocm.ir.IRBuilder;
 import io.karma.ferrous.manganese.ocm.ir.IRContext;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
@@ -25,6 +26,7 @@ import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Operator;
 import io.karma.ferrous.manganese.util.TokenSlice;
 import org.jetbrains.annotations.Nullable;
+import org.lwjgl.llvm.LLVMCore;
 
 import java.util.Objects;
 
@@ -136,7 +138,7 @@ public final class BinaryExpression implements Expression {
             case REAL -> builder.fdiv(lhs, rhs);
             case UINT -> builder.udiv(lhs, rhs);
             default   -> builder.sdiv(lhs, rhs);
-        }; // @formmatter:on
+        }; // @formatter:on
     }
 
     private long emitMod(final long lhs, final long rhs, final Type type, final IRBuilder builder) {
@@ -144,7 +146,16 @@ public final class BinaryExpression implements Expression {
             case REAL -> builder.frem(lhs, rhs);
             case UINT -> builder.urem(lhs, rhs);
             default   -> builder.srem(lhs, rhs);
-        }; // @formmatter:on
+        }; // @formatter:on
+    }
+
+    private long emitGreater(final long lhs, final long rhs, final Type type, final IRBuilder builder) {
+        if (type.isBuiltin()) {
+            // TODO: Finish
+        } else {
+            builder.constBool(false);
+        }
+        return NULL;
     }
 
     private boolean needsLoadDedup() {
