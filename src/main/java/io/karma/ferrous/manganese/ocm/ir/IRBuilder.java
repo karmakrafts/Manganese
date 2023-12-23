@@ -20,7 +20,6 @@ import io.karma.ferrous.manganese.ocm.function.IntrinsicFunction;
 import io.karma.ferrous.manganese.ocm.type.BoolType;
 import io.karma.ferrous.manganese.ocm.type.TypeModifier;
 import io.karma.ferrous.manganese.target.TargetMachine;
-import io.karma.ferrous.manganese.util.EnumCompareOp;
 import org.apiguardian.api.API;
 import org.lwjgl.llvm.LLVMCore;
 import org.lwjgl.system.MemoryStack;
@@ -389,12 +388,12 @@ public final class IRBuilder implements AutoCloseable {
 
     // Comparison
 
-    public long compareInt(final long left, final long right, final EnumCompareOp op, final boolean signed) {
-        return LLVMCore.LLVMBuildICmp(this.address, op.asInt(signed), right, left, "");
+    public long icmp(final long left, final long right, final int op) {
+        return LLVMCore.LLVMBuildICmp(this.address, op, right, left, "");
     }
 
-    public long compareDecimal(final long left, final long right, final EnumCompareOp op, final boolean signed) {
-        return LLVMCore.LLVMBuildFCmp(this.address, op.asInt(signed), right, left, "");
+    public long fcmp(final long left, final long right, final int op) {
+        return LLVMCore.LLVMBuildFCmp(this.address, op, right, left, "");
     }
 
     // Non-instruction related functions

@@ -34,7 +34,7 @@ import static org.lwjgl.system.MemoryUtil.NULL;
 
 /**
  * @author Cedric Hammes, Cach30verfl0w
- * @since  23/12/2023
+ * @since 23/12/2023
  */
 @API(status = API.Status.INTERNAL)
 public final class SimpleWhileExpression implements Expression {
@@ -90,11 +90,11 @@ public final class SimpleWhileExpression implements Expression {
     public long emit(final TargetMachine targetMachine, final IRContext irContext) {
         final var builder = irContext.getCurrentOrCreate();
         final var labelName = this.loopLabel.toInternalName();
-        builder.br("cond_" + labelName);
+        builder.br(STR."cond_\{labelName}");
 
         // Create conditional branch
-        irContext.getAndPush("cond_" + labelName);
-        builder.condBr(this.condition.emit(targetMachine, irContext), labelName, "end_" + labelName);
+        irContext.getAndPush(STR."cond_\{labelName}");
+        builder.condBr(this.condition.emit(targetMachine, irContext), labelName, STR."end_\{labelName}");
         irContext.popCurrent();
 
         // Create loop and emit statements
@@ -102,11 +102,11 @@ public final class SimpleWhileExpression implements Expression {
         for (final var statement : this.body) {
             statement.emit(targetMachine, irContext);
         }
-        builder.br("cond_" + labelName);
+        builder.br(STR."cond_\{labelName}");
         irContext.popCurrent();
 
         // Emit end label for future code
-        irContext.getAndPush("end_" + labelName);
+        irContext.getAndPush(STR."end_\{labelName}");
         return NULL; // Return value ref to result register
     }
 

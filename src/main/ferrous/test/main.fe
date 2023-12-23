@@ -1,13 +1,9 @@
-pub struct Test {
-    pub value: bool
-}
-
-pub fun foo(value: mut Test*): bool {
-    return false
-}
-
 @NoMangle
 fun main(num_args: i32, args: char**): i32 {
+    let mut i = 0
+    i += 1
+    return i
+
     let x = num_args
     let mut y = &x
     let mut f = 2.0
@@ -16,5 +12,6 @@ fun main(num_args: i32, args: char**): i32 {
     let mut cond = false
     let mut atom: atomic i32
     let ptr = !cond ? *z : y
+
     return x == 1 ? *ptr : 0
 }

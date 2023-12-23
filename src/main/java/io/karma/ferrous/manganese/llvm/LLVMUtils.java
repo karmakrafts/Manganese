@@ -15,6 +15,7 @@
 
 package io.karma.ferrous.manganese.llvm;
 
+import io.karma.kommons.util.SystemInfo;
 import org.apiguardian.api.API;
 import org.apiguardian.api.API.Status;
 import org.jetbrains.annotations.Nullable;
@@ -133,6 +134,10 @@ public final class LLVMUtils {
     }
 
     public static @Nullable Path getLLVMPath() {
+        if (SystemInfo.isWindows()) {
+            return Path.of("C:\\Program Files\\LLVM\\bin");
+        }
+
         final var pathString = System.getProperty("org.lwjgl.librarypath");
         if (pathString != null) {
             return Path.of(pathString);
@@ -159,20 +164,28 @@ public final class LLVMUtils {
     }
 
     public static @Nullable String getLLVMVersion() {
-        final var path = getLLVMPath();
-        if (path == null) {
-            return null;
+        if (SystemInfo.isWindows()) {
+            return "15.0.7"; //Lass mich in Ruhe
         }
-        final var libFolderPath = path.toAbsolutePath().normalize().toString();
-        final var matcher = VERSION_PATTERN.matcher(libFolderPath);
-        if (!matcher.find()) {
-            try (final var stack = MemoryStack.stackPush()) {
-                final var major = stack.callocInt(1);
-                LLVMGetVersion(major, null, null);
-                return Integer.toString(major.get());
+
+        if (!SystemInfo.isWindows()) {
+            final var path = getLLVMPath();
+            if (path == null) {
+                return null;
+            }
+            final var libFolderPath = path.toAbsolutePath().normalize().toString();
+            final var matcher = VERSION_PATTERN.matcher(libFolderPath);
+
+            if (matcher.find()) {
+                return matcher.group(1);
             }
         }
-        return matcher.group(1);
+
+        try (final var stack = MemoryStack.stackPush()) {
+            final var major = stack.callocInt(1);
+            LLVMGetVersion(major, null, null);
+            return Integer.toString(major.get());
+        }
     }
 
     public static void loadLLVM() {
@@ -180,11 +193,20 @@ public final class LLVMUtils {
         if (path == null) {
             return;
         }
-        final var libFolder = path.resolve("lib");
-        if (!Files.exists(libFolder) || !Files.isDirectory(libFolder)) {
-            return;
+
+        String pathString = null;
+
+        if (SystemInfo.isWindows()) {
+            pathString = path.normalize().toString();
+        } else {
+            final var libFolder = path.resolve("lib");
+            if (!Files.exists(libFolder) || !Files.isDirectory(libFolder)) {
+                return;
+            }
+            pathString = libFolder.toAbsolutePath().normalize().toString();
         }
-        final var pathString = libFolder.toAbsolutePath().normalize().toString();
+
+
         System.setProperty("org.lwjgl.librarypath", pathString);
     }
 
