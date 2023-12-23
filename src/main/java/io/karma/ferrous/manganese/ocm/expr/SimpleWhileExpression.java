@@ -89,13 +89,24 @@ public final class SimpleWhileExpression implements Expression {
     @Override
     public long emit(final TargetMachine targetMachine, final IRContext irContext) {
         final var builder = irContext.getCurrentOrCreate();
-        builder.condBr(this.condition.emit(targetMachine, irContext), this.loopLabel.toInternalName(), ""); // True Label: Loop, False Label: Continue executon
+        final var labelName = this.loopLabel.toInternalName();
+        builder.br("cond_" + labelName);
 
-        // Create loop label and emit statements
+        // Create conditional branch
+        irContext.getAndPush("cond_" + labelName);
+        builder.condBr(this.condition.emit(targetMachine, irContext), labelName, "end_" + labelName);
+        irContext.popCurrent();
+
+        // Create loop and emit statements
+        irContext.getAndPush(labelName);
         for (final var statement : this.body) {
             statement.emit(targetMachine, irContext);
         }
+        builder.br("cond_" + labelName);
+        irContext.popCurrent();
 
+        // Emit end label for future code
+        irContext.getAndPush("end_" + labelName);
         return NULL; // Return value ref to result register
     }
 
