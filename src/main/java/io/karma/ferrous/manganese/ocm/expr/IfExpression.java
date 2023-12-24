@@ -97,7 +97,7 @@ public final class IfExpression implements Expression, Scope {
 
             // Generate selector branch for code branch
             final var selectorBuilder = irContext.getAndPush(STR."selector_\{entryLabel}-\{i}");
-            final var falseLabel = i != this.branches.size() - 1 ? STR."selector_\{entryLabel}_\{i + 1}" : STR."end_\{entryLabel}";
+            final var falseLabel = i != this.branches.size() - 1 ? STR."selector_\{entryLabel}-\{i + 1}" : STR."end_\{entryLabel}";
             if (branch.getLeft() != null) {
                 selectorBuilder.condBr(branch.getLeft().emit(targetMachine, irContext), codeBranchLabel, falseLabel);
             } else {
