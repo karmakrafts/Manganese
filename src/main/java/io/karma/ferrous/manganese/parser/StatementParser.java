@@ -28,7 +28,10 @@ import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.KitchenSink;
 import io.karma.ferrous.manganese.util.TokenSlice;
 import io.karma.ferrous.vanadium.FerrousParser.*;
+import org.antlr.v4.runtime.tree.ParseTree;
+import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import org.apiguardian.api.API;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -45,7 +48,7 @@ public final class StatementParser extends ParseAdapter {
     private final ScopeStack capturedScopeStack;
     private final Object parent;
 
-    public StatementParser(final CompileContext compileContext, final Type expectedReturnType,
+    public StatementParser(final CompileContext compileContext, final @Nullable Type expectedReturnType,
                            final ScopeStack capturedScopeStack, final Object parent) {
         super(compileContext);
         this.expectedReturnType = expectedReturnType;
@@ -58,6 +61,18 @@ public final class StatementParser extends ParseAdapter {
             compileContext.getOrCreateModuleData().getLocalsFor(function).put(let.getQualifiedName(), let);
         }
         statements.add(statement);
+    }
+
+    public static List<Statement> parse(final CompileContext compileContext, final @Nullable Type expectedReturnType,
+                                        final ScopeStack scopeStack, final ParseTree context,
+                                        final Object parent) {
+        if (context == null) {
+            return new ArrayList<>();
+        }
+
+        final var parser = new StatementParser(compileContext, expectedReturnType, scopeStack, parent);
+        ParseTreeWalker.DEFAULT.walk(parser, context);
+        return parser.statements;
     }
 
     @Override
@@ -176,7 +191,7 @@ public final class StatementParser extends ParseAdapter {
             }
             final var targetMachine = compileContext.getCompiler().getTargetMachine();
             final var exprType = expr.getType(targetMachine);
-            if (!expectedReturnType.canAccept(targetMachine, exprType)) {
+            if (expectedReturnType != null && !expectedReturnType.canAccept(targetMachine, exprType)) {
                 final var message = KitchenSink.makeCompilerMessage(STR."\{exprType} cannot be assigned to \{expectedReturnType}");
                 compileContext.reportError(context.start, message, CompileErrorCode.E3006);
                 return;

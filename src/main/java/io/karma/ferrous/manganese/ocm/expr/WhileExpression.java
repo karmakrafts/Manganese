@@ -37,24 +37,22 @@ import static org.lwjgl.system.MemoryUtil.NULL;
  * @since 23/12/2023
  */
 @API(status = API.Status.INTERNAL)
-public final class SimpleWhileExpression implements Expression {
+public final class WhileExpression implements Expression {
 
     private final List<Statement> body;
     private final Expression condition;
     private final TokenSlice tokenSlice;
     private final Identifier loopLabel;
+    private final boolean isDoWhile;
     private Scope enclosingScope;
 
-    public SimpleWhileExpression(final List<Statement> body, final Expression condition, final TokenSlice tokenSlice,
-                                 final Identifier loopLabel) {
+    public WhileExpression(final List<Statement> body, final Expression condition, final TokenSlice tokenSlice,
+                           final @Nullable Identifier loopLabel, final boolean doWhile) {
         this.body = body;
         this.condition = condition;
         this.tokenSlice = tokenSlice;
-        this.loopLabel = loopLabel;
-    }
-
-    public SimpleWhileExpression(final List<Statement> body, final Expression condition, final TokenSlice tokenSlice) {
-        this(body, condition, tokenSlice, new Identifier(STR."loop\{UUID.randomUUID()}"));
+        this.isDoWhile = doWhile;
+        this.loopLabel = loopLabel != null ? loopLabel : new Identifier(STR."loop\{UUID.randomUUID()}");
     }
 
     // Scoped
@@ -88,24 +86,29 @@ public final class SimpleWhileExpression implements Expression {
 
     @Override
     public long emit(final TargetMachine targetMachine, final IRContext irContext) {
-        final var builder = irContext.getCurrentOrCreate();
         final var labelName = this.loopLabel.toInternalName();
-        builder.br(STR."cond_\{labelName}");
+        final var mainBuilder = irContext.getCurrentOrCreate();
 
-        // Create conditional branch
-        irContext.getAndPush(STR."cond_\{labelName}");
-        builder.condBr(this.condition.emit(targetMachine, irContext), labelName, STR."end_\{labelName}");
+        // Create jump trampoline
+        final var trampolineBuilder = irContext.getAndPush(STR."trampoline_\{labelName}");
+        trampolineBuilder.condBr(this.condition.emit(targetMachine, irContext), labelName, STR."end_\{labelName}");
         irContext.popCurrent();
 
-        // Create loop and emit statements
-        irContext.getAndPush(labelName);
+        // Conditional jump if not do while, otherwise jump
+        if (this.isDoWhile) {
+            mainBuilder.br(labelName);
+        } else {
+            mainBuilder.br(STR."trampoline_\{labelName}");
+        }
+
+        // Create loop block
+        final var loopBlockBuilder = irContext.getAndPush(labelName);
         for (final var statement : this.body) {
             statement.emit(targetMachine, irContext);
         }
-        builder.br(STR."cond_\{labelName}");
+        loopBlockBuilder.br(STR."trampoline_\{labelName}");
         irContext.popCurrent();
 
-        // Emit end label for future code
         irContext.getAndPush(STR."end_\{labelName}");
         return NULL; // Return value ref to result register
     }
