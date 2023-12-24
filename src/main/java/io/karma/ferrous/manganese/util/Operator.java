@@ -86,7 +86,8 @@ public enum Operator {
     PTR_REF         (FerrousLexer.ARROW,               "fe.op.ptrref",         false,  true,  false, true ),
     SAFE_PTR_REF    (FerrousLexer.OP_SAFE_PTR_REF,     "fe.op.ptrref.safe",    false,  true,  false, true ),
     MEMBER_REF      (FerrousLexer.DOT,                 "fe.op.memberref",      false,  true,  false, true ),
-    REF             (FerrousLexer.AMP,                 "fe.op.ref",            true,   false, false, false)
+    REF             (FerrousLexer.AMP,                 "fe.op.ref",            true,   false, false, false),
+    LABE_ADDR       (FerrousLexer.OP_LABEL_ADDR,       "fe.op.labeladdr",      true,   false, false, true)
     ;
     // @formatter:on
 
