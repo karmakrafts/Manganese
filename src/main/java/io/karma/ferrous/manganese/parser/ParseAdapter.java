@@ -583,28 +583,42 @@ public abstract class ParseAdapter implements FerrousParserListener {
     }
 
     @Override
-    public void enterWhileLoop(WhileLoopContext context) {}
+    public void enterWhileLoop(WhileLoopContext context) {
+
+    }
 
     @Override
     public void exitWhileLoop(WhileLoopContext context) {}
 
     @Override
-    public void enterSimpleWhileLoop(SimpleWhileLoopContext simpleWhileLoopContext) {}
+    public void enterSimpleWhileLoop(SimpleWhileLoopContext simpleWhileLoopContext) {
+        this.pushScope(ScopeType.WHILE, Identifier.EMPTY);
+    }
 
     @Override
-    public void exitSimpleWhileLoop(SimpleWhileLoopContext simpleWhileLoopContext) {}
+    public void exitSimpleWhileLoop(SimpleWhileLoopContext simpleWhileLoopContext) {
+        this.popScope();
+    }
 
     @Override
-    public void enterDoWhileLoop(DoWhileLoopContext doWhileLoopContext) {}
+    public void enterDoWhileLoop(DoWhileLoopContext doWhileLoopContext) {
+        this.pushScope(ScopeType.WHILE, Identifier.EMPTY);
+    }
 
     @Override
-    public void exitDoWhileLoop(DoWhileLoopContext doWhileLoopContext) {}
+    public void exitDoWhileLoop(DoWhileLoopContext doWhileLoopContext) {
+        this.popScope();
+    }
 
     @Override
-    public void enterWhileDoLoop(WhileDoLoopContext whileDoLoopContext) {}
+    public void enterWhileDoLoop(WhileDoLoopContext whileDoLoopContext) {
+        this.pushScope(ScopeType.WHILE, Identifier.EMPTY);
+    }
 
     @Override
-    public void exitWhileDoLoop(WhileDoLoopContext whileDoLoopContext) {}
+    public void exitWhileDoLoop(WhileDoLoopContext whileDoLoopContext) {
+        this.popScope();
+    }
 
     @Override
     public void enterWhileHead(WhileHeadContext whileHeadContext) {}

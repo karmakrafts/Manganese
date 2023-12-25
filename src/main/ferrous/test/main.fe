@@ -1,7 +1,12 @@
 @NoMangle
 fun main(num_args: i32, args: char**): i32 {
+    let mut var = 0
+    while (var < 10) {
+        var += 1
+    }
+
     if (num_args == 1) {
-        return 1
+        return var
     } else if (num_args == 2) {
         return 2
     } else if (num_args == 3) {

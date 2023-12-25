@@ -40,12 +40,12 @@ import static org.lwjgl.system.MemoryUtil.NULL;
  */
 @API(status = API.Status.INTERNAL)
 public final class IfExpression implements Expression, Scope {
-    private final List<Pair<Expression, List<Statement>>> branches;
+    private final List<Pair<Expression, ScopeExpression>> branches;
     private final TokenSlice tokenSlice;
     private final Identifier entryLabel;
     private Scope enclosingScope;
 
-    public IfExpression(final List<Pair<Expression, List<Statement>>> branches, final TokenSlice tokenSlice) {
+    public IfExpression(final List<Pair<Expression, ScopeExpression>> branches, final TokenSlice tokenSlice) {
         if (branches.isEmpty()) {
             throw new IllegalArgumentException("If expression requires at least one block");
         }
@@ -107,15 +107,8 @@ public final class IfExpression implements Expression, Scope {
 
             // Generate code branch for execution
             final var codeBuilder = irContext.getAndPush(codeBranchLabel);
-            boolean needsJump = true;
-            for (final var statement : branch.getRight()) {
-                if (statement.terminatesBlock()) {
-                    needsJump = false;
-                }
-                statement.emit(targetMachine, irContext);
-            }
-
-            if (needsJump) {
+            branch.getRight().emit(targetMachine, irContext);
+            if (!irContext.getUserDataBool("scopeTerminated")) {
                 codeBuilder.br(STR."end_\{entryLabel}");
             }
             irContext.popCurrent();
@@ -134,4 +127,5 @@ public final class IfExpression implements Expression, Scope {
     public ScopeType getScopeType() {
         return ScopeType.IF;
     }
+
 }
