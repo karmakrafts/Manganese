@@ -17,9 +17,11 @@ package io.karma.ferrous.manganese.ocm.expr;
 
 import io.karma.ferrous.manganese.ocm.ir.IRContext;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
+import io.karma.ferrous.manganese.ocm.scope.ScopeType;
 import io.karma.ferrous.manganese.ocm.statement.Statement;
 import io.karma.ferrous.manganese.ocm.statement.YieldStatement;
 import io.karma.ferrous.manganese.ocm.type.Type;
+import io.karma.ferrous.manganese.ocm.type.Types;
 import io.karma.ferrous.manganese.ocm.type.VoidType;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Identifier;
@@ -37,56 +39,29 @@ import static org.lwjgl.system.MemoryUtil.NULL;
  * @since 23/12/2023
  */
 @API(status = API.Status.INTERNAL)
-public final class WhileExpression implements Expression {
+public final class WhileExpression extends AbstractScopeExpression {
 
-    private final List<Statement> body;
     private final Expression condition;
-    private final TokenSlice tokenSlice;
-    private final Identifier loopLabel;
     private final boolean isDoWhile;
-    private Scope enclosingScope;
 
-    public WhileExpression(final List<Statement> body, final Expression condition, final TokenSlice tokenSlice,
-                           final @Nullable Identifier loopLabel, final boolean doWhile) {
-        this.body = body;
+    public WhileExpression(final Identifier scopeName, final TokenSlice tokenSlice, final Expression condition,
+                           final boolean isDoWhile) {
+        super(scopeName.toInternalName(), tokenSlice);
         this.condition = condition;
-        this.tokenSlice = tokenSlice;
-        this.isDoWhile = doWhile;
-        this.loopLabel = loopLabel != null ? loopLabel : new Identifier(STR."loop\{UUID.randomUUID()}");
+        this.isDoWhile = isDoWhile;
     }
 
-    // Scoped
-
-    @Override
-    public @Nullable Scope getEnclosingScope() {
-        return this.enclosingScope;
-    }
-
-    @Override
-    public void setEnclosingScope(final Scope enclosingScope) {
-        this.enclosingScope = enclosingScope;
+    public WhileExpression(final TokenSlice tokenSlice, final Expression condition, final boolean isDoWhile) {
+        super(tokenSlice);
+        this.condition = condition;
+        this.isDoWhile = isDoWhile;
     }
 
     // Expression
 
     @Override
-    public TokenSlice getTokenSlice() {
-        return this.tokenSlice;
-    }
-
-    @Override
-    public Type getType(final TargetMachine targetMachine) {
-        for (final var statement : this.body) {
-            if (statement instanceof YieldStatement yieldStatement) {
-                return yieldStatement.getValue().getType(targetMachine);
-            }
-        }
-        return VoidType.INSTANCE;
-    }
-
-    @Override
     public long emit(final TargetMachine targetMachine, final IRContext irContext) {
-        final var labelName = this.loopLabel.toInternalName();
+        final var labelName = this.scopeName.toInternalName();
         final var mainBuilder = irContext.getCurrentOrCreate();
 
         // Create jump trampoline
@@ -103,7 +78,7 @@ public final class WhileExpression implements Expression {
 
         // Create loop block
         final var loopBlockBuilder = irContext.getAndPush(labelName);
-        for (final var statement : this.body) {
+        for (final var statement : this.statements) {
             statement.emit(targetMachine, irContext);
         }
         loopBlockBuilder.br(STR."trampoline_\{labelName}");
@@ -111,6 +86,13 @@ public final class WhileExpression implements Expression {
 
         irContext.getAndPush(STR."end_\{labelName}");
         return NULL; // Return value ref to result register
+    }
+
+    // Scope
+
+    @Override
+    public ScopeType getScopeType() {
+        return ScopeType.WHILE;
     }
 
 }

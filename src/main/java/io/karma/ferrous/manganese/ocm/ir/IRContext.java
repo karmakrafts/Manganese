@@ -52,6 +52,19 @@ public interface IRContext extends AutoCloseable {
 
     void reset();
 
+    @Nullable Object setUserData(final String key, final @Nullable Object value);
+
+    @Nullable Object getUserData(final String key);
+
+    default boolean getUserDataBool(final String key) {
+        final var value = getUserData(key);
+        if (!(value instanceof Boolean boolValue))
+            return false;
+
+        return boolValue;
+    }
+
+
     default IRBuilder getCurrentOrCreate() {
         var current = getCurrent();
         if (current != null) {

@@ -26,6 +26,7 @@ import org.apiguardian.api.API;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -57,16 +58,20 @@ public abstract class AbstractScopeExpression implements Expression, Scope {
         statements.add(statement);
     }
 
+    public void addStatements(final List<Statement> statements) {
+        statements.forEach(this::addStatement);
+    }
+
     // Expression
 
     @Override
     public Type getType(final TargetMachine targetMachine) {
         // @formatter:off
         return Types.findCommonType(targetMachine, statements.stream()
-            .filter(Expression.class::isInstance)
-            .map(Expression.class::cast)
-            .map(expr -> expr.getType(targetMachine))
-            .toList());
+                .filter(Expression.class::isInstance)
+                .map(Expression.class::cast)
+                .map(expr -> expr.getType(targetMachine))
+                .toList());
         // @formatter:on
     }
 

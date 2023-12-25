@@ -20,6 +20,8 @@ import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.ocm.scope.ScopeType;
 import io.karma.ferrous.manganese.ocm.statement.Statement;
 import io.karma.ferrous.manganese.ocm.type.Type;
+import io.karma.ferrous.manganese.ocm.type.Types;
+import io.karma.ferrous.manganese.ocm.type.VoidType;
 import io.karma.ferrous.manganese.target.TargetMachine;
 import io.karma.ferrous.manganese.util.Identifier;
 import io.karma.ferrous.manganese.util.TokenSlice;
@@ -30,61 +32,39 @@ import java.util.ArrayList;
 import java.util.UUID;
 
 /**
- * @author Alexander Hinze
- * @since 03/12/2023
+ * @author Cedric Hammes, Cach30verfl0w
+ * @since 25/12/2023
  */
 @API(status = API.Status.INTERNAL)
-public final class LoopExpression implements Expression, Scope {
-    private final Identifier scopeName;
-    private final TokenSlice tokenSlice;
-    private final ArrayList<Statement> statements = new ArrayList<>();
-    private Scope enclosingScope;
+public final class LoopExpression extends AbstractScopeExpression {
 
     public LoopExpression(final String scopeName, final TokenSlice tokenSlice) {
-        this.scopeName = new Identifier(scopeName);
-        this.tokenSlice = tokenSlice;
+        super(scopeName, tokenSlice);
     }
 
     public LoopExpression(final TokenSlice tokenSlice) {
-        this(STR."loop\{UUID.randomUUID()}", tokenSlice);
+        super(tokenSlice);
+    }
+
+    // Expression
+
+    @Override
+    public long emit(final TargetMachine targetMachine, final IRContext irContext) {
+        irContext.getCurrentOrCreate().br(this.scopeName.toInternalName());
+        final var loopBuilder = irContext.getAndPush(this.scopeName.toInternalName());
+        for (final var statement : this.statements) {
+            statement.emit(targetMachine, irContext);
+        }
+        loopBuilder.br(this.scopeName.toInternalName());
+        irContext.popCurrent();
+        return 0L;
     }
 
     // Scope
-
-    @Override
-    public Identifier getName() {
-        return scopeName;
-    }
 
     @Override
     public ScopeType getScopeType() {
         return ScopeType.LOOP;
     }
 
-    // Expression
-
-    @Override
-    public Type getType(final TargetMachine targetMachine) {
-        return null;
-    }
-
-    @Override
-    public long emit(final TargetMachine targetMachine, final IRContext irContext) {
-        return 0L;
-    }
-
-    @Override
-    public @Nullable Scope getEnclosingScope() {
-        return enclosingScope;
-    }
-
-    @Override
-    public void setEnclosingScope(final Scope enclosingScope) {
-        this.enclosingScope = enclosingScope;
-    }
-
-    @Override
-    public TokenSlice getTokenSlice() {
-        return tokenSlice;
-    }
 }
