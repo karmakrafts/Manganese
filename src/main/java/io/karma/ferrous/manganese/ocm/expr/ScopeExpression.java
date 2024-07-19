@@ -28,11 +28,10 @@ import static org.lwjgl.system.MemoryUtil.NULL;
 
 /**
  * @author Cedric Hammes, Cach30verfl0w
- * @since  24/12/2023
+ * @since 24/12/2023
  */
 @API(status = API.Status.INTERNAL)
 public final class ScopeExpression extends AbstractScopeExpression {
-
     private final ScopeType type;
     private final LongSupplier valueSupplier;
 
@@ -57,10 +56,11 @@ public final class ScopeExpression extends AbstractScopeExpression {
 
     @Override
     public long emit(TargetMachine targetMachine, IRContext irContext) {
-        irContext.setUserData("scopeTerminated", false);
+        irContext.setScopeTerminated(false);
         for (final var statement : this.statements) {
-            if (statement.terminatesBlock())
-                irContext.setUserData("scopeTerminated", true);
+            if (statement.terminatesBlock()) {
+                irContext.setScopeTerminated(true);
+            }
             statement.emit(targetMachine, irContext);
         }
         return this.valueSupplier.getAsLong();

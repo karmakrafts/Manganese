@@ -58,13 +58,13 @@ public final class FunctionBody implements Scope {
             return;
         }
         try (final var context = new FunctionIRContext(compileContext, module, targetMachine, function)) {
-            context.reset();
-            for (final var statement : statements) {
-                if (!(statement instanceof LabeledStatement labeled)) {
-                    continue;
-                }
-                labeled.emit(targetMachine, context); // Pre-emit all blocks in the right order
-            }
+            //context.reset();
+            //for (final var statement : statements) {
+            //    if (!(statement instanceof LabeledStatement labeled)) {
+            //        continue;
+            //    }
+            //    labeled.emit(targetMachine, context); // Pre-emit all blocks in the right order
+            //}
             context.reset();
             var isTerminated = false;
             var lastBlock = IRContext.DEFAULT_BLOCK;

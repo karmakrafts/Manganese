@@ -27,7 +27,6 @@ import io.karma.ferrous.manganese.ocm.function.UnresolvedFunctionReference;
 import io.karma.ferrous.manganese.ocm.scope.ScopeStack;
 import io.karma.ferrous.manganese.ocm.scope.ScopeType;
 import io.karma.ferrous.manganese.ocm.scope.Scoped;
-import io.karma.ferrous.manganese.ocm.statement.Statement;
 import io.karma.ferrous.manganese.ocm.type.*;
 import io.karma.ferrous.manganese.util.*;
 import io.karma.ferrous.vanadium.FerrousLexer;
@@ -44,7 +43,9 @@ import org.jetbrains.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.*;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * @author Alexander Hinze
@@ -148,8 +149,10 @@ public final class ExpressionParser extends ParseAdapter {
 
     @Override
     public void enterSimpleWhileLoop(final SimpleWhileLoopContext context) {
-        final var condition = parse(this.compileContext, this.capturedScopeStack, context.whileHead().expr(),
-                this.parent);
+        final var condition = parse(this.compileContext,
+            this.capturedScopeStack,
+            context.whileHead().expr(),
+            this.parent);
         if (condition == null) {
             this.compileContext.reportError(context.start, CompileErrorCode.E2001);
             return;
@@ -160,27 +163,37 @@ public final class ExpressionParser extends ParseAdapter {
 
         var expression = new WhileExpression(TokenSlice.from(this.compileContext, context), condition, false);
         if (labelLiteral != null) {
-            expression = new WhileExpression(labelLiteral, TokenSlice.from(this.compileContext, context), condition,
-                    false);
+            expression = new WhileExpression(labelLiteral,
+                TokenSlice.from(this.compileContext, context),
+                condition,
+                false);
         }
-        expression.addStatements(StatementParser.parse(this.compileContext, VoidType.INSTANCE, this.capturedScopeStack,
-                context, this.parent));
+        expression.addStatements(StatementParser.parse(this.compileContext,
+            VoidType.INSTANCE,
+            this.capturedScopeStack,
+            context,
+            this.parent));
         this.setExpression(context, expression);
         this.pushScope(expression);
     }
 
     @Override
     public void enterDoWhileLoop(DoWhileLoopContext context) {
-        final var condition = parse(this.compileContext, this.capturedScopeStack, context.whileHead().expr(),
-                this.parent);
+        final var condition = parse(this.compileContext,
+            this.capturedScopeStack,
+            context.whileHead().expr(),
+            this.parent);
         if (condition == null) {
             this.compileContext.reportError(context.start, CompileErrorCode.E2001);
             return;
         }
 
         var expression = new WhileExpression(TokenSlice.from(this.compileContext, context), condition, false);
-        expression.addStatements(StatementParser.parse(this.compileContext, VoidType.INSTANCE, this.capturedScopeStack,
-                context, this.parent));
+        expression.addStatements(StatementParser.parse(this.compileContext,
+            VoidType.INSTANCE,
+            this.capturedScopeStack,
+            context,
+            this.parent));
         this.setExpression(context, expression);
         this.pushScope(expression);
     }
@@ -188,23 +201,33 @@ public final class ExpressionParser extends ParseAdapter {
     @Override
     public void enterIfExpr(IfExprContext context) {
         final var branches = new LinkedList<Pair<Expression, ScopeExpression>>();
-        final var firstBlockCondition = ExpressionParser.parse(this.compileContext, this.capturedScopeStack,
-                context.expr(), this.parent);
+        final var firstBlockCondition = ExpressionParser.parse(this.compileContext,
+            this.capturedScopeStack,
+            context.expr(),
+            this.parent);
 
         final var scopeExpr = new ScopeExpression(TokenSlice.from(this.compileContext, context), ScopeType.IF);
-        scopeExpr.addStatements(StatementParser.parse(this.compileContext, null,
-                this.capturedScopeStack, context.ifBody(), this.parent));
+        scopeExpr.addStatements(StatementParser.parse(this.compileContext,
+            null,
+            this.capturedScopeStack,
+            context.ifBody(),
+            this.parent));
         branches.add(Pair.of(firstBlockCondition, scopeExpr));
 
         // Parse else if branches
         for (ElseIfExprContext elseIfBranchContext : context.elseIfExpr()) {
-            final var condition = ExpressionParser.parse(this.compileContext, this.capturedScopeStack,
-                    elseIfBranchContext.expr(), this.parent);
+            final var condition = ExpressionParser.parse(this.compileContext,
+                this.capturedScopeStack,
+                elseIfBranchContext.expr(),
+                this.parent);
 
             final var elseIfExpr = new ScopeExpression(TokenSlice.from(this.compileContext, context),
-                    ScopeType.ELSE_IF);
-            elseIfExpr.addStatements(StatementParser.parse(this.compileContext, null,
-                    this.capturedScopeStack, elseIfBranchContext.ifBody(), this.parent));
+                ScopeType.ELSE_IF);
+            elseIfExpr.addStatements(StatementParser.parse(this.compileContext,
+                null,
+                this.capturedScopeStack,
+                elseIfBranchContext.ifBody(),
+                this.parent));
             branches.add(Pair.of(condition, elseIfExpr));
         }
 
@@ -212,8 +235,11 @@ public final class ExpressionParser extends ParseAdapter {
         final var elseExprContext = context.elseExpr();
         if (elseExprContext != null) {
             final var elseExpr = new ScopeExpression(TokenSlice.from(this.compileContext, context), ScopeType.ELSE);
-            elseExpr.addStatements(StatementParser.parse(this.compileContext, null,
-                    this.capturedScopeStack, elseExprContext.ifBody(), this.parent));
+            elseExpr.addStatements(StatementParser.parse(this.compileContext,
+                null,
+                this.capturedScopeStack,
+                elseExprContext.ifBody(),
+                this.parent));
             branches.add(Pair.of(firstBlockCondition, elseExpr));
         }
 
@@ -227,8 +253,11 @@ public final class ExpressionParser extends ParseAdapter {
     @Override
     public void enterLoop(LoopContext context) {
         final var expression = new LoopExpression(TokenSlice.from(this.compileContext, context));
-        expression.addStatements(StatementParser.parse(this.compileContext, null,
-                this.capturedScopeStack, context, this.parent));
+        expression.addStatements(StatementParser.parse(this.compileContext,
+            null,
+            this.capturedScopeStack,
+            context,
+            this.parent));
         this.setExpression(context, expression);
         this.pushScope(expression);
     }

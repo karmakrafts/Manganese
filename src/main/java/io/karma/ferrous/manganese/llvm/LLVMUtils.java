@@ -198,7 +198,8 @@ public final class LLVMUtils {
 
         if (SystemInfo.isWindows()) {
             pathString = path.normalize().toString();
-        } else {
+        }
+        else {
             final var libFolder = path.resolve("lib");
             if (!Files.exists(libFolder) || !Files.isDirectory(libFolder)) {
                 return;

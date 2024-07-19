@@ -54,7 +54,8 @@ public final class ELFLinker extends AbstractLinker {
             final var path = sysLibDir.resolve("lib").toAbsolutePath().normalize().toString();
             if (Files.exists(Path.of(path))) {
                 buffer.add(STR."-L\{path}");
-            } else {
+            }
+            else {
                 buffer.add(STR."-L\{sysLibDir.toAbsolutePath().normalize()}");
             }
             buffer.add("-lc");
@@ -97,7 +98,7 @@ public final class ELFLinker extends AbstractLinker {
             // Epilogue object
             var crtEpiloguePath = findSystemLibrary(architecture, path -> path.resolve("lib"), "crtn\\.o");
             if (crtEpiloguePath == null) {
-                 crtEpiloguePath = findSystemLibrary(architecture, Function.identity(), "crtn\\.o");
+                crtEpiloguePath = findSystemLibrary(architecture, Function.identity(), "crtn\\.o");
                 if (crtEpiloguePath == null) {
                     compileContext.reportError("CRT Epilogue", CompileErrorCode.E6009);
                     return;
@@ -173,7 +174,8 @@ public final class ELFLinker extends AbstractLinker {
         }
         if (isDynamic) {
             buffer.add("-dynamic-linker");
-            final var path = findSystemLibrary(architecture, Functions.castingIdentity(),
+            final var path = findSystemLibrary(architecture,
+                Functions.castingIdentity(),
                 STR."ld[\\-_.]linux[\\-_.](\{architecture.makePattern()})(\\.so(\\.[0-9])?)");
 
             if (path == null) {

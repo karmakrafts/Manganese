@@ -18,7 +18,6 @@ package io.karma.ferrous.manganese.ocm.expr;
 import io.karma.ferrous.manganese.ocm.ir.IRContext;
 import io.karma.ferrous.manganese.ocm.scope.Scope;
 import io.karma.ferrous.manganese.ocm.scope.ScopeType;
-import io.karma.ferrous.manganese.ocm.statement.Statement;
 import io.karma.ferrous.manganese.ocm.type.Type;
 import io.karma.ferrous.manganese.ocm.type.Types;
 import io.karma.ferrous.manganese.ocm.type.VoidType;
@@ -100,7 +99,8 @@ public final class IfExpression implements Expression, Scope {
             final var falseLabel = i != this.branches.size() - 1 ? STR."selector_\{entryLabel}-\{i + 1}" : STR."end_\{entryLabel}";
             if (branch.getLeft() != null) {
                 selectorBuilder.condBr(branch.getLeft().emit(targetMachine, irContext), codeBranchLabel, falseLabel);
-            } else {
+            }
+            else {
                 selectorBuilder.br(codeBranchLabel);
             }
             irContext.popCurrent();
@@ -108,7 +108,7 @@ public final class IfExpression implements Expression, Scope {
             // Generate code branch for execution
             final var codeBuilder = irContext.getAndPush(codeBranchLabel);
             branch.getRight().emit(targetMachine, irContext);
-            if (!irContext.getUserDataBool("scopeTerminated")) {
+            if (!irContext.isScopeTerminated()) {
                 codeBuilder.br(STR."end_\{entryLabel}");
             }
             irContext.popCurrent();

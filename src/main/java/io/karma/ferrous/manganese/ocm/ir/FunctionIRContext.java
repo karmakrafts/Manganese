@@ -37,7 +37,6 @@ import static org.lwjgl.llvm.LLVMCore.LLVMDeleteBasicBlock;
  */
 @API(status = API.Status.INTERNAL)
 public final class FunctionIRContext implements IRContext {
-    private final HashMap<String, Object> userDataStore = new HashMap<>();
     private final CompileContext compileContext;
     private final Module module;
     private final TargetMachine targetMachine;
@@ -45,6 +44,7 @@ public final class FunctionIRContext implements IRContext {
     private final HashMap<String, IRBuilder> builders = new HashMap<>();
     private final Stack<IRBuilder> builderStack = new Stack<>();
     private boolean isDropped;
+    private boolean isScopeTerminated;
 
     public FunctionIRContext(final CompileContext compileContext, final Module module,
                              final TargetMachine targetMachine, final Function function) {
@@ -56,6 +56,16 @@ public final class FunctionIRContext implements IRContext {
 
     public void dispose() {
         builders.values().forEach(IRBuilder::dispose);
+    }
+
+    @Override
+    public boolean isScopeTerminated() {
+        return isScopeTerminated;
+    }
+
+    @Override
+    public void setScopeTerminated(final boolean isScopeTerminated) {
+        this.isScopeTerminated = isScopeTerminated;
     }
 
     @Override
@@ -146,15 +156,5 @@ public final class FunctionIRContext implements IRContext {
     public void reset() {
         builderStack.clear();
         getAndPush(DEFAULT_BLOCK); // Restore default block
-    }
-
-    @Override
-    public @Nullable Object setUserData(String key, @Nullable Object value) {
-        return userDataStore.put(key, value);
-    }
-
-    @Override
-    public @Nullable Object getUserData(String key) {
-        return userDataStore.get(key);
     }
 }

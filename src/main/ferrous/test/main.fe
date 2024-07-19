@@ -1,3 +1,9 @@
+inl fun foo(value: bool): bool {
+    testing1:
+    testing2:
+    return value
+}
+
 @NoMangle
 fun main(num_args: i32, args: char**): i32 {
     let mut var = 0
@@ -5,9 +11,13 @@ fun main(num_args: i32, args: char**): i32 {
         var += 1
     }
 
+    testing:
     if (num_args == 1) {
-        return var
+        let mut x = num_args
+        x *= 2
+        return x
     } else if (num_args == 2) {
+        branch:
         return 2
     } else if (num_args == 3) {
         return 3

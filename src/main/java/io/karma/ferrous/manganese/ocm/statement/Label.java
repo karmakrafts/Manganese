@@ -47,6 +47,8 @@ public final class Label implements Statement, LabeledStatement {
 
     @Override
     public long emit(final TargetMachine targetMachine, final IRContext irContext) {
+        irContext.getCurrentOrCreate().br(name);
+        irContext.popCurrent();
         return LLVMCore.LLVMBasicBlockAsValue(irContext.getAndPush(name).getBlockAddress());
     }
 

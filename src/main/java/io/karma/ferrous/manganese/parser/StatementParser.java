@@ -56,16 +56,8 @@ public final class StatementParser extends ParseAdapter {
         this.parent = parent;
     }
 
-    private void addStatement(final Statement statement) {
-        if (parent instanceof Function function && statement instanceof LetStatement let) {
-            compileContext.getOrCreateModuleData().getLocalsFor(function).put(let.getQualifiedName(), let);
-        }
-        statements.add(statement);
-    }
-
     public static List<Statement> parse(final CompileContext compileContext, final @Nullable Type expectedReturnType,
-                                        final ScopeStack scopeStack, final ParseTree context,
-                                        final Object parent) {
+                                        final ScopeStack scopeStack, final ParseTree context, final Object parent) {
         if (context == null) {
             return new ArrayList<>();
         }
@@ -73,6 +65,13 @@ public final class StatementParser extends ParseAdapter {
         final var parser = new StatementParser(compileContext, expectedReturnType, scopeStack, parent);
         ParseTreeWalker.DEFAULT.walk(parser, context);
         return parser.statements;
+    }
+
+    private void addStatement(final Statement statement) {
+        if (parent instanceof Function function && statement instanceof LetStatement let) {
+            compileContext.getOrCreateModuleData().getLocalsFor(function).put(let.getQualifiedName(), let);
+        }
+        statements.add(statement);
     }
 
     @Override

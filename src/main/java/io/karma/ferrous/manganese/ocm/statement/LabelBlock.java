@@ -57,6 +57,7 @@ public final class LabelBlock implements LabeledStatement, Scope {
 
     @Override
     public long emit(final TargetMachine targetMachine, final IRContext irContext) {
+        irContext.popCurrent();
         return LLVMCore.LLVMBasicBlockAsValue(irContext.getAndPush(name).getBlockAddress());
     }
 
